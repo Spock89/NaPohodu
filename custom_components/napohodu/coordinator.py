@@ -377,7 +377,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
             ovladat = self.hodnoty.get((p.subentry_id, "ovladat"), 0.0) > 0
             pamet = self.pameti.setdefault(p.subentry_id, core.Pamet())
-            skutecne = self._okno_otevreno(d.get(CONF_OKNO), pamet)
+            projezd = float(d.get(CONF_PROJEZD, 120))
+            skutecne = self._okno_otevreno(d.get(CONF_OKNO), pamet, cas_s,
+                                           projezd)
+            # po dojezdu se povel a skutečnost musí shodovat
+            if (ovladat and cas_s - pamet.cas_povelu_s > projezd * 2
+                    and pamet.otevreno != skutecne):
+                _LOGGER.warning(
+                    "NaPohodu: %s hlásí %s, ale posledním povelem bylo %s",
+                    p.title, "otevřeno" if skutecne else "zavřeno",
+                    "otevřít" if pamet.otevreno else "zavřít")
             pamet.otevreno = skutecne
 
             if ovladat:
@@ -458,8 +467,17 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     # ------------------------------------------------------------ detaily
 
-    def _okno_otevreno(self, eid: str | None, pamet: core.Pamet) -> bool:
-        """Skutečný stav okna má přednost před tím, co si pamatujeme."""
+    def _okno_otevreno(self, eid: str | None, pamet: core.Pamet,
+                       cas_s: float = 0.0, projezd_s: float = 120.0) -> bool:
+        """Skutečný stav okna, ale během jízdy se věří vlastnímu povelu.
+
+        Pohon chvíli jede a po tu dobu hlásí starou polohu. Bez téhle
+        pojistky by jádro vidělo zavřeno, chtělo otevřít znovu a naráželo
+        na minimální dobu držení stavu — přesně to hlásí „čekám 1080 s“.
+        """
+        if cas_s - pamet.cas_povelu_s < projezd_s:
+            return pamet.otevreno
+
         st = self._stav(eid)
         if st is None:
             return pamet.otevreno

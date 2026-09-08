@@ -176,7 +176,16 @@ def test_noc_zavira_na_teplotu_ne_na_cisto():
 def test_projezd_blokuje_opacny_povel():
     p = Pamet(otevreno=True, cas_povelu_s=0)
     r = rozhodni(Vstup(co2=500, cil=25.5, cas_s=30), p, N)
-    assert r.akce is Akce.NIC and "čekám" in r.duvod
+    assert r.akce is Akce.NIC
+    # hláška má říct, co se chce a jak dlouho se ještě drží
+    assert "zavřít" in r.duvod and "držím" in r.duvod
+
+
+def test_hlaska_o_cekani_je_srozumitelna():
+    p = Pamet(otevreno=False, cas_povelu_s=0)
+    r = rozhodni(Vstup(co2=1200, cil=25.5, t_out=10, cas_s=30), p, N)
+    assert "chci otevřít" in r.duvod
+    assert "min" in r.duvod          # dlouhé čekání v minutách, ne v sekundách
 
 
 def test_korekce_ma_spravne_znamenko():
@@ -323,3 +332,17 @@ def test_vysoka_priorita_vetra_dele():
     a, _ = krok(stary(co2=900, t_in=22, t_out=8, cil=25.5),
                 p=Pamet(cas_povelu_s=100000 - N.min_drzeni_s - 60))
     assert den_vysoka > den_nizka
+
+
+# ------------------------------------------------- projezd a rozejití stavu
+
+def test_po_povelu_se_veri_vlastnimu_stavu():
+    """Pohon chvíli jede a hlásí starou polohu. Kdyby jádro vidělo
+    zavřeno, chtělo by otevřít znovu a naráželo na držení stavu."""
+    p = Pamet(otevreno=False, cas_povelu_s=0)
+    r = rozhodni(Vstup(co2=1200, cil=25.5, t_out=10, cas_s=100000), p, N)
+    assert r.akce is Akce.OTEVRIT
+    assert p.otevreno is True           # jádro si povel zapamatuje
+    # hned nato se stejné rozhodnutí neopakuje
+    r2 = rozhodni(Vstup(co2=1200, cil=25.5, t_out=10, cas_s=100010), p, N)
+    assert r2.akce is Akce.NIC

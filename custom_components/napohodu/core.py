@@ -203,7 +203,12 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         limit = n.projezd_s if hned else max(n.projezd_s, n.min_drzeni_s)
         if v.cas_s - p.cas_povelu_s < limit:
             zbyva = int(limit - (v.cas_s - p.cas_povelu_s))
-            return hotovo(Akce.NIC, f"čekám {zbyva} s")
+            chci = "otevřít" if chci_otevreno else "zavřít"
+            if zbyva >= 60:
+                kolik = f"{zbyva // 60} min"
+            else:
+                kolik = f"{zbyva} s"
+            return hotovo(Akce.NIC, f"chci {chci}, držím stav ještě {kolik}")
         p.otevreno = chci_otevreno
         p.cas_povelu_s = v.cas_s
         p.pohyby += 1
