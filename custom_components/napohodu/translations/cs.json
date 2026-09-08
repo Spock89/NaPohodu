@@ -178,12 +178,12 @@
             "climate_chlazeni": "Klimatizace (jen chladí)",
             "climate_oboji": "Klimatizace, která umí i topit",
             "priorita_vzduchu": "Vzduch proti teplu",
-            "zaluzie_zony": "Žaluzie místnosti",
             "azimut": "Azimut oken",
             "plocha": "Relativní plocha oken",
             "klid_stineni_min": "Nejčastěji hýbat jednou za",
             "stineni_rezim": "Kdy smí automatika hýbat žaluziemi",
-            "soukromi_kdy": "Zatáhnout po setmění"
+            "soukromi_kdy": "Zatáhnout po setmění",
+            "zaluzie": "Žaluzie"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -207,12 +207,12 @@
             "climate_chlazeni": "Jednotka, která umí jen chladit. Nasadí se, až když nestačí zastínit a vyvětrat.",
             "climate_oboji": "Tepelné čerpadlo nebo klimatizace s topením. Mimo topnou sezónu se použije na topení místo radiátorů, v sezóně naopak topit nebude, aby si s radiátory nelezly do cesty.",
             "priorita_vzduchu": "Nula znamená držet teplo za každou cenu, deset vyvětrat za každou cenu. Pětka je vyvážená. Ovládá, o kolik smí teplota při větrání klesnout — ve dne i v noci.",
-            "zaluzie_zony": "Žaluzie této místnosti. Můžeš vybrat víc — v dalším kroku pak každé přiřadíš, který její uložený stav plní kterou roli.",
             "azimut": "Kam okna směřují. 0 sever, 90 východ, 180 jih, 270 západ. Podle toho se pozná, kdy do místnosti svítí.",
             "plocha": "Kolikrát jsou okna větší než běžné okno v bytě. Slouží jen k porovnání slunečního zisku mezi místnostmi.",
             "klid_stineni_min": "Minimální odstup mezi pohyby žaluzií, aby se lamely nehoupaly při každém mráčku.",
             "stineni_rezim": "Když si žaluzie v této místnosti nastavuješ ručně, vyber „jen když nikdo není doma“. Automatika je pak nechá být, dokud jsi doma. Zatažení po setmění platí i tak.",
-            "soukromi_kdy": "Po západu slunce je do rozsvícené místnosti vidět. „Hned“ zatáhne při setmění, „až při pohybu“ počká, dokud někdo do místnosti nepřijde. Zatáhne se jednou a dál se s nimi nehýbe."
+            "soukromi_kdy": "Po západu slunce je do rozsvícené místnosti vidět. „Hned“ zatáhne při setmění, „až při pohybu“ počká, dokud někdo do místnosti nepřijde. Zatáhne se jednou a dál se s nimi nehýbe.",
+            "zaluzie": "Žaluzie této místnosti. Můžeš vybrat víc — v dalším kroku pak každé přiřadíš, který její uložený stav plní kterou roli."
           },
           "submit": "Další"
         },
@@ -292,12 +292,12 @@
             "climate_chlazeni": "Klimatizace (jen chladí)",
             "climate_oboji": "Klimatizace, která umí i topit",
             "priorita_vzduchu": "Vzduch proti teplu",
-            "zaluzie_zony": "Žaluzie místnosti",
             "azimut": "Azimut oken",
             "plocha": "Relativní plocha oken",
             "klid_stineni_min": "Nejčastěji hýbat jednou za",
             "stineni_rezim": "Kdy smí automatika hýbat žaluziemi",
-            "soukromi_kdy": "Zatáhnout po setmění"
+            "soukromi_kdy": "Zatáhnout po setmění",
+            "zaluzie": "Žaluzie"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -332,12 +332,12 @@
             "climate_chlazeni": "Jednotka, která umí jen chladit. Nasadí se, až když nestačí zastínit a vyvětrat.",
             "climate_oboji": "Tepelné čerpadlo nebo klimatizace s topením. Mimo topnou sezónu se použije na topení místo radiátorů, v sezóně naopak topit nebude, aby si s radiátory nelezly do cesty.",
             "priorita_vzduchu": "Nula znamená držet teplo za každou cenu, deset vyvětrat za každou cenu. Pětka je vyvážená. Ovládá, o kolik smí teplota při větrání klesnout — ve dne i v noci.",
-            "zaluzie_zony": "Žaluzie této místnosti. Můžeš vybrat víc — v dalším kroku pak každé přiřadíš, který její uložený stav plní kterou roli.",
             "azimut": "Kam okna směřují. 0 sever, 90 východ, 180 jih, 270 západ. Podle toho se pozná, kdy do místnosti svítí.",
             "plocha": "Kolikrát jsou okna větší než běžné okno v bytě. Slouží jen k porovnání slunečního zisku mezi místnostmi.",
             "klid_stineni_min": "Minimální odstup mezi pohyby žaluzií, aby se lamely nehoupaly při každém mráčku.",
             "stineni_rezim": "Když si žaluzie v této místnosti nastavuješ ručně, vyber „jen když nikdo není doma“. Automatika je pak nechá být, dokud jsi doma. Zatažení po setmění platí i tak.",
-            "soukromi_kdy": "Po západu slunce je do rozsvícené místnosti vidět. „Hned“ zatáhne při setmění, „až při pohybu“ počká, dokud někdo do místnosti nepřijde. Zatáhne se jednou a dál se s nimi nehýbe."
+            "soukromi_kdy": "Po západu slunce je do rozsvícené místnosti vidět. „Hned“ zatáhne při setmění, „až při pohybu“ počká, dokud někdo do místnosti nepřijde. Zatáhne se jednou a dál se s nimi nehýbe.",
+            "zaluzie": "Žaluzie této místnosti. Můžeš vybrat víc — v dalším kroku pak každé přiřadíš, který její uložený stav plní kterou roli."
           },
           "submit": "Další"
         },

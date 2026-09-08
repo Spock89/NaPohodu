@@ -78,7 +78,7 @@ CONF_CO2_OTEVRIT = "co2_otevrit"
 CONF_CO2_ZAVRIT = "co2_zavrit"
 
 # stínění zóny: jména uložených stavů
-CONF_ZALUZIE_ZONY = "zaluzie_zony"
+CONF_ZALUZIE_STARE = "zaluzie_zony"   # dřívější název, kvůli starším verzím
 CONF_STINENI_MAPA = "stineni_mapa"   # {"cover.o1|zastinit": "zastíněno"}
 CONF_KLID_STINENI_MIN = "klid_stineni_min"
 CONF_STINENI_REZIM = "stineni_rezim"

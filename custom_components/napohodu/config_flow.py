@@ -330,7 +330,7 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         ),
 
         # --- stínění patří k místnosti, protože slunce svítí do pokoje ---
-        vol.Optional(c.CONF_ZALUZIE_ZONY): _ent(["cover"], True),
+        vol.Optional(c.CONF_ZALUZIE): _ent(["cover"], True),
         vol.Optional(c.CONF_AZIMUT, default=180): _cislo(0, 359, 1, "°"),
         vol.Optional(c.CONF_PLOCHA, default=1.0): _cislo(0.1, 5, 0.1, ""),
         vol.Optional(c.CONF_STINENI_REZIM, default="vzdy"): _volba(
@@ -407,7 +407,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         Dvě žaluzie v jednom pokoji můžou mít stavy pojmenované jinak,
         proto se nabízejí jen ty, které daná žaluzie skutečně má.
         """
-        zaluzie = self._data.get(c.CONF_ZALUZIE_ZONY) or []
+        zaluzie = (self._data.get(c.CONF_ZALUZIE)
+                   or self._data.get(c.CONF_ZALUZIE_STARE) or [])
         if not zaluzie:
             self._data.pop(c.CONF_STINENI_MAPA, None)
             return await self._dal()

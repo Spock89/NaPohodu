@@ -31,7 +31,7 @@ from .const import (
     CONF_KLID_STINENI_MIN, CONF_SEZONA_HYSTEREZE,
     CONF_SOUKROMI_KDY, CONF_STINENI_MAPA, CONF_STINENI_REZIM, CONF_SEZONA_PRAH, CONF_T_PRUMER,
     CONF_T_SEZONA, CONF_T_VENKU, CONF_TEPLOTY, CONF_VITR,     CONF_VITR_PRAH, CONF_VYNUCENO, CONF_ZARENI, CONF_ZDROJ_KLIDU,
-    CONF_ZDROJ_OBSAZENOSTI, DOMAIN, INTERVAL_S, PODENTITA_MISTNOST,
+    CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZDROJ_OBSAZENOSTI, DOMAIN, INTERVAL_S, PODENTITA_MISTNOST,
     PODENTITA_ZONA,
 )
 
@@ -228,6 +228,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 obsazeno=pr.obsazeno(sig, nast),
                 klid=pr.klid(sig, nast),
             )
+            if not d.get(CONF_ZALUZIE) and d.get(CONF_ZALUZIE_STARE):
+                d = {**d, CONF_ZALUZIE: d[CONF_ZALUZIE_STARE]}
+
             okno_m = sl.Okno(
                 nazev=p.title,
                 azimut=float(d.get(CONF_AZIMUT, 180)),
@@ -259,7 +262,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     pohyb=bool(sig.cidlo) or bool(
                         pr.indicie_aktivni(sig, nast)),
                     soukromi_kdy=d.get(CONF_SOUKROMI_KDY, "nikdy"))
-                cile = vy.cile_zaluzii(role, d.get(CONF_STINENI_MAPA) or {})
+                mapa = d.get(CONF_STINENI_MAPA) or {}
+                cile = vy.cile_zaluzii(role, mapa)
                 stin = await vyk_m.stineni(
                     cile, cas_s, float(d.get(CONF_KLID_STINENI_MIN, 15)))
                 m.atributy["stineni"] = stin
