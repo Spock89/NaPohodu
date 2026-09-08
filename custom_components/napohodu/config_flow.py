@@ -329,6 +329,23 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_VENTILATOR_SMER, default="ven"): _volba(
             c.SMERY_VENTILACE, "ventilator_smer"
         ),
+
+        # --- stínění patří k místnosti, protože slunce svítí do pokoje ---
+        vol.Optional(c.CONF_ZALUZIE_ZONY): _ent(["cover"], True),
+        vol.Optional(c.CONF_AZIMUT, default=180): _cislo(0, 359, 1, "°"),
+        vol.Optional(c.CONF_PLOCHA, default=1.0): _cislo(0.1, 5, 0.1, ""),
+        vol.Optional(c.CONF_STAV_ZASTINIT): _stav_vyber(stavy),
+        vol.Optional(c.CONF_STAV_ODSTINIT): _stav_vyber(stavy),
+        vol.Optional(c.CONF_STAV_PRYC): _stav_vyber(stavy),
+        vol.Optional(c.CONF_STINENI_REZIM, default="vzdy"): _volba(
+            c.REZIMY_STINENI, "stineni_rezim"
+        ),
+        vol.Optional(c.CONF_SOUKROMI_KDY, default="nikdy"): _volba(
+            c.SOUKROMI_KDY, "soukromi_kdy"
+        ),
+        vol.Optional(c.CONF_STAV_SOUKROMI): _stav_vyber(stavy),
+        vol.Optional(c.CONF_KLID_STINENI_MIN, default=15):
+            _cislo(1, 120, 1, "min"),
     }
 )
 
