@@ -3,7 +3,7 @@
 import asyncio
 
 import core
-from vykon import MIN_ODSTUP_S, Vykonavac, stav_stineni
+from vykon import MIN_ODSTUP_S, Vykonavac, cile_zaluzii, role_stineni
 
 
 class FalesnyHass:
@@ -91,33 +91,24 @@ def test_pulz_bez_limitu_nezavira():
 # ---------------------------------------------------------------- stínění
 
 def test_vybere_zastineni_kdyz_je_horko():
-    jmena = {"zastinit": "zastíněno", "odstinit": "odstíněno", "pryc": "dolů"}
-    assert stav_stineni(400, 150, True, False, True, jmena) == "zastíněno"
+    assert role_stineni(400, 150, True, False, True) == "zastinit"
 
 
 def test_vybere_odstineni_kdyz_je_zima():
-    jmena = {"zastinit": "zastíněno", "odstinit": "odstíněno", "pryc": "dolů"}
-    assert stav_stineni(400, 150, False, True, True, jmena) == "odstíněno"
+    assert role_stineni(400, 150, False, True, True) == "odstinit"
 
 
 def test_bez_slunce_se_nehybe():
-    jmena = {"zastinit": "zastíněno"}
-    assert stav_stineni(50, 150, True, False, True, jmena) is None
+    assert role_stineni(50, 150, True, False, True) is None
 
 
 def test_nikdo_doma_prebiji():
-    jmena = {"zastinit": "zastíněno", "pryc": "roztáhnout"}
-    assert stav_stineni(400, 150, True, False, False, jmena) == "roztáhnout"
-
-
-def test_nenastavene_jmeno_znamena_nedelat_nic():
-    assert stav_stineni(400, 150, True, False, True, {}) is None
+    assert role_stineni(400, 150, True, False, False) == "pryc"
 
 
 def test_vlazno_se_nestini():
     """Ani horko, ani zima — žaluzie se nechá být."""
-    jmena = {"zastinit": "z", "odstinit": "o"}
-    assert stav_stineni(400, 150, False, False, True, jmena) is None
+    assert role_stineni(400, 150, False, False, True) is None
 
 
 
@@ -144,16 +135,16 @@ def _naparuj_stineni(monkeypatch, selhavajici=()):
 def test_stineni_projede_vsechny_zaluzie(monkeypatch):
     p = _naparuj_stineni(monkeypatch)
     h, v = vyk()
-    bez(v.stineni(["cover.o1", "cover.o2"], "zastíněno", 1000, 15))
+    bez(v.stineni({"cover.o1": "zastíněno", "cover.o2": "zastíněno"}, 1000, 15))
     assert p == [("cover.o1", "zastíněno"), ("cover.o2", "zastíněno")]
 
 
 def test_uz_nastavena_zaluzie_se_prekcaci(monkeypatch):
     p = _naparuj_stineni(monkeypatch)
     h, v = vyk()
-    bez(v.stineni(["cover.o1", "cover.o2"], "zastíněno", 1000, 15))
+    bez(v.stineni({"cover.o1": "zastíněno", "cover.o2": "zastíněno"}, 1000, 15))
     p.clear()
-    bez(v.stineni(["cover.o1", "cover.o2"], "zastíněno", 9000, 15))
+    bez(v.stineni({"cover.o1": "zastíněno", "cover.o2": "zastíněno"}, 9000, 15))
     assert p == []
 
 
@@ -161,17 +152,17 @@ def test_kazda_zaluzie_ma_vlastni_pamet(monkeypatch):
     """Ruční přestavení jedné nesmí rozjet ostatní."""
     p = _naparuj_stineni(monkeypatch)
     h, v = vyk()
-    bez(v.stineni(["cover.o1", "cover.o2"], "zastíněno", 1000, 15))
+    bez(v.stineni({"cover.o1": "zastíněno", "cover.o2": "zastíněno"}, 1000, 15))
     v.stav.posledni_stineni.pop("cover.o2")
     p.clear()
-    bez(v.stineni(["cover.o1", "cover.o2"], "zastíněno", 9000, 15))
+    bez(v.stineni({"cover.o1": "zastíněno", "cover.o2": "zastíněno"}, 9000, 15))
     assert p == [("cover.o2", "zastíněno")]
 
 
 def test_selhani_jedne_nezastavi_ostatni(monkeypatch):
     p = _naparuj_stineni(monkeypatch, selhavajici={"cover.o1"})
     h, v = vyk()
-    vysledek = bez(v.stineni(["cover.o1", "cover.o2"], "zastíněno", 1000, 15))
+    vysledek = bez(v.stineni({"cover.o1": "zastíněno", "cover.o2": "zastíněno"}, 1000, 15))
     assert len(p) == 2
     assert "cover.o2" in v.stav.posledni_stineni
     assert "cover.o1" not in v.stav.posledni_stineni
@@ -181,19 +172,20 @@ def test_selhani_jedne_nezastavi_ostatni(monkeypatch):
 def test_odstup_mezi_pohyby(monkeypatch):
     p = _naparuj_stineni(monkeypatch)
     h, v = vyk()
-    bez(v.stineni(["cover.o1"], "zastíněno", 1000, 15))
+    bez(v.stineni({"cover.o1": "zastíněno"}, 1000, 15))
     p.clear()
-    bez(v.stineni(["cover.o1"], "odstíněno", 1100, 15))   # za 100 s
+    bez(v.stineni({"cover.o1": "odstíněno"}, 1100, 15))   # za 100 s
     assert p == []
-    bez(v.stineni(["cover.o1"], "odstíněno", 1000 + 16 * 60, 15))
+    bez(v.stineni({"cover.o1": "odstíněno"}, 1000 + 16 * 60, 15))
     assert p == [("cover.o1", "odstíněno")]
 
 
-def test_jedna_zaluzie_jako_retezec(monkeypatch):
+def test_ruzna_jmena_pro_stejnou_roli(monkeypatch):
+    """O1 má „zastíněno", O2 „zataženo" — obě se nastaví správně."""
     p = _naparuj_stineni(monkeypatch)
     h, v = vyk()
-    bez(v.stineni("cover.o1", "dolů", 1000, 15))
-    assert p == [("cover.o1", "dolů")]
+    bez(v.stineni({"cover.o1": "zastíněno", "cover.o2": "zataženo"}, 1000, 15))
+    assert p == [("cover.o1", "zastíněno"), ("cover.o2", "zataženo")]
 
 
 
@@ -202,17 +194,14 @@ def test_jedna_zaluzie_jako_retezec(monkeypatch):
 from vykon import (REZIM_JEN_PRYC, REZIM_NIKDY, REZIM_VZDY, SOUKROMI_HNED,
                    SOUKROMI_NIKDY, SOUKROMI_POHYB)
 
-JMENA = {"zastinit": "zastíněno", "odstinit": "odstíněno",
-         "pryc": "nejsme doma", "soukromi": "dolů"}
-
 
 def st(**kw):
     """Zkratka: výchozí je doma, den, slunce svítí."""
     a = dict(zisk=400, prah=150, horko=False, zima=False, doma=True,
-             jmena=JMENA, rezim=REZIM_VZDY, po_zapadu=False, pohyb=False,
+             rezim=REZIM_VZDY, po_zapadu=False, pohyb=False,
              soukromi_kdy=SOUKROMI_NIKDY)
     a.update(kw)
-    return stav_stineni(**a)
+    return role_stineni(**a)
 
 
 def test_doma_se_nesaha_kdyz_je_rezim_jen_pryc():
@@ -222,7 +211,7 @@ def test_doma_se_nesaha_kdyz_je_rezim_jen_pryc():
 
 
 def test_ale_prazdny_byt_prebiji_i_ten_rezim():
-    assert st(rezim=REZIM_JEN_PRYC, doma=False) == "nejsme doma"
+    assert st(rezim=REZIM_JEN_PRYC, doma=False) == "pryc"
 
 
 def test_rezim_nikdy_nesaha_ani_kdyz_odejdeme():
@@ -231,14 +220,14 @@ def test_rezim_nikdy_nesaha_ani_kdyz_odejdeme():
 
 def test_kuchyne_se_stini_i_kdyz_jsme_doma():
     """Kuchyň: roztaženo pořád, kromě horka od slunce."""
-    assert st(rezim=REZIM_VZDY, horko=True) == "zastíněno"
+    assert st(rezim=REZIM_VZDY, horko=True) == "zastinit"
     assert st(rezim=REZIM_VZDY) is None
 
 
 def test_soukromi_po_zapadu_hned():
     """Obývák: po setmění zatáhnout, ať není vidět dovnitř."""
     assert st(po_zapadu=True, soukromi_kdy=SOUKROMI_HNED,
-              rezim=REZIM_JEN_PRYC) == "dolů"
+              rezim=REZIM_JEN_PRYC) == "soukromi"
 
 
 def test_soukromi_az_pri_pohybu():
@@ -246,7 +235,7 @@ def test_soukromi_az_pri_pohybu():
     a = dict(po_zapadu=True, soukromi_kdy=SOUKROMI_POHYB,
              rezim=REZIM_JEN_PRYC)
     assert st(**a, pohyb=False) is None
-    assert st(**a, pohyb=True) == "dolů"
+    assert st(**a, pohyb=True) == "soukromi"
 
 
 def test_soukromi_neplati_pres_den():
@@ -256,13 +245,42 @@ def test_soukromi_neplati_pres_den():
 def test_soukromi_prebiji_rezim_jen_pryc():
     """Zatáhnout po setmění chceme i tam, kde si jinak žaluzie řídíme sami."""
     assert st(po_zapadu=True, soukromi_kdy=SOUKROMI_HNED,
-              rezim=REZIM_JEN_PRYC) == "dolů"
-
-
-def test_bez_nastaveneho_jmena_se_nic_nedeje():
-    assert st(po_zapadu=True, soukromi_kdy=SOUKROMI_HNED,
-              jmena={"zastinit": "z"}) is None
+              rezim=REZIM_JEN_PRYC) == "soukromi"
 
 
 def test_puvodni_volani_bez_pravidel_funguje_dal():
-    assert stav_stineni(400, 150, True, False, True, JMENA) == "zastíněno"
+    assert role_stineni(400, 150, True, False, True) == "zastinit"
+
+
+# ------------------------------------- přiřazení stavů jednotlivým žaluziím
+
+MAPA = {
+    "cover.o1|zastinit": "zastíněno",
+    "cover.o1|soukromi": "dolů",
+    "cover.o2|zastinit": "zataženo",     # jinak pojmenovaný stav
+    "cover.o2|soukromi": "dolů",
+    "cover.o2|odstinit": "odstíněno",
+}
+
+
+def test_kazda_zaluzie_dostane_svoje_jmeno():
+    """Dvě žaluzie v pokoji můžou mít stavy pojmenované jinak."""
+    assert cile_zaluzii("zastinit", MAPA) == {
+        "cover.o1": "zastíněno", "cover.o2": "zataženo"}
+
+
+def test_zaluzie_bez_prirazeni_se_nehne():
+    assert cile_zaluzii("odstinit", MAPA) == {"cover.o2": "odstíněno"}
+
+
+def test_role_bez_prirazeni_nic_nedela():
+    assert cile_zaluzii("pryc", MAPA) == {}
+
+
+def test_zadna_role_znamena_klid():
+    assert cile_zaluzii(None, MAPA) == {}
+
+
+def test_prazdna_mapa():
+    assert cile_zaluzii("zastinit", {}) == {}
+    assert cile_zaluzii("zastinit", None) == {}

@@ -28,9 +28,8 @@ from .const import (
     CONF_NOC_MIN, CONF_NOC_OD, CONF_ODCHYLKA, CONF_OKNO, CONF_PLOCHA,
     CONF_PM10, CONF_PM25, CONF_PRIORITA, CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRITOMNOST,
     CONF_PROJEZD, CONF_RH_VENKU, CONF_SPANEK, CONF_STINENI_PRYC,
-    CONF_KLID_STINENI_MIN, CONF_SEZONA_HYSTEREZE, CONF_STAV_ODSTINIT,
-    CONF_SOUKROMI_KDY, CONF_STAV_PRYC, CONF_STAV_SOUKROMI,
-    CONF_STAV_ZASTINIT, CONF_STINENI_REZIM, CONF_ZALUZIE_ZONY, CONF_SEZONA_PRAH, CONF_T_PRUMER,
+    CONF_KLID_STINENI_MIN, CONF_SEZONA_HYSTEREZE,
+    CONF_SOUKROMI_KDY, CONF_STINENI_MAPA, CONF_STINENI_REZIM, CONF_SEZONA_PRAH, CONF_T_PRUMER,
     CONF_T_SEZONA, CONF_T_VENKU, CONF_TEPLOTY, CONF_VITR,     CONF_VITR_PRAH, CONF_VYNUCENO, CONF_ZARENI, CONF_ZDROJ_KLIDU,
     CONF_ZDROJ_OBSAZENOSTI, DOMAIN, INTERVAL_S, PODENTITA_MISTNOST,
     PODENTITA_ZONA,
@@ -250,26 +249,21 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             if self.hodnoty.get((p.subentry_id, "ovladat_stineni"), 0.0) > 0:
                 t_max = m.atributy["teplota_max"]
                 t_min = m.atributy["teplota_min"]
-                jmena = {
-                    "zastinit": d.get(CONF_STAV_ZASTINIT),
-                    "odstinit": d.get(CONF_STAV_ODSTINIT),
-                    "pryc": d.get(CONF_STAV_PRYC),
-                }
-                jmena["soukromi"] = d.get(CONF_STAV_SOUKROMI)
-                cil_stav = vy.stav_stineni(
+                role = vy.role_stineni(
                     m.slunce, 150.0,
                     t_max is not None and t_max > m.cil + 0.5,
                     t_min is not None and t_min < m.cil - 0.5,
-                    doma, jmena,
+                    doma,
                     rezim=d.get(CONF_STINENI_REZIM, "vzdy"),
                     po_zapadu=slunce_el < 0,
                     pohyb=bool(sig.cidlo) or bool(
                         pr.indicie_aktivni(sig, nast)),
                     soukromi_kdy=d.get(CONF_SOUKROMI_KDY, "nikdy"))
+                cile = vy.cile_zaluzii(role, d.get(CONF_STINENI_MAPA) or {})
                 stin = await vyk_m.stineni(
-                    d.get(CONF_ZALUZIE_ZONY) or [], cil_stav, cas_s,
-                    float(d.get(CONF_KLID_STINENI_MIN, 15)))
+                    cile, cas_s, float(d.get(CONF_KLID_STINENI_MIN, 15)))
                 m.atributy["stineni"] = stin
+                m.atributy["role_stineni"] = role
             m.atributy["stineni_stav"] = dict(vyk_m.stav.posledni_stineni)
 
             self.mistnosti[p.subentry_id] = m

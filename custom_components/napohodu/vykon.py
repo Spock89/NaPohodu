@@ -93,20 +93,18 @@ class Vykonavac:
 
     # ------------------------------------------------------------ stínění
 
-    async def stineni(self, zaluzie: list[str] | str | None,
-                      nazev_stavu: str | None, cas_s: float,
+    async def stineni(self, cile: dict[str, str], cas_s: float,
                       klid_min: float) -> str | None:
-        """Nastaví pojmenovaný stav na všech žaluziích zóny.
+        """Nastaví každé žaluzii ten její stav, který plní žádanou roli.
 
-        Žaluzií může být víc, například dvě okna v obýváku. Jedou
-        postupně a každá si pamatuje svůj poslední stav zvlášť — když
-        jednu přestavíš ručně, ostatní se kvůli ní nerozjedou.
+        Žaluzií může být víc a každá může mít pro stejnou roli jinak
+        pojmenovaný stav. Jedou postupně a každá si pamatuje svou polohu
+        zvlášť — když jednu přestavíš ručně, ostatní se kvůli ní nerozjedou.
         """
-        if not zaluzie or not nazev_stavu:
+        if not cile:
             return None
-        seznam = [zaluzie] if isinstance(zaluzie, str) else list(zaluzie)
-        zbyva = [z for z in seznam
-                 if self.stav.posledni_stineni.get(z) != nazev_stavu]
+        zbyva = {z: n for z, n in cile.items()
+                 if self.stav.posledni_stineni.get(z) != n}
         if not zbyva:
             return None
         if cas_s - self.stav.stineni_cas_s < klid_min * 60:
@@ -118,21 +116,21 @@ class Vykonavac:
             from services import proved_stav_stineni
 
         hotovo = []
-        for z in zbyva:
-            vysledek = await proved_stav_stineni(self.hass, z, nazev_stavu)
+        for z, nazev in zbyva.items():
+            vysledek = await proved_stav_stineni(self.hass, z, nazev)
             if vysledek.get("povedlo_se"):
-                self.stav.posledni_stineni[z] = nazev_stavu
-                hotovo.append(z)
-                _LOGGER.info("NaPohodu: žaluzie %s -> %s", z, nazev_stavu)
+                self.stav.posledni_stineni[z] = nazev
+                hotovo.append(nazev)
+                _LOGGER.info("NaPohodu: žaluzie %s -> %s", z, nazev)
             else:
                 self.stav.chyby.append(f"{z}: {vysledek.get('chyba')}")
                 _LOGGER.warning("NaPohodu: stínění %s na %s selhalo: %s",
-                                nazev_stavu, z, vysledek.get("chyba"))
+                                nazev, z, vysledek.get("chyba"))
 
         if not hotovo:
             return None
         self.stav.stineni_cas_s = cas_s
-        return f"stínění: {nazev_stavu} ({len(hotovo)}x)"
+        return "stínění: " + ", ".join(sorted(set(hotovo)))
 
 
 # kdy smí automatika hýbat žaluziemi
@@ -146,8 +144,11 @@ SOUKROMI_HNED = "hned"            # hned po západu
 SOUKROMI_POHYB = "pri_pohybu"     # až když do místnosti někdo přijde
 
 
-def stav_stineni(zisk: float, prah: float, horko: bool, zima: bool,
-                 doma: bool, jmena: dict, rezim: str = REZIM_VZDY,
+ROLE = ("zastinit", "odstinit", "soukromi", "pryc")
+
+
+def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
+                 doma: bool, rezim: str = REZIM_VZDY,
                  po_zapadu: bool = False, pohyb: bool = False,
                  soukromi_kdy: str = SOUKROMI_NIKDY) -> str | None:
     """Který pojmenovaný stav má platit.
@@ -162,14 +163,14 @@ def stav_stineni(zisk: float, prah: float, horko: bool, zima: bool,
     západu už stejně žádné není.
     """
     if not doma:
-        return jmena.get("pryc") or None
+        return "pryc"
     if rezim == REZIM_NIKDY:
         return None
 
     if po_zapadu and soukromi_kdy != SOUKROMI_NIKDY:
         if soukromi_kdy == SOUKROMI_HNED or (
                 soukromi_kdy == SOUKROMI_POHYB and pohyb):
-            return jmena.get("soukromi") or None
+            return "soukromi"
 
     if rezim == REZIM_JEN_PRYC:
         return None
@@ -177,7 +178,25 @@ def stav_stineni(zisk: float, prah: float, horko: bool, zima: bool,
     if zisk < prah:
         return None
     if horko:
-        return jmena.get("zastinit") or None
+        return "zastinit"
     if zima:
-        return jmena.get("odstinit") or None
+        return "odstinit"
     return None
+
+
+def cile_zaluzii(role: str | None, mapa: dict) -> dict[str, str]:
+    """Ke každé žaluzii najde její stav, který danou roli plní.
+
+    Mapa je uložená u místnosti ve tvaru {"cover.o1|zastinit": "zastíněno"}.
+    Žaluzie, která pro tu roli nemá nic přiřazené, se prostě nehne.
+    """
+    if not role:
+        return {}
+    cile = {}
+    for klic, nazev in (mapa or {}).items():
+        if not nazev or "|" not in klic:
+            continue
+        zaluzie, r = klic.rsplit("|", 1)
+        if r == role:
+            cile[zaluzie] = nazev
+    return cile

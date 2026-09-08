@@ -303,7 +303,6 @@ def _stav_vyber(nazvy: list[str]):
 
 
 def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
-    stavy = stavy or []
     return vol.Schema(
     {
         vol.Required(c.CONF_NAZEV): selector.TextSelector(),
@@ -334,16 +333,12 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_ZALUZIE_ZONY): _ent(["cover"], True),
         vol.Optional(c.CONF_AZIMUT, default=180): _cislo(0, 359, 1, "°"),
         vol.Optional(c.CONF_PLOCHA, default=1.0): _cislo(0.1, 5, 0.1, ""),
-        vol.Optional(c.CONF_STAV_ZASTINIT): _stav_vyber(stavy),
-        vol.Optional(c.CONF_STAV_ODSTINIT): _stav_vyber(stavy),
-        vol.Optional(c.CONF_STAV_PRYC): _stav_vyber(stavy),
         vol.Optional(c.CONF_STINENI_REZIM, default="vzdy"): _volba(
             c.REZIMY_STINENI, "stineni_rezim"
         ),
         vol.Optional(c.CONF_SOUKROMI_KDY, default="nikdy"): _volba(
             c.SOUKROMI_KDY, "soukromi_kdy"
         ),
-        vol.Optional(c.CONF_STAV_SOUKROMI): _stav_vyber(stavy),
         vol.Optional(c.CONF_KLID_STINENI_MIN, default=15):
             _cislo(1, 120, 1, "min"),
     }
@@ -401,9 +396,43 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
     async def async_step_zaklad(self, user_input=None) -> SubentryFlowResult:
         if user_input is not None:
             self._data.update(user_input)
-            return await self.async_step_pritomnost()
+            return await self.async_step_stineni()
         return self.async_show_form(
             step_id="zaklad", data_schema=_schema_mistnost(self._stavy()))
+
+    async def async_step_stineni(self, user_input=None) -> SubentryFlowResult:
+        """Ke každé žaluzii se přiřadí, který její stav plní kterou roli.
+
+        Dvě žaluzie v jednom pokoji můžou mít stavy pojmenované jinak,
+        proto se nabízejí jen ty, které daná žaluzie skutečně má.
+        """
+        zaluzie = self._data.get(c.CONF_ZALUZIE_ZONY) or []
+        if not zaluzie:
+            return await self.async_step_pritomnost()
+
+        if user_input is not None:
+            mapa = {k: v for k, v in user_input.items() if v}
+            self._data[c.CONF_STINENI_MAPA] = mapa
+            return await self.async_step_pritomnost()
+
+        from .services import nacti_stavy
+
+        pole = {}
+        for z in zaluzie:
+            jmena = sorted(nacti_stavy(self.hass, z))
+            for role, popis in (("zastinit", "zastínit"),
+                                ("odstinit", "odclonit"),
+                                ("soukromi", "soukromí po setmění"),
+                                ("pryc", "nikdo doma")):
+                pole[vol.Optional(f"{z}|{role}")] = _stav_vyber(jmena)
+
+        return self.async_show_form(
+            step_id="stineni",
+            data_schema=self.add_suggested_values_to_schema(
+                vol.Schema(pole), self._data.get(c.CONF_STINENI_MAPA, {})
+            ),
+            description_placeholders={"zaluzie": ", ".join(zaluzie)},
+        )
 
     async def async_step_pritomnost(self, user_input=None) -> SubentryFlowResult:
         if user_input is not None:

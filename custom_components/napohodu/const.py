@@ -79,12 +79,9 @@ CONF_CO2_ZAVRIT = "co2_zavrit"
 
 # stínění zóny: jména uložených stavů
 CONF_ZALUZIE_ZONY = "zaluzie_zony"
-CONF_STAV_ZASTINIT = "stav_zastinit"
-CONF_STAV_ODSTINIT = "stav_odstinit"
-CONF_STAV_PRYC = "stav_pryc"
+CONF_STINENI_MAPA = "stineni_mapa"   # {"cover.o1|zastinit": "zastíněno"}
 CONF_KLID_STINENI_MIN = "klid_stineni_min"
 CONF_STINENI_REZIM = "stineni_rezim"
-CONF_STAV_SOUKROMI = "stav_soukromi"
 CONF_SOUKROMI_KDY = "soukromi_kdy"
 REZIMY_STINENI = ["vzdy", "jen_pryc", "nikdy"]
 SOUKROMI_KDY = ["nikdy", "hned", "pri_pohybu"]
