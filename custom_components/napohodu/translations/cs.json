@@ -36,8 +36,8 @@
           "noc_do": "Do kdy platí noční klid. Po této hodině se už neotevírá, aby nerušil ranní ruch.",
           "vitr_prah": "Nad touto rychlostí se okna zavřou a nesmí se otevřít.",
           "vitr_klid": "Pod touto rychlostí se blokace zase uvolní. Musí být nižší než práh.",
-          "t_prumer": "Nepovinné. Když máš vlastní statistický senzor týdenního průměru, zadej ho. Jinak si ho Pohoda počítá sama z venkovní teploty.",
-          "t_sezona": "Nepovinné. Vlastní senzor třídenního průměru pro topnou sezónu. Bez něj si ho Pohoda počítá sama.",
+          "t_prumer": "Nepovinné. Když máš vlastní statistický senzor týdenního průměru, zadej ho a bude se počítat podle něj. Bez něj si průměr integrace spočítá sama. Entita „Venkovní teplota, týdenní průměr“ pak ukazuje to, co se skutečně používá.",
+          "t_sezona": "Nepovinné. Vlastní senzor třídenního průměru pro topnou sezónu. Bez něj si ho integrace počítá sama.",
           "sezona_prah": "Pod touto průměrnou teplotou začíná topná sezóna. Obvykle 15 °C.",
           "sezona_hystereze": "Pásmo kolem prahu, ve kterém se sezóna nepřepíná. Brání přeskakování na hraně."
         },
@@ -93,8 +93,8 @@
           "noc_do": "Do kdy platí noční klid. Po této hodině se už neotevírá, aby nerušil ranní ruch.",
           "vitr_prah": "Nad touto rychlostí se okna zavřou a nesmí se otevřít.",
           "vitr_klid": "Pod touto rychlostí se blokace zase uvolní. Musí být nižší než práh.",
-          "t_prumer": "Nepovinné. Když máš vlastní statistický senzor týdenního průměru, zadej ho. Jinak si ho Pohoda počítá sama z venkovní teploty.",
-          "t_sezona": "Nepovinné. Vlastní senzor třídenního průměru pro topnou sezónu. Bez něj si ho Pohoda počítá sama.",
+          "t_prumer": "Nepovinné. Když máš vlastní statistický senzor týdenního průměru, zadej ho a bude se počítat podle něj. Bez něj si průměr integrace spočítá sama. Entita „Venkovní teplota, týdenní průměr“ pak ukazuje to, co se skutečně používá.",
+          "t_sezona": "Nepovinné. Vlastní senzor třídenního průměru pro topnou sezónu. Bez něj si ho integrace počítá sama.",
           "sezona_prah": "Pod touto průměrnou teplotou začíná topná sezóna. Obvykle 15 °C.",
           "sezona_hystereze": "Pásmo kolem prahu, ve kterém se sezóna nepřepíná. Brání přeskakování na hraně."
         }

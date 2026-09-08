@@ -94,7 +94,12 @@ class SlunceMistnosti(NaPohoduEntity, SensorEntity):
 
 
 class Prumer(CoordinatorEntity, SensorEntity):
-    """Klouzavé průměry venkovní teploty, které si integrace počítá sama."""
+    """Klouzavý průměr venkovní teploty.
+
+    Ukazuje tu hodnotu, se kterou se opravdu počítá. Když je v nastavení
+    vlastní statistický senzor, ukáže jeho hodnotu — jinak by entita
+    tvrdila něco jiného, než podle čeho se rozhoduje.
+    """
 
     _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.TEMPERATURE
@@ -113,4 +118,18 @@ class Prumer(CoordinatorEntity, SensorEntity):
 
     @property
     def native_value(self):
-        return getattr(self.coordinator.prumery, self._pole, None)
+        hodnota, _ = self.coordinator.pouzity.get(self._pole, (None, ""))
+        if hodnota is None:
+            return getattr(self.coordinator.prumery, self._pole, None)
+        return round(hodnota, 2)
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        hodnota, zdroj = self.coordinator.pouzity.get(self._pole, (None, ""))
+        vlastni = getattr(self.coordinator.prumery, self._pole, None)
+        return {
+            "zdroj": {"cidlo": "vlastní čidlo",
+                      "pocitano": "počítá integrace",
+                      "nahrada": "náhrada, chybí data"}.get(zdroj, zdroj),
+            "vlastni_vypocet": None if vlastni is None else round(vlastni, 2),
+        }

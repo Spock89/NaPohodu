@@ -79,6 +79,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.topna_sezona: bool = True
         # průměry si počítáme sami, ať uživatel nemusí zakládat statistiky
         self.prumery = pm.Prumery()
+        # hodnoty, se kterými se opravdu počítá, a odkud pocházejí
+        self.pouzity: dict[str, tuple[float | None, str]] = {
+            "tyden": (None, "pocitano"), "tri_dny": (None, "pocitano")}
         self.vykonavaci: dict[str, vy.Vykonavac] = {}
         self._uloziste = Store(hass, 1, f"{DOMAIN}.prumery")
         self.mistnosti: dict[str, VysledekMistnosti] = {}
@@ -171,10 +174,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # měnil s každým odpolednem, proto raději samostatná entita
         # vlastní entita má přednost, jinak počítaný průměr
         prumer = self._cislo(g.get(CONF_T_PRUMER))
+        zdroj = "cidlo"
         if prumer is None:
-            prumer = self.prumery.tyden
+            prumer, zdroj = self.prumery.tyden, "pocitano"
         if prumer is None:
-            prumer = self._cislo(g.get(CONF_T_VENKU), 15.0)
+            prumer, zdroj = self._cislo(g.get(CONF_T_VENKU), 15.0), "nahrada"
+        self.pouzity["tyden"] = (prumer, zdroj)
         posun = self.hodnoty.get((self.entry.entry_id, "posun"), 0.0)
         return core.cil_adaptivni(
             prumer, posun,
@@ -429,8 +434,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         prah = float(g.get(CONF_SEZONA_PRAH, 15.0))
         hyst = float(g.get(CONF_SEZONA_HYSTEREZE, 1.0))
         t = self._cislo(g.get(CONF_T_SEZONA))
+        zdroj = "cidlo"
         if t is None:
-            t = self.prumery.tri_dny
+            t, zdroj = self.prumery.tri_dny, "pocitano"
+        self.pouzity["tri_dny"] = (t, zdroj)
         if t is None:
             return self.topna_sezona
         if t < prah - hyst / 2:
