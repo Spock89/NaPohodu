@@ -1,0 +1,14 @@
+{
+  "domain": "napohodu",
+  "name": "NaPohodu",
+  "codeowners": [
+    "@Spock89"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/Spock89/NaPohodu",
+  "issue_tracker": "https://github.com/Spock89/NaPohodu/issues",
+  "integration_type": "service",
+  "iot_class": "local_polling",
+  "requirements": [],
+  "version": "0.9.0"
+}

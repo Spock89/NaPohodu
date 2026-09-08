@@ -1,0 +1,98 @@
+test_sekvence:
+  name: Vyzkoušet posloupnost
+  description: >
+    Provede posloupnost na zvolené žaluzii a vrátí, co se stalo, včetně
+    polohy před a po. Slouží k ladění, než se posloupnost uloží jako
+    pojmenovaný stav.
+  fields:
+    zaluzie:
+      name: Žaluzie
+      required: true
+      selector:
+        entity:
+          domain: cover
+    sekvence:
+      name: Posloupnost
+      required: true
+      description: >
+        Kroky oddělené čárkou. Číslo je poloha v procentech, číslo s "s"
+        je čekání, "=N" čeká na potvrzení polohy, "stop" zastaví jízdu,
+        "tilt N" naklopí lamely. Desetinná čísla s tečkou.
+      example: "0, =0, 14, 3s, 12.7"
+      selector:
+        text:
+    timeout_polohy_s:
+      name: Čekat na polohu nejdéle
+      default: 30
+      selector:
+        number:
+          min: 5
+          max: 180
+          unit_of_measurement: s
+
+uloz_stav:
+  name: Uložit stav stínění
+  description: >
+    Uloží odladěnou posloupnost pod jménem, například "zastíněno".
+    Uložený stav pak jde vyvolat službou Nastavit stínění.
+  fields:
+    zaluzie:
+      name: Žaluzie
+      required: true
+      selector:
+        entity:
+          domain: cover
+    nazev:
+      name: Název stavu
+      required: true
+      example: zastíněno
+      selector:
+        text:
+    sekvence:
+      name: Posloupnost
+      required: true
+      example: "0, =0, 5"
+      selector:
+        text:
+
+nastav_stineni:
+  name: Nastavit stínění
+  description: Provede dříve uložený pojmenovaný stav.
+  fields:
+    zaluzie:
+      name: Žaluzie
+      required: true
+      selector:
+        entity:
+          domain: cover
+    nazev:
+      name: Název stavu
+      required: true
+      example: zastíněno
+      selector:
+        text:
+
+seznam_stavu:
+  name: Vypsat uložené stavy
+  description: Vrátí uložené stavy stínění, případně jen pro jednu žaluzii.
+  fields:
+    zaluzie:
+      name: Žaluzie
+      selector:
+        entity:
+          domain: cover
+
+smaz_stav:
+  name: Smazat stav stínění
+  fields:
+    zaluzie:
+      name: Žaluzie
+      required: true
+      selector:
+        entity:
+          domain: cover
+    nazev:
+      name: Název stavu
+      required: true
+      selector:
+        text:
