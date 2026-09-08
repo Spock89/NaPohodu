@@ -229,6 +229,42 @@ class NaPohoduOptionsFlow(OptionsFlow):
         )
 
     async def async_step_vysledek(self, user_input=None) -> FlowResult:
+        """Ukáže výsledek a nechá rozhodnout, co dál.
+
+        Uložit jde jen povedený pokus — u chyby by to nemělo smysl.
+        """
+        v = self._vysledek
+        if v.get("povedlo_se"):
+            volby = ["ulozit", "znovu", "hotovo"]
+        else:
+            volby = ["znovu", "hotovo"]
+
+        return self.async_show_menu(
+            step_id="vysledek",
+            menu_options=volby,
+            description_placeholders={"shrnuti": self._shrnuti()},
+        )
+
+    def _shrnuti(self) -> str:
+        v = self._vysledek
+        if not v.get("povedlo_se"):
+            return f"Nepovedlo se: {v.get('chyba')}"
+        return (
+            f"Hotovo za {v.get('trvani_s')} s.\n\n"
+            f"Poloha před: {v.get('poloha_pred')} %\n"
+            f"Poloha po: {v.get('poloha_po')} %\n"
+            f"Provedeno: {', '.join(v.get('provedeno') or [])}\n\n"
+            f"Podívej se z okna. Když lamely vypadají, jak mají, ulož to."
+        )
+
+    async def async_step_znovu(self, user_input=None) -> FlowResult:
+        """Zpět na tester s předvyplněnou posloupností."""
+        return await self.async_step_tester()
+
+    async def async_step_hotovo(self, user_input=None) -> FlowResult:
+        return await self.async_step_init()
+
+    async def async_step_ulozit(self, user_input=None) -> FlowResult:
         if user_input is not None:
             nazev = (user_input.get(c.CONF_NAZEV_STAVU) or "").strip()
             if nazev:
@@ -239,29 +275,36 @@ class NaPohoduOptionsFlow(OptionsFlow):
                     self._vysledek.get("sekvence")
                     or self._tester[c.CONF_SEKVENCE],
                 )
-            return await self.async_step_tester()
+                return await self.async_step_init()
+        from .services import nacti_stavy
 
-        v = self._vysledek
-        if v.get("povedlo_se"):
-            shrnuti = (
-                f"Hotovo za {v.get('trvani_s')} s.\n\n"
-                f"Poloha před: {v.get('poloha_pred')} %\n"
-                f"Poloha po: {v.get('poloha_po')} %\n"
-                f"Provedeno: {', '.join(v.get('provedeno') or [])}"
-            )
-        else:
-            shrnuti = f"Nepovedlo se: {v.get('chyba')}"
-
+        jmena = list(nacti_stavy(self.hass, self._tester[c.CONF_ZALUZIE]))
         return self.async_show_form(
-            step_id="vysledek",
-            data_schema=SCHEMA_ULOZENI,
-            description_placeholders={"shrnuti": shrnuti},
+            step_id="ulozit",
+            data_schema=vol.Schema({
+                vol.Required(c.CONF_NAZEV_STAVU): _stav_vyber(jmena),
+            }),
+            description_placeholders={
+                "sekvence": self._vysledek.get("sekvence", ""),
+            },
         )
 
 
 # ---------------------------------------------------------------- místnost
 
-SCHEMA_MISTNOST = vol.Schema(
+def _stav_vyber(nazvy: list[str]):
+    """Nabídne už uložené stavy, ale nechá napsat i nový."""
+    return selector.SelectSelector(
+        selector.SelectSelectorConfig(
+            options=sorted(nazvy), custom_value=True,
+            mode=selector.SelectSelectorMode.DROPDOWN,
+        )
+    )
+
+
+def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
+    stavy = stavy or []
+    return vol.Schema(
     {
         vol.Required(c.CONF_NAZEV): selector.TextSelector(),
         vol.Optional(c.CONF_TEPLOTY): _ent(["sensor"], True, ["temperature"]),
@@ -326,6 +369,15 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
     def __init__(self) -> None:
         self._data: dict[str, Any] = {}
 
+    def _stavy(self) -> list[str]:
+        """Jména stavů uložených u kterékoli žaluzie, pro nabídku."""
+        try:
+            from .services import vsechna_jmena_stavu
+
+            return vsechna_jmena_stavu(self.hass)
+        except Exception:  # pragma: no cover
+            return []
+
     async def async_step_user(self, user_input=None) -> SubentryFlowResult:
         return await self.async_step_zaklad(user_input)
 
@@ -333,7 +385,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         if user_input is not None:
             self._data.update(user_input)
             return await self.async_step_pritomnost()
-        return self.async_show_form(step_id="zaklad", data_schema=SCHEMA_MISTNOST)
+        return self.async_show_form(
+            step_id="zaklad", data_schema=_schema_mistnost(self._stavy()))
 
     async def async_step_pritomnost(self, user_input=None) -> SubentryFlowResult:
         if user_input is not None:
@@ -364,9 +417,9 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=self.add_suggested_values_to_schema(
-                SCHEMA_MISTNOST.extend(SCHEMA_PRITOMNOST.schema).extend(
-                    SCHEMA_INDICIE.schema
-                ),
+                _schema_mistnost(self._stavy())
+                .extend(SCHEMA_PRITOMNOST.schema)
+                .extend(SCHEMA_INDICIE.schema),
                 self._data,
             ),
         )
@@ -396,14 +449,6 @@ def _schema_zona(mistnosti: list[dict], sousedi: list[dict] | None = None) -> vo
             vol.Optional(c.CONF_CO2_OTEVRIT, default=800): _cislo(500, 2000, 25, "ppm"),
             vol.Optional(c.CONF_CO2_ZAVRIT, default=700): _cislo(400, 1500, 25, "ppm"),
             vol.Optional(c.CONF_PROJEZD, default=120): _cislo(10, 600, 10, "s"),
-            vol.Optional(c.CONF_AZIMUT, default=180): _cislo(0, 359, 1, "°"),
-            vol.Optional(c.CONF_PLOCHA, default=1.0): _cislo(0.1, 5, 0.1, ""),
-            vol.Optional(c.CONF_ZALUZIE_ZONY): _ent(["cover"], True),
-            vol.Optional(c.CONF_STAV_ZASTINIT): selector.TextSelector(),
-            vol.Optional(c.CONF_STAV_ODSTINIT): selector.TextSelector(),
-            vol.Optional(c.CONF_STAV_PRYC): selector.TextSelector(),
-            vol.Optional(c.CONF_KLID_STINENI_MIN, default=15):
-                _cislo(1, 120, 1, "min"),
             vol.Optional(c.CONF_SOUSEDI): _vyber(sousedi or []),
             vol.Optional(c.CONF_DVERE): _ent(["binary_sensor"], True),
             vol.Optional(c.CONF_KONTAKT): _ent(["binary_sensor"], True),

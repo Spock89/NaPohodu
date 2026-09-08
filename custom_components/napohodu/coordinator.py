@@ -29,7 +29,8 @@ from .const import (
     CONF_PM10, CONF_PM25, CONF_PRIORITA, CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRITOMNOST,
     CONF_PROJEZD, CONF_RH_VENKU, CONF_SPANEK, CONF_STINENI_PRYC,
     CONF_KLID_STINENI_MIN, CONF_SEZONA_HYSTEREZE, CONF_STAV_ODSTINIT,
-    CONF_STAV_PRYC, CONF_STAV_ZASTINIT, CONF_ZALUZIE_ZONY, CONF_SEZONA_PRAH, CONF_T_PRUMER,
+    CONF_SOUKROMI_KDY, CONF_STAV_PRYC, CONF_STAV_SOUKROMI,
+    CONF_STAV_ZASTINIT, CONF_STINENI_REZIM, CONF_ZALUZIE_ZONY, CONF_SEZONA_PRAH, CONF_T_PRUMER,
     CONF_T_SEZONA, CONF_T_VENKU, CONF_TEPLOTY, CONF_VITR,     CONF_VITR_PRAH, CONF_VYNUCENO, CONF_ZARENI, CONF_ZDROJ_KLIDU,
     CONF_ZDROJ_OBSAZENOSTI, DOMAIN, INTERVAL_S, PODENTITA_MISTNOST,
     PODENTITA_ZONA,
@@ -228,6 +229,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 obsazeno=pr.obsazeno(sig, nast),
                 klid=pr.klid(sig, nast),
             )
+            okno_m = sl.Okno(
+                nazev=p.title,
+                azimut=float(d.get(CONF_AZIMUT, 180)),
+                plocha=float(d.get(CONF_PLOCHA, 1.0)),
+            )
+            m.slunce = round(sl.dopad(okno_m, slunce_az, slunce_el, jasno))
+
             m.atributy = {
                 "teplota_min": self._min(d.get(CONF_TEPLOTY)),
                 "teplota_max": self._max(d.get(CONF_TEPLOTY)),
@@ -235,6 +243,35 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 "indicie": pr.indicie_aktivni(sig, nast),
                 "zdroj_obsazenosti": d.get(CONF_ZDROJ_OBSAZENOSTI, "vzdy"),
             }
+
+            # ---------- stínění místnosti ----------
+            vyk_m = self.vykonavaci.setdefault(
+                p.subentry_id, vy.Vykonavac(self.hass, p.subentry_id))
+            if self.hodnoty.get((p.subentry_id, "ovladat_stineni"), 0.0) > 0:
+                t_max = m.atributy["teplota_max"]
+                t_min = m.atributy["teplota_min"]
+                jmena = {
+                    "zastinit": d.get(CONF_STAV_ZASTINIT),
+                    "odstinit": d.get(CONF_STAV_ODSTINIT),
+                    "pryc": d.get(CONF_STAV_PRYC),
+                }
+                jmena["soukromi"] = d.get(CONF_STAV_SOUKROMI)
+                cil_stav = vy.stav_stineni(
+                    m.slunce, 150.0,
+                    t_max is not None and t_max > m.cil + 0.5,
+                    t_min is not None and t_min < m.cil - 0.5,
+                    doma, jmena,
+                    rezim=d.get(CONF_STINENI_REZIM, "vzdy"),
+                    po_zapadu=slunce_el < 0,
+                    pohyb=bool(sig.cidlo) or bool(
+                        pr.indicie_aktivni(sig, nast)),
+                    soukromi_kdy=d.get(CONF_SOUKROMI_KDY, "nikdy"))
+                stin = await vyk_m.stineni(
+                    d.get(CONF_ZALUZIE_ZONY) or [], cil_stav, cas_s,
+                    float(d.get(CONF_KLID_STINENI_MIN, 15)))
+                m.atributy["stineni"] = stin
+            m.atributy["stineni_stav"] = dict(vyk_m.stav.posledni_stineni)
+
             self.mistnosti[p.subentry_id] = m
 
         # ---------- zóny: nejdřív posbírat, pak přerozdělit ----------
@@ -344,13 +381,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 zaloha.otevreno = skutecne
                 pamet = zaloha
 
-            okno = sl.Okno(
-                nazev=p.title,
-                azimut=float(d.get(CONF_AZIMUT, 180)),
-                plocha=float(d.get(CONF_PLOCHA, 1.0)),
-            )
-            zisk = sl.dopad(okno, slunce_az, slunce_el, jasno)
-
             z = VysledekZony(
                 nazev=d.get(CONF_NAZEV, p.title),
                 rozhodnuti=r,
@@ -364,31 +394,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             if ovladat:
                 provedeno = await vyk.okno(d.get(CONF_OKNO), r, cas_s, skutecne)
 
-            stineni = None
-            if self.hodnoty.get((p.subentry_id, "ovladat_stineni"), 0.0) > 0:
-                teploty_zony = [self.mistnosti[mp.subentry_id]
-                                for mp in podentity]
-                horko = any(m.atributy.get("teplota_max") is not None
-                            and m.atributy["teplota_max"] > m.cil + 0.5
-                            for m in teploty_zony)
-                zima = all(m.atributy.get("teplota_min") is not None
-                           and m.atributy["teplota_min"] < m.cil - 0.5
-                           for m in teploty_zony) if teploty_zony else False
-                jmena = {
-                    "zastinit": d.get(CONF_STAV_ZASTINIT),
-                    "odstinit": d.get(CONF_STAV_ODSTINIT),
-                    "pryc": d.get(CONF_STAV_PRYC),
-                }
-                cil_stav = vy.stav_stineni(zisk, 150.0, horko, zima, doma, jmena)
-                stineni = await vyk.stineni(
-                    d.get(CONF_ZALUZIE_ZONY) or [],
-                    cil_stav, cas_s, float(d.get(CONF_KLID_STINENI_MIN, 15)))
 
             z.atributy = {
                 "co2": v.co2,
                 "provedeno": provedeno,
-                "stineni": stineni,
-                "stineni_stav": dict(vyk.stav.posledni_stineni),
                 "uvnitr": r.t_in_korig,
                 "uvnitr_max": v.t_in_max,
                 "korekce": r.korekce,
@@ -398,7 +407,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 "rezim": pamet.rezim,
                 "vetra_se": skutecne,
                 "ovladani": "zapnuto" if ovladat else "jen sleduje",
-                "slunce": round(zisk),
                 "jasno": round(jasno, 2),
                 "vynuceno": vynuceno,
                 "vitr_blokuje": vitr_blokuje,
@@ -412,7 +420,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
             for mp in podentity:
                 self.mistnosti[mp.subentry_id].okno_otevreno = skutecne
-                self.mistnosti[mp.subentry_id].slunce = round(zisk)
 
         return {"zony": self.zony, "mistnosti": self.mistnosti}
 

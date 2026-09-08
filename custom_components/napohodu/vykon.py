@@ -135,15 +135,45 @@ class Vykonavac:
         return f"stínění: {nazev_stavu} ({len(hotovo)}x)"
 
 
+# kdy smí automatika hýbat žaluziemi
+REZIM_VZDY = "vzdy"
+REZIM_JEN_PRYC = "jen_pryc"       # doma si je řídíme sami
+REZIM_NIKDY = "nikdy"
+
+# kdy se po západu slunce zatahuje kvůli soukromí
+SOUKROMI_NIKDY = "nikdy"
+SOUKROMI_HNED = "hned"            # hned po západu
+SOUKROMI_POHYB = "pri_pohybu"     # až když do místnosti někdo přijde
+
+
 def stav_stineni(zisk: float, prah: float, horko: bool, zima: bool,
-                 doma: bool, jmena: dict) -> str | None:
+                 doma: bool, jmena: dict, rezim: str = REZIM_VZDY,
+                 po_zapadu: bool = False, pohyb: bool = False,
+                 soukromi_kdy: str = SOUKROMI_NIKDY) -> str | None:
     """Který pojmenovaný stav má platit.
 
-    Prázdný návrat znamená nechat být — buď na okno nesvítí, nebo není
-    důvod nic měnit. Nedělat nic je u žaluzií správná výchozí odpověď.
+    Prázdný návrat znamená nechat být, a to je u žaluzií správná výchozí
+    odpověď. Automatika, která přestavuje to, co si člověk před chvílí
+    nastavil ručně, je horší než žádná.
+
+    Pořadí je dané tím, co je naléhavější. Prázdný byt přebíjí vše.
+    Soukromí po setmění přebíjí režim, protože zatáhnout po západu chceme
+    i tam, kde si jinak žaluzie řídíme sami. Slunce je až poslední, a po
+    západu už stejně žádné není.
     """
     if not doma:
         return jmena.get("pryc") or None
+    if rezim == REZIM_NIKDY:
+        return None
+
+    if po_zapadu and soukromi_kdy != SOUKROMI_NIKDY:
+        if soukromi_kdy == SOUKROMI_HNED or (
+                soukromi_kdy == SOUKROMI_POHYB and pohyb):
+            return jmena.get("soukromi") or None
+
+    if rezim == REZIM_JEN_PRYC:
+        return None
+
     if zisk < prah:
         return None
     if horko:

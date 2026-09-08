@@ -29,6 +29,7 @@ ATR_ZALUZIE = "zaluzie"
 ATR_SEKVENCE = "sekvence"
 ATR_NAZEV = "nazev"
 ATR_TIMEOUT = "timeout_polohy_s"
+ATR_MISTNOST = "mistnost"
 
 SCHEMA_TEST = vol.Schema({
     vol.Required(ATR_ZALUZIE): cv.entity_id,
@@ -46,6 +47,23 @@ SCHEMA_NASTAV = vol.Schema({
 })
 SCHEMA_SEZNAM = vol.Schema({vol.Optional(ATR_ZALUZIE): cv.entity_id})
 SCHEMA_SMAZ = SCHEMA_NASTAV
+SCHEMA_MISTNOST = vol.Schema({
+    vol.Required(ATR_MISTNOST): cv.string,
+    vol.Required(ATR_NAZEV): cv.string,
+})
+
+
+def _zaluzie_mistnosti(hass: HomeAssistant, nazev: str) -> list[str]:
+    """Najde žaluzie místnosti podle jejího jména."""
+    from .const import CONF_ZALUZIE_ZONY, PODENTITA_MISTNOST
+
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        for pod in entry.subentries.values():
+            if pod.subentry_type != PODENTITA_MISTNOST:
+                continue
+            if pod.title.lower() == nazev.lower():
+                return list(pod.data.get(CONF_ZALUZIE_ZONY) or [])
+    return []
 
 
 class OvladacHA:
@@ -159,6 +177,17 @@ async def proved_sekvenci(hass: HomeAssistant, entita: str, zapis: str,
     return out
 
 
+def vsechna_jmena_stavu(hass: HomeAssistant) -> list[str]:
+    """Jména napříč všemi žaluziemi, aby šla nabídnout ve formuláři."""
+    stavy = hass.data.get(DOMAIN, {}).get("stavy_stineni")
+    if not stavy:
+        return []
+    jmena: set[str] = set()
+    for polohy in stavy.vse().values():
+        jmena.update(polohy)
+    return sorted(jmena)
+
+
 def nacti_stavy(hass: HomeAssistant, entita: str) -> dict:
     """Uložené stavy jedné žaluzie. Prázdné, když ještě žádné nejsou."""
     stavy = hass.data.get(DOMAIN, {}).get("stavy_stineni")
@@ -235,6 +264,21 @@ async def zaregistruj(hass: HomeAssistant) -> None:
         entita = call.data.get(ATR_ZALUZIE)
         return {"stavy": stavy.pro(entita) if entita else stavy.vse()}
 
+    async def stineni_mistnosti(call: ServiceCall) -> ServiceResponse:
+        """Nastaví stav na všech žaluziích místnosti. Pro tlačítko."""
+        nazev = call.data[ATR_NAZEV]
+        zaluzie = _zaluzie_mistnosti(hass, call.data[ATR_MISTNOST])
+        if not zaluzie:
+            return {"povedlo_se": False,
+                    "chyba": f"Místnost {call.data[ATR_MISTNOST]!r} nemá "
+                             f"přiřazené žádné žaluzie."}
+        vysledky = [await proved_stav_stineni(hass, z, nazev) for z in zaluzie]
+        return {
+            "povedlo_se": all(v.get("povedlo_se") for v in vysledky),
+            "zaluzie": zaluzie,
+            "vysledky": vysledky,
+        }
+
     async def smaz_stav(call: ServiceCall) -> ServiceResponse:
         smazano = await stavy.smaz(call.data[ATR_ZALUZIE], call.data[ATR_NAZEV])
         return {"povedlo_se": smazano}
@@ -247,6 +291,7 @@ async def zaregistruj(hass: HomeAssistant) -> None:
         ("nastav_stineni", nastav_stineni, SCHEMA_NASTAV),
         ("seznam_stavu", seznam_stavu, SCHEMA_SEZNAM),
         ("smaz_stav", smaz_stav, SCHEMA_SMAZ),
+        ("stineni_mistnosti", stineni_mistnosti, SCHEMA_MISTNOST),
     ):
         hass.services.async_register(
             DOMAIN, jmeno, funkce, schema=schema,

@@ -115,13 +115,11 @@
       "vysledek": {
         "title": "Výsledek",
         "description": "{shrnuti}",
-        "data": {
-          "nazev_stavu": "Uložit jako"
-        },
-        "data_description": {
-          "nazev_stavu": "Vyplň jméno, například „zastíněno\", a posloupnost se uloží. Prázdné pole se vrátí na tester bez uložení."
-        },
-        "submit": "Pokračovat"
+        "menu_options": {
+          "ulozit": "Uložit jako stav",
+          "znovu": "Zkusit jinou posloupnost",
+          "hotovo": "Hotovo"
+        }
       },
       "stavy": {
         "title": "Stavy žaluzií",
@@ -135,6 +133,14 @@
         "description": "Jeden stav na řádek ve tvaru „název = posloupnost\".\n\nČíslo je poloha v procentech, „3s\" je čekání, „=5\" počká na potvrzení polohy, „stop\" zastaví za jízdy, „tilt 40\" naklopí lamely. Desetinná čísla piš s tečkou.\n\nPříklad:\nzastíněno = 0, 2s, 5\nodstíněno = 4, 3s, 2\nškvírka = 0, 5s, 2.9, 1.25s, stop\n\nUložením se nahradí všechny stavy této žaluzie. Prázdné pole je smaže.",
         "data": {
           "stavy_text": "Stavy"
+        },
+        "submit": "Uložit"
+      },
+      "ulozit": {
+        "title": "Uložit stav",
+        "description": "Posloupnost {sekvence} se uloží pod tímto jménem. Stejné jméno přepíše starý stav.",
+        "data": {
+          "nazev_stavu": "Název stavu"
         },
         "submit": "Uložit"
       }
@@ -171,7 +177,17 @@
             "rh_max": "Odtah zapnout nad",
             "climate_chlazeni": "Klimatizace (jen chladí)",
             "climate_oboji": "Klimatizace, která umí i topit",
-            "priorita_vzduchu": "Vzduch proti teplu"
+            "priorita_vzduchu": "Vzduch proti teplu",
+            "zaluzie_zony": "Žaluzie místnosti",
+            "azimut": "Azimut oken",
+            "plocha": "Relativní plocha oken",
+            "stav_zastinit": "Stav pro zastínění",
+            "stav_odstinit": "Stav pro odclonění",
+            "stav_pryc": "Stav, když nikdo není doma",
+            "klid_stineni_min": "Nejčastěji hýbat jednou za",
+            "stineni_rezim": "Kdy smí automatika hýbat žaluziemi",
+            "soukromi_kdy": "Zatáhnout po setmění",
+            "stav_soukromi": "Stav pro soukromí"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -194,7 +210,17 @@
             "rh_max": "Nad touto vlhkostí se zapne odtah. V koupelně obvykle 65 %, jinde 60 %.",
             "climate_chlazeni": "Jednotka, která umí jen chladit. Nasadí se, až když nestačí zastínit a vyvětrat.",
             "climate_oboji": "Tepelné čerpadlo nebo klimatizace s topením. Mimo topnou sezónu se použije na topení místo radiátorů, v sezóně naopak topit nebude, aby si s radiátory nelezly do cesty.",
-            "priorita_vzduchu": "Nula znamená držet teplo za každou cenu, deset vyvětrat za každou cenu. Pětka je vyvážená. Ovládá, o kolik smí teplota při větrání klesnout — ve dne i v noci."
+            "priorita_vzduchu": "Nula znamená držet teplo za každou cenu, deset vyvětrat za každou cenu. Pětka je vyvážená. Ovládá, o kolik smí teplota při větrání klesnout — ve dne i v noci.",
+            "zaluzie_zony": "Žaluzie této místnosti. Můžeš vybrat víc — pojedou postupně na stejný pojmenovaný stav. Každá si pamatuje svou polohu zvlášť, takže ruční přestavení jedné ostatními nehne.",
+            "azimut": "Kam okna směřují. 0 sever, 90 východ, 180 jih, 270 západ. Podle toho se pozná, kdy do místnosti svítí.",
+            "plocha": "Kolikrát jsou okna větší než běžné okno v bytě. Slouží jen k porovnání slunečního zisku mezi místnostmi.",
+            "stav_zastinit": "Uložený stav, který se použije při přehřívání. Nabízí se ty, které už máš uložené. Nové se ladí v Testeru žaluzií.",
+            "stav_odstinit": "Uložený stav, kterým se pustí slunce dovnitř, když je uvnitř chladno.",
+            "stav_pryc": "Uložený stav při prázdném bytě. Nech prázdné, pokud se nemá nic dít.",
+            "klid_stineni_min": "Minimální odstup mezi pohyby žaluzií, aby se lamely nehoupaly při každém mráčku.",
+            "stineni_rezim": "Když si žaluzie v této místnosti nastavuješ ručně, vyber „jen když nikdo není doma“. Automatika je pak nechá být, dokud jsi doma.",
+            "soukromi_kdy": "Po západu slunce je do rozsvícené místnosti vidět. „Hned“ zatáhne při setmění, „až při pohybu“ počká, dokud někdo do místnosti nepřijde. Zatáhne se jednou a dál se s nimi nehýbe.",
+            "stav_soukromi": "Uložený stav, kterým se zatahuje po setmění. Obvykle „dolů“."
           },
           "submit": "Další"
         },
@@ -273,7 +299,17 @@
             "rh_max": "Odtah zapnout nad",
             "climate_chlazeni": "Klimatizace (jen chladí)",
             "climate_oboji": "Klimatizace, která umí i topit",
-            "priorita_vzduchu": "Vzduch proti teplu"
+            "priorita_vzduchu": "Vzduch proti teplu",
+            "zaluzie_zony": "Žaluzie místnosti",
+            "azimut": "Azimut oken",
+            "plocha": "Relativní plocha oken",
+            "stav_zastinit": "Stav pro zastínění",
+            "stav_odstinit": "Stav pro odclonění",
+            "stav_pryc": "Stav, když nikdo není doma",
+            "klid_stineni_min": "Nejčastěji hýbat jednou za",
+            "stineni_rezim": "Kdy smí automatika hýbat žaluziemi",
+            "soukromi_kdy": "Zatáhnout po setmění",
+            "stav_soukromi": "Stav pro soukromí"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -307,7 +343,17 @@
             "rh_max": "Nad touto vlhkostí se zapne odtah. V koupelně obvykle 65 %, jinde 60 %.",
             "climate_chlazeni": "Jednotka, která umí jen chladit. Nasadí se, až když nestačí zastínit a vyvětrat.",
             "climate_oboji": "Tepelné čerpadlo nebo klimatizace s topením. Mimo topnou sezónu se použije na topení místo radiátorů, v sezóně naopak topit nebude, aby si s radiátory nelezly do cesty.",
-            "priorita_vzduchu": "Nula znamená držet teplo za každou cenu, deset vyvětrat za každou cenu. Pětka je vyvážená. Ovládá, o kolik smí teplota při větrání klesnout — ve dne i v noci."
+            "priorita_vzduchu": "Nula znamená držet teplo za každou cenu, deset vyvětrat za každou cenu. Pětka je vyvážená. Ovládá, o kolik smí teplota při větrání klesnout — ve dne i v noci.",
+            "zaluzie_zony": "Žaluzie této místnosti. Můžeš vybrat víc — pojedou postupně na stejný pojmenovaný stav. Každá si pamatuje svou polohu zvlášť, takže ruční přestavení jedné ostatními nehne.",
+            "azimut": "Kam okna směřují. 0 sever, 90 východ, 180 jih, 270 západ. Podle toho se pozná, kdy do místnosti svítí.",
+            "plocha": "Kolikrát jsou okna větší než běžné okno v bytě. Slouží jen k porovnání slunečního zisku mezi místnostmi.",
+            "stav_zastinit": "Uložený stav, který se použije při přehřívání. Nabízí se ty, které už máš uložené. Nové se ladí v Testeru žaluzií.",
+            "stav_odstinit": "Uložený stav, kterým se pustí slunce dovnitř, když je uvnitř chladno.",
+            "stav_pryc": "Uložený stav při prázdném bytě. Nech prázdné, pokud se nemá nic dít.",
+            "klid_stineni_min": "Minimální odstup mezi pohyby žaluzií, aby se lamely nehoupaly při každém mráčku.",
+            "stineni_rezim": "Když si žaluzie v této místnosti nastavuješ ručně, vyber „jen když nikdo není doma“. Automatika je pak nechá být, dokud jsi doma.",
+            "soukromi_kdy": "Po západu slunce je do rozsvícené místnosti vidět. „Hned“ zatáhne při setmění, „až při pohybu“ počká, dokud někdo do místnosti nepřijde. Zatáhne se jednou a dál se s nimi nehýbe.",
+            "stav_soukromi": "Uložený stav, kterým se zatahuje po setmění. Obvykle „dolů“."
           },
           "submit": "Uložit"
         }
@@ -334,15 +380,8 @@
             "vynuceno": "Vynucené otevření",
             "co2_otevrit": "Otevřít nad",
             "co2_zavrit": "Zavřít pod",
-            "azimut": "Azimut okna (0 sever, 180 jih)",
-            "plocha": "Relativní plocha",
             "sousedi": "Sousední zóny",
-            "dvere": "Dveře mezi zónami",
-            "zaluzie_zony": "Žaluzie zóny",
-            "stav_zastinit": "Stav pro zastínění",
-            "stav_odstinit": "Stav pro odclonění",
-            "stav_pryc": "Stav, když nikdo není doma",
-            "klid_stineni_min": "Nejčastěji hýbat jednou za"
+            "dvere": "Dveře mezi zónami"
           },
           "data_description": {
             "nazev": "Jak se zóna jmenuje, například Obývák a kuchyně.",
@@ -354,15 +393,8 @@
             "vynuceno": "Přepínače, kterými okno otevřeš natvrdo bez ohledu na vzduch a teplotu. Nesouvisí s prahy CO2 výše. Přebijí všechno kromě větru.",
             "co2_otevrit": "Nad touto hodnotou CO2 se začne větrat. Bere se nejvyšší hodnota ze všech místností zóny.",
             "co2_zavrit": "Pod touto hodnotou je vyvětráno. Mezi oběma prahy se schválně nic neděje, aby okno neposkakovalo.",
-            "azimut": "Kam okno směřuje. 0 sever, 90 východ, 180 jih, 270 západ. Podle toho se pozná, kdy na něj svítí.",
-            "plocha": "Kolikrát je okno větší než běžné okno v bytě. Slouží jen k porovnání slunečního zisku mezi okny, ne k výpočtu ve wattech. Jedno okno nech na 1, dvojnásobně velké dej 2.",
             "sousedi": "Zóny za dveřmi, které mají vlastní okno. Když se v této zóně spí, vyvětrá ji raději soused, aby ti nefoukalo na hlavu. Uplatní se jen v noci. Po přejmenování zóny odkaz zůstane platný.",
-            "dvere": "Čidlo dveří mezi zónami. Při zavřených dveřích se vzduch nevymění, takže se zastupování nepoužije. Bez čidla se předpokládá otevřeno.",
-            "zaluzie_zony": "Žaluzie, které zóna ovládá. Můžeš vybrat víc, například dvě okna v obýváku — pojedou postupně a nastaví se na stejný pojmenovaný stav. Každá si pamatuje svou polohu zvlášť, takže ruční přestavení jedné ostatními nehne.",
-            "stav_zastinit": "Jméno uloženého stavu, který se použije při přehřívání. Například „zastíněno\". Stavy se ladí v Testeru žaluzií.",
-            "stav_odstinit": "Jméno stavu, kterým se pustí slunce dovnitř, když je uvnitř chladno. Například „odstíněno\".",
-            "stav_pryc": "Jméno stavu při prázdném bytě. Nech prázdné, pokud se nemá nic dít.",
-            "klid_stineni_min": "Minimální odstup mezi pohyby žaluzie, aby se lamely nehoupaly při každém mráčku."
+            "dvere": "Čidlo dveří mezi zónami. Při zavřených dveřích se vzduch nevymění, takže se zastupování nepoužije. Bez čidla se předpokládá otevřeno."
           },
           "submit": "Uložit zónu"
         },
@@ -379,15 +411,8 @@
             "vynuceno": "Vynucené otevření",
             "co2_otevrit": "Otevřít nad",
             "co2_zavrit": "Zavřít pod",
-            "azimut": "Azimut okna (0 sever, 180 jih)",
-            "plocha": "Relativní plocha",
             "sousedi": "Sousední zóny",
-            "dvere": "Dveře mezi zónami",
-            "zaluzie_zony": "Žaluzie zóny",
-            "stav_zastinit": "Stav pro zastínění",
-            "stav_odstinit": "Stav pro odclonění",
-            "stav_pryc": "Stav, když nikdo není doma",
-            "klid_stineni_min": "Nejčastěji hýbat jednou za"
+            "dvere": "Dveře mezi zónami"
           },
           "data_description": {
             "nazev": "Jak se zóna jmenuje, například Obývák a kuchyně.",
@@ -399,15 +424,8 @@
             "vynuceno": "Přepínače, kterými okno otevřeš natvrdo bez ohledu na vzduch a teplotu. Nesouvisí s prahy CO2 výše. Přebijí všechno kromě větru.",
             "co2_otevrit": "Nad touto hodnotou CO2 se začne větrat. Bere se nejvyšší hodnota ze všech místností zóny.",
             "co2_zavrit": "Pod touto hodnotou je vyvětráno. Mezi oběma prahy se schválně nic neděje, aby okno neposkakovalo.",
-            "azimut": "Kam okno směřuje. 0 sever, 90 východ, 180 jih, 270 západ. Podle toho se pozná, kdy na něj svítí.",
-            "plocha": "Kolikrát je okno větší než běžné okno v bytě. Slouží jen k porovnání slunečního zisku mezi okny, ne k výpočtu ve wattech. Jedno okno nech na 1, dvojnásobně velké dej 2.",
             "sousedi": "Zóny za dveřmi, které mají vlastní okno. Když se v této zóně spí, vyvětrá ji raději soused, aby ti nefoukalo na hlavu. Uplatní se jen v noci. Po přejmenování zóny odkaz zůstane platný.",
-            "dvere": "Čidlo dveří mezi zónami. Při zavřených dveřích se vzduch nevymění, takže se zastupování nepoužije. Bez čidla se předpokládá otevřeno.",
-            "zaluzie_zony": "Žaluzie, které zóna ovládá. Můžeš vybrat víc, například dvě okna v obýváku — pojedou postupně a nastaví se na stejný pojmenovaný stav. Každá si pamatuje svou polohu zvlášť, takže ruční přestavení jedné ostatními nehne.",
-            "stav_zastinit": "Jméno uloženého stavu, který se použije při přehřívání. Například „zastíněno\". Stavy se ladí v Testeru žaluzií.",
-            "stav_odstinit": "Jméno stavu, kterým se pustí slunce dovnitř, když je uvnitř chladno. Například „odstíněno\".",
-            "stav_pryc": "Jméno stavu při prázdném bytě. Nech prázdné, pokud se nemá nic dít.",
-            "klid_stineni_min": "Minimální odstup mezi pohyby žaluzie, aby se lamely nehoupaly při každém mráčku."
+            "dvere": "Čidlo dveří mezi zónami. Při zavřených dveřích se vzduch nevymění, takže se zastupování nepoužije. Bez čidla se předpokládá otevřeno."
           },
           "submit": "Uložit"
         }
@@ -460,6 +478,20 @@
         "ven": "Odsává ven",
         "dovnitr": "Přivádí dovnitř",
         "oboji": "Obojí"
+      }
+    },
+    "stineni_rezim": {
+      "options": {
+        "vzdy": "Vždy",
+        "jen_pryc": "Jen když nikdo není doma",
+        "nikdy": "Nikdy, řídím je sám"
+      }
+    },
+    "soukromi_kdy": {
+      "options": {
+        "nikdy": "Nezatahovat",
+        "hned": "Hned po západu slunce",
+        "pri_pohybu": "Až když někdo přijde do místnosti"
       }
     }
   },

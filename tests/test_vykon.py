@@ -194,3 +194,75 @@ def test_jedna_zaluzie_jako_retezec(monkeypatch):
     h, v = vyk()
     bez(v.stineni("cover.o1", "dolů", 1000, 15))
     assert p == [("cover.o1", "dolů")]
+
+
+
+# ------------------------------------------------- pravidla, kdy hýbat
+
+from vykon import (REZIM_JEN_PRYC, REZIM_NIKDY, REZIM_VZDY, SOUKROMI_HNED,
+                   SOUKROMI_NIKDY, SOUKROMI_POHYB)
+
+JMENA = {"zastinit": "zastíněno", "odstinit": "odstíněno",
+         "pryc": "nejsme doma", "soukromi": "dolů"}
+
+
+def st(**kw):
+    """Zkratka: výchozí je doma, den, slunce svítí."""
+    a = dict(zisk=400, prah=150, horko=False, zima=False, doma=True,
+             jmena=JMENA, rezim=REZIM_VZDY, po_zapadu=False, pohyb=False,
+             soukromi_kdy=SOUKROMI_NIKDY)
+    a.update(kw)
+    return stav_stineni(**a)
+
+
+def test_doma_se_nesaha_kdyz_je_rezim_jen_pryc():
+    """Ložnice a obývák: co si nastavíme ručně, to zůstane."""
+    assert st(rezim=REZIM_JEN_PRYC, horko=True) is None
+    assert st(rezim=REZIM_JEN_PRYC, zima=True) is None
+
+
+def test_ale_prazdny_byt_prebiji_i_ten_rezim():
+    assert st(rezim=REZIM_JEN_PRYC, doma=False) == "nejsme doma"
+
+
+def test_rezim_nikdy_nesaha_ani_kdyz_odejdeme():
+    assert st(rezim=REZIM_NIKDY, doma=True, horko=True) is None
+
+
+def test_kuchyne_se_stini_i_kdyz_jsme_doma():
+    """Kuchyň: roztaženo pořád, kromě horka od slunce."""
+    assert st(rezim=REZIM_VZDY, horko=True) == "zastíněno"
+    assert st(rezim=REZIM_VZDY) is None
+
+
+def test_soukromi_po_zapadu_hned():
+    """Obývák: po setmění zatáhnout, ať není vidět dovnitř."""
+    assert st(po_zapadu=True, soukromi_kdy=SOUKROMI_HNED,
+              rezim=REZIM_JEN_PRYC) == "dolů"
+
+
+def test_soukromi_az_pri_pohybu():
+    """Ložnice: zatáhne se, teprve když tam někdo přijde."""
+    a = dict(po_zapadu=True, soukromi_kdy=SOUKROMI_POHYB,
+             rezim=REZIM_JEN_PRYC)
+    assert st(**a, pohyb=False) is None
+    assert st(**a, pohyb=True) == "dolů"
+
+
+def test_soukromi_neplati_pres_den():
+    assert st(po_zapadu=False, soukromi_kdy=SOUKROMI_HNED, pohyb=True) is None
+
+
+def test_soukromi_prebiji_rezim_jen_pryc():
+    """Zatáhnout po setmění chceme i tam, kde si jinak žaluzie řídíme sami."""
+    assert st(po_zapadu=True, soukromi_kdy=SOUKROMI_HNED,
+              rezim=REZIM_JEN_PRYC) == "dolů"
+
+
+def test_bez_nastaveneho_jmena_se_nic_nedeje():
+    assert st(po_zapadu=True, soukromi_kdy=SOUKROMI_HNED,
+              jmena={"zastinit": "z"}) is None
+
+
+def test_puvodni_volani_bez_pravidel_funguje_dal():
+    assert stav_stineni(400, 150, True, False, True, JMENA) == "zastíněno"

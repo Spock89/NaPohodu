@@ -96,3 +96,23 @@ smaz_stav:
       required: true
       selector:
         text:
+
+stineni_mistnosti:
+  name: Nastavit stínění místnosti
+  description: >
+    Nastaví pojmenovaný stav na všech žaluziích místnosti. Hodí se pro
+    tlačítko — místo vyjmenovávání jednotlivých žaluzií stačí říct, která
+    místnost a jaký stav.
+  fields:
+    mistnost:
+      name: Místnost
+      required: true
+      example: Obývák
+      selector:
+        text:
+    nazev:
+      name: Název stavu
+      required: true
+      example: zastíněno
+      selector:
+        text:

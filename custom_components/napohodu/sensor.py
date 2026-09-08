@@ -84,6 +84,14 @@ class SlunceMistnosti(NaPohoduEntity, SensorEntity):
         m = self.mistnost
         return m.slunce if m else None
 
+    @property
+    def extra_state_attributes(self) -> dict:
+        m = self.mistnost
+        if not m:
+            return {}
+        return {k: v for k, v in m.atributy.items()
+                if k in ("stineni", "stineni_stav")}
+
 
 class Prumer(CoordinatorEntity, SensorEntity):
     """Klouzavé průměry venkovní teploty, které si integrace počítá sama."""
