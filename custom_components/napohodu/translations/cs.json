@@ -339,7 +339,7 @@
             "stineni_rezim": "Když si žaluzie v této místnosti nastavuješ ručně, vyber „jen když nikdo není doma“. Automatika je pak nechá být, dokud jsi doma. Zatažení po setmění platí i tak.",
             "soukromi_kdy": "Po západu slunce je do rozsvícené místnosti vidět. „Hned“ zatáhne při setmění, „až při pohybu“ počká, dokud někdo do místnosti nepřijde. Zatáhne se jednou a dál se s nimi nehýbe."
           },
-          "submit": "Uložit"
+          "submit": "Další"
         },
         "stineni": {
           "title": "Stavy žaluzií",

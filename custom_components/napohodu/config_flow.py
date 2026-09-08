@@ -380,6 +380,7 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
 
     def __init__(self) -> None:
         self._data: dict[str, Any] = {}
+        self._uprava = False        # rozlišuje přidání od úpravy
 
     def _stavy(self) -> list[str]:
         """Jména stavů uložených u kterékoli žaluzie, pro nabídku."""
@@ -408,12 +409,13 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         """
         zaluzie = self._data.get(c.CONF_ZALUZIE_ZONY) or []
         if not zaluzie:
-            return await self.async_step_pritomnost()
+            self._data.pop(c.CONF_STINENI_MAPA, None)
+            return await self._dal()
 
         if user_input is not None:
-            mapa = {k: v for k, v in user_input.items() if v}
-            self._data[c.CONF_STINENI_MAPA] = mapa
-            return await self.async_step_pritomnost()
+            self._data[c.CONF_STINENI_MAPA] = {
+                k: v for k, v in user_input.items() if v}
+            return await self._dal()
 
         from .services import nacti_stavy
 
@@ -434,6 +436,17 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
             description_placeholders={"zaluzie": ", ".join(zaluzie)},
         )
 
+    async def _dal(self) -> SubentryFlowResult:
+        """Po stavech žaluzií: při přidávání pokračuj, při úpravě ulož."""
+        if not self._uprava:
+            return await self.async_step_pritomnost()
+        return self.async_update_and_abort(
+            self._get_entry(),
+            self._get_reconfigure_subentry(),
+            data=self._data,
+            title=self._data[c.CONF_NAZEV],
+        )
+
     async def async_step_pritomnost(self, user_input=None) -> SubentryFlowResult:
         if user_input is not None:
             self._data.update(user_input)
@@ -451,15 +464,12 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         return self.async_show_form(step_id="indicie", data_schema=SCHEMA_INDICIE)
 
     async def async_step_reconfigure(self, user_input=None) -> SubentryFlowResult:
-        self._data = dict(self._get_reconfigure_subentry().data)
+        self._uprava = True
         if user_input is not None:
             self._data.update(user_input)
-            return self.async_update_and_abort(
-                self._get_entry(),
-                self._get_reconfigure_subentry(),
-                data=self._data,
-                title=self._data[c.CONF_NAZEV],
-            )
+            # žaluzie mohly přibýt, takže se projde i krok se stavy
+            return await self.async_step_stineni()
+        self._data = dict(self._get_reconfigure_subentry().data)
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=self.add_suggested_values_to_schema(
