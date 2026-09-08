@@ -44,9 +44,6 @@ v procentech, `3s` je čekání, `=5` počká na potvrzení polohy, `stop`
 zastaví za jízdy, `tilt 40` naklopí lamely. Když výsledek sedí, uložíš ho
 pod jménem a pak vyvoláváš službou `napohodu.nastav_stineni`.
 
-Ve složce `priklady/` je skript, který převede polohy z Node-REDu, a
-návod k testeru.
-
 ## Stav
 
 Rozpracované. Jádro je hotové a otestované (92 testů), config flow taky.

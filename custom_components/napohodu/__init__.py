@@ -9,7 +9,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, PODENTITA_MISTNOST, PODENTITA_ZONA
-from .coordinator import PohodaCoordinator
+from .coordinator import NaPohoduCoordinator
 from .services import zaregistruj
 
 _LOGGER = logging.getLogger(__name__)
