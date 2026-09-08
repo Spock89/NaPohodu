@@ -51,6 +51,19 @@ class Vykonavac:
 
     # ------------------------------------------------------------ okno
 
+    def zapomen(self) -> None:
+        """Zahodí paměť o posledních povelech.
+
+        Používá se, když si člověk přestaví žaluzie ručně nebo když chce
+        po restartu srovnat všechno do polohy, kterou automatika žádá.
+        Bez toho by integrace mlčela, protože si myslí, že už poslala.
+        """
+        self.stav.posledni_povel = None
+        self.stav.posledni_cas_s = -1e9
+        self.stav.posledni_stineni.clear()
+        self.stav.stineni_cas_s = -1e9
+        self.stav.chyby.clear()
+
     async def okno(self, okno_entita: str | None, r: core.Rozhodnuti,
                    cas_s: float, otevreno: bool) -> str | None:
         """Provede rozhodnutí o okně. Vrací popis toho, co poslal."""

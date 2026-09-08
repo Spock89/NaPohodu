@@ -47,6 +47,7 @@ SCHEMA_NASTAV = vol.Schema({
 })
 SCHEMA_SEZNAM = vol.Schema({vol.Optional(ATR_ZALUZIE): cv.entity_id})
 SCHEMA_SMAZ = SCHEMA_NASTAV
+SCHEMA_SROVNEJ = vol.Schema({vol.Optional(ATR_MISTNOST): cv.string})
 SCHEMA_MISTNOST = vol.Schema({
     vol.Required(ATR_MISTNOST): cv.string,
     vol.Required(ATR_NAZEV): cv.string,
@@ -279,6 +280,25 @@ async def zaregistruj(hass: HomeAssistant) -> None:
             "vysledky": vysledky,
         }
 
+    async def srovnej(call: ServiceCall) -> ServiceResponse:
+        """Zahodí paměť posledních povelů, takže se pošlou znovu."""
+        nazev = (call.data.get(ATR_MISTNOST) or "").strip().lower()
+        srovnano = []
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            k = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+            if k is None or not hasattr(k, "srovnej"):
+                continue
+            if not nazev:
+                k.srovnej()
+                srovnano.append("vše")
+            else:
+                for pod in entry.subentries.values():
+                    if pod.title.lower() == nazev:
+                        k.srovnej(pod.subentry_id)
+                        srovnano.append(pod.title)
+            await k.async_request_refresh()
+        return {"povedlo_se": bool(srovnano), "srovnano": srovnano}
+
     async def smaz_stav(call: ServiceCall) -> ServiceResponse:
         smazano = await stavy.smaz(call.data[ATR_ZALUZIE], call.data[ATR_NAZEV])
         return {"povedlo_se": smazano}
@@ -292,6 +312,7 @@ async def zaregistruj(hass: HomeAssistant) -> None:
         ("seznam_stavu", seznam_stavu, SCHEMA_SEZNAM),
         ("smaz_stav", smaz_stav, SCHEMA_SMAZ),
         ("stineni_mistnosti", stineni_mistnosti, SCHEMA_MISTNOST),
+        ("srovnej", srovnej, SCHEMA_SROVNEJ),
     ):
         hass.services.async_register(
             DOMAIN, jmeno, funkce, schema=schema,

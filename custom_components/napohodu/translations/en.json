@@ -550,6 +550,17 @@
       "ovladat_stineni": {
         "name": "Ovládat stínění"
       }
+    },
+    "button": {
+      "srovnat_okno": {
+        "name": "Srovnat okno"
+      },
+      "srovnat_stineni": {
+        "name": "Srovnat žaluzie"
+      },
+      "srovnat_vse": {
+        "name": "Srovnat vše"
+      }
     }
   }
 }

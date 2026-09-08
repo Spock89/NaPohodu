@@ -15,6 +15,7 @@ from .services import zaregistruj
 _LOGGER = logging.getLogger(__name__)
 
 PLATFORMY: list[Platform] = [
+    Platform.BUTTON,
     Platform.SENSOR,
     Platform.BINARY_SENSOR,
     Platform.NUMBER,

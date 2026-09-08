@@ -86,6 +86,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._uloziste = Store(hass, 1, f"{DOMAIN}.prumery")
         self.mistnosti: dict[str, VysledekMistnosti] = {}
 
+    def srovnej(self, pod_id: str | None = None) -> None:
+        """Zapomene poslední povely, takže se v dalším cyklu pošlou znovu.
+
+        Bez pod_id platí pro všechno. Skutečné povely se pošlou jen tam,
+        kde je zapnuté ovládání — tlačítko nic neobchází.
+        """
+        for klic, vyk in self.vykonavaci.items():
+            if pod_id is None or klic == pod_id:
+                vyk.zapomen()
+
     async def async_nacti(self) -> None:
         """Obnoví průměry po restartu, ať se nezačíná od nuly."""
         self.prumery = pm.Prumery.ze_slovniku(await self._uloziste.async_load())

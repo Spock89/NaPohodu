@@ -116,3 +116,19 @@ stineni_mistnosti:
       example: zastíněno
       selector:
         text:
+
+srovnej:
+  name: Srovnat do žádané polohy
+  description: >
+    Zahodí paměť o posledních povelech, takže se v dalším cyklu pošlou
+    znovu. Hodí se po ručním přestavení nebo po restartu, kdy skutečnost
+    nemusí odpovídat tomu, co automatika chce. Kde je ovládání vypnuté,
+    se nic nestane.
+  fields:
+    mistnost:
+      name: Místnost nebo zóna
+      description: >
+        Název místnosti nebo zóny. Bez vyplnění se srovná všechno.
+      example: Obývák
+      selector:
+        text:
