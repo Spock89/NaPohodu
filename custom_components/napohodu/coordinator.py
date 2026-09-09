@@ -402,12 +402,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                                         float(d.get(CONF_CO2_ZAVRIT, 700))),
                 co2_noc=self.hodnota(p.subentry_id, CONF_CO2_NOC,
                                      float(d.get(CONF_CO2_NOC, 1000))),
-                projezd_s=float(d.get(CONF_PROJEZD, 120)),
-                co2_noc=self.hodnota(p.subentry_id, CONF_CO2_NOC,
-                                     float(d.get(CONF_CO2_NOC, 1000))),
                 co2_noc_krize=self.hodnota(
                     p.subentry_id, CONF_CO2_NOC_KRIZE,
                     float(d.get(CONF_CO2_NOC_KRIZE, 1250))),
+                projezd_s=float(d.get(CONF_PROJEZD, 120)),
                 nocni_min=noc_min,
                 denni_pokles=den_pokles,
                 nocni_pokles=noc_pokles,
