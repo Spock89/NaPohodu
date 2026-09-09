@@ -21,17 +21,21 @@ from homeassistant.util import dt as dt_util
 from . import (core, pritomnost as pr, prumery as pm, slunce as sl,
                sousedstvi as so, vykon as vy)
 from .const import (
-    CONF_AZIMUT, CONF_CIL_MAX, CONF_CIL_MIN, CONF_CO2, CONF_CO2_OTEVRIT,
-    CONF_CO2_ZAVRIT, CONF_DEST, CONF_DOBEH, CONF_DOMA, CONF_INDICIE_DOBEH,
-    CONF_INDICIE_STAV, CONF_INDICIE_VYKON, CONF_KOMFORT_ODSTUP, CONF_KVALITA,
-    CONF_DVERE, CONF_MAX_STARI, CONF_MISTNOSTI, CONF_SOUSEDI, CONF_NARAZ, CONF_NAZEV, CONF_NOC_DO,
-    CONF_NOC_MIN, CONF_NOC_OD, CONF_ODCHYLKA, CONF_OKNO, CONF_PLOCHA,
-    CONF_PM10, CONF_PM25, CONF_PRIORITA, CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRITOMNOST,
-    CONF_PROJEZD, CONF_RH_VENKU, CONF_SPANEK, CONF_STINENI_PRYC,
-    CONF_KLID_STINENI_MIN, CONF_SEZONA_HYSTEREZE,
-    CONF_SOUKROMI_KDY, CONF_STINENI_MAPA, CONF_STINENI_REZIM, CONF_SEZONA_PRAH, CONF_T_PRUMER,
-    CONF_T_SEZONA, CONF_T_VENKU, CONF_TEPLOTY, CONF_VITR,     CONF_VITR_PRAH, CONF_VYNUCENO, CONF_ZARENI, CONF_ZDROJ_KLIDU,
-    CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZDROJ_OBSAZENOSTI, DOMAIN, INTERVAL_S, PODENTITA_MISTNOST,
+    CONF_AZIMUT, CONF_CIL_MAX, CONF_CIL_MIN, CONF_CO2, CONF_CO2_NOC,
+    CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT, CONF_DEST,
+    CONF_DOBEH, CONF_DOMA, CONF_DVERE, CONF_INDICIE_DOBEH,
+    CONF_INDICIE_STAV, CONF_INDICIE_VYKON, CONF_KLID_STINENI_MIN,
+    CONF_KOMFORT_ODSTUP, CONF_KVALITA, CONF_MAX_STARI, CONF_MISTNOSTI,
+    CONF_NARAZ, CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN,
+    CONF_NOC_OD, CONF_ODCHYLKA, CONF_OKNO, CONF_PLOCHA, CONF_PM10,
+    CONF_PM25, CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRIORITA,
+    CONF_PRITOMNOST, CONF_PROJEZD, CONF_RH_VENKU, CONF_SEZONA_HYSTEREZE,
+    CONF_SEZONA_PRAH, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
+    CONF_STINENI_MAPA, CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
+    CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU, CONF_VITR,
+    CONF_VITR_HYSTEREZE, CONF_VITR_PRAH, CONF_VYNUCENO, CONF_ZALUZIE,
+    CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
+    CONF_ZDROJ_OBSAZENOSTI, DOMAIN, INTERVAL_S, PODENTITA_MISTNOST,
     PODENTITA_ZONA,
 )
 
@@ -77,6 +81,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.pameti: dict[str, core.Pamet] = {}
         self.zony: dict[str, VysledekZony] = {}
         self.topna_sezona: bool = True
+        self.vitr_blokuje: bool = False
+        self.vitr_blokuje: bool = False
         # průměry si počítáme sami, ať uživatel nemusí zakládat statistiky
         self.prumery = pm.Prumery()
         # hodnoty, se kterými se opravdu počítá, a odkud pocházejí
@@ -84,6 +90,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "tyden": (None, "pocitano"), "tri_dny": (None, "pocitano")}
         self.vykonavaci: dict[str, vy.Vykonavac] = {}
         self._uloziste = Store(hass, 1, f"{DOMAIN}.prumery")
+        # Bez tohohle by se po každém znovunačtení integrace žaluzie
+        # rozjely znovu do stejné polohy. Zarachotí a nikdo neví proč.
+        self._uloziste_stineni = Store(hass, 1, f"{DOMAIN}.stineni_pamet")
         self.mistnosti: dict[str, VysledekMistnosti] = {}
 
     def srovnej(self, pod_id: str | None = None) -> None:
@@ -97,8 +106,20 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 vyk.zapomen()
 
     async def async_nacti(self) -> None:
-        """Obnoví průměry po restartu, ať se nezačíná od nuly."""
+        """Obnoví průměry i polohy žaluzií, ať se nezačíná od nuly."""
         self.prumery = pm.Prumery.ze_slovniku(await self._uloziste.async_load())
+        ulozene = await self._uloziste_stineni.async_load() or {}
+        for pod_id, polohy in ulozene.items():
+            vyk = self.vykonavaci.setdefault(
+                pod_id, vy.Vykonavac(self.hass, pod_id))
+            vyk.stav.posledni_stineni.update(polohy)
+            # polohy známe z disku, ochrana po startu už netřeba
+            vyk.stav.prvni_beh = False
+
+    def _uloz_stineni(self) -> dict:
+        return {k: dict(v.stav.posledni_stineni)
+                for k, v in self.vykonavaci.items()
+                if v.stav.posledni_stineni}
 
     # ------------------------------------------------------------ čtení
 
@@ -211,9 +232,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         doma = self._zapnuto(g.get(CONF_DOMA))
         doma = True if doma is None else doma
 
-        vitr = self._cislo(g.get(CONF_VITR), 0.0)
-        naraz = self._cislo(g.get(CONF_NARAZ), vitr)
-        vitr_blokuje = max(vitr or 0, naraz or 0) > float(g.get(CONF_VITR_PRAH, 14))
+        # Náraz poškodí pohon dřív než stálý vítr, proto vlastní práh.
+        vitr = self._cislo(g.get(CONF_VITR), 0.0) or 0.0
+        naraz = self._cislo(g.get(CONF_NARAZ), vitr) or 0.0
+        prah_v = float(g.get(CONF_VITR_PRAH, 7.0))
+        prah_n = float(g.get(CONF_NARAZ_PRAH, 11.0))
+        klid_v = float(g.get(CONF_VITR_HYSTEREZE, CONF_NARAZ_PRAH, 5.0))
+
+        if vitr > prah_v or naraz > prah_n:
+            self.vitr_blokuje = True
+        elif vitr < klid_v and naraz < klid_v:
+            self.vitr_blokuje = False       # hystereze, ať to nekmitá
+        vitr_blokuje = self.vitr_blokuje
 
         slunce_az, slunce_el = self._poloha_slunce()
         jasno = pr.oblacnost(self._cislo(g.get(CONF_ZARENI)), slunce_el)
@@ -283,6 +313,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     cile, cas_s, float(d.get(CONF_KLID_STINENI_MIN, 15)))
                 m.atributy["stineni"] = stin
                 m.atributy["role_stineni"] = role
+                if stin:
+                    self._uloziste_stineni.async_delay_save(
+                        self._uloz_stineni, 10)
             m.atributy["stineni_stav"] = dict(vyk_m.stav.posledni_stineni)
 
             self.mistnosti[p.subentry_id] = m
@@ -367,7 +400,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                                          float(d.get(CONF_CO2_OTEVRIT, 800))),
                 co2_zavrit=self.hodnota(p.subentry_id, CONF_CO2_ZAVRIT,
                                         float(d.get(CONF_CO2_ZAVRIT, 700))),
+                co2_noc=self.hodnota(p.subentry_id, CONF_CO2_NOC,
+                                     float(d.get(CONF_CO2_NOC, 1000))),
                 projezd_s=float(d.get(CONF_PROJEZD, 120)),
+                co2_noc=self.hodnota(p.subentry_id, CONF_CO2_NOC,
+                                     float(d.get(CONF_CO2_NOC, 1000))),
+                co2_noc_krize=self.hodnota(
+                    p.subentry_id, CONF_CO2_NOC_KRIZE,
+                    float(d.get(CONF_CO2_NOC_KRIZE, 1250))),
                 nocni_min=noc_min,
                 denni_pokles=den_pokles,
                 nocni_pokles=noc_pokles,
@@ -444,6 +484,22 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 self.mistnosti[mp.subentry_id].okno_otevreno = skutecne
 
         return {"zony": self.zony, "mistnosti": self.mistnosti}
+
+    def _vitr(self, g: dict, vitr: float, naraz: float) -> bool:
+        """Nárazy mají vlastní práh, protože pohon poškodí dřív než průměr.
+
+        Hystereze brání překlápění na hraně: blokace povolí, až když obě
+        hodnoty klesnou o kus pod svůj práh.
+        """
+        prah_v = float(g.get(CONF_VITR_PRAH, 7.0))
+        prah_n = float(g.get(CONF_NARAZ_PRAH, 11.0))
+        hyst = float(g.get(CONF_VITR_HYSTEREZE, 2.0))
+
+        if vitr > prah_v or naraz > prah_n:
+            self.vitr_blokuje = True
+        elif vitr < prah_v - hyst and naraz < prah_n - hyst:
+            self.vitr_blokuje = False
+        return self.vitr_blokuje
 
     def _sezona(self, g: dict) -> bool:
         """Topná sezóna podle třídenního průměru, s hysterezí kolem prahu.

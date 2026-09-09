@@ -22,7 +22,8 @@ CONF_CIL_MIN = "cil_min"
 CONF_CIL_MAX = "cil_max"
 CONF_NOC_OD = "noc_od"
 CONF_NOC_DO = "noc_do"
-CONF_VITR_PRAH = "vitr_prah"
+CONF_VITR_PRAH = "vitr_prah"       # průměrná rychlost
+CONF_NARAZ_PRAH = "naraz_prah"     # nárazy, ty poškodí pohon dřív
 CONF_VITR_KLID = "vitr_klid"
 
 # --- místnost ---
@@ -76,6 +77,9 @@ CONF_ZDROJ_OKENNIHO = "zdroj_okenniho_senzoru"
 CONF_VYNUCENO = "vynuceno"
 CONF_CO2_OTEVRIT = "co2_otevrit"
 CONF_CO2_ZAVRIT = "co2_zavrit"
+CONF_CO2_NOC = "co2_noc"              # v noci se otevírá až od tohoto
+CONF_CO2_NOC_KRIZE = "co2_noc_krize"  # tohle přebije i teplotní mez
+CONF_CO2_NOC = "co2_noc"
 
 # stínění zóny: jména uložených stavů
 CONF_ZALUZIE_STARE = "zaluzie_zony"   # dřívější název, kvůli starším verzím

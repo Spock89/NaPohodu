@@ -77,8 +77,9 @@ SCHEMA_GLOBAL = vol.Schema(
         vol.Optional(c.CONF_CIL_MAX, default=27.0): _cislo(22, 32),
         vol.Optional(c.CONF_NOC_OD, default="22:00:00"): selector.TimeSelector(),
         vol.Optional(c.CONF_NOC_DO, default="06:30:00"): selector.TimeSelector(),
-        vol.Optional(c.CONF_VITR_PRAH, default=14.0): _cislo(5, 30, 0.5, "m/s"),
-        vol.Optional(c.CONF_VITR_KLID, default=9.0): _cislo(3, 25, 0.5, "m/s"),
+        vol.Optional(c.CONF_VITR_PRAH, default=7.0): _cislo(3, 30, 0.5, "m/s"),
+        vol.Optional(c.CONF_NARAZ_PRAH, default=11.0): _cislo(3, 40, 0.5, "m/s"),
+        vol.Optional(c.CONF_VITR_KLID, default=5.0): _cislo(2, 25, 0.5, "m/s"),
     }
 )
 
@@ -505,6 +506,10 @@ def _schema_zona(mistnosti: list[dict], sousedi: list[dict] | None = None) -> vo
             vol.Required(c.CONF_MISTNOSTI): vyber,
             vol.Optional(c.CONF_CO2_OTEVRIT, default=800): _cislo(500, 2000, 25, "ppm"),
             vol.Optional(c.CONF_CO2_ZAVRIT, default=700): _cislo(400, 1500, 25, "ppm"),
+            vol.Optional(c.CONF_CO2_NOC, default=1000): _cislo(600, 2000, 25, "ppm"),
+            vol.Optional(c.CONF_CO2_NOC_KRIZE, default=1250):
+                _cislo(800, 2500, 25, "ppm"),
+            vol.Optional(c.CONF_CO2_NOC, default=1000): _cislo(700, 2000, 25, "ppm"),
             vol.Optional(c.CONF_PROJEZD, default=120): _cislo(10, 600, 10, "s"),
             vol.Optional(c.CONF_SOUSEDI): _vyber(sousedi or []),
             vol.Optional(c.CONF_DVERE): _ent(["binary_sensor"], True),

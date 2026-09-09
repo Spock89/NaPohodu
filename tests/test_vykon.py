@@ -16,9 +16,12 @@ class FalesnyHass:
         self.volani.append((domena, sluzba, data["entity_id"]))
 
 
-def vyk():
+def vyk(po_startu=True):
+    """Výchozí je běžící systém. po_startu=True simuluje čerstvý start."""
     h = FalesnyHass()
-    return h, Vykonavac(h, "z1")
+    v = Vykonavac(h, "z1")
+    v.stav.prvni_beh = po_startu
+    return h, v
 
 
 def r(akce, duvod="test", limit=None):
@@ -134,14 +137,14 @@ def _naparuj_stineni(monkeypatch, selhavajici=()):
 
 def test_stineni_projede_vsechny_zaluzie(monkeypatch):
     p = _naparuj_stineni(monkeypatch)
-    h, v = vyk()
+    h, v = vyk(po_startu=False)
     bez(v.stineni({"cover.o1": "zastíněno", "cover.o2": "zastíněno"}, 1000, 15))
     assert p == [("cover.o1", "zastíněno"), ("cover.o2", "zastíněno")]
 
 
 def test_uz_nastavena_zaluzie_se_prekcaci(monkeypatch):
     p = _naparuj_stineni(monkeypatch)
-    h, v = vyk()
+    h, v = vyk(po_startu=False)
     bez(v.stineni({"cover.o1": "zastíněno", "cover.o2": "zastíněno"}, 1000, 15))
     p.clear()
     bez(v.stineni({"cover.o1": "zastíněno", "cover.o2": "zastíněno"}, 9000, 15))
@@ -151,7 +154,7 @@ def test_uz_nastavena_zaluzie_se_prekcaci(monkeypatch):
 def test_kazda_zaluzie_ma_vlastni_pamet(monkeypatch):
     """Ruční přestavení jedné nesmí rozjet ostatní."""
     p = _naparuj_stineni(monkeypatch)
-    h, v = vyk()
+    h, v = vyk(po_startu=False)
     bez(v.stineni({"cover.o1": "zastíněno", "cover.o2": "zastíněno"}, 1000, 15))
     v.stav.posledni_stineni.pop("cover.o2")
     p.clear()
@@ -161,7 +164,7 @@ def test_kazda_zaluzie_ma_vlastni_pamet(monkeypatch):
 
 def test_selhani_jedne_nezastavi_ostatni(monkeypatch):
     p = _naparuj_stineni(monkeypatch, selhavajici={"cover.o1"})
-    h, v = vyk()
+    h, v = vyk(po_startu=False)
     vysledek = bez(v.stineni({"cover.o1": "zastíněno", "cover.o2": "zastíněno"}, 1000, 15))
     assert len(p) == 2
     assert "cover.o2" in v.stav.posledni_stineni
@@ -171,7 +174,7 @@ def test_selhani_jedne_nezastavi_ostatni(monkeypatch):
 
 def test_odstup_mezi_pohyby(monkeypatch):
     p = _naparuj_stineni(monkeypatch)
-    h, v = vyk()
+    h, v = vyk(po_startu=False)
     bez(v.stineni({"cover.o1": "zastíněno"}, 1000, 15))
     p.clear()
     bez(v.stineni({"cover.o1": "odstíněno"}, 1100, 15))   # za 100 s
@@ -183,7 +186,7 @@ def test_odstup_mezi_pohyby(monkeypatch):
 def test_ruzna_jmena_pro_stejnou_roli(monkeypatch):
     """O1 má „zastíněno", O2 „zataženo" — obě se nastaví správně."""
     p = _naparuj_stineni(monkeypatch)
-    h, v = vyk()
+    h, v = vyk(po_startu=False)
     bez(v.stineni({"cover.o1": "zastíněno", "cover.o2": "zataženo"}, 1000, 15))
     assert p == [("cover.o1", "zastíněno"), ("cover.o2", "zataženo")]
 
@@ -284,3 +287,34 @@ def test_zadna_role_znamena_klid():
 def test_prazdna_mapa():
     assert cile_zaluzii("zastinit", {}) == {}
     assert cile_zaluzii("zastinit", None) == {}
+
+
+# --------------------------------------------- žaluzie po startu neruší
+
+def test_po_startu_se_zaluziemi_nehybe(monkeypatch):
+    """Restart Home Assistanta nesmí zarachotit žaluziemi."""
+    p = _naparuj_stineni(monkeypatch)
+    h, v = vyk()
+    bez(v.stineni({"cover.o1": "zastíněno"}, 1000, 15))
+    assert p == []
+    assert v.stav.posledni_stineni == {"cover.o1": "zastíněno"}
+
+
+def test_po_startu_reaguje_az_na_zmenu(monkeypatch):
+    p = _naparuj_stineni(monkeypatch)
+    h, v = vyk(po_startu=True)
+    bez(v.stineni({"cover.o1": "zastíněno"}, 1000, 15))
+    bez(v.stineni({"cover.o1": "zastíněno"}, 9000, 15))
+    assert p == []                       # pořád stejné, nic se neděje
+    bez(v.stineni({"cover.o1": "odstíněno"}, 20000, 15))
+    assert p == [("cover.o1", "odstíněno")]
+
+
+def test_tlacitko_srovnat_pohyb_vynuti(monkeypatch):
+    """Když si člověk řekne, žaluzie se srovnají i po startu."""
+    p = _naparuj_stineni(monkeypatch)
+    h, v = vyk()
+    bez(v.stineni({"cover.o1": "zastíněno"}, 1000, 15))
+    v.zapomen()
+    bez(v.stineni({"cover.o1": "zastíněno"}, 9000, 15))
+    assert p == [("cover.o1", "zastíněno")]

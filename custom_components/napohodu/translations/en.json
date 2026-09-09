@@ -15,12 +15,13 @@
           "cil_max": "Cíl nejvíc",
           "noc_od": "Noční klid od",
           "noc_do": "Noční klid do",
-          "vitr_prah": "Vítr blokuje od",
-          "vitr_klid": "Vítr povolí pod",
+          "vitr_prah": "Vítr blokuje od (průměr)",
           "t_prumer": "Týdenní průměr (nepovinné)",
           "t_sezona": "Třídenní průměr (nepovinné)",
           "sezona_prah": "Topná sezóna pod",
-          "sezona_hystereze": "Hystereze sezóny"
+          "sezona_hystereze": "Hystereze sezóny",
+          "naraz_prah": "Vítr blokuje od (nárazy)",
+          "vitr_hystereze": "Hystereze větru"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -34,12 +35,13 @@
           "cil_max": "Nad tuto teplotu cíl nevystoupá ani v největším vedru.",
           "noc_od": "Od kdy platí noční klid. Okna se pak otevírají méně a jen když je opravdu dusno.",
           "noc_do": "Do kdy platí noční klid. Po této hodině se už neotevírá, aby nerušil ranní ruch.",
-          "vitr_prah": "Nad touto rychlostí se okna zavřou a nesmí se otevřít.",
-          "vitr_klid": "Pod touto rychlostí se blokace zase uvolní. Musí být nižší než práh.",
+          "vitr_prah": "Průměrná rychlost, nad kterou se okna zavřou a nesmí otevřít.",
           "t_prumer": "Nepovinné. Když máš vlastní statistický senzor týdenního průměru, zadej ho a bude se počítat podle něj. Bez něj si průměr integrace spočítá sama. Entita „Venkovní teplota, týdenní průměr“ pak ukazuje to, co se skutečně používá.",
           "t_sezona": "Nepovinné. Vlastní senzor třídenního průměru pro topnou sezónu. Bez něj si ho integrace počítá sama.",
           "sezona_prah": "Pod touto průměrnou teplotou začíná topná sezóna. Obvykle 15 °C.",
-          "sezona_hystereze": "Pásmo kolem prahu, ve kterém se sezóna nepřepíná. Brání přeskakování na hraně."
+          "sezona_hystereze": "Pásmo kolem prahu, ve kterém se sezóna nepřepíná. Brání přeskakování na hraně.",
+          "naraz_prah": "Nárazy poškodí pohon dřív než průměr, proto vlastní práh. Stačí, aby jedna z obou hodnot práh překročila.",
+          "vitr_hystereze": "O kolik musí vítr klesnout pod práh, než se blokace uvolní. Brání překlápění na hraně."
         },
         "title": "NaPohodu"
       }
@@ -72,12 +74,13 @@
           "cil_max": "Cíl nejvíc",
           "noc_od": "Noční klid od",
           "noc_do": "Noční klid do",
-          "vitr_prah": "Vítr blokuje od",
-          "vitr_klid": "Vítr povolí pod",
+          "vitr_prah": "Vítr blokuje od (průměr)",
           "t_prumer": "Týdenní průměr (nepovinné)",
           "t_sezona": "Třídenní průměr (nepovinné)",
           "sezona_prah": "Topná sezóna pod",
-          "sezona_hystereze": "Hystereze sezóny"
+          "sezona_hystereze": "Hystereze sezóny",
+          "naraz_prah": "Vítr blokuje od (nárazy)",
+          "vitr_hystereze": "Hystereze větru"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -91,12 +94,13 @@
           "cil_max": "Nad tuto teplotu cíl nevystoupá ani v největším vedru.",
           "noc_od": "Od kdy platí noční klid. Okna se pak otevírají méně a jen když je opravdu dusno.",
           "noc_do": "Do kdy platí noční klid. Po této hodině se už neotevírá, aby nerušil ranní ruch.",
-          "vitr_prah": "Nad touto rychlostí se okna zavřou a nesmí se otevřít.",
-          "vitr_klid": "Pod touto rychlostí se blokace zase uvolní. Musí být nižší než práh.",
+          "vitr_prah": "Průměrná rychlost, nad kterou se okna zavřou a nesmí otevřít.",
           "t_prumer": "Nepovinné. Když máš vlastní statistický senzor týdenního průměru, zadej ho a bude se počítat podle něj. Bez něj si průměr integrace spočítá sama. Entita „Venkovní teplota, týdenní průměr“ pak ukazuje to, co se skutečně používá.",
           "t_sezona": "Nepovinné. Vlastní senzor třídenního průměru pro topnou sezónu. Bez něj si ho integrace počítá sama.",
           "sezona_prah": "Pod touto průměrnou teplotou začíná topná sezóna. Obvykle 15 °C.",
-          "sezona_hystereze": "Pásmo kolem prahu, ve kterém se sezóna nepřepíná. Brání přeskakování na hraně."
+          "sezona_hystereze": "Pásmo kolem prahu, ve kterém se sezóna nepřepíná. Brání přeskakování na hraně.",
+          "naraz_prah": "Nárazy poškodí pohon dřív než průměr, proto vlastní práh. Stačí, aby jedna z obou hodnot práh překročila.",
+          "vitr_hystereze": "O kolik musí vítr klesnout pod práh, než se blokace uvolní. Brání překlápění na hraně."
         }
       },
       "tester": {
@@ -370,7 +374,9 @@
             "co2_otevrit": "Otevřít nad",
             "co2_zavrit": "Zavřít pod",
             "sousedi": "Sousední zóny",
-            "dvere": "Dveře mezi zónami"
+            "dvere": "Dveře mezi zónami",
+            "co2_noc": "V noci otevřít nad",
+            "co2_noc_krize": "Nouzově otevřít nad"
           },
           "data_description": {
             "nazev": "Jak se zóna jmenuje, například Obývák a kuchyně.",
@@ -383,7 +389,9 @@
             "co2_otevrit": "Nad touto hodnotou CO2 se začne větrat. Bere se nejvyšší hodnota ze všech místností zóny.",
             "co2_zavrit": "Pod touto hodnotou je vyvětráno. Mezi oběma prahy se schválně nic neděje, aby okno neposkakovalo.",
             "sousedi": "Zóny za dveřmi, které mají vlastní okno. Když se v této zóně spí, vyvětrá ji raději soused, aby ti nefoukalo na hlavu. Uplatní se jen v noci. Po přejmenování zóny odkaz zůstane platný.",
-            "dvere": "Čidlo dveří mezi zónami. Při zavřených dveřích se vzduch nevymění, takže se zastupování nepoužije. Bez čidla se předpokládá otevřeno."
+            "dvere": "Čidlo dveří mezi zónami. Při zavřených dveřích se vzduch nevymění, takže se zastupování nepoužije. Bez čidla se předpokládá otevřeno.",
+            "co2_noc": "V noci se otevírá později než přes den, aby to nebudilo a netahalo dovnitř hluk z ulice. Zvyš, když ti okno v noci vadí víc než dusno.",
+            "co2_noc_krize": "Nad touto hodnotou se otevře i pod teplotní mezí a i v době ranního klidu. Jen krátce."
           },
           "submit": "Uložit zónu"
         },
@@ -401,7 +409,9 @@
             "co2_otevrit": "Otevřít nad",
             "co2_zavrit": "Zavřít pod",
             "sousedi": "Sousední zóny",
-            "dvere": "Dveře mezi zónami"
+            "dvere": "Dveře mezi zónami",
+            "co2_noc": "V noci otevřít nad",
+            "co2_noc_krize": "Nouzově otevřít nad"
           },
           "data_description": {
             "nazev": "Jak se zóna jmenuje, například Obývák a kuchyně.",
@@ -414,7 +424,9 @@
             "co2_otevrit": "Nad touto hodnotou CO2 se začne větrat. Bere se nejvyšší hodnota ze všech místností zóny.",
             "co2_zavrit": "Pod touto hodnotou je vyvětráno. Mezi oběma prahy se schválně nic neděje, aby okno neposkakovalo.",
             "sousedi": "Zóny za dveřmi, které mají vlastní okno. Když se v této zóně spí, vyvětrá ji raději soused, aby ti nefoukalo na hlavu. Uplatní se jen v noci. Po přejmenování zóny odkaz zůstane platný.",
-            "dvere": "Čidlo dveří mezi zónami. Při zavřených dveřích se vzduch nevymění, takže se zastupování nepoužije. Bez čidla se předpokládá otevřeno."
+            "dvere": "Čidlo dveří mezi zónami. Při zavřených dveřích se vzduch nevymění, takže se zastupování nepoužije. Bez čidla se předpokládá otevřeno.",
+            "co2_noc": "V noci se otevírá později než přes den, aby to nebudilo a netahalo dovnitř hluk z ulice. Zvyš, když ti okno v noci vadí víc než dusno.",
+            "co2_noc_krize": "Nad touto hodnotou se otevře i pod teplotní mezí a i v době ranního klidu. Jen krátce."
           },
           "submit": "Uložit"
         }
@@ -541,6 +553,12 @@
       },
       "priorita_vzduchu": {
         "name": "Vzduch proti teplu"
+      },
+      "co2_noc": {
+        "name": "V noci otevřít nad CO2"
+      },
+      "co2_noc_krize": {
+        "name": "Nouzově otevřít nad CO2"
       }
     },
     "switch": {

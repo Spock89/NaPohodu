@@ -38,16 +38,18 @@ class StavVykonu:
     pulz_do_s: float | None = None
     posledni_stineni: dict[str, str] = field(default_factory=dict)
     stineni_cas_s: float = -1e9
+    prvni_beh: bool = True
     chyby: list[str] = field(default_factory=list)
 
 
 class Vykonavac:
     """Jeden na zónu. Drží si, co už poslal."""
 
-    def __init__(self, hass: "HomeAssistant", zona_id: str) -> None:
+    def __init__(self, hass: "HomeAssistant", zona_id: str,
+                 po_startu: bool = True) -> None:
         self.hass = hass
         self.zona_id = zona_id
-        self.stav = StavVykonu()
+        self.stav = StavVykonu(prvni_beh=po_startu)
 
     # ------------------------------------------------------------ okno
 
@@ -62,6 +64,7 @@ class Vykonavac:
         self.stav.posledni_cas_s = -1e9
         self.stav.posledni_stineni.clear()
         self.stav.stineni_cas_s = -1e9
+        self.stav.prvni_beh = False    # tlačítko chce pohyb, ne mlčení
         self.stav.chyby.clear()
 
     async def okno(self, okno_entita: str | None, r: core.Rozhodnuti,
@@ -116,10 +119,22 @@ class Vykonavac:
         """
         if not cile:
             return None
+
+        # Po startu se žaluziemi nehýbeme. Nevíme, kde stojí, a rachot
+        # bez důvodu je horší než minuta, kdy nejsou přesně nastavené.
+        # Zapamatujeme si, co bychom chtěli, a čekáme na skutečnou změnu.
+        if self.stav.prvni_beh:
+            self.stav.prvni_beh = False
+            self.stav.posledni_stineni.update(cile)
+            self.stav.stineni_cas_s = cas_s
+            _LOGGER.debug("NaPohodu: po startu přebírám polohy %s", cile)
+            return None
+
         zbyva = {z: n for z, n in cile.items()
                  if self.stav.posledni_stineni.get(z) != n}
         if not zbyva:
             return None
+
         if cas_s - self.stav.stineni_cas_s < klid_min * 60:
             return None            # ať se lamely nehoupou
 
