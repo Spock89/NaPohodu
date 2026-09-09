@@ -237,7 +237,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         naraz = self._cislo(g.get(CONF_NARAZ), vitr) or 0.0
         prah_v = float(g.get(CONF_VITR_PRAH, 7.0))
         prah_n = float(g.get(CONF_NARAZ_PRAH, 11.0))
-        klid_v = float(g.get(CONF_VITR_KLID, CONF_NARAZ_PRAH, 5.0))
+        klid_v = float(g.get(CONF_VITR_KLID, 5.0))
 
         if vitr > prah_v or naraz > prah_n:
             self.vitr_blokuje = True

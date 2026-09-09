@@ -20,6 +20,17 @@ for p in d.glob("*.py"):
                 and u.attr not in konst):
             chyby.append(f"{p.name}: c.{u.attr} neexistuje")
 
+# 1b) volání se špatným počtem argumentů, která projdou syntaxí
+BEZNE = {"get": 2, "setdefault": 2, "pop": 2, "getattr": 3, "round": 2}
+for p in d.glob("*.py"):
+    for u in ast.walk(ast.parse(p.read_text())):
+        if isinstance(u, ast.Call) and isinstance(u.func, ast.Attribute):
+            limit = BEZNE.get(u.func.attr)
+            if limit and len(u.args) > limit:
+                chyby.append(
+                    f"{p.name}:{u.lineno}: {u.func.attr}() má "
+                    f"{len(u.args)} argumentů, nejvýš {limit}")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):
