@@ -24,7 +24,7 @@ CONF_NOC_OD = "noc_od"
 CONF_NOC_DO = "noc_do"
 CONF_VITR_PRAH = "vitr_prah"       # průměrná rychlost
 CONF_NARAZ_PRAH = "naraz_prah"     # nárazy, ty poškodí pohon dřív
-CONF_VITR_KLID = "vitr_klid"
+CONF_VITR_KLID = "vitr_klid"      # pod tím blokace povolí
 
 # --- místnost ---
 CONF_NAZEV = "nazev"

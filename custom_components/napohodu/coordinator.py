@@ -33,7 +33,7 @@ from .const import (
     CONF_SEZONA_PRAH, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
     CONF_STINENI_MAPA, CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
     CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU, CONF_VITR,
-    CONF_VITR_HYSTEREZE, CONF_VITR_PRAH, CONF_VYNUCENO, CONF_ZALUZIE,
+    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYNUCENO, CONF_ZALUZIE,
     CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
     CONF_ZDROJ_OBSAZENOSTI, DOMAIN, INTERVAL_S, PODENTITA_MISTNOST,
     PODENTITA_ZONA,
@@ -237,7 +237,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         naraz = self._cislo(g.get(CONF_NARAZ), vitr) or 0.0
         prah_v = float(g.get(CONF_VITR_PRAH, 7.0))
         prah_n = float(g.get(CONF_NARAZ_PRAH, 11.0))
-        klid_v = float(g.get(CONF_VITR_HYSTEREZE, CONF_NARAZ_PRAH, 5.0))
+        klid_v = float(g.get(CONF_VITR_KLID, CONF_NARAZ_PRAH, 5.0))
 
         if vitr > prah_v or naraz > prah_n:
             self.vitr_blokuje = True
@@ -493,11 +493,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         """
         prah_v = float(g.get(CONF_VITR_PRAH, 7.0))
         prah_n = float(g.get(CONF_NARAZ_PRAH, 11.0))
-        hyst = float(g.get(CONF_VITR_HYSTEREZE, 2.0))
+        klid = float(g.get(CONF_VITR_KLID, 5.0))
 
         if vitr > prah_v or naraz > prah_n:
             self.vitr_blokuje = True
-        elif vitr < prah_v - hyst and naraz < prah_n - hyst:
+        elif vitr < klid and naraz < klid:
             self.vitr_blokuje = False
         return self.vitr_blokuje
 

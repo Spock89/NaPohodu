@@ -21,7 +21,7 @@
           "sezona_prah": "Topná sezóna pod",
           "sezona_hystereze": "Hystereze sezóny",
           "naraz_prah": "Vítr blokuje od (nárazy)",
-          "vitr_hystereze": "Hystereze větru"
+          "vitr_klid": "Vítr povolí pod"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -41,7 +41,7 @@
           "sezona_prah": "Pod touto průměrnou teplotou začíná topná sezóna. Obvykle 15 °C.",
           "sezona_hystereze": "Pásmo kolem prahu, ve kterém se sezóna nepřepíná. Brání přeskakování na hraně.",
           "naraz_prah": "Nárazy poškodí pohon dřív než průměr, proto vlastní práh. Stačí, aby jedna z obou hodnot práh překročila.",
-          "vitr_hystereze": "O kolik musí vítr klesnout pod práh, než se blokace uvolní. Brání překlápění na hraně."
+          "vitr_klid": "Blokace povolí, až když obě hodnoty klesnou pod tuhle. Musí být níž než oba prahy, jinak se to překlápí na hraně."
         },
         "title": "NaPohodu"
       }
@@ -80,7 +80,7 @@
           "sezona_prah": "Topná sezóna pod",
           "sezona_hystereze": "Hystereze sezóny",
           "naraz_prah": "Vítr blokuje od (nárazy)",
-          "vitr_hystereze": "Hystereze větru"
+          "vitr_klid": "Vítr povolí pod"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -100,7 +100,7 @@
           "sezona_prah": "Pod touto průměrnou teplotou začíná topná sezóna. Obvykle 15 °C.",
           "sezona_hystereze": "Pásmo kolem prahu, ve kterém se sezóna nepřepíná. Brání přeskakování na hraně.",
           "naraz_prah": "Nárazy poškodí pohon dřív než průměr, proto vlastní práh. Stačí, aby jedna z obou hodnot práh překročila.",
-          "vitr_hystereze": "O kolik musí vítr klesnout pod práh, než se blokace uvolní. Brání překlápění na hraně."
+          "vitr_klid": "Blokace povolí, až když obě hodnoty klesnou pod tuhle. Musí být níž než oba prahy, jinak se to překlápí na hraně."
         }
       },
       "tester": {
