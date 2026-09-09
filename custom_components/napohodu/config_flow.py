@@ -330,6 +330,24 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
             c.SMERY_VENTILACE, "ventilator_smer"
         ),
 
+        # --- okna místnosti ---
+        vol.Optional(c.CONF_OKNA): _ent(["cover"], True),
+        vol.Optional(c.CONF_PROJEZD_M, default=120): _cislo(10, 600, 10, "s"),
+        vol.Optional(c.CONF_KONTAKT_M): _ent(["binary_sensor"], True),
+        vol.Optional(c.CONF_ZDROJ_OKENNIHO_M, default="nase_otevreni"): _volba(
+            c.ZDROJ_OKENNIHO, "zdroj_okenniho"),
+        vol.Optional(c.CONF_VYNUCENO_M): _ent(
+            ["input_boolean", "switch", "binary_sensor"], True),
+        vol.Optional(c.CONF_CO2_OTEVRIT, default=800): _cislo(500, 2000, 25, "ppm"),
+        vol.Optional(c.CONF_CO2_ZAVRIT, default=700): _cislo(400, 1500, 25, "ppm"),
+        vol.Optional(c.CONF_CO2_NOC, default=1000): _cislo(600, 2000, 25, "ppm"),
+        vol.Optional(c.CONF_CO2_NOC_KRIZE, default=1250): _cislo(800, 2500, 25, "ppm"),
+        vol.Optional(c.CONF_DEST_PRAH, default=0.3): _cislo(0, 20, 0.1, "mm/h"),
+        vol.Optional(c.CONF_I_KDYZ_NIKDO, default=False):
+            selector.BooleanSelector(),
+        vol.Optional(c.CONF_T_VENKU_M): _ent(["sensor"], trida=["temperature"]),
+        vol.Optional(c.CONF_RH_VENKU_M): _ent(["sensor"], trida=["humidity"]),
+
         # --- stínění patří k místnosti, protože slunce svítí do pokoje ---
         vol.Optional(c.CONF_ZALUZIE): _ent(["cover"], True),
         vol.Optional(c.CONF_AZIMUT, default=180): _cislo(0, 359, 1, "°"),
@@ -497,29 +515,13 @@ def _vyber(polozky: list[dict]) -> selector.SelectSelector:
 
 
 def _schema_zona(mistnosti: list[dict], sousedi: list[dict] | None = None) -> vol.Schema:
-    """Místnosti a sousedi se nabízejí z těch, které už jsou založené."""
-    vyber = _vyber(mistnosti)
+    """Oblast je jen propojení místností. Okna a prahy patří místnostem."""
     return vol.Schema(
         {
             vol.Required(c.CONF_NAZEV): selector.TextSelector(),
-            vol.Required(c.CONF_OKNO): _ent(["cover"]),
-            vol.Required(c.CONF_MISTNOSTI): vyber,
-            vol.Optional(c.CONF_CO2_OTEVRIT, default=800): _cislo(500, 2000, 25, "ppm"),
-            vol.Optional(c.CONF_CO2_ZAVRIT, default=700): _cislo(400, 1500, 25, "ppm"),
-            vol.Optional(c.CONF_CO2_NOC, default=1000): _cislo(600, 2000, 25, "ppm"),
-            vol.Optional(c.CONF_CO2_NOC_KRIZE, default=1250):
-                _cislo(800, 2500, 25, "ppm"),
-            vol.Optional(c.CONF_CO2_NOC, default=1000): _cislo(700, 2000, 25, "ppm"),
-            vol.Optional(c.CONF_PROJEZD, default=120): _cislo(10, 600, 10, "s"),
+            vol.Required(c.CONF_MISTNOSTI): _vyber(mistnosti),
             vol.Optional(c.CONF_SOUSEDI): _vyber(sousedi or []),
             vol.Optional(c.CONF_DVERE): _ent(["binary_sensor"], True),
-            vol.Optional(c.CONF_KONTAKT): _ent(["binary_sensor"], True),
-            vol.Optional(c.CONF_ZDROJ_OKENNIHO, default="nase_otevreni"): _volba(
-                c.ZDROJ_OKENNIHO, "zdroj_okenniho"
-            ),
-            vol.Optional(c.CONF_VYNUCENO): _ent(
-                ["input_boolean", "switch", "binary_sensor"], True
-            ),
         }
     )
 

@@ -17,7 +17,7 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, PODENTITA_MISTNOST, PODENTITA_ZONA
+from .const import DOMAIN, PODENTITA_MISTNOST
 from .entity import NaPohoduEntity
 
 
@@ -25,11 +25,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                             pridat: AddEntitiesCallback) -> None:
     k = hass.data[DOMAIN][entry.entry_id]
     for pod in entry.subentries.values():
-        if pod.subentry_type == PODENTITA_ZONA:
-            pridat([Srovnat(k, pod, "srovnat_okno")],
-                   config_subentry_id=pod.subentry_id)
-        elif pod.subentry_type == PODENTITA_MISTNOST:
-            pridat([Srovnat(k, pod, "srovnat_stineni")],
+        if pod.subentry_type == PODENTITA_MISTNOST:
+            pridat([Srovnat(k, pod, "srovnat_okno"),
+                    Srovnat(k, pod, "srovnat_stineni")],
                    config_subentry_id=pod.subentry_id)
     pridat([SrovnatVse(k, entry)])
 

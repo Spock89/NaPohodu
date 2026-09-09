@@ -187,7 +187,20 @@
             "klid_stineni_min": "Nejčastěji hýbat jednou za",
             "stineni_rezim": "Kdy smí automatika hýbat žaluziemi",
             "soukromi_kdy": "Zatáhnout po setmění",
-            "zaluzie": "Žaluzie"
+            "zaluzie": "Žaluzie",
+            "okna": "Okna",
+            "projezd_okna_s": "Doba projezdu okna",
+            "kontakt_okna": "Kontakt okna",
+            "zdroj_okenniho": "Okenní senzor pro topení podle",
+            "vynuceno_okno": "Vynucené otevření",
+            "co2_otevrit": "Otevřít nad CO2",
+            "co2_zavrit": "Zavřít pod CO2",
+            "co2_noc": "V noci otevřít nad",
+            "co2_noc_krize": "Nouzově otevřít nad",
+            "dest_prah": "Déšť vadí od",
+            "i_kdyz_nikdo_doma": "Větrat i když nikdo není doma",
+            "t_venku_mistni": "Vlastní venkovní teplota",
+            "rh_venku_mistni": "Vlastní venkovní vlhkost"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -216,7 +229,20 @@
             "klid_stineni_min": "Minimální odstup mezi pohyby žaluzií, aby se lamely nehoupaly při každém mráčku.",
             "stineni_rezim": "Když si žaluzie v této místnosti nastavuješ ručně, vyber „jen když nikdo není doma“. Automatika je pak nechá být, dokud jsi doma. Zatažení po setmění platí i tak.",
             "soukromi_kdy": "Po západu slunce je do rozsvícené místnosti vidět. „Hned“ zatáhne při setmění, „až při pohybu“ počká, dokud někdo do místnosti nepřijde. Zatáhne se jednou a dál se s nimi nehýbe.",
-            "zaluzie": "Žaluzie této místnosti. Můžeš vybrat víc — v dalším kroku pak každé přiřadíš, který její uložený stav plní kterou roli."
+            "zaluzie": "Žaluzie této místnosti. Můžeš vybrat víc — v dalším kroku pak každé přiřadíš, který její uložený stav plní kterou roli.",
+            "okna": "Okna této místnosti. Můžeš vybrat víc, budou se ovládat společně.",
+            "projezd_okna_s": "Jak dlouho pohon jede z jedné krajní polohy do druhé. Během jízdy se věří vlastnímu povelu, ne stavu entity.",
+            "kontakt_okna": "Fyzické čidlo otevření, pokud ho okno má.",
+            "zdroj_okenniho": "Podle čeho se topení dozví, že je otevřeno. Když okno kontakt nemá a ruční otevření topení vypínat nechceš, vyber jen automatiku.",
+            "vynuceno_okno": "Přepínače, kterými okno otevřeš natvrdo. Přebijí vzduch i teplotu, ale ne vítr a déšť.",
+            "co2_otevrit": "Nad touto hodnotou se začne větrat. Bere se nejhorší hodnota z celé oblasti.",
+            "co2_zavrit": "Pod touto hodnotou je vyvětráno. Mezi prahy se schválně nic neděje.",
+            "co2_noc": "V noci se otevírá později, aby to nebudilo a netáhl dovnitř hluk.",
+            "co2_noc_krize": "Nad touto hodnotou se otevře i pod teplotní mezí a v ranním klidu.",
+            "dest_prah": "Nad touto intenzitou deště se okno zavře. Nula znamená, že déšť vadí vždycky. Vysoká hodnota, že tomuhle oknu déšť nevadí — třeba když je pod stříškou.",
+            "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené.",
+            "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
+            "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu."
           },
           "submit": "Další"
         },
@@ -301,7 +327,20 @@
             "klid_stineni_min": "Nejčastěji hýbat jednou za",
             "stineni_rezim": "Kdy smí automatika hýbat žaluziemi",
             "soukromi_kdy": "Zatáhnout po setmění",
-            "zaluzie": "Žaluzie"
+            "zaluzie": "Žaluzie",
+            "okna": "Okna",
+            "projezd_okna_s": "Doba projezdu okna",
+            "kontakt_okna": "Kontakt okna",
+            "zdroj_okenniho": "Okenní senzor pro topení podle",
+            "vynuceno_okno": "Vynucené otevření",
+            "co2_otevrit": "Otevřít nad CO2",
+            "co2_zavrit": "Zavřít pod CO2",
+            "co2_noc": "V noci otevřít nad",
+            "co2_noc_krize": "Nouzově otevřít nad",
+            "dest_prah": "Déšť vadí od",
+            "i_kdyz_nikdo_doma": "Větrat i když nikdo není doma",
+            "t_venku_mistni": "Vlastní venkovní teplota",
+            "rh_venku_mistni": "Vlastní venkovní vlhkost"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -341,7 +380,20 @@
             "klid_stineni_min": "Minimální odstup mezi pohyby žaluzií, aby se lamely nehoupaly při každém mráčku.",
             "stineni_rezim": "Když si žaluzie v této místnosti nastavuješ ručně, vyber „jen když nikdo není doma“. Automatika je pak nechá být, dokud jsi doma. Zatažení po setmění platí i tak.",
             "soukromi_kdy": "Po západu slunce je do rozsvícené místnosti vidět. „Hned“ zatáhne při setmění, „až při pohybu“ počká, dokud někdo do místnosti nepřijde. Zatáhne se jednou a dál se s nimi nehýbe.",
-            "zaluzie": "Žaluzie této místnosti. Můžeš vybrat víc — v dalším kroku pak každé přiřadíš, který její uložený stav plní kterou roli."
+            "zaluzie": "Žaluzie této místnosti. Můžeš vybrat víc — v dalším kroku pak každé přiřadíš, který její uložený stav plní kterou roli.",
+            "okna": "Okna této místnosti. Můžeš vybrat víc, budou se ovládat společně.",
+            "projezd_okna_s": "Jak dlouho pohon jede z jedné krajní polohy do druhé. Během jízdy se věří vlastnímu povelu, ne stavu entity.",
+            "kontakt_okna": "Fyzické čidlo otevření, pokud ho okno má.",
+            "zdroj_okenniho": "Podle čeho se topení dozví, že je otevřeno. Když okno kontakt nemá a ruční otevření topení vypínat nechceš, vyber jen automatiku.",
+            "vynuceno_okno": "Přepínače, kterými okno otevřeš natvrdo. Přebijí vzduch i teplotu, ale ne vítr a déšť.",
+            "co2_otevrit": "Nad touto hodnotou se začne větrat. Bere se nejhorší hodnota z celé oblasti.",
+            "co2_zavrit": "Pod touto hodnotou je vyvětráno. Mezi prahy se schválně nic neděje.",
+            "co2_noc": "V noci se otevírá později, aby to nebudilo a netáhl dovnitř hluk.",
+            "co2_noc_krize": "Nad touto hodnotou se otevře i pod teplotní mezí a v ranním klidu.",
+            "dest_prah": "Nad touto intenzitou deště se okno zavře. Nula znamená, že déšť vadí vždycky. Vysoká hodnota, že tomuhle oknu déšť nevadí — třeba když je pod stříškou.",
+            "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené.",
+            "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
+            "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu."
           },
           "submit": "Další"
         },
@@ -358,83 +410,47 @@
       }
     },
     "zona": {
-      "title": "Zóna",
+      "title": "Oblast",
       "step": {
         "user": {
-          "title": "Větrací zóna",
-          "description": "Zóna přiřazuje okno místnostem. Každá místnost patří právě do jedné zóny.\n\nPříklad: byt má tři místnosti a dvě ovládaná okna. Ložnice má svoje okno, kuchyň taky, obývák žádné. Založíš tři místnosti a dvě zóny — „Kuchyňské okno\" s místnostmi Kuchyně a Obývák, a „Ložnicové okno\" s místností Ložnice. Obě zóny si pak navzájem nastavíš jako sousední, aby se v noci mohly zastoupit.",
+          "title": "Oblast propojených místností",
+          "description": "Oblast jsou místnosti, které spolu dýchají — otevřené dveře, průchozí prostor. Vzduch se v nich míchá, takže se počítá s nejhorší hodnotou z celé oblasti a větrat může kterékoli okno.\n\nOkna, žaluzie i prahy patří místnostem. Oblast sama nic neovládá, jen říká, co spolu souvisí.\n\nMístnost, která s ničím nesousedí, oblast nepotřebuje — rozhoduje se sama za sebe.\n\nPříklad: kuchyň a obývák jsou průchozí, takže tvoří oblast. Ložnice za dveřmi je samostatná, ale obě oblasti si nastavíš jako sousední, aby se v noci mohly zastoupit.",
           "data": {
             "nazev": "Název",
-            "okno": "Okno",
-            "mistnosti": "Místnosti (názvy)",
-            "projezd_s": "Doba projezdu okna",
-            "kontakt": "Kontakt okna",
-            "zdroj_okenniho_senzoru": "Okenní senzor pro topení podle",
-            "vynuceno": "Vynucené otevření",
-            "co2_otevrit": "Otevřít nad",
-            "co2_zavrit": "Zavřít pod",
-            "sousedi": "Sousední zóny",
-            "dvere": "Dveře mezi zónami",
-            "co2_noc": "V noci otevřít nad",
-            "co2_noc_krize": "Nouzově otevřít nad"
+            "mistnosti": "Místnosti",
+            "sousedi": "Sousední oblasti",
+            "dvere": "Dveře mezi oblastmi"
           },
           "data_description": {
-            "nazev": "Jak se zóna jmenuje, například Obývák a kuchyně.",
-            "okno": "Pohon okna, který tato zóna ovládá.",
-            "mistnosti": "Místnosti, o kterých rozhoduje tohle okno. Patří sem ty, které vlastní ovládané okno nemají. Každá místnost smí být jen v jedné zóně.",
-            "projezd_s": "Jak dlouho okno jede z jedné krajní polohy do druhé. Během jízdy se neposílá opačný povel, aby ho pohon nezahodil.",
-            "kontakt": "Fyzické čidlo otevření, pokud ho okno má.",
-            "zdroj_okenniho_senzoru": "Podle čeho se topení dozví, že je otevřeno. Když okno kontakt nemá a ruční otevření topení vypínat nechceš, vyber jen automatiku.",
-            "vynuceno": "Přepínače, kterými okno otevřeš natvrdo bez ohledu na vzduch a teplotu. Nesouvisí s prahy CO2 výše. Přebijí všechno kromě větru.",
-            "co2_otevrit": "Nad touto hodnotou CO2 se začne větrat. Bere se nejvyšší hodnota ze všech místností zóny.",
-            "co2_zavrit": "Pod touto hodnotou je vyvětráno. Mezi oběma prahy se schválně nic neděje, aby okno neposkakovalo.",
-            "sousedi": "Zóny za dveřmi, které mají vlastní okno. Když se v této zóně spí, vyvětrá ji raději soused, aby ti nefoukalo na hlavu. Uplatní se jen v noci. Po přejmenování zóny odkaz zůstane platný.",
-            "dvere": "Čidlo dveří mezi zónami. Při zavřených dveřích se vzduch nevymění, takže se zastupování nepoužije. Bez čidla se předpokládá otevřeno.",
-            "co2_noc": "V noci se otevírá později než přes den, aby to nebudilo a netahalo dovnitř hluk z ulice. Zvyš, když ti okno v noci vadí víc než dusno.",
-            "co2_noc_krize": "Nad touto hodnotou se otevře i pod teplotní mezí a i v době ranního klidu. Jen krátce."
+            "nazev": "Jak se oblast jmenuje, například Obývák a kuchyně.",
+            "mistnosti": "Místnosti, které spolu dýchají. Každá smí být jen v jedné oblasti.",
+            "sousedi": "Oblasti za dveřmi. Když se v této oblasti spí, vyvětrá ji raději soused, aby ti nefoukalo na hlavu. Uplatní se jen v noci.",
+            "dvere": "Čidlo dveří. Při zavřených se zastupování nepoužije. Bez čidla se předpokládá otevřeno."
           },
           "submit": "Uložit zónu"
         },
         "reconfigure": {
-          "title": "Úprava zóny",
-          "description": "Zóna přiřazuje okno místnostem. Každá místnost patří právě do jedné zóny.\n\nPříklad: byt má tři místnosti a dvě ovládaná okna. Ložnice má svoje okno, kuchyň taky, obývák žádné. Založíš tři místnosti a dvě zóny — „Kuchyňské okno\" s místnostmi Kuchyně a Obývák, a „Ložnicové okno\" s místností Ložnice. Obě zóny si pak navzájem nastavíš jako sousední, aby se v noci mohly zastoupit.",
+          "title": "Oblast propojených místností",
+          "description": "Oblast jsou místnosti, které spolu dýchají — otevřené dveře, průchozí prostor. Vzduch se v nich míchá, takže se počítá s nejhorší hodnotou z celé oblasti a větrat může kterékoli okno.\n\nOkna, žaluzie i prahy patří místnostem. Oblast sama nic neovládá, jen říká, co spolu souvisí.\n\nMístnost, která s ničím nesousedí, oblast nepotřebuje — rozhoduje se sama za sebe.\n\nPříklad: kuchyň a obývák jsou průchozí, takže tvoří oblast. Ložnice za dveřmi je samostatná, ale obě oblasti si nastavíš jako sousední, aby se v noci mohly zastoupit.",
           "data": {
             "nazev": "Název",
-            "okno": "Okno",
-            "mistnosti": "Místnosti (názvy)",
-            "projezd_s": "Doba projezdu okna",
-            "kontakt": "Kontakt okna",
-            "zdroj_okenniho_senzoru": "Okenní senzor pro topení podle",
-            "vynuceno": "Vynucené otevření",
-            "co2_otevrit": "Otevřít nad",
-            "co2_zavrit": "Zavřít pod",
-            "sousedi": "Sousední zóny",
-            "dvere": "Dveře mezi zónami",
-            "co2_noc": "V noci otevřít nad",
-            "co2_noc_krize": "Nouzově otevřít nad"
+            "mistnosti": "Místnosti",
+            "sousedi": "Sousední oblasti",
+            "dvere": "Dveře mezi oblastmi"
           },
           "data_description": {
-            "nazev": "Jak se zóna jmenuje, například Obývák a kuchyně.",
-            "okno": "Pohon okna, který tato zóna ovládá.",
-            "mistnosti": "Místnosti, o kterých rozhoduje tohle okno. Patří sem ty, které vlastní ovládané okno nemají. Každá místnost smí být jen v jedné zóně.",
-            "projezd_s": "Jak dlouho okno jede z jedné krajní polohy do druhé. Během jízdy se neposílá opačný povel, aby ho pohon nezahodil.",
-            "kontakt": "Fyzické čidlo otevření, pokud ho okno má.",
-            "zdroj_okenniho_senzoru": "Podle čeho se topení dozví, že je otevřeno. Když okno kontakt nemá a ruční otevření topení vypínat nechceš, vyber jen automatiku.",
-            "vynuceno": "Přepínače, kterými okno otevřeš natvrdo bez ohledu na vzduch a teplotu. Nesouvisí s prahy CO2 výše. Přebijí všechno kromě větru.",
-            "co2_otevrit": "Nad touto hodnotou CO2 se začne větrat. Bere se nejvyšší hodnota ze všech místností zóny.",
-            "co2_zavrit": "Pod touto hodnotou je vyvětráno. Mezi oběma prahy se schválně nic neděje, aby okno neposkakovalo.",
-            "sousedi": "Zóny za dveřmi, které mají vlastní okno. Když se v této zóně spí, vyvětrá ji raději soused, aby ti nefoukalo na hlavu. Uplatní se jen v noci. Po přejmenování zóny odkaz zůstane platný.",
-            "dvere": "Čidlo dveří mezi zónami. Při zavřených dveřích se vzduch nevymění, takže se zastupování nepoužije. Bez čidla se předpokládá otevřeno.",
-            "co2_noc": "V noci se otevírá později než přes den, aby to nebudilo a netahalo dovnitř hluk z ulice. Zvyš, když ti okno v noci vadí víc než dusno.",
-            "co2_noc_krize": "Nad touto hodnotou se otevře i pod teplotní mezí a i v době ranního klidu. Jen krátce."
+            "nazev": "Jak se oblast jmenuje, například Obývák a kuchyně.",
+            "mistnosti": "Místnosti, které spolu dýchají. Každá smí být jen v jedné oblasti.",
+            "sousedi": "Oblasti za dveřmi. Když se v této oblasti spí, vyvětrá ji raději soused, aby ti nefoukalo na hlavu. Uplatní se jen v noci.",
+            "dvere": "Čidlo dveří. Při zavřených se zastupování nepoužije. Bez čidla se předpokládá otevřeno."
           },
           "submit": "Uložit"
         }
       },
-      "entry_type": "Zóna",
+      "entry_type": "Oblast",
       "initiate_flow": {
-        "user": "Přidat zónu",
-        "reconfigure": "Upravit zónu"
+        "user": "Přidat oblast",
+        "reconfigure": "Upravit oblast"
       },
       "error": {
         "mistnost_uz_ma_zonu": "Některá z vybraných místností už patří jiné zóně. Každá místnost smí být jen v jedné."
@@ -513,6 +529,9 @@
       },
       "prumer_tri_dny": {
         "name": "Venkovní teplota, třídenní průměr"
+      },
+      "stav_oblasti": {
+        "name": "Sdílený vzduch"
       }
     },
     "binary_sensor": {
@@ -525,11 +544,11 @@
       "klid": {
         "name": "Klid"
       },
-      "vetra_se": {
-        "name": "Větrá se"
-      },
       "topna_sezona": {
         "name": "Topná sezóna"
+      },
+      "okno": {
+        "name": "Okno"
       }
     },
     "number": {

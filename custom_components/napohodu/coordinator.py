@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import copy
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
@@ -23,17 +23,18 @@ from . import (core, pritomnost as pr, prumery as pm, slunce as sl,
 from .const import (
     CONF_AZIMUT, CONF_CIL_MAX, CONF_CIL_MIN, CONF_CO2, CONF_CO2_NOC,
     CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT, CONF_DEST,
-    CONF_DOBEH, CONF_DOMA, CONF_DVERE, CONF_INDICIE_DOBEH,
-    CONF_INDICIE_STAV, CONF_INDICIE_VYKON, CONF_KLID_STINENI_MIN,
-    CONF_KOMFORT_ODSTUP, CONF_KVALITA, CONF_MAX_STARI, CONF_MISTNOSTI,
-    CONF_NARAZ, CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN,
-    CONF_NOC_OD, CONF_ODCHYLKA, CONF_OKNO, CONF_PLOCHA, CONF_PM10,
-    CONF_PM25, CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRIORITA,
-    CONF_PRITOMNOST, CONF_PROJEZD, CONF_RH_VENKU, CONF_SEZONA_HYSTEREZE,
+    CONF_DEST_PRAH, CONF_DOBEH, CONF_DOMA, CONF_DVERE, CONF_INDICIE_DOBEH,
+    CONF_INDICIE_STAV, CONF_INDICIE_VYKON, CONF_I_KDYZ_NIKDO,
+    CONF_KLID_STINENI_MIN, CONF_KOMFORT_ODSTUP, CONF_KVALITA,
+    CONF_MAX_STARI, CONF_MISTNOSTI, CONF_NARAZ, CONF_NARAZ_PRAH,
+    CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD, CONF_ODCHYLKA,
+    CONF_OKNA, CONF_PLOCHA, CONF_PM10, CONF_PM25, CONF_PM_PLATNY,
+    CONF_PRAH_VYKONU, CONF_PRIORITA, CONF_PRITOMNOST, CONF_PROJEZD_M,
+    CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_SEZONA_HYSTEREZE,
     CONF_SEZONA_PRAH, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
     CONF_STINENI_MAPA, CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
-    CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU, CONF_VITR,
-    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYNUCENO, CONF_ZALUZIE,
+    CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_VITR,
+    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE,
     CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
     CONF_ZDROJ_OBSAZENOSTI, DOMAIN, INTERVAL_S, PODENTITA_MISTNOST,
     PODENTITA_ZONA,
@@ -46,11 +47,13 @@ NEPLATNE = ("unknown", "unavailable", "none", "")
 
 @dataclass
 class VysledekZony:
-    """Co koordinátor spočítal pro jednu zónu."""
+    """Co koordinátor spočítal pro jednu oblast.
+
+    Oblast sama nic neovládá. Jen sdílí vzduch mezi místnostmi a řeší
+    zastupování v noci, aby se v ložnici nemuselo otevírat.
+    """
 
     nazev: str
-    rozhodnuti: core.Rozhodnuti | None = None
-    otevreno: bool = False
     mistnosti: list[str] = field(default_factory=list)
     atributy: dict = field(default_factory=dict)
 
@@ -58,6 +61,7 @@ class VysledekZony:
 @dataclass
 class VysledekMistnosti:
     nazev: str
+    rozhodnuti: core.Rozhodnuti | None = None
     cil: float = 22.0
     obsazeno: bool = True
     klid: bool = False
@@ -220,21 +224,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     # ------------------------------------------------------------ hlavní
 
-    async def _async_update_data(self):
-        g = {**self.entry.data, **self.entry.options}
+    def _vitr(self, g: dict, vitr: float, naraz: float) -> bool:
+        """Nárazy mají vlastní práh, protože pohon poškodí dřív než průměr.
 
-        t_out = self._cislo(g.get(CONF_T_VENKU), 15.0)
-        self.prumery.aktualizuj(self._cislo(g.get(CONF_T_VENKU)),
-                                dt_util.utcnow().timestamp())
-        self._uloziste.async_delay_save(self.prumery.jako_slovnik, 300)
-        rh_out = self._cislo(g.get(CONF_RH_VENKU), 50.0)
-        dest = self._cislo(g.get(CONF_DEST), 0.0)
-        doma = self._zapnuto(g.get(CONF_DOMA))
-        doma = True if doma is None else doma
-
-        # Náraz poškodí pohon dřív než stálý vítr, proto vlastní práh.
-        vitr = self._cislo(g.get(CONF_VITR), 0.0) or 0.0
-        naraz = self._cislo(g.get(CONF_NARAZ), vitr) or 0.0
+        Blokace povolí, až když obě hodnoty klesnou pod uklidňovací mez —
+        jinak by se to na hraně překlápělo.
+        """
         prah_v = float(g.get(CONF_VITR_PRAH, 7.0))
         prah_n = float(g.get(CONF_NARAZ_PRAH, 11.0))
         klid_v = float(g.get(CONF_VITR_KLID, 5.0))
@@ -242,267 +237,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if vitr > prah_v or naraz > prah_n:
             self.vitr_blokuje = True
         elif vitr < klid_v and naraz < klid_v:
-            self.vitr_blokuje = False       # hystereze, ať to nekmitá
-        vitr_blokuje = self.vitr_blokuje
-
-        slunce_az, slunce_el = self._poloha_slunce()
-        jasno = pr.oblacnost(self._cislo(g.get(CONF_ZARENI)), slunce_el)
-
-        ted = dt_util.now()
-        hodina = ted.hour + ted.minute / 60
-        cas_s = dt_util.utcnow().timestamp()
-        cil_zakl = self._cil_zakladni(g)
-        self.topna_sezona = self._sezona(g)
-
-        noc_od = self._hodina(g.get(CONF_NOC_OD), 22.0)
-        noc_do = self._hodina(g.get(CONF_NOC_DO), 6.5)
-
-        # ---------- místnosti ----------
-        self.mistnosti = {}
-        for p in self._podentity(PODENTITA_MISTNOST):
-            d = p.data
-            jmeno = d.get(CONF_NAZEV, p.title)
-            odchylka = self.hodnota(p.subentry_id, CONF_ODCHYLKA,
-                                    float(d.get(CONF_ODCHYLKA, 0.0)))
-            sig = self._signaly(d, doma, hodina, noc_od, noc_do)
-            nast = self._nastaveni_pritomnosti(d)
-
-            m = VysledekMistnosti(
-                nazev=jmeno,
-                cil=round(cil_zakl + odchylka, 1),
-                obsazeno=pr.obsazeno(sig, nast),
-                klid=pr.klid(sig, nast),
-            )
-            if not d.get(CONF_ZALUZIE) and d.get(CONF_ZALUZIE_STARE):
-                d = {**d, CONF_ZALUZIE: d[CONF_ZALUZIE_STARE]}
-
-            okno_m = sl.Okno(
-                nazev=p.title,
-                azimut=float(d.get(CONF_AZIMUT, 180)),
-                plocha=float(d.get(CONF_PLOCHA, 1.0)),
-            )
-            m.slunce = round(sl.dopad(okno_m, slunce_az, slunce_el, jasno))
-
-            m.atributy = {
-                "teplota_min": self._min(d.get(CONF_TEPLOTY)),
-                "teplota_max": self._max(d.get(CONF_TEPLOTY)),
-                "co2": self._max(d.get(CONF_CO2)),
-                "indicie": pr.indicie_aktivni(sig, nast),
-                "zdroj_obsazenosti": d.get(CONF_ZDROJ_OBSAZENOSTI, "vzdy"),
-            }
-
-            # ---------- stínění místnosti ----------
-            vyk_m = self.vykonavaci.setdefault(
-                p.subentry_id, vy.Vykonavac(self.hass, p.subentry_id))
-            if self.hodnoty.get((p.subentry_id, "ovladat_stineni"), 0.0) > 0:
-                t_max = m.atributy["teplota_max"]
-                t_min = m.atributy["teplota_min"]
-                role = vy.role_stineni(
-                    m.slunce, 150.0,
-                    t_max is not None and t_max > m.cil + 0.5,
-                    t_min is not None and t_min < m.cil - 0.5,
-                    doma,
-                    rezim=d.get(CONF_STINENI_REZIM, "vzdy"),
-                    po_zapadu=slunce_el < 0,
-                    pohyb=bool(sig.cidlo) or bool(
-                        pr.indicie_aktivni(sig, nast)),
-                    soukromi_kdy=d.get(CONF_SOUKROMI_KDY, "nikdy"))
-                mapa = d.get(CONF_STINENI_MAPA) or {}
-                cile = vy.cile_zaluzii(role, mapa)
-                stin = await vyk_m.stineni(
-                    cile, cas_s, float(d.get(CONF_KLID_STINENI_MIN, 15)))
-                m.atributy["stineni"] = stin
-                m.atributy["role_stineni"] = role
-                if stin:
-                    self._uloziste_stineni.async_delay_save(
-                        self._uloz_stineni, 10)
-            m.atributy["stineni_stav"] = dict(vyk_m.stav.posledni_stineni)
-
-            self.mistnosti[p.subentry_id] = m
-
-        # ---------- zóny: nejdřív posbírat, pak přerozdělit ----------
-        priprava = {}
-        for p in self._podentity(PODENTITA_ZONA):
-            podentity = [self._mistnost(j)
-                         for j in (p.data.get(CONF_MISTNOSTI) or [])]
-            podentity = [x for x in podentity if x]
-            co2 = []
-            for mp in podentity:
-                co2 += list(mp.data.get(CONF_CO2) or [])
-            klid = any(self.mistnosti[mp.subentry_id].klid for mp in podentity)
-            dvere = [self._zapnuto(e) for e in (p.data.get(CONF_DVERE) or [])]
-            priprava[p.subentry_id] = so.ZonaStav(
-                id=p.subentry_id, nazev=p.title,
-                co2=self._max(co2, 450.0), klid=klid,
-                muze_vetrat=not vitr_blokuje and doma,
-                sousedi=[q.subentry_id for q in self._podentity(PODENTITA_ZONA)
-                         if q.subentry_id in (p.data.get(CONF_SOUSEDI) or [])
-                         or q.title in (p.data.get(CONF_SOUSEDI) or [])],
-                dvere_otevrene=all(d is not False for d in dvere),
-            )
-        upravy = so.prerozdel(list(priprava.values()))
-
-        self.zony = {}
-        for p in self._podentity(PODENTITA_ZONA):
-            d = p.data
-            jmena = d.get(CONF_MISTNOSTI) or []
-            podentity = [self._mistnost(j) for j in jmena]
-            podentity = [x for x in podentity if x]
-
-            teploty, co2, pm25, pm10 = [], [], [], []
-            spanek = False
-            pm_platny, kvalita = None, None
-            for mp in podentity:
-                md = mp.data
-                teploty += list(md.get(CONF_TEPLOTY) or [])
-                co2 += list(md.get(CONF_CO2) or [])
-                pm25 += list(md.get(CONF_PM25) or [])
-                pm10 += list(md.get(CONF_PM10) or [])
-                spanek = spanek or bool(self._zapnuto(md.get(CONF_SPANEK)))
-                if md.get(CONF_PM_PLATNY) and pm_platny is None:
-                    pm_platny = self._zapnuto(md.get(CONF_PM_PLATNY))
-                if md.get(CONF_KVALITA) and kvalita is None:
-                    st = self._stav(md.get(CONF_KVALITA))
-                    kvalita = st.state if st else None
-
-            cil = min((self.mistnosti[mp.subentry_id].cil for mp in podentity),
-                      default=cil_zakl)
-            noc_min = min((self.hodnota(mp.subentry_id, CONF_NOC_MIN,
-                                        float(mp.data.get(CONF_NOC_MIN, 18)))
-                           for mp in podentity), default=18.0)
-            odstup = min((float(mp.data.get(CONF_KOMFORT_ODSTUP, 4.0))
-                          for mp in podentity), default=4.0)
-            # nejnižší priorita v zóně rozhoduje: kdo chce teplo, ten vyhrává
-            priorita = min((self.hodnota(mp.subentry_id, CONF_PRIORITA, 5.0)
-                            for mp in podentity), default=5.0)
-            den_pokles, noc_pokles = core.z_priority(priorita)
-
-            vynuceno = any(self._zapnuto(e)
-                           for e in (d.get(CONF_VYNUCENO) or []))
-            uprava = upravy.get(p.subentry_id, so.Uprava())
-
-            v = core.Vstup(
-                co2=max(self._max(co2, 450.0), uprava.prevzate_co2),
-                pm25=self._max(pm25, 0.0),
-                pm10=self._max(pm10, 0.0),
-                pm_platny=True if pm_platny is None else pm_platny,
-                kvalita=kvalita,
-                t_in=self._min(teploty, 21.0),
-                t_in_max=self._max(teploty, None),
-                t_out=t_out, rh_out=rh_out, cil=cil,
-                dest=dest, vitr_blokuje=vitr_blokuje,
-                doma=doma, spanek=spanek, vynuceno=vynuceno,
-                hodina=hodina, cas_s=cas_s,
-                zastupce=uprava.zastupce is not None,
-            )
-            nast = core.Nastaveni(
-                co2_otevrit=self.hodnota(p.subentry_id, CONF_CO2_OTEVRIT,
-                                         float(d.get(CONF_CO2_OTEVRIT, 800))),
-                co2_zavrit=self.hodnota(p.subentry_id, CONF_CO2_ZAVRIT,
-                                        float(d.get(CONF_CO2_ZAVRIT, 700))),
-                co2_noc=self.hodnota(p.subentry_id, CONF_CO2_NOC,
-                                     float(d.get(CONF_CO2_NOC, 1000))),
-                co2_noc_krize=self.hodnota(
-                    p.subentry_id, CONF_CO2_NOC_KRIZE,
-                    float(d.get(CONF_CO2_NOC_KRIZE, 1250))),
-                projezd_s=float(d.get(CONF_PROJEZD, 120)),
-                nocni_min=noc_min,
-                denni_pokles=den_pokles,
-                nocni_pokles=noc_pokles,
-                komfort_odstup=odstup,
-                noc_od=noc_od, noc_do=noc_do,
-            )
-
-            ovladat = self.hodnoty.get((p.subentry_id, "ovladat"), 0.0) > 0
-            pamet = self.pameti.setdefault(p.subentry_id, core.Pamet())
-            projezd = float(d.get(CONF_PROJEZD, 120))
-            skutecne = self._okno_otevreno(d.get(CONF_OKNO), pamet, cas_s,
-                                           projezd)
-            # po dojezdu se povel a skutečnost musí shodovat
-            if (ovladat and cas_s - pamet.cas_povelu_s > projezd * 2
-                    and pamet.otevreno != skutecne):
-                _LOGGER.warning(
-                    "NaPohodu: %s hlásí %s, ale posledním povelem bylo %s",
-                    p.title, "otevřeno" if skutecne else "zavřeno",
-                    "otevřít" if pamet.otevreno else "zavřít")
-            pamet.otevreno = skutecne
-
-            if ovladat:
-                r = core.rozhodni(v, pamet, nast)
-            else:
-                # Bez ovládání se paměť měnit nesmí. Jádro si jinak zapíše,
-                # že okno otevřelo, další cyklus přečte skutečnost a stav
-                # se překlápí sem a tam.
-                zaloha = copy.deepcopy(pamet)
-                r = core.rozhodni(v, pamet, nast)
-                naucene = pamet.pm_prumer
-                self.pameti[p.subentry_id] = zaloha
-                zaloha.pm_prumer = naucene
-                zaloha.otevreno = skutecne
-                pamet = zaloha
-
-            z = VysledekZony(
-                nazev=d.get(CONF_NAZEV, p.title),
-                rozhodnuti=r,
-                otevreno=skutecne,
-                mistnosti=[mp.title for mp in podentity],
-            )
-            # ---------- vykonání ----------
-            vyk = self.vykonavaci.setdefault(
-                p.subentry_id, vy.Vykonavac(self.hass, p.subentry_id))
-            provedeno = None
-            if ovladat:
-                provedeno = await vyk.okno(d.get(CONF_OKNO), r, cas_s, skutecne)
-
-
-            z.atributy = {
-                "co2": v.co2,
-                "provedeno": provedeno,
-                "uvnitr": r.t_in_korig,
-                "uvnitr_max": v.t_in_max,
-                "korekce": r.korekce,
-                "venku": t_out,
-                "cil": cil,
-                "rosny_bod": r.rosny_bod,
-                "rezim": pamet.rezim,
-                "vetra_se": skutecne,
-                "ovladani": "zapnuto" if ovladat else "jen sleduje",
-                "jasno": round(jasno, 2),
-                "vynuceno": vynuceno,
-                "vitr_blokuje": vitr_blokuje,
-                "mistnosti": z.mistnosti,
-                "navrh": r.akce.value,
-                "zastupce": uprava.zastupce,
-                "vetra_i_za": uprava.za_koho,
-                "topna_sezona": self.topna_sezona,
-            }
-            self.zony[p.subentry_id] = z
-
-            for mp in podentity:
-                self.mistnosti[mp.subentry_id].okno_otevreno = skutecne
-
-        return {"zony": self.zony, "mistnosti": self.mistnosti}
-
-    def _vitr(self, g: dict, vitr: float, naraz: float) -> bool:
-        """Nárazy mají vlastní práh, protože pohon poškodí dřív než průměr.
-
-        Hystereze brání překlápění na hraně: blokace povolí, až když obě
-        hodnoty klesnou o kus pod svůj práh.
-        """
-        prah_v = float(g.get(CONF_VITR_PRAH, 7.0))
-        prah_n = float(g.get(CONF_NARAZ_PRAH, 11.0))
-        klid = float(g.get(CONF_VITR_KLID, 5.0))
-
-        if vitr > prah_v or naraz > prah_n:
-            self.vitr_blokuje = True
-        elif vitr < klid and naraz < klid:
             self.vitr_blokuje = False
         return self.vitr_blokuje
 
     def _sezona(self, g: dict) -> bool:
         """Topná sezóna podle třídenního průměru, s hysterezí kolem prahu.
 
-        Bez vlastní entity se použije týdenní průměr, který stejně máme.
+        Bez vlastní entity se použije počítaný průměr.
         """
         prah = float(g.get(CONF_SEZONA_PRAH, 15.0))
         hyst = float(g.get(CONF_SEZONA_HYSTEREZE, 1.0))
@@ -518,6 +259,274 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if t > prah + hyst / 2:
             return False
         return self.topna_sezona          # v pásmu se nemění
+
+    async def _async_update_data(self):
+        """Jeden cyklus: přečti stav, rozhodni za každou místnost, vykonej.
+
+        Rozhoduje se za místnost, protože okna patří místnosti. Oblast
+        do toho vstupuje jen tím, že sdílí vzduch mezi místnostmi, které
+        spolu dýchají, a řeší noční zastupování.
+        """
+        g = {**self.entry.data, **self.entry.options}
+
+        # ---------- společné venku ----------
+        t_out = self._cislo(g.get(CONF_T_VENKU), 15.0)
+        self.prumery.aktualizuj(self._cislo(g.get(CONF_T_VENKU)),
+                                dt_util.utcnow().timestamp())
+        self._uloziste.async_delay_save(self.prumery.jako_slovnik, 300)
+        rh_out = self._cislo(g.get(CONF_RH_VENKU), 50.0)
+        dest = self._cislo(g.get(CONF_DEST), 0.0) or 0.0
+        doma = self._zapnuto(g.get(CONF_DOMA))
+        doma = True if doma is None else doma
+
+        vitr = self._cislo(g.get(CONF_VITR), 0.0) or 0.0
+        naraz = self._cislo(g.get(CONF_NARAZ), vitr) or 0.0
+        vitr_blokuje = self._vitr(g, vitr, naraz)
+
+        slunce_az, slunce_el = self._poloha_slunce()
+        jasno = pr.oblacnost(self._cislo(g.get(CONF_ZARENI)), slunce_el)
+
+        ted = dt_util.now()
+        hodina = ted.hour + ted.minute / 60
+        cas_s = dt_util.utcnow().timestamp()
+        cil_zakl = self._cil_zakladni(g)
+        self.topna_sezona = self._sezona(g)
+        noc_od = self._hodina(g.get(CONF_NOC_OD), 22.0)
+        noc_do = self._hodina(g.get(CONF_NOC_DO), 6.5)
+        je_noc = ((hodina >= noc_od or hodina < noc_do) if noc_od > noc_do
+                  else (noc_od <= hodina < noc_do))
+
+        # ---------- 1. základ každé místnosti ----------
+        self.mistnosti = {}
+        podklady: dict[str, dict] = {}
+        for p in self._podentity(PODENTITA_MISTNOST):
+            d = dict(p.data)
+            if not d.get(CONF_ZALUZIE) and d.get(CONF_ZALUZIE_STARE):
+                d[CONF_ZALUZIE] = d[CONF_ZALUZIE_STARE]
+
+            jmeno = d.get(CONF_NAZEV, p.title)
+            odchylka = self.hodnota(p.subentry_id, CONF_ODCHYLKA,
+                                    float(d.get(CONF_ODCHYLKA, 0.0)))
+            sig = self._signaly(d, doma, hodina, noc_od, noc_do)
+            nast_pr = self._nastaveni_pritomnosti(d)
+
+            m = VysledekMistnosti(
+                nazev=jmeno,
+                cil=round(cil_zakl + odchylka, 1),
+                obsazeno=pr.obsazeno(sig, nast_pr),
+                klid=pr.klid(sig, nast_pr),
+            )
+            okno_m = sl.Okno(nazev=p.title,
+                             azimut=float(d.get(CONF_AZIMUT, 180)),
+                             plocha=float(d.get(CONF_PLOCHA, 1.0)))
+            m.slunce = round(sl.dopad(okno_m, slunce_az, slunce_el, jasno))
+            m.atributy = {
+                "teplota_min": self._min(d.get(CONF_TEPLOTY)),
+                "teplota_max": self._max(d.get(CONF_TEPLOTY)),
+                "co2_vlastni": self._max(d.get(CONF_CO2)),
+                "indicie": pr.indicie_aktivni(sig, nast_pr),
+            }
+            self.mistnosti[p.subentry_id] = m
+            podklady[p.subentry_id] = {"pod": p, "d": d, "sig": sig,
+                                       "nast": nast_pr}
+
+        # ---------- 2. okruhy: oblasti plus samostatné místnosti ----------
+        okruhy = []
+        v_oblasti = set()
+        for z in self._podentity(PODENTITA_ZONA):
+            cleni = [self._mistnost(j) for j in (z.data.get(CONF_MISTNOSTI) or [])]
+            cleni = [x for x in cleni if x and x.subentry_id in podklady]
+            if not cleni:
+                continue
+            v_oblasti.update(x.subentry_id for x in cleni)
+            okruhy.append({"id": z.subentry_id, "nazev": z.title,
+                           "pod": z, "cleni": cleni})
+        for pid, u in podklady.items():
+            if pid not in v_oblasti:
+                okruhy.append({"id": pid, "nazev": u["pod"].title,
+                               "pod": None, "cleni": [u["pod"]]})
+
+        # sdílený vzduch: rozhoduje nejhorší hodnota v okruhu
+        for o in okruhy:
+            co2, pm25, pm10, kvalita, pm_platny, spanek = [], [], [], None, None, False
+            for mp in o["cleni"]:
+                md = podklady[mp.subentry_id]["d"]
+                co2 += list(md.get(CONF_CO2) or [])
+                pm25 += list(md.get(CONF_PM25) or [])
+                pm10 += list(md.get(CONF_PM10) or [])
+                spanek = spanek or bool(self._zapnuto(md.get(CONF_SPANEK)))
+                if md.get(CONF_PM_PLATNY) and pm_platny is None:
+                    pm_platny = self._zapnuto(md.get(CONF_PM_PLATNY))
+                if md.get(CONF_KVALITA) and kvalita is None:
+                    st = self._stav(md.get(CONF_KVALITA))
+                    kvalita = st.state if st else None
+            o["co2"] = self._max(co2, 450.0)
+            o["pm25"] = self._max(pm25, 0.0)
+            o["pm10"] = self._max(pm10, 0.0)
+            o["kvalita"] = kvalita
+            o["pm_platny"] = True if pm_platny is None else pm_platny
+            o["spanek"] = spanek
+            o["klid"] = any(self.mistnosti[x.subentry_id].klid
+                            for x in o["cleni"])
+
+        # ---------- 3. zastupování mezi oblastmi ----------
+        stavy = []
+        for o in okruhy:
+            data = o["pod"].data if o["pod"] else {}
+            dvere = [self._zapnuto(e) for e in (data.get(CONF_DVERE) or [])]
+            sousedi = [q["id"] for q in okruhy
+                       if q["pod"] is not None
+                       and q["pod"].subentry_id in (data.get(CONF_SOUSEDI) or [])]
+            stavy.append(so.ZonaStav(
+                id=o["id"], nazev=o["nazev"], co2=o["co2"], klid=o["klid"],
+                muze_vetrat=not vitr_blokuje and doma, sousedi=sousedi,
+                dvere_otevrene=all(x is not False for x in dvere)))
+        upravy = so.prerozdel(stavy)
+
+        # ---------- 4. rozhodnutí a vykonání za místnost ----------
+        for o in okruhy:
+            uprava = upravy.get(o["id"], so.Uprava())
+            for mp in o["cleni"]:
+                await self._mistnost_krok(
+                    mp, podklady[mp.subentry_id], o, uprava,
+                    t_out, rh_out, dest, doma, vitr_blokuje, je_noc,
+                    hodina, cas_s, noc_od, noc_do, slunce_el)
+
+        # ---------- 5. přehled oblasti ----------
+        self.zony = {}
+        for o in okruhy:
+            if o["pod"] is None:
+                continue
+            uprava = upravy.get(o["id"], so.Uprava())
+            z = VysledekZony(nazev=o["nazev"],
+                             mistnosti=[x.title for x in o["cleni"]])
+            z.atributy = {
+                "co2": o["co2"], "pm25": o["pm25"], "kvalita": o["kvalita"],
+                "spi_se": o["spanek"], "klid": o["klid"],
+                "zastupce": uprava.zastupce, "vetra_i_za": uprava.za_koho,
+                "mistnosti": z.mistnosti,
+            }
+            self.zony[o["id"]] = z
+
+        return {"zony": self.zony, "mistnosti": self.mistnosti}
+
+    async def _mistnost_krok(self, p, u, okruh, uprava, t_out, rh_out, dest,
+                             doma, vitr_blokuje, je_noc, hodina, cas_s,
+                             noc_od, noc_do, slunce_el):
+        """Rozhodne o oknech jedné místnosti a případně je ovládne."""
+        d = u["d"]
+        m = self.mistnosti[p.subentry_id]
+        okna = d.get(CONF_OKNA) or []
+
+        # místní čidla přebíjejí fasádu — balkon má jiný vzduch
+        t_ven = self._cislo(d.get(CONF_T_VENKU_M), t_out)
+        rh_ven = self._cislo(d.get(CONF_RH_VENKU_M), rh_out)
+
+        # déšť: každé okno snese jinak, u některých nevadí vůbec
+        prah_deste = float(d.get(CONF_DEST_PRAH, 0.3))
+        i_kdyz_nikdo = bool(d.get(CONF_I_KDYZ_NIKDO, False))
+
+        vynuceno = any(self._zapnuto(e) for e in (d.get(CONF_VYNUCENO_M) or []))
+
+        v = core.Vstup(
+            co2=max(okruh["co2"], uprava.prevzate_co2),
+            pm25=okruh["pm25"], pm10=okruh["pm10"],
+            pm_platny=okruh["pm_platny"], kvalita=okruh["kvalita"],
+            t_in=self._min(d.get(CONF_TEPLOTY), 21.0),
+            t_in_max=self._max(d.get(CONF_TEPLOTY), None),
+            t_out=t_ven, rh_out=rh_ven, cil=m.cil,
+            dest=dest, vitr_blokuje=vitr_blokuje,
+            doma=doma or i_kdyz_nikdo,
+            spanek=okruh["spanek"], vynuceno=vynuceno,
+            hodina=hodina, cas_s=cas_s,
+            zastupce=uprava.zastupce is not None,
+        )
+        nast = core.Nastaveni(
+            co2_otevrit=self.hodnota(p.subentry_id, CONF_CO2_OTEVRIT,
+                                     float(d.get(CONF_CO2_OTEVRIT, 800))),
+            co2_zavrit=self.hodnota(p.subentry_id, CONF_CO2_ZAVRIT,
+                                    float(d.get(CONF_CO2_ZAVRIT, 700))),
+            co2_noc=self.hodnota(p.subentry_id, CONF_CO2_NOC,
+                                 float(d.get(CONF_CO2_NOC, 1000))),
+            co2_noc_krize=self.hodnota(p.subentry_id, CONF_CO2_NOC_KRIZE,
+                                       float(d.get(CONF_CO2_NOC_KRIZE, 1250))),
+            dest_prah=prah_deste,
+            projezd_s=float(d.get(CONF_PROJEZD_M, 120)),
+            nocni_min=self.hodnota(p.subentry_id, CONF_NOC_MIN,
+                                   float(d.get(CONF_NOC_MIN, 18))),
+            komfort_odstup=float(d.get(CONF_KOMFORT_ODSTUP, 4.0)),
+            noc_od=noc_od, noc_do=noc_do,
+        )
+        den_pokles, noc_pokles = core.z_priority(
+            self.hodnota(p.subentry_id, CONF_PRIORITA, 5.0))
+        nast = replace(nast, denni_pokles=den_pokles, nocni_pokles=noc_pokles)
+
+        vyk = self.vykonavaci.setdefault(
+            p.subentry_id, vy.Vykonavac(self.hass, p.subentry_id))
+        ovladat = self.hodnoty.get((p.subentry_id, "ovladat"), 0.0) > 0
+        pamet = self.pameti.setdefault(p.subentry_id, core.Pamet())
+
+        prvni_okno = okna[0] if okna else None
+        projezd = float(d.get(CONF_PROJEZD_M, 120))
+        skutecne = self._okno_otevreno(prvni_okno, pamet, cas_s, projezd)
+        pamet.otevreno = skutecne
+
+        if ovladat and okna:
+            r = core.rozhodni(v, pamet, nast)
+        else:
+            zaloha = copy.deepcopy(pamet)
+            r = core.rozhodni(v, pamet, nast)
+            naucene = pamet.pm_prumer
+            self.pameti[p.subentry_id] = zaloha
+            zaloha.pm_prumer = naucene
+            zaloha.otevreno = skutecne
+            pamet = zaloha
+
+        provedeno = None
+        if ovladat and okna:
+            for okno in okna:
+                vysledek = await vyk.okno(okno, r, cas_s, skutecne)
+                provedeno = vysledek or provedeno
+
+        m.rozhodnuti = r
+        m.okno_otevreno = skutecne
+        m.atributy.update({
+            "co2": v.co2, "uvnitr": r.t_in_korig, "korekce": r.korekce,
+            "venku": t_ven, "rosny_bod": r.rosny_bod, "rezim": pamet.rezim,
+            "navrh": r.akce.value, "provedeno": provedeno,
+            "ovladani": "zapnuto" if ovladat else "jen sleduje",
+            "oblast": okruh["nazev"] if okruh["pod"] else None,
+            "zastupce": uprava.zastupce,
+            "okna": okna,
+        })
+
+        await self._stineni_krok(p, d, u, m, doma, slunce_el, cas_s)
+
+    async def _stineni_krok(self, p, d, u, m, doma, slunce_el, cas_s):
+        """Rozhodne o žaluziích místnosti. Slunce svítí do pokoje, ne do oblasti."""
+        vyk_m = self.vykonavaci.setdefault(
+            p.subentry_id, vy.Vykonavac(self.hass, p.subentry_id))
+        if self.hodnoty.get((p.subentry_id, "ovladat_stineni"), 0.0) > 0:
+            t_max = m.atributy.get("teplota_max")
+            t_min = m.atributy.get("teplota_min")
+            role = vy.role_stineni(
+                m.slunce, 150.0,
+                t_max is not None and t_max > m.cil + 0.5,
+                t_min is not None and t_min < m.cil - 0.5,
+                doma,
+                rezim=d.get(CONF_STINENI_REZIM, "vzdy"),
+                po_zapadu=slunce_el < 0,
+                pohyb=bool(u["sig"].cidlo)
+                or bool(pr.indicie_aktivni(u["sig"], u["nast"])),
+                soukromi_kdy=d.get(CONF_SOUKROMI_KDY, "nikdy"))
+            cile = vy.cile_zaluzii(role, d.get(CONF_STINENI_MAPA) or {})
+            stin = await vyk_m.stineni(
+                cile, cas_s, float(d.get(CONF_KLID_STINENI_MIN, 15)))
+            m.atributy["stineni"] = stin
+            m.atributy["role_stineni"] = role
+            if stin:
+                self._uloziste_stineni.async_delay_save(self._uloz_stineni, 10)
+        m.atributy["stineni_stav"] = dict(vyk_m.stav.posledni_stineni)
 
     # ------------------------------------------------------------ detaily
 

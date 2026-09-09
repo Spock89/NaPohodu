@@ -10,7 +10,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from homeassistant.helpers.device_registry import DeviceInfo
 
-from .const import DOMAIN, PODENTITA_MISTNOST, PODENTITA_ZONA
+from .const import DOMAIN, PODENTITA_MISTNOST
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .entity import NaPohoduEntity
@@ -21,10 +21,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     k = hass.data[DOMAIN][entry.entry_id]
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_MISTNOST:
-            pridat([OknoOtevreno(k, pod), Obsazeno(k, pod), Klid(k, pod)],
-                   config_subentry_id=pod.subentry_id)
-        elif pod.subentry_type == PODENTITA_ZONA:
-            pridat([VetraSe(k, pod)], config_subentry_id=pod.subentry_id)
+            pridat([OknoOtevreno(k, pod), Obsazeno(k, pod), Klid(k, pod),
+                    Okno(k, pod)], config_subentry_id=pod.subentry_id)
     pridat([TopnaSezona(k, entry)])
 
 
@@ -77,16 +75,18 @@ class Klid(NaPohoduEntity, BinarySensorEntity):
         return bool(m and m.klid)
 
 
-class VetraSe(NaPohoduEntity, BinarySensorEntity):
-    _attr_device_class = BinarySensorDeviceClass.OPENING
+class Okno(NaPohoduEntity, BinarySensorEntity):
+    """Skutečný stav oken místnosti."""
+
+    _attr_device_class = BinarySensorDeviceClass.WINDOW
 
     def __init__(self, k, pod):
-        super().__init__(k, pod, "vetra_se")
+        super().__init__(k, pod, "okno")
 
     @property
     def is_on(self) -> bool:
-        z = self.zona
-        return bool(z and z.otevreno)
+        m = self.mistnost
+        return bool(m and m.okno_otevreno)
 
 
 class TopnaSezona(CoordinatorEntity, BinarySensorEntity):

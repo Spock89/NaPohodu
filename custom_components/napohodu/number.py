@@ -14,7 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT, CONF_KOMFORT_ODSTUP,
                     CONF_NOC_MIN, CONF_ODCHYLKA, CONF_PRIORITA, CONF_UTLUM,
                     DOMAIN,
-                    PODENTITA_MISTNOST, PODENTITA_ZONA)
+                    PODENTITA_MISTNOST)
 from .entity import NaPohoduEntity
 
 
@@ -39,9 +39,6 @@ MISTNOST = [
     Posuvnik(CONF_UTLUM, 5, 20, 0.5, UnitOfTemperature.CELSIUS, 16.0,
              "mdi:radiator-off"),
     Posuvnik(CONF_PRIORITA, 0, 10, 1, None, 5.0, "mdi:scale-balance"),
-]
-
-ZONA = [
     Posuvnik(CONF_CO2_OTEVRIT, 500, 2000, 25, "ppm", 800.0, "mdi:molecule-co2"),
     Posuvnik(CONF_CO2_ZAVRIT, 400, 1500, 25, "ppm", 700.0, "mdi:molecule-co2"),
     Posuvnik(CONF_CO2_NOC, 600, 2000, 25, "ppm", 1000.0, "mdi:weather-night"),
@@ -50,16 +47,15 @@ ZONA = [
 ]
 
 
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                             pridat: AddEntitiesCallback) -> None:
     k = hass.data[DOMAIN][entry.entry_id]
     for pod in entry.subentries.values():
-        if pod.subentry_type == PODENTITA_MISTNOST:
-            sada = MISTNOST
-        elif pod.subentry_type == PODENTITA_ZONA:
-            sada = ZONA
-        else:
-            continue
+        if pod.subentry_type != PODENTITA_MISTNOST:
+            continue          # prahy vzduchu patří místnosti, ta se rozhoduje
+        sada = MISTNOST
         pridat([NaPohoduNumber(k, pod, p) for p in sada],
                config_subentry_id=pod.subentry_id)
 

@@ -13,7 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import DOMAIN, PODENTITA_MISTNOST, PODENTITA_ZONA
+from .const import DOMAIN, PODENTITA_MISTNOST
 from .entity import NaPohoduEntity
 
 
@@ -21,10 +21,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                             pridat: AddEntitiesCallback) -> None:
     k = hass.data[DOMAIN][entry.entry_id]
     for pod in entry.subentries.values():
-        if pod.subentry_type == PODENTITA_ZONA:
-            pridat([OvladatOkno(k, pod)], config_subentry_id=pod.subentry_id)
-        elif pod.subentry_type == PODENTITA_MISTNOST:
-            pridat([OvladatStineni(k, pod)], config_subentry_id=pod.subentry_id)
+        if pod.subentry_type == PODENTITA_MISTNOST:
+            pridat([OvladatOkno(k, pod), OvladatStineni(k, pod)],
+                   config_subentry_id=pod.subentry_id)
 
 
 class NaPohoduPrepinac(NaPohoduEntity, SwitchEntity, RestoreEntity):

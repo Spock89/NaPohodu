@@ -20,16 +20,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     k = hass.data[DOMAIN][entry.entry_id]
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_ZONA:
-            pridat([StavZony(k, pod)], config_subentry_id=pod.subentry_id)
+            pridat([StavOblasti(k, pod)], config_subentry_id=pod.subentry_id)
         elif pod.subentry_type == PODENTITA_MISTNOST:
-            pridat([CilMistnosti(k, pod), SlunceMistnosti(k, pod)],
+            pridat([StavMistnosti(k, pod), CilMistnosti(k, pod),
+                    SlunceMistnosti(k, pod)],
                    config_subentry_id=pod.subentry_id)
     pridat([Prumer(k, entry, "prumer_tyden", "tyden"),
             Prumer(k, entry, "prumer_tri_dny", "tri_dny")])
 
 
-class StavZony(NaPohoduEntity, SensorEntity):
-    """Co zóna dělá a proč. Totéž, co bylo v Node-REDu pod uzlem."""
+class StavMistnosti(NaPohoduEntity, SensorEntity):
+    """Co se v místnosti děje s okny a proč."""
 
     _attr_icon = "mdi:window-open-variant"
 
@@ -38,10 +39,31 @@ class StavZony(NaPohoduEntity, SensorEntity):
 
     @property
     def native_value(self) -> str | None:
-        z = self.zona
-        if z is None or z.rozhodnuti is None:
+        m = self.mistnost
+        if m is None or m.rozhodnuti is None:
             return None
-        return z.rozhodnuti.duvod[:255]
+        return m.rozhodnuti.duvod[:255]
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        m = self.mistnost
+        return m.atributy if m else {}
+
+
+class StavOblasti(NaPohoduEntity, SensorEntity):
+    """Sdílený vzduch oblasti. Sama nic neovládá."""
+
+    _attr_icon = "mdi:home-group"
+
+    def __init__(self, k, pod):
+        super().__init__(k, pod, "stav_oblasti")
+
+    @property
+    def native_value(self) -> str | None:
+        z = self.zona
+        if z is None:
+            return None
+        return f"CO2 {z.atributy.get('co2', 0):.0f}"
 
     @property
     def extra_state_attributes(self) -> dict:

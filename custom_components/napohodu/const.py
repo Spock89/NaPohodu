@@ -79,12 +79,24 @@ CONF_CO2_OTEVRIT = "co2_otevrit"
 CONF_CO2_ZAVRIT = "co2_zavrit"
 CONF_CO2_NOC = "co2_noc"              # v noci se otevírá až od tohoto
 CONF_CO2_NOC_KRIZE = "co2_noc_krize"  # tohle přebije i teplotní mez
-CONF_CO2_NOC = "co2_noc"
 
 # stínění zóny: jména uložených stavů
 CONF_ZALUZIE_STARE = "zaluzie_zony"   # dřívější název, kvůli starším verzím
 CONF_STINENI_MAPA = "stineni_mapa"   # {"cover.o1|zastinit": "zastíněno"}
 CONF_KLID_STINENI_MIN = "klid_stineni_min"
+
+# --- okna místnosti ---
+CONF_OKNA = "okna"
+CONF_PROJEZD_M = "projezd_okna_s"
+CONF_KONTAKT_M = "kontakt_okna"
+CONF_ZDROJ_OKENNIHO_M = "zdroj_okenniho"
+CONF_VYNUCENO_M = "vynuceno_okno"
+CONF_DEST_PRAH = "dest_prah"
+CONF_I_KDYZ_NIKDO = "i_kdyz_nikdo_doma"
+CONF_T_VENKU_M = "t_venku_mistni"
+CONF_RH_VENKU_M = "rh_venku_mistni"
+
+
 CONF_STINENI_REZIM = "stineni_rezim"
 CONF_SOUKROMI_KDY = "soukromi_kdy"
 REZIMY_STINENI = ["vzdy", "jen_pryc", "nikdy"]
