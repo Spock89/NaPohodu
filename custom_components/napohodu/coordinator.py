@@ -19,7 +19,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
 from . import (core, pritomnost as pr, prumery as pm, slunce as sl,
-               sousedstvi as so, vykon as vy)
+               sousedstvi as so, vykon as vy, zpravy as zp)
 from .const import (
     CONF_AZIMUT, CONF_CIL_MAX, CONF_CIL_MIN, CONF_CISTICKA, CONF_CO2,
     CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT,
@@ -32,12 +32,13 @@ from .const import (
     CONF_PM25, CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRIORITA,
     CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_RH_MAX, CONF_RH_VENKU,
     CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_SEZONA_HYSTEREZE,
-    CONF_SEZONA_PRAH, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
-    CONF_STINENI_MAPA, CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
-    CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_VITR,
-    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE,
-    CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
-    CONF_ZDROJ_OBSAZENOSTI, DOMAIN, INTERVAL_S, PODENTITA_MISTNOST,
+    CONF_SEZONA_PRAH, CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI,
+    CONF_SPANEK, CONF_STINENI_MAPA, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
+    CONF_TEPLOTY, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
+    CONF_T_VENKU_M, CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH,
+    CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
+    CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZPRAVY,
+    CONF_ZPRAVY_UROVEN, DOMAIN, INTERVAL_S, PODENTITA_MISTNOST,
     PODENTITA_ZONA,
 )
 
@@ -90,10 +91,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
         self.souhrn: dict[str, dict] = {}
         self._souhrn_den: str = ""
+        self.hlasic = zp.Hlasic()
+        self._souhrn_odeslan: str = ""
         self.vitr_blokuje: bool = False
         # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
         self.souhrn: dict[str, dict] = {}
         self._souhrn_den: str = ""
+        self.hlasic = zp.Hlasic()
+        self._souhrn_odeslan: str = ""
         # průměry si počítáme sami, ať uživatel nemusí zakládat statistiky
         self.prumery = pm.Prumery()
         # hodnoty, se kterými se opravdu počítá, a odkud pocházejí
@@ -196,6 +201,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             if p.title == odkaz or p.data.get(CONF_NAZEV) == odkaz:
                 return p
         return None
+
+    @staticmethod
+    def _cas(hodina: float) -> str:
+        """Desetinná hodina na čitelný čas."""
+        h = int(hodina)
+        return f"{h:02d}:{int(round((hodina - h) * 60)):02d}"
 
     @staticmethod
     def _hodina(text, nahrada: float) -> float:
@@ -420,7 +431,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     t_out, rh_out, dest, doma, vitr_blokuje, je_noc,
                     hodina, cas_s, noc_od, noc_do, slunce_el)
 
-        # ---------- 5. přehled oblasti ----------
+        # ---------- 5. denní souhrn ----------
+        cas_souhrnu = self._hodina(g.get(CONF_SOUHRN_CAS), 21.0)
+        if (hodina >= cas_souhrnu and self._souhrn_odeslan != dnes
+                and self.souhrn):
+            self._souhrn_odeslan = dnes
+            for pid, sh in self.souhrn.items():
+                m = self.mistnosti.get(pid)
+                if m:
+                    await self._posli(g, "souhrn", m.nazev, cas_s,
+                                      dnes=m.atributy.get("dnes", {}))
+
+        # ---------- 6. přehled oblasti ----------
         self.zony = {}
         for o in okruhy:
             if o["pod"] is None:
@@ -437,6 +459,23 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self.zony[o["id"]] = z
 
         return {"zony": self.zony, "mistnosti": self.mistnosti}
+
+    async def _posli(self, g: dict, druh: str, mistnost: str,
+                     cas_s: float, **udaje) -> None:
+        """Sestaví zprávu a pošle ji na vybrané notify entity."""
+        kam = g.get(CONF_ZPRAVY) or []
+        if not kam:
+            return
+        self.hlasic.uroven = g.get(CONF_ZPRAVY_UROVEN, "dulezite")
+        text = self.hlasic.zprava(druh, mistnost, cas_s, **udaje)
+        if not text:
+            return
+        try:
+            await self.hass.services.async_call(
+                "notify", "send_message",
+                {"entity_id": kam, "message": text}, blocking=False)
+        except Exception as e:  # pragma: no cover - výpadek notifikací
+            _LOGGER.warning("NaPohodu: zprávu se nepodařilo poslat: %s", e)
 
     async def _mistnost_krok(self, p, u, okruh, uprava, t_out, rh_out, dest,
                              doma, vitr_blokuje, je_noc, hodina, cas_s,
@@ -513,6 +552,22 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 vysledek = await vyk.okno(okno, r, cas_s, skutecne)
                 provedeno = vysledek or provedeno
 
+            g = {**self.entry.data, **self.entry.options}
+            if r.akce is core.Akce.ZAVRIT and "větr" in r.duvod:
+                await self._posli(g, "vitr", m.nazev, cas_s,
+                                  naraz=self._cislo(g.get(CONF_NARAZ), 0))
+            elif r.akce is core.Akce.ZAVRIT and "dešt" in r.duvod:
+                await self._posli(g, "dest", m.nazev, cas_s, dest=dest)
+            elif r.akce is core.Akce.OTEVRIT and "nouzov" in r.duvod:
+                await self._posli(g, "nouzove", m.nazev, cas_s, co2=v.co2)
+            elif r.akce is core.Akce.OTEVRIT:
+                await self._posli(g, "vetrani", m.nazev, cas_s,
+                                  duvod=r.duvod)
+            if vyk.stav.chyby:
+                await self._posli(g, "chyba", m.nazev, cas_s,
+                                  text=vyk.stav.chyby[-1])
+                vyk.stav.chyby.clear()
+
         # ---------- denní souhrn ----------
         sh = self.souhrn.setdefault(p.subentry_id, {
             "pohyby": 0, "minut_otevreno": 0, "co2_max": 0,
@@ -544,6 +599,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "zastupce": uprava.zastupce,
             "okna": okna,
             "duvody": core.duvody(v, pamet, nast),
+            "nocni_klid": f"{self._cas(noc_od)} – {self._cas(noc_do)}",
+            "rano_neotvirat_od": self._cas(noc_do),
+            "je_noc": je_noc,
             "dnes": {
                 "pohyby": sh["pohyby"],
                 "otevreno_min": round(sh["minut_otevreno"]),

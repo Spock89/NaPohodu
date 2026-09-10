@@ -66,9 +66,30 @@ def _hlavicka(text: str, ikona: str, styl: str = "title") -> list[str]:
             f"    heading_style: {styl}", f"    icon: {ikona}", ""]
 
 
-def dashboard(mistnosti: list[str], oblasti: list[str],
-              existuje) -> str:
-    """Poskládá kartu. `existuje` řekne, jestli entita opravdu je."""
+def _graf(nadpis: str, hodin: int, polozky: list[tuple[str, str]],
+          existuje) -> list[str]:
+    """Graf se vynechá, když by v něm nebylo co kreslit."""
+    radky = [(e, n) for e, n in polozky if existuje(e)]
+    if len(radky) < 2:
+        return []
+    r = ["  - type: history-graph", f"    title: {nadpis}",
+         f"    hours_to_show: {hodin}", "    entities:"]
+    for e, n in radky:
+        r += [f"      - entity: {e}", f'        name: "{n}"']
+    return r + [""]
+
+
+def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
+              cidla: dict | None = None, zaluzie: dict | None = None,
+              venku: str | None = None) -> str:
+    """Poskládá kartu. `existuje` řekne, jestli entita opravdu je.
+
+    `cidla` a `zaluzie` jsou entity, které integrace nevytváří — teploměr
+    místnosti a její žaluzie. Do grafů patří, takže si je vezmeme
+    z konfigurace.
+    """
+    cidla = cidla or {}
+    zaluzie = zaluzie or {}
     c = ["# Vygenerováno integrací NaPohodu.",
          "# Vlož jako Manuální kartu. Až přidáš místnost, vygeneruj znovu.",
          "", "type: vertical-stack", "cards:"]
@@ -94,6 +115,12 @@ def dashboard(mistnosti: list[str], oblasti: list[str],
             polozky += _atribut(stav, a, n, s)
         c += _karta("", "", polozky, nazev=m.capitalize())
         c.append("")
+        # cíl proti skutečnosti hned u té místnosti, ne až na konci karty
+        c += _graf(f"{m.capitalize()} — cíl proti skutečnosti", 48, [
+            (f"sensor.napohodu_{m}_cilova_teplota", "Cíl"),
+            (cidla.get(m, ""), "V místnosti"),
+            (venku or "", "Venku"),
+        ], existuje)
 
     # --- oblasti ---
     polozky = []
@@ -159,6 +186,15 @@ def dashboard(mistnosti: list[str], oblasti: list[str],
         polozky.append("      - type: divider")
     c += _karta("", "", polozky[:-1], nazev="Co smí ovládat")
     c.append("")
+
+    # --- grafy pohybů ---
+    okna = [(f"binary_sensor.napohodu_{m}_okno", f"Okno {m}") for m in mistnosti]
+    zal = []
+    for m in mistnosti:
+        for i, z in enumerate(zaluzie.get(m, []) or []):
+            zal.append((z, f"Žaluzie {m}" + (f" {i + 1}" if i else "")))
+    klidy = [(f"binary_sensor.napohodu_{m}_klid", f"Klid {m}") for m in mistnosti]
+    c += _graf("Okna, žaluzie a klid", 24, okna + zal + klidy, existuje)
 
     polozky = []
     if existuje("button.napohodu_srovnat_vse"):

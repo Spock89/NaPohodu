@@ -117,4 +117,10 @@ CONF_NAZEV_STAVU = "nazev_stavu"
 CONF_STAVY_TEXT = "stavy_text"
 CONF_KARTA_YAML = "karta_yaml"
 
+# --- zprávy ---
+CONF_ZPRAVY = "zpravy_kam"
+CONF_ZPRAVY_UROVEN = "zpravy_uroven"
+CONF_SOUHRN_CAS = "souhrn_cas"
+UROVNE_ZPRAV = ["nic", "dulezite", "vse"]
+
 INTERVAL_S = 60

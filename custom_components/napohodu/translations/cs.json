@@ -21,7 +21,10 @@
           "sezona_prah": "Topná sezóna pod",
           "sezona_hystereze": "Hystereze sezóny",
           "naraz_prah": "Vítr blokuje od (nárazy)",
-          "vitr_klid": "Vítr povolí pod"
+          "vitr_klid": "Vítr povolí pod",
+          "zpravy_kam": "Kam posílat zprávy",
+          "zpravy_uroven": "Co posílat",
+          "souhrn_cas": "Denní souhrn v"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -41,7 +44,10 @@
           "sezona_prah": "Pod touto průměrnou teplotou začíná topná sezóna. Obvykle 15 °C.",
           "sezona_hystereze": "Pásmo kolem prahu, ve kterém se sezóna nepřepíná. Brání přeskakování na hraně.",
           "naraz_prah": "Nárazy poškodí pohon dřív než průměr, proto vlastní práh. Stačí, aby jedna z obou hodnot práh překročila.",
-          "vitr_klid": "Blokace povolí, až když obě hodnoty klesnou pod tuhle. Musí být níž než oba prahy, jinak se to překlápí na hraně."
+          "vitr_klid": "Blokace povolí, až když obě hodnoty klesnou pod tuhle. Musí být níž než oba prahy, jinak se to překlápí na hraně.",
+          "zpravy_kam": "Notify entity, například Telegram nebo mobilní aplikace. U Telegramu vytváří integrace jednu entitu na každý chat, takže příjemce vybereš tady, ne psaním čísla.",
+          "zpravy_uroven": "Ochrana znamená vítr, déšť, chyby pohonu a denní souhrn. Vše k tomu přidá běžná otevírání — hodí se první dny, pak spíš otravuje.",
+          "souhrn_cas": "Kdy poslat souhrn dne: kolikrát se okno hýbalo, jak dlouho bylo otevřeno, nejvyšší CO2. Podle toho se pozná, jestli jsou prahy dobře."
         },
         "title": "NaPohodu"
       }
@@ -81,7 +87,10 @@
           "sezona_prah": "Topná sezóna pod",
           "sezona_hystereze": "Hystereze sezóny",
           "naraz_prah": "Vítr blokuje od (nárazy)",
-          "vitr_klid": "Vítr povolí pod"
+          "vitr_klid": "Vítr povolí pod",
+          "zpravy_kam": "Kam posílat zprávy",
+          "zpravy_uroven": "Co posílat",
+          "souhrn_cas": "Denní souhrn v"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -101,7 +110,10 @@
           "sezona_prah": "Pod touto průměrnou teplotou začíná topná sezóna. Obvykle 15 °C.",
           "sezona_hystereze": "Pásmo kolem prahu, ve kterém se sezóna nepřepíná. Brání přeskakování na hraně.",
           "naraz_prah": "Nárazy poškodí pohon dřív než průměr, proto vlastní práh. Stačí, aby jedna z obou hodnot práh překročila.",
-          "vitr_klid": "Blokace povolí, až když obě hodnoty klesnou pod tuhle. Musí být níž než oba prahy, jinak se to překlápí na hraně."
+          "vitr_klid": "Blokace povolí, až když obě hodnoty klesnou pod tuhle. Musí být níž než oba prahy, jinak se to překlápí na hraně.",
+          "zpravy_kam": "Notify entity, například Telegram nebo mobilní aplikace. U Telegramu vytváří integrace jednu entitu na každý chat, takže příjemce vybereš tady, ne psaním čísla.",
+          "zpravy_uroven": "Ochrana znamená vítr, déšť, chyby pohonu a denní souhrn. Vše k tomu přidá běžná otevírání — hodí se první dny, pak spíš otravuje.",
+          "souhrn_cas": "Kdy poslat souhrn dne: kolikrát se okno hýbalo, jak dlouho bylo otevřeno, nejvyšší CO2. Podle toho se pozná, jestli jsou prahy dobře."
         }
       },
       "tester": {
@@ -518,6 +530,13 @@
         "nikdy": "Nezatahovat",
         "hned": "Hned po západu slunce",
         "pri_pohybu": "Až když někdo přijde do místnosti"
+      }
+    },
+    "zpravy_uroven": {
+      "options": {
+        "nic": "Nic neposílat",
+        "dulezite": "Jen ochranu a chyby",
+        "vse": "Vše včetně běžného větrání"
       }
     }
   },

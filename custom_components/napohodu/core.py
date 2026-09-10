@@ -356,13 +356,15 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     if not brani:
         p.rezim = "komfort"
         if p.otevreno:
-            return beze_zmeny("chladím" if chlazeni else "komfort", True)
-        return otevri("chlazení větráním" if chlazeni else "komfortní režim", None)
+            return beze_zmeny("chladím" if chlazeni
+                              else "venku je příjemně, otevřeno", True)
+        return otevri("chlazení větráním" if chlazeni
+                      else "venku je příjemně, nechávám otevřeno", None)
 
     if p.rezim == "komfort":
         p.rezim = "pulz"
         if not potreba:
-            return zavri(f"konec komfortu: {brani}")
+            return zavri(f"zavírám, {brani}")
 
     # --- 6. noční režim ---------------------------------------------
     if noc:

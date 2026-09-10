@@ -120,7 +120,9 @@ def test_komfort_jen_kdyz_neni_pod_cilem():
 
 def test_komfort_kdyz_je_venku_stejne_teplo():
     r, _ = krok(stary(co2=550, t_in=25.9, t_out=24.0, cil=25.5, hodina=14))
-    assert r.akce is Akce.OTEVRIT and "komfort" in r.duvod
+    assert r.akce is Akce.OTEVRIT
+    # popisek má být srozumitelný, ne pojem ze specifikace
+    assert "příjemně" in r.duvod
 
 
 def test_chlazeni_prebiji_nocni_klid():

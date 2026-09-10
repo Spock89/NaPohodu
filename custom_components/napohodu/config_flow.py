@@ -77,6 +77,11 @@ SCHEMA_GLOBAL = vol.Schema(
         vol.Optional(c.CONF_CIL_MAX, default=27.0): _cislo(22, 32),
         vol.Optional(c.CONF_NOC_OD, default="22:00:00"): selector.TimeSelector(),
         vol.Optional(c.CONF_NOC_DO, default="06:30:00"): selector.TimeSelector(),
+        vol.Optional(c.CONF_ZPRAVY): _ent(["notify"], True),
+        vol.Optional(c.CONF_ZPRAVY_UROVEN, default="dulezite"): _volba(
+            c.UROVNE_ZPRAV, "zpravy_uroven"),
+        vol.Optional(c.CONF_SOUHRN_CAS, default="21:00:00"):
+            selector.TimeSelector(),
         vol.Optional(c.CONF_VITR_PRAH, default=7.0): _cislo(3, 30, 0.5, "m/s"),
         vol.Optional(c.CONF_NARAZ_PRAH, default=11.0): _cislo(3, 40, 0.5, "m/s"),
         vol.Optional(c.CONF_VITR_KLID, default=5.0): _cislo(2, 25, 0.5, "m/s"),
@@ -187,15 +192,24 @@ class NaPohoduOptionsFlow(OptionsFlow):
                            for z in bez.lower()).strip("_")
 
         mistnosti, oblasti = [], []
+        cidla, zaluzie = {}, {}
         for pod in self.config_entry.subentries.values():
             if pod.subentry_type == c.PODENTITA_MISTNOST:
-                mistnosti.append(klic(pod.title))
+                k = klic(pod.title)
+                mistnosti.append(k)
+                teploty = pod.data.get(c.CONF_TEPLOTY) or []
+                if teploty:
+                    cidla[k] = teploty[0]
+                zaluzie[k] = (pod.data.get(c.CONF_ZALUZIE)
+                              or pod.data.get(c.CONF_ZALUZIE_STARE) or [])
             elif pod.subentry_type == c.PODENTITA_ZONA:
                 oblasti.append(klic(pod.title))
 
+        g = {**self.config_entry.data, **self.config_entry.options}
         text = karty.dashboard(
             mistnosti, oblasti,
-            lambda e: self.hass.states.get(e) is not None)
+            lambda e: self.hass.states.get(e) is not None,
+            cidla=cidla, zaluzie=zaluzie, venku=g.get(c.CONF_T_VENKU))
 
         return self.async_show_form(
             step_id="karta",
