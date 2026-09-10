@@ -57,12 +57,19 @@ def _vitr(m, u):
     Blokace drží, dokud vítr neklesne pod uklidňovací mez, takže mezitím
     už může být venku klid — a zpráva s aktuálním číslem by lhala.
     """
-    co = u.get("co_prekrocilo")
-    if not co:
+    prumer = u.get("prumer")
+    naraz = u.get("naraz")
+    if prumer is None and naraz is None:
         return f"{m}: zavírám okno kvůli větru."
-    hodnota = u.get("naraz" if co == "nárazy" else "prumer", 0)
-    return (f"{m}: zavírám okno kvůli větru — {co} {hodnota:.1f} m/s "
-            f"nad prahem {u.get('prah', 0):.0f}.")
+    prahy = u.get("prahy") or {}
+    co = u.get("co_prekrocilo")
+    kvuli = {"nárazy": "nárazy jsou nad prahem",
+             "průměr": "průměr je nad prahem",
+             "hystereze": "vítr ještě neklesl dost nízko"}.get(co, "")
+    return (f"{m}: zavírám okno kvůli větru — {kvuli}. "
+            f"Průměr {prumer:.1f} z {prahy.get('prumer', '?')}, "
+            f"náraz {naraz:.1f} z {prahy.get('naraz', '?')}, "
+            f"povolí pod {prahy.get('povoli_pod', '?')}.")
 
 
 def _dest(m, u):

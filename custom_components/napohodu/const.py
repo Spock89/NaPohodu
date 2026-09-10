@@ -89,6 +89,7 @@ CONF_KLID_STINENI_MIN = "klid_stineni_min"
 # --- okna místnosti ---
 CONF_OKNA = "okna"
 CONF_PROJEZD_M = "projezd_okna_s"
+CONF_MIN_DRZENI = "min_drzeni_min"
 CONF_KONTAKT_M = "kontakt_okna"
 CONF_ZDROJ_OKENNIHO_M = "zdroj_okenniho"
 CONF_VYNUCENO_M = "vynuceno_okno"
@@ -100,7 +101,7 @@ CONF_RH_VENKU_M = "rh_venku_mistni"
 
 CONF_STINENI_REZIM = "stineni_rezim"
 CONF_SOUKROMI_KDY = "soukromi_kdy"
-REZIMY_STINENI = ["vzdy", "jen_pryc", "nikdy"]
+REZIMY_STINENI = ["vzdy", "prazdna", "jen_pryc", "nikdy"]
 SOUKROMI_KDY = ["nikdy", "hned", "pri_pohybu"]
 
 # --- okna pro sluneční zisk ---

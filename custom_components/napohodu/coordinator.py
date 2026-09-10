@@ -31,19 +31,19 @@ from .const import (
     CONF_KLIMA_POKOJE, CONF_KLIMA_SUSIT_OD, CONF_KLIMA_TOPIT_OD,
     CONF_KLIMA_UMI, CONF_KLIMA_UTLUM_CHLAZENI, CONF_KLIMA_UTLUM_TOPENI,
     CONF_KLIMA_V_POKOJI, CONF_KOMFORT_ODSTUP, CONF_KVALITA, CONF_MAX_STARI,
-    CONF_MISTNOSTI, CONF_NARAZ, CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOC_DO,
-    CONF_NOC_MIN, CONF_NOC_OD, CONF_ODCHYLKA, CONF_ODTAH, CONF_OKNA,
-    CONF_PLOCHA, CONF_PM10, CONF_PM25, CONF_PM_PLATNY, CONF_PRAH_VYKONU,
-    CONF_PRIORITA, CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_RH_MAX,
-    CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_SEZONA_HYSTEREZE,
-    CONF_SEZONA_PRAH, CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI,
-    CONF_SPANEK, CONF_STINENI_MAPA, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
-    CONF_TEPLOTY, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
-    CONF_T_VENKU_M, CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH,
-    CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
-    CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZPRAVY,
-    CONF_ZPRAVY_DRUHY, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
-    PODENTITA_MISTNOST, PODENTITA_ZONA,
+    CONF_MIN_DRZENI, CONF_MISTNOSTI, CONF_NARAZ, CONF_NARAZ_PRAH,
+    CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD, CONF_ODCHYLKA,
+    CONF_ODTAH, CONF_OKNA, CONF_PLOCHA, CONF_PM10, CONF_PM25,
+    CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRIORITA, CONF_PRITOMNOST,
+    CONF_PROJEZD_M, CONF_RH_MAX, CONF_RH_VENKU, CONF_RH_VENKU_M,
+    CONF_RH_VNITRNI, CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH,
+    CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
+    CONF_STINENI_MAPA, CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
+    CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_VITR,
+    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE,
+    CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
+    CONF_ZDROJ_OBSAZENOSTI, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, DOMAIN,
+    INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -270,23 +270,34 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         prah_n = float(g.get(CONF_NARAZ_PRAH, 11.0))
         klid_v = float(g.get(CONF_VITR_KLID, 5.0))
 
+        drive = self.vitr_blokuje
         if vitr > prah_v or naraz > prah_n:
-            if not self.vitr_blokuje:
-                self.vitr_pricina = {
-                    "prumer": round(vitr, 1), "naraz": round(naraz, 1),
-                    "co_prekrocilo": "nárazy" if naraz > prah_n else "průměr",
-                    "prah": prah_n if naraz > prah_n else prah_v,
-                }
-                _LOGGER.info("NaPohodu: vítr blokuje — %s %.1f m/s nad "
-                             "prahem %.1f", self.vitr_pricina["co_prekrocilo"],
-                             max(vitr, naraz), self.vitr_pricina["prah"])
             self.vitr_blokuje = True
+            co = "nárazy" if naraz > prah_n else "průměr"
+            prah = prah_n if naraz > prah_n else prah_v
         elif vitr < klid_v and naraz < klid_v:
-            if self.vitr_blokuje:
-                _LOGGER.info("NaPohodu: vítr povolil (průměr %.1f, náraz "
-                             "%.1f pod %.1f)", vitr, naraz, klid_v)
             self.vitr_blokuje = False
-            self.vitr_pricina = {}
+            co, prah = None, None
+        else:
+            # mezi prahem a uklidněním se stav nemění
+            co, prah = ("hystereze", klid_v) if self.vitr_blokuje else (None, None)
+
+        # příčina se přepisuje každý cyklus, aby zpráva nikdy nebyla prázdná
+        self.vitr_pricina = {
+            "prumer": round(vitr, 1), "naraz": round(naraz, 1),
+            "co_prekrocilo": co, "prah": prah,
+            "prahy": {"prumer": prah_v, "naraz": prah_n, "povoli_pod": klid_v},
+        } if self.vitr_blokuje else {}
+
+        if drive != self.vitr_blokuje:
+            _LOGGER.info(
+                "NaPohodu: vítr %s — průměr %.1f (práh %.1f), náraz %.1f "
+                "(práh %.1f), povolí pod %.1f",
+                "blokuje" if self.vitr_blokuje else "povolil",
+                vitr, prah_v, naraz, prah_n, klid_v)
+        else:
+            _LOGGER.debug("NaPohodu: vítr průměr %.1f náraz %.1f blokuje %s",
+                          vitr, naraz, self.vitr_blokuje)
         self.vitr_stav = {
             "prumer": round(vitr, 1), "naraz": round(naraz, 1),
             "blokuje": self.vitr_blokuje,
@@ -640,6 +651,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             co2_noc_krize=okruh["prahy"][CONF_CO2_NOC_KRIZE],
             dest_prah=prah_deste,
             projezd_s=float(d.get(CONF_PROJEZD_M, 120)),
+            min_drzeni_s=self.hodnota(
+                p.subentry_id, CONF_MIN_DRZENI,
+                float(d.get(CONF_MIN_DRZENI, 20))) * 60,
             nocni_min=self.hodnota(p.subentry_id, CONF_NOC_MIN,
                                    float(d.get(CONF_NOC_MIN, 18))),
             komfort_odstup=float(d.get(CONF_KOMFORT_ODSTUP, 4.0)),
@@ -670,11 +684,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             zaloha.otevreno = skutecne
             pamet = zaloha
 
-        provedeno = None
+        provedeno = vyk.stav.posledni_popis
         if ovladat and okna:
             for okno in okna:
                 vysledek = await vyk.okno(okno, r, cas_s, skutecne)
-                provedeno = vysledek or provedeno
+                if vysledek:
+                    provedeno = vysledek
+                    vyk.stav.posledni_popis = vysledek
 
             g = {**self.entry.data, **self.entry.options}
             if r.akce is core.Akce.ZAVRIT and "větr" in r.duvod:
@@ -725,7 +741,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             },
             "zastupce": uprava.zastupce,
             "okna": okna,
-            "duvody": core.duvody(v, pamet, nast),
+            "duvody": (["větrá se"] if skutecne
+                       else core.duvody(v, pamet, nast) or ["nic nebrání"]),
             "nocni_klid": f"{self._cas(noc_od)} – {self._cas(noc_do)}",
             "rano_neotvirat_od": self._cas(noc_do),
             "je_noc": je_noc,
@@ -789,7 +806,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 po_zapadu=slunce_el < 0,
                 pohyb=bool(u["sig"].cidlo)
                 or bool(pr.indicie_aktivni(u["sig"], u["nast"])),
-                soukromi_kdy=d.get(CONF_SOUKROMI_KDY, "nikdy"))
+                soukromi_kdy=d.get(CONF_SOUKROMI_KDY, "nikdy"),
+                v_pokoji=bool(u["sig"].cidlo)
+                or bool(pr.indicie_aktivni(u["sig"], u["nast"])))
             cile = vy.cile_zaluzii(role, d.get(CONF_STINENI_MAPA) or {})
             stin = await vyk_m.stineni(
                 cile, cas_s, float(d.get(CONF_KLID_STINENI_MIN, 15)))

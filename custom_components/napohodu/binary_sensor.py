@@ -27,8 +27,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
 
 class OknoOtevreno(NaPohoduEntity, BinarySensorEntity):
-    """Vstup pro Better Thermostat. Nikdy nesmí být nedostupný, jinak
-    se s ním stane nedostupným i celý termostat."""
+    """Vstup pro Better Thermostat.
+
+    Kopíruje stav oken místnosti podle nastaveného zdroje. Nesouvisí
+    s topnou sezónou — jen říká termostatu, jestli je otevřeno.
+
+    Nikdy nesmí být nedostupný, jinak se s ním stane nedostupným
+    i celý termostat.
+    """
 
     _attr_device_class = BinarySensorDeviceClass.WINDOW
     _attr_available = True
@@ -44,6 +50,10 @@ class OknoOtevreno(NaPohoduEntity, BinarySensorEntity):
     def is_on(self) -> bool:
         m = self.mistnost
         return bool(m and m.okno_otevreno)
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return {"k_cemu": "vstup pro Better Thermostat, ne stav topení"}
 
 
 class Obsazeno(NaPohoduEntity, BinarySensorEntity):

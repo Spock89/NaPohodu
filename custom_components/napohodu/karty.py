@@ -25,13 +25,13 @@ POSUVNIKY = [
 
 ATRIBUTY_STAVU = [
     ("co2", "CO2", " ppm"),
-    ("uvnitr", "Uvnitř (rozhoduje)", " °C"),
-    ("venku", "Venku (pro tuhle místnost)", " °C"),
+    ("uvnitr", "Nejchladnější místo v pokoji", " °C"),
+    ("venku", "Venku u tohoto okna", " °C"),
     ("rosny_bod", "Rosný bod", " °C"),
     ("zastupce", "Větrá za nás", None),
     ("provedeno", "Poslední povel", None),
     ("ovladani", "Ovládání", None),
-    ("duvody", "Co brání větrání", None),
+    ("duvody", "Diagnostika", None),
 ]
 
 
@@ -197,8 +197,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         if polozky:
             polozky.append("      - type: divider")
         polozky += _radek(eid, m.capitalize())
-        polozky += _atribut(eid, "role_stineni", "   role")
-        polozky += _atribut(eid, "stineni_stav", "   žaluzie stojí na")
+        polozky += _atribut(eid, "role_stineni", "   co je teď potřeba")
+        polozky += _atribut(eid, "stineni_stav", "   nastavená poloha")
     if polozky:
         c += _hlavicka("Slunce a stínění", "mdi:blinds-horizontal", "subtitle")
         c += _karta("", "", polozky)
@@ -208,7 +208,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     polozky = []
     for klic, popis, kde in (("obsazeno", "obsazeno", None),
                              ("klid", "klid", s_klidem),
-                             ("okno_otevreno", "topení vypnuto", None)):
+                             ("okno_otevreno", "hlásí oknu topení", None)):
         pridano = False
         for m in mistnosti:
             if kde is not None and m not in kde:

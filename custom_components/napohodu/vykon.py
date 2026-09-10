@@ -41,6 +41,8 @@ class StavVykonu:
     prvni_beh: bool = True
     chyby: list[str] = field(default_factory=list)
     zarizeni: dict[str, bool] = field(default_factory=dict)
+    # poslední odeslaný povel si držíme, ať na kartě nezmizí po minutě
+    posledni_popis: str | None = None
 
 
 class Vykonavac:
@@ -192,6 +194,7 @@ class Vykonavac:
 # kdy smí automatika hýbat žaluziemi
 REZIM_VZDY = "vzdy"
 REZIM_JEN_PRYC = "jen_pryc"       # doma si je řídíme sami
+REZIM_PRAZDNA = "prazdna"         # doma, ale jen když v pokoji nikdo není
 REZIM_NIKDY = "nikdy"
 
 # kdy se po západu slunce zatahuje kvůli soukromí
@@ -206,12 +209,17 @@ ROLE = ("zastinit", "odstinit", "soukromi", "pryc")
 def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
                  doma: bool, rezim: str = REZIM_VZDY,
                  po_zapadu: bool = False, pohyb: bool = False,
-                 soukromi_kdy: str = SOUKROMI_NIKDY) -> str | None:
+                 soukromi_kdy: str = SOUKROMI_NIKDY,
+                 v_pokoji: bool = False) -> str | None:
     """Který pojmenovaný stav má platit.
 
     Prázdný návrat znamená nechat být, a to je u žaluzií správná výchozí
     odpověď. Automatika, která přestavuje to, co si člověk před chvílí
     nastavil ručně, je horší než žádná.
+
+    Režim „jen v prázdné místnosti" je kompromis pro pokoje, kterými se
+    prochází. Kuchyň se zaclonit má, i když jsi doma, ale ne když v ní
+    zrovna stojíš — to bys měl zataženo pokaždé, když jdeš pro vodu.
 
     Pořadí je dané tím, co je naléhavější. Prázdný byt přebíjí vše.
     Soukromí po setmění přebíjí režim, protože zatáhnout po západu chceme
@@ -229,6 +237,9 @@ def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
             return "soukromi"
 
     if rezim == REZIM_JEN_PRYC:
+        return None
+    if rezim == REZIM_PRAZDNA and v_pokoji:
+        # někdo tu je, takže si žaluzie nastaví sám
         return None
 
     if zisk < prah:

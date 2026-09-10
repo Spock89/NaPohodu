@@ -221,7 +221,8 @@
             "dest_prah": "Déšť vadí od",
             "i_kdyz_nikdo_doma": "Větrat i když nikdo není doma",
             "t_venku_mistni": "Vlastní venkovní teplota",
-            "rh_venku_mistni": "Vlastní venkovní vlhkost"
+            "rh_venku_mistni": "Vlastní venkovní vlhkost",
+            "min_drzeni_min": "Nejkratší doba držení polohy"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -263,7 +264,8 @@
             "dest_prah": "Nad touto intenzitou deště se okno zavře. Nula znamená, že déšť vadí vždycky. Vysoká hodnota, že tomuhle oknu déšť nevadí — třeba když je pod stříškou.",
             "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené.",
             "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
-            "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu."
+            "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
+            "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam kvůli hodnotě skákající kolem prahu."
           },
           "submit": "Další"
         },
@@ -361,7 +363,8 @@
             "dest_prah": "Déšť vadí od",
             "i_kdyz_nikdo_doma": "Větrat i když nikdo není doma",
             "t_venku_mistni": "Vlastní venkovní teplota",
-            "rh_venku_mistni": "Vlastní venkovní vlhkost"
+            "rh_venku_mistni": "Vlastní venkovní vlhkost",
+            "min_drzeni_min": "Nejkratší doba držení polohy"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -414,7 +417,8 @@
             "dest_prah": "Nad touto intenzitou deště se okno zavře. Nula znamená, že déšť vadí vždycky. Vysoká hodnota, že tomuhle oknu déšť nevadí — třeba když je pod stříškou.",
             "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené.",
             "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
-            "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu."
+            "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
+            "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam kvůli hodnotě skákající kolem prahu."
           },
           "submit": "Další"
         },
@@ -426,7 +430,7 @@
       },
       "entry_type": "Místnost",
       "initiate_flow": {
-        "user": "Přidat místnost",
+        "user": "+ místnost",
         "reconfigure": "Upravit místnost"
       }
     },
@@ -470,7 +474,7 @@
       },
       "entry_type": "Oblast",
       "initiate_flow": {
-        "user": "Přidat oblast",
+        "user": "+ oblast",
         "reconfigure": "Upravit oblast"
       },
       "error": {
@@ -481,7 +485,7 @@
       "title": "Sdílená klimatizace",
       "entry_type": "Klimatizace",
       "initiate_flow": {
-        "user": "Přidat klimatizaci",
+        "user": "+ klima",
         "reconfigure": "Upravit klimatizaci"
       },
       "step": {
@@ -489,7 +493,7 @@
           "title": "Sdílená klimatizace",
           "description": "Jednotka, která obsluhuje víc místností a musí se rozhodnout, komu vyhoví.\\n\\nCíl se počítá ve stupnici místnosti, kde jednotka stojí, a dotlačí se podle toho, o kolik jsou ostatní nad cílem — nejvýš o dva stupně, aby ta s jednotkou nezmrzla.\\n\\nOtevřené okno jednotku nevypne, když je venku tepleji než cíl. Okno je tehdy otevřené kvůli vzduchu a tahá dovnitř teplo, takže chladit je potřeba právě teď.",
           "data": {
-            "klima_entita": "Klimatizace",
+            "klima_entita": "Klimatizační jednotka",
             "klima_umi": "Co umí",
             "klima_v_pokoji": "Stojí v místnosti",
             "klima_pokoje": "Obsluhuje místnosti",
@@ -507,8 +511,8 @@
             "klima_umi": "Jednotka, která umí topit, se mimo topnou sezónu použije místo radiátorů. V sezóně topit nebude, aby si nelezly do cesty.",
             "klima_v_pokoji": "Kde jednotka fyzicky stojí. Měří především tuhle místnost, takže se v její stupnici počítá cíl — do ostatních se chlad dotlačí nejvýš o dva stupně.",
             "klima_pokoje": "Místnosti, které se do rozhodování počítají. Dílnu nebo spíž vynech, jinak by tahaly cíl.",
-            "chladit_od": "O kolik musí být v místnosti nad cílem, než se začne chladit.",
-            "topit_od": "O kolik musí být pod cílem, než se začne topit.",
+            "chladit_od": "O kolik stupňů musí být v místnosti nad cílem, než se začne chladit. Jeden stupeň znamená: cíl 24, chladit od 25.",
+            "topit_od": "O kolik stupňů musí být pod cílem, než se začne topit. Jeden stupeň znamená: cíl 22, topit od 21.",
             "utlum_chlazeni": "Při dlouhé nepřítomnosti se nevypíná úplně, jen se drží tahle teplota. Rozhoupat byt zpátky je dražší než ho udržet.",
             "utlum_topeni": "Totéž v topné sezóně.",
             "susit_od": "Klimatizace umí odvlhčovat. Nula znamená nesušit — je to spotřeba za komfort, který nemusí být potřeba.",
@@ -521,7 +525,7 @@
         "reconfigure": {
           "title": "Úprava klimatizace",
           "data": {
-            "klima_entita": "Klimatizace",
+            "klima_entita": "Klimatizační jednotka",
             "klima_umi": "Co umí",
             "klima_v_pokoji": "Stojí v místnosti",
             "klima_pokoje": "Obsluhuje místnosti",
@@ -539,8 +543,8 @@
             "klima_umi": "Jednotka, která umí topit, se mimo topnou sezónu použije místo radiátorů. V sezóně topit nebude, aby si nelezly do cesty.",
             "klima_v_pokoji": "Kde jednotka fyzicky stojí. Měří především tuhle místnost, takže se v její stupnici počítá cíl — do ostatních se chlad dotlačí nejvýš o dva stupně.",
             "klima_pokoje": "Místnosti, které se do rozhodování počítají. Dílnu nebo spíž vynech, jinak by tahaly cíl.",
-            "chladit_od": "O kolik musí být v místnosti nad cílem, než se začne chladit.",
-            "topit_od": "O kolik musí být pod cílem, než se začne topit.",
+            "chladit_od": "O kolik stupňů musí být v místnosti nad cílem, než se začne chladit. Jeden stupeň znamená: cíl 24, chladit od 25.",
+            "topit_od": "O kolik stupňů musí být pod cílem, než se začne topit. Jeden stupeň znamená: cíl 22, topit od 21.",
             "utlum_chlazeni": "Při dlouhé nepřítomnosti se nevypíná úplně, jen se drží tahle teplota. Rozhoupat byt zpátky je dražší než ho udržet.",
             "utlum_topeni": "Totéž v topné sezóně.",
             "susit_od": "Klimatizace umí odvlhčovat. Nula znamená nesušit — je to spotřeba za komfort, který nemusí být potřeba.",
@@ -596,6 +600,7 @@
     "stineni_rezim": {
       "options": {
         "vzdy": "Vždy",
+        "prazdna": "Doma jen když v pokoji nikdo není",
         "jen_pryc": "Jen když nikdo není doma",
         "nikdy": "Nikdy, řídím je sám"
       }
@@ -653,7 +658,7 @@
     },
     "binary_sensor": {
       "okno_otevreno": {
-        "name": "Okno otevřeno"
+        "name": "Okno pro topení"
       },
       "obsazeno": {
         "name": "Obsazeno"

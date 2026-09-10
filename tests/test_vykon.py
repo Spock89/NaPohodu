@@ -202,7 +202,7 @@ def st(**kw):
     """Zkratka: výchozí je doma, den, slunce svítí."""
     a = dict(zisk=400, prah=150, horko=False, zima=False, doma=True,
              rezim=REZIM_VZDY, po_zapadu=False, pohyb=False,
-             soukromi_kdy=SOUKROMI_NIKDY)
+             soukromi_kdy=SOUKROMI_NIKDY, v_pokoji=False)
     a.update(kw)
     return role_stineni(**a)
 
@@ -318,3 +318,19 @@ def test_tlacitko_srovnat_pohyb_vynuti(monkeypatch):
     v.zapomen()
     bez(v.stineni({"cover.o1": "zastíněno"}, 9000, 15))
     assert p == [("cover.o1", "zastíněno")]
+
+
+def test_rezim_prazdna_mistnost():
+    """Kuchyň se má zaclonit i doma, ale ne když v ní zrovna stojíš."""
+    from vykon import REZIM_PRAZDNA
+    assert st(rezim=REZIM_PRAZDNA, horko=True, v_pokoji=False) == "zastinit"
+    assert st(rezim=REZIM_PRAZDNA, horko=True, v_pokoji=True) is None
+
+
+def test_rezim_prazdna_odcloni_kdyz_je_zima():
+    from vykon import REZIM_PRAZDNA
+    assert st(rezim=REZIM_PRAZDNA, zima=True, v_pokoji=False) == "odstinit"
+
+
+def test_rezim_vzdy_ignoruje_pritomnost_v_pokoji():
+    assert st(rezim=REZIM_VZDY, horko=True, v_pokoji=True) == "zastinit"
