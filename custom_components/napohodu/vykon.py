@@ -40,6 +40,7 @@ class StavVykonu:
     stineni_cas_s: float = -1e9
     prvni_beh: bool = True
     chyby: list[str] = field(default_factory=list)
+    zarizeni: dict[str, bool] = field(default_factory=dict)
 
 
 class Vykonavac:
@@ -108,6 +109,33 @@ class Vykonavac:
         return f"{sluzba} ({duvod})"
 
     # ------------------------------------------------------------ stínění
+
+    async def zarizeni(self, entity: list[str], zapnout: bool | None,
+                       klic: str) -> str | None:
+        """Zapne nebo vypne pomocná zařízení, třeba čističku nebo odtah.
+
+        Povel se posílá jen při změně. Opakované zapínání už zapnuté
+        čističky nic nezlepší a jen zatěžuje síť.
+        """
+        if not entity or zapnout is None:
+            return None
+        if self.stav.zarizeni.get(klic) == zapnout:
+            return None
+
+        sluzba = "turn_on" if zapnout else "turn_off"
+        for e in entity:
+            domena = e.split(".", 1)[0]
+            try:
+                await self.hass.services.async_call(
+                    domena, sluzba, {"entity_id": e}, blocking=False)
+            except Exception as ex:  # pragma: no cover
+                self.stav.chyby.append(f"{e}: {ex}")
+                _LOGGER.warning("NaPohodu: %s na %s selhalo: %s",
+                                sluzba, e, ex)
+                return None
+        self.stav.zarizeni[klic] = zapnout
+        _LOGGER.info("NaPohodu: %s -> %s", klic, "zapnuto" if zapnout else "vypnuto")
+        return f"{klic}: {'zapnuto' if zapnout else 'vypnuto'}"
 
     async def stineni(self, cile: dict[str, str], cas_s: float,
                       klid_min: float) -> str | None:

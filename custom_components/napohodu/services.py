@@ -281,6 +281,29 @@ async def zaregistruj(hass: HomeAssistant) -> None:
             "vysledky": vysledky,
         }
 
+    async def dashboard(call: ServiceCall) -> ServiceResponse:
+        """Vygeneruje kartu z entit, které opravdu existují."""
+        from unicodedata import normalize
+
+        from . import karty
+        from .const import PODENTITA_MISTNOST, PODENTITA_ZONA
+
+        def klic(nazev: str) -> str:
+            bez = normalize("NFKD", nazev).encode("ascii", "ignore").decode()
+            return "".join(z if z.isalnum() else "_" for z in bez.lower()).strip("_")
+
+        mistnosti, oblasti = [], []
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            for pod in entry.subentries.values():
+                if pod.subentry_type == PODENTITA_MISTNOST:
+                    mistnosti.append(klic(pod.title))
+                elif pod.subentry_type == PODENTITA_ZONA:
+                    oblasti.append(klic(pod.title))
+
+        text = karty.dashboard(
+            mistnosti, oblasti, lambda e: hass.states.get(e) is not None)
+        return {"yaml": text, "mistnosti": mistnosti, "oblasti": oblasti}
+
     async def srovnej(call: ServiceCall) -> ServiceResponse:
         """Zahodí paměť posledních povelů, takže se pošlou znovu."""
         nazev = (call.data.get(ATR_MISTNOST) or "").strip().lower()
@@ -314,6 +337,7 @@ async def zaregistruj(hass: HomeAssistant) -> None:
         ("smaz_stav", smaz_stav, SCHEMA_SMAZ),
         ("stineni_mistnosti", stineni_mistnosti, SCHEMA_MISTNOST),
         ("srovnej", srovnej, SCHEMA_SROVNEJ),
+        ("dashboard", dashboard, vol.Schema({})),
     ):
         hass.services.async_register(
             DOMAIN, jmeno, funkce, schema=schema,

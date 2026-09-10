@@ -132,3 +132,10 @@ srovnej:
       example: Obývák
       selector:
         text:
+
+dashboard:
+  name: Vygenerovat kartu na dashboard
+  description: >
+    Poskládá kartu ze všech místností a oblastí, které máš založené,
+    a vrátí ji jako YAML. Zkopíruj z odpovědi a vlož jako Manuální kartu.
+    Po přidání místnosti spusť znovu.

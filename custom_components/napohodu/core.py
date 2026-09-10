@@ -174,6 +174,53 @@ def z_priority(priorita: float) -> tuple[float, float]:
     return (0.5 + p * 0.25, 1.0 + p * 0.4)
 
 
+def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
+    """Vyjmenuje všechno, co právě brání větrání.
+
+    Popisek pod rozhodnutím ukáže jen ten první důvod, takže se snadno
+    stane, že člověk jednu překážku odstraní a nic se nezmění. Tohle
+    ukáže celý seznam.
+    """
+    seznam = []
+    if v.vitr_blokuje:
+        seznam.append("vítr")
+    if v.dest > n.dest_prah:
+        seznam.append(f"déšť {v.dest:.1f}")
+    if not v.doma:
+        seznam.append("nikdo doma")
+
+    korekce = 0.0
+    if p.otevreno:
+        korekce = max(-n.korekce_max,
+                      min(n.korekce_max, n.korekce_k * (v.t_in - v.t_out)))
+    tin = v.t_in + korekce
+    noc = _je_noc(v.hodina, n, v.spanek)
+
+    if noc:
+        seznam.append("noční klid")
+        if v.zastupce:
+            seznam.append("větrá za nás soused")
+        if tin <= n.nocni_min + n.nocni_rezerva:
+            seznam.append(f"pod noční mezí {n.nocni_min:.1f} °C")
+        if n.noc_do <= v.hodina < 9:
+            seznam.append("ranní klid")
+        prah = n.co2_noc
+    else:
+        prah = n.co2_zavrit if p.vetra_se else n.co2_otevrit
+
+    if v.co2 <= prah:
+        seznam.append(f"CO2 {v.co2:.0f} pod prahem {prah:.0f}")
+    if rosny_bod(v.t_out, v.rh_out) > tin - 2:
+        seznam.append("rosný bod")
+    if v.smog:
+        seznam.append("smog venku")
+    if v.cas_s - p.cas_povelu_s < n.min_drzeni_s:
+        zbyva = int((n.min_drzeni_s - (v.cas_s - p.cas_povelu_s)) / 60)
+        seznam.append(f"drží se stav ještě {zbyva} min")
+
+    return seznam
+
+
 def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     """Vrátí, co se má s oknem stát. Paměť se upravuje na místě."""
 

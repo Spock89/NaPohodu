@@ -17,6 +17,7 @@ MODULY = [
     "const", "core", "slunce", "pritomnost", "prumery", "sousedstvi",
     "sekvence", "arbiter", "vykon", "entity", "coordinator", "config_flow",
     "services", "sensor", "binary_sensor", "number", "switch", "button",
+    "karty",
 ]
 
 

@@ -346,3 +346,34 @@ def test_po_povelu_se_veri_vlastnimu_stavu():
     # hned nato se stejné rozhodnutí neopakuje
     r2 = rozhodni(Vstup(co2=1200, cil=25.5, t_out=10, cas_s=100010), p, N)
     assert r2.akce is Akce.NIC
+
+
+# ---------------------------------------------------------- diagnostika
+
+def test_diagnostika_vyjmenuje_vsechny_prekazky():
+    from core import duvody
+    v = stary(co2=500, vitr_blokuje=True, dest=2.0, doma=False, cil=25.5)
+    d = duvody(v, Pamet(), N)
+    assert any("vítr" in x for x in d)
+    assert any("déšť" in x for x in d)
+    assert any("nikdo doma" in x for x in d)
+
+
+def test_diagnostika_v_noci_rekne_proc():
+    from core import duvody
+    v = stary(co2=800, t_in=18.0, cil=25.5, hodina=2, spanek=True)
+    d = duvody(v, Pamet(), N)
+    assert any("noční" in x for x in d)
+    assert any("noční mezí" in x for x in d)
+
+
+def test_diagnostika_je_prazdna_kdyz_nic_nebrani():
+    from core import duvody
+    v = stary(co2=1200, t_in=21, t_out=12, cil=25.5, hodina=14)
+    assert duvody(v, Pamet(cas_povelu_s=0), N) == []
+
+
+def test_diagnostika_zminuje_zastupce():
+    from core import duvody
+    v = stary(co2=900, t_in=21, cil=25.5, hodina=2, spanek=True, zastupce=True)
+    assert any("soused" in x for x in duvody(v, Pamet(), N))

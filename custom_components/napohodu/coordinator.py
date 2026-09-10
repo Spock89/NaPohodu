@@ -21,16 +21,17 @@ from homeassistant.util import dt as dt_util
 from . import (core, pritomnost as pr, prumery as pm, slunce as sl,
                sousedstvi as so, vykon as vy)
 from .const import (
-    CONF_AZIMUT, CONF_CIL_MAX, CONF_CIL_MIN, CONF_CO2, CONF_CO2_NOC,
-    CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT, CONF_DEST,
-    CONF_DEST_PRAH, CONF_DOBEH, CONF_DOMA, CONF_DVERE, CONF_INDICIE_DOBEH,
-    CONF_INDICIE_STAV, CONF_INDICIE_VYKON, CONF_I_KDYZ_NIKDO,
-    CONF_KLID_STINENI_MIN, CONF_KOMFORT_ODSTUP, CONF_KVALITA,
-    CONF_MAX_STARI, CONF_MISTNOSTI, CONF_NARAZ, CONF_NARAZ_PRAH,
-    CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD, CONF_ODCHYLKA,
-    CONF_OKNA, CONF_PLOCHA, CONF_PM10, CONF_PM25, CONF_PM_PLATNY,
-    CONF_PRAH_VYKONU, CONF_PRIORITA, CONF_PRITOMNOST, CONF_PROJEZD_M,
-    CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_SEZONA_HYSTEREZE,
+    CONF_AZIMUT, CONF_CIL_MAX, CONF_CIL_MIN, CONF_CISTICKA, CONF_CO2,
+    CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT,
+    CONF_DEST, CONF_DEST_PRAH, CONF_DOBEH, CONF_DOMA, CONF_DVERE,
+    CONF_INDICIE_DOBEH, CONF_INDICIE_STAV, CONF_INDICIE_VYKON,
+    CONF_I_KDYZ_NIKDO, CONF_KLID_STINENI_MIN, CONF_KOMFORT_ODSTUP,
+    CONF_KVALITA, CONF_MAX_STARI, CONF_MISTNOSTI, CONF_NARAZ,
+    CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD,
+    CONF_ODCHYLKA, CONF_ODTAH, CONF_OKNA, CONF_PLOCHA, CONF_PM10,
+    CONF_PM25, CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRIORITA,
+    CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_RH_MAX, CONF_RH_VENKU,
+    CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_SEZONA_HYSTEREZE,
     CONF_SEZONA_PRAH, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
     CONF_STINENI_MAPA, CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
     CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_VITR,
@@ -86,7 +87,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.zony: dict[str, VysledekZony] = {}
         self.topna_sezona: bool = True
         self.vitr_blokuje: bool = False
+        # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
+        self.souhrn: dict[str, dict] = {}
+        self._souhrn_den: str = ""
         self.vitr_blokuje: bool = False
+        # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
+        self.souhrn: dict[str, dict] = {}
+        self._souhrn_den: str = ""
         # průměry si počítáme sami, ať uživatel nemusí zakládat statistiky
         self.prumery = pm.Prumery()
         # hodnoty, se kterými se opravdu počítá, a odkud pocházejí
@@ -288,6 +295,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
         ted = dt_util.now()
         hodina = ted.hour + ted.minute / 60
+        dnes = ted.strftime("%Y-%m-%d")
+        if dnes != self._souhrn_den:
+            self._souhrn_den = dnes
+            self.souhrn = {}          # nový den, počítadla od nuly
         cas_s = dt_util.utcnow().timestamp()
         cil_zakl = self._cil_zakladni(g)
         self.topna_sezona = self._sezona(g)
@@ -369,6 +380,23 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             o["klid"] = any(self.mistnosti[x.subentry_id].klid
                             for x in o["cleni"])
 
+            # Vzduch je společný, takže o něm nemůžou dvě místnosti
+            # rozhodovat jinak — jinak by jedna otevírala a druhá zavírala.
+            # Bere se nejcitlivější nastavení: stačí jedna místnost,
+            # které je dusno, a větrá celá oblast.
+            def nej(klic, vychozi):
+                return min(self.hodnota(x.subentry_id, klic,
+                                        float(podklady[x.subentry_id]["d"]
+                                              .get(klic, vychozi)))
+                           for x in o["cleni"])
+
+            o["prahy"] = {
+                CONF_CO2_OTEVRIT: nej(CONF_CO2_OTEVRIT, 800),
+                CONF_CO2_ZAVRIT: nej(CONF_CO2_ZAVRIT, 700),
+                CONF_CO2_NOC: nej(CONF_CO2_NOC, 1000),
+                CONF_CO2_NOC_KRIZE: nej(CONF_CO2_NOC_KRIZE, 1250),
+            }
+
         # ---------- 3. zastupování mezi oblastmi ----------
         stavy = []
         for o in okruhy:
@@ -442,14 +470,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             zastupce=uprava.zastupce is not None,
         )
         nast = core.Nastaveni(
-            co2_otevrit=self.hodnota(p.subentry_id, CONF_CO2_OTEVRIT,
-                                     float(d.get(CONF_CO2_OTEVRIT, 800))),
-            co2_zavrit=self.hodnota(p.subentry_id, CONF_CO2_ZAVRIT,
-                                    float(d.get(CONF_CO2_ZAVRIT, 700))),
-            co2_noc=self.hodnota(p.subentry_id, CONF_CO2_NOC,
-                                 float(d.get(CONF_CO2_NOC, 1000))),
-            co2_noc_krize=self.hodnota(p.subentry_id, CONF_CO2_NOC_KRIZE,
-                                       float(d.get(CONF_CO2_NOC_KRIZE, 1250))),
+            # prahy z oblasti, ať se místnosti nepřetahují
+            co2_otevrit=okruh["prahy"][CONF_CO2_OTEVRIT],
+            co2_zavrit=okruh["prahy"][CONF_CO2_ZAVRIT],
+            co2_noc=okruh["prahy"][CONF_CO2_NOC],
+            co2_noc_krize=okruh["prahy"][CONF_CO2_NOC_KRIZE],
             dest_prah=prah_deste,
             projezd_s=float(d.get(CONF_PROJEZD_M, 120)),
             nocni_min=self.hodnota(p.subentry_id, CONF_NOC_MIN,
@@ -488,6 +513,21 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 vysledek = await vyk.okno(okno, r, cas_s, skutecne)
                 provedeno = vysledek or provedeno
 
+        # ---------- denní souhrn ----------
+        sh = self.souhrn.setdefault(p.subentry_id, {
+            "pohyby": 0, "minut_otevreno": 0, "co2_max": 0,
+            "nejnizsi_teplota": None, "nouzove": 0})
+        if r.akce is not core.Akce.NIC:
+            sh["pohyby"] += 1
+        if skutecne:
+            sh["minut_otevreno"] += INTERVAL_S / 60
+        sh["co2_max"] = max(sh["co2_max"], int(v.co2))
+        if r.t_in_korig:
+            sh["nejnizsi_teplota"] = min(
+                sh["nejnizsi_teplota"] or 99, round(r.t_in_korig, 1))
+        if "nouzov" in (r.duvod or ""):
+            sh["nouzove"] += 1
+
         m.rozhodnuti = r
         m.okno_otevreno = skutecne
         m.atributy.update({
@@ -496,11 +536,56 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "navrh": r.akce.value, "provedeno": provedeno,
             "ovladani": "zapnuto" if ovladat else "jen sleduje",
             "oblast": okruh["nazev"] if okruh["pod"] else None,
+            "prahy_z_oblasti": {
+                "otevrit": okruh["prahy"][CONF_CO2_OTEVRIT],
+                "zavrit": okruh["prahy"][CONF_CO2_ZAVRIT],
+                "noc": okruh["prahy"][CONF_CO2_NOC],
+            },
             "zastupce": uprava.zastupce,
             "okna": okna,
+            "duvody": core.duvody(v, pamet, nast),
+            "dnes": {
+                "pohyby": sh["pohyby"],
+                "otevreno_min": round(sh["minut_otevreno"]),
+                "co2_max": sh["co2_max"],
+                "nejnizsi_teplota": sh["nejnizsi_teplota"],
+                "nouzove_vetrani": sh["nouzove"],
+            },
         })
 
         await self._stineni_krok(p, d, u, m, doma, slunce_el, cas_s)
+        await self._pomocnici_krok(p, d, m, okruh)
+
+    async def _pomocnici_krok(self, p, d, m, okruh) -> None:
+        """Čistička řeší prach, odtah vlhkost. Okno na to nemusí."""
+        vyk = self.vykonavaci.setdefault(
+            p.subentry_id, vy.Vykonavac(self.hass, p.subentry_id))
+
+        cisticka = d.get(CONF_CISTICKA) or []
+        if cisticka:
+            pm = okruh["pm25"] or 0
+            pm10 = okruh["pm10"] or 0
+            zapnout = None
+            if (pm > 35 or pm10 > 50) and m.obsazeno:
+                zapnout = True
+            elif pm < 20 and pm10 < 30:
+                zapnout = False
+            m.atributy["cisticka"] = await vyk.zarizeni(
+                cisticka, zapnout, "čistička")
+        m.atributy["cisticka_bezi"] = vyk.stav.zarizeni.get("čistička")
+
+        odtah = d.get(CONF_ODTAH) or []
+        rh_in = self._cislo(d.get(CONF_RH_VNITRNI))
+        if odtah and rh_in is not None:
+            rh_max = float(d.get(CONF_RH_MAX, 60.0))
+            zapnout = None
+            if rh_in > rh_max:
+                zapnout = True
+            elif rh_in < rh_max - 5:
+                zapnout = False
+            m.atributy["odtah"] = await vyk.zarizeni(odtah, zapnout, "odtah")
+            m.atributy["vlhkost"] = rh_in
+        m.atributy["odtah_bezi"] = vyk.stav.zarizeni.get("odtah")
 
     async def _stineni_krok(self, p, d, u, m, doma, slunce_el, cas_s):
         """Rozhodne o žaluziích místnosti. Slunce svítí do pokoje, ne do oblasti."""
