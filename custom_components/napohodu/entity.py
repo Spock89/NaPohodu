@@ -7,7 +7,7 @@ from homeassistant.config_entries import ConfigSubentry
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, PODENTITA_ZONA
+from .const import DOMAIN, PODENTITA_KLIMA, PODENTITA_ZONA
 
 
 class NaPohoduEntity(CoordinatorEntity):
@@ -23,7 +23,9 @@ class NaPohoduEntity(CoordinatorEntity):
             identifiers={(DOMAIN, pod.subentry_id)},
             name=f"NaPohodu {pod.title}",
             manufacturer="NaPohodu",
-            model="Zóna" if pod.subentry_type == PODENTITA_ZONA else "Místnost",
+            model={PODENTITA_ZONA: "Oblast",
+                   PODENTITA_KLIMA: "Klimatizace"}.get(
+                       pod.subentry_type, "Místnost"),
         )
 
     @property

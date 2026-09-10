@@ -93,6 +93,31 @@ U každé místnosti se nastaví, **kdy vůbec smí automatika sahat**: vždy,
 jen když nikdo není doma, nebo nikdy. A zvlášť zatahování po setmění kvůli
 soukromí, buď hned nebo až když někdo do místnosti přijde.
 
+### Sdílená klimatizace
+
+Vnitřní jednotka v jedné místnosti patří té místnosti a řídí se sama.
+Jednotka, která obsluhuje celý byt, je jiný případ — musí se rozhodnout,
+komu vyhoví. Pro ni se zakládá **sdílená klimatizace** jako třetí typ
+vedle místnosti a oblasti.
+
+Cíl se počítá ve stupnici místnosti, kde jednotka fyzicky stojí, protože
+tu měří nejlíp. Podle toho, o kolik jsou ostatní počítané místnosti nad
+cílem, se dotlačí dolů — nejvýš o dva stupně, aby místnost s jednotkou
+nezmrzla. Prázdné a nepočítané místnosti cíl netahají, takže dílna
+nechladí celý byt.
+
+**Otevřené okno jednotku nevypne, když je venku tepleji než cíl.** Okno
+je tehdy otevřené kvůli vzduchu a tahá dovnitř teplo, takže chladit je
+potřeba právě teď. Vypne se jen tehdy, když okno chladí zadarmo.
+
+Při nepřítomnosti se cíl drží dál, protože rozhoupat byt zpátky je
+dražší než ho udržet. Na útlum se přejde až při dlouhé nepřítomnosti,
+buď přepínačem, nebo automaticky po zvolené době.
+
+Cíl se posílá jen při skutečné změně — aspoň půl stupně a nejčastěji
+jednou za patnáct minut. Kompresor ani člověk nemá rád, když se hodnota
+vrtí každou minutu.
+
 ### Obsazenost z více důkazů
 
 Pohybové čidlo nevidí sedícího člověka a po vybití baterie zamrzne.
@@ -102,6 +127,32 @@ ignoruje.
 
 Obsazenost a klid jsou dvě nezávislé věci. Ložnice bývá neobsazená, ale
 v noci vyžaduje klid.
+
+### Zprávy
+
+Posílá se přes notify entity, takže příjemce vybereš ze seznamu — u
+Telegramu vytváří integrace jednu entitu na každý chat. Zaškrtneš, co tě
+zajímá: zavření kvůli větru nebo dešti, nouzové provětrání, otevírání
+a zavírání, chyby pohonu, denní souhrn.
+
+Stejná zpráva se neopakuje dřív než za půl hodiny. Automatika, která
+upozorňuje pořád, se přestane číst.
+
+### Karta na dashboard
+
+Nastavení → NaPohodu → Nastavit → **Karta na dashboard** vypíše hotový
+YAML poskládaný z entit, které opravdu existují. Zkopíruješ a vložíš.
+Po přidání místnosti si přijdeš pro novou verzi.
+
+### Diagnostika
+
+Když se nic neděje, atribut `duvody` u stavu místnosti vyjmenuje
+**všechny** překážky naráz, ne jen tu první. Odstranit jednu a divit se,
+že to nepomohlo, je snadné — proto celý seznam.
+
+Atribut `dnes` shrne den: kolikrát se okno hýbalo, jak dlouho bylo
+otevřeno, nejvyšší CO2, nejnižší teplota. Podle toho se pozná, jestli
+jsou prahy dobře nastavené.
 
 ## Co to nedělá
 

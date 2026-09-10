@@ -113,6 +113,7 @@ class NaPohoduConfigFlow(ConfigFlow, domain=c.DOMAIN):
         return {
             c.PODENTITA_MISTNOST: MistnostSubentryFlow,
             c.PODENTITA_ZONA: ZonaSubentryFlow,
+            c.PODENTITA_KLIMA: KlimaSubentryFlow,
         }
 
     @staticmethod
@@ -667,3 +668,72 @@ class ZonaSubentryFlow(ConfigSubentryFlow):
                 _schema_zona(self._mistnosti(), self._zony()), pod.data
             ),
         )
+
+
+# ---------------------------------------------------------------- klima
+
+def _schema_klima(mistnosti: list[dict]) -> vol.Schema:
+    """Sdílená klimatizace na celý byt.
+
+    Vnitřní jednotka v každé místnosti sem nepatří — tu zadáš u té
+    místnosti a řídí se sama. Tady je jen jednotka, která obsluhuje víc
+    místností a musí se rozhodnout, komu vyhoví.
+    """
+    jmena = [{"value": m["value"], "label": m["label"]} for m in mistnosti]
+    return vol.Schema(
+        {
+            vol.Required(c.CONF_NAZEV): selector.TextSelector(),
+            vol.Required(c.CONF_KLIMA_ENTITA): _ent(["climate"]),
+            vol.Optional(c.CONF_KLIMA_UMI, default="chlazeni"): _volba(
+                c.UMI_KLIMA, "klima_umi"),
+            vol.Optional(c.CONF_KLIMA_V_POKOJI): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=jmena, mode=selector.SelectSelectorMode.DROPDOWN)),
+            vol.Optional(c.CONF_KLIMA_POKOJE): _vyber(jmena),
+            vol.Optional(c.CONF_KLIMA_CHLADIT_OD, default=1.0):
+                _cislo(0.5, 5, 0.5),
+            vol.Optional(c.CONF_KLIMA_TOPIT_OD, default=1.0):
+                _cislo(0.5, 5, 0.5),
+            vol.Optional(c.CONF_KLIMA_UTLUM_CHLAZENI, default=28.0):
+                _cislo(22, 32),
+            vol.Optional(c.CONF_KLIMA_UTLUM_TOPENI, default=16.0):
+                _cislo(8, 20),
+            vol.Optional(c.CONF_KLIMA_SUSIT_OD, default=0):
+                _cislo(0, 80, 1, "%"),
+            vol.Optional(c.CONF_KLIMA_DLOUHA): _ent(
+                ["input_boolean", "switch", "binary_sensor"]),
+            vol.Optional(c.CONF_KLIMA_DLOUHA_H, default=24):
+                _cislo(2, 168, 1, "h"),
+        }
+    )
+
+
+class KlimaSubentryFlow(ConfigSubentryFlow):
+    """Přidání a úprava sdílené klimatizace."""
+
+    def _mistnosti(self) -> list[dict]:
+        try:
+            entry = self._get_entry()
+        except Exception:  # pragma: no cover
+            return []
+        return [{"value": p.subentry_id, "label": p.title}
+                for p in entry.subentries.values()
+                if p.subentry_type == c.PODENTITA_MISTNOST]
+
+    async def async_step_user(self, user_input=None) -> SubentryFlowResult:
+        if user_input is not None:
+            return self.async_create_entry(
+                title=user_input[c.CONF_NAZEV], data=user_input)
+        return self.async_show_form(
+            step_id="user", data_schema=_schema_klima(self._mistnosti()))
+
+    async def async_step_reconfigure(self, user_input=None) -> SubentryFlowResult:
+        pod = self._get_reconfigure_subentry()
+        if user_input is not None:
+            return self.async_update_and_abort(
+                self._get_entry(), pod, data=user_input,
+                title=user_input[c.CONF_NAZEV])
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                _schema_klima(self._mistnosti()), pod.data))

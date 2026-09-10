@@ -52,8 +52,17 @@ class Hlasic:
 
 
 def _vitr(m, u):
-    return (f"{m}: zavírám okno kvůli větru "
-            f"({u.get('naraz', 0):.0f} m/s v nárazech).")
+    """Uvádí hodnotu, která blokaci spustila, ne tu aktuální.
+
+    Blokace drží, dokud vítr neklesne pod uklidňovací mez, takže mezitím
+    už může být venku klid — a zpráva s aktuálním číslem by lhala.
+    """
+    co = u.get("co_prekrocilo")
+    if not co:
+        return f"{m}: zavírám okno kvůli větru."
+    hodnota = u.get("naraz" if co == "nárazy" else "prumer", 0)
+    return (f"{m}: zavírám okno kvůli větru — {co} {hodnota:.1f} m/s "
+            f"nad prahem {u.get('prah', 0):.0f}.")
 
 
 def _dest(m, u):

@@ -44,8 +44,23 @@ def test_ruzne_druhy_se_neblokuji():
 
 def test_text_obsahuje_mistnost_i_cislo():
     h = Hlasic(VYCHOZI)
-    t = h.zprava("vitr", "Ložnice", 1000, naraz=14)
-    assert "Ložnice" in t and "14" in t
+    t = h.zprava("vitr", "Ložnice", 1000, naraz=14, prumer=8,
+                 co_prekrocilo="nárazy", prah=11)
+    assert "Ložnice" in t and "14" in t and "11" in t
+
+
+def test_zprava_o_vetru_uvadi_co_prekrocilo():
+    """Blokace drží i po zklidnění, takže aktuální číslo by lhalo."""
+    h = Hlasic(VYCHOZI)
+    t = h.zprava("vitr", "Kuchyně", 1000, naraz=3, prumer=10,
+                 co_prekrocilo="průměr", prah=9)
+    assert "průměr 10" in t and "9" in t
+    assert "3" not in t.replace("Kuchyně", "")
+
+
+def test_zprava_o_vetru_bez_podrobnosti_nespadne():
+    h = Hlasic(VYCHOZI)
+    assert h.zprava("vitr", "Kuchyně", 1000)
 
 
 def test_souhrn_shrne_den():

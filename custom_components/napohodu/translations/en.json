@@ -476,6 +476,81 @@
       "error": {
         "mistnost_uz_ma_zonu": "Některá z vybraných místností už patří jiné zóně. Každá místnost smí být jen v jedné."
       }
+    },
+    "klima": {
+      "title": "Sdílená klimatizace",
+      "entry_type": "Klimatizace",
+      "initiate_flow": {
+        "user": "Přidat klimatizaci",
+        "reconfigure": "Upravit klimatizaci"
+      },
+      "step": {
+        "user": {
+          "title": "Sdílená klimatizace",
+          "description": "Jednotka, která obsluhuje víc místností a musí se rozhodnout, komu vyhoví.\\n\\nCíl se počítá ve stupnici místnosti, kde jednotka stojí, a dotlačí se podle toho, o kolik jsou ostatní nad cílem — nejvýš o dva stupně, aby ta s jednotkou nezmrzla.\\n\\nOtevřené okno jednotku nevypne, když je venku tepleji než cíl. Okno je tehdy otevřené kvůli vzduchu a tahá dovnitř teplo, takže chladit je potřeba právě teď.",
+          "data": {
+            "klima_entita": "Klimatizace",
+            "klima_umi": "Co umí",
+            "klima_v_pokoji": "Stojí v místnosti",
+            "klima_pokoje": "Obsluhuje místnosti",
+            "chladit_od": "Chladit od překročení",
+            "topit_od": "Topit od nedostatku",
+            "utlum_chlazeni": "Útlum při dlouhé nepřítomnosti (chlazení)",
+            "utlum_topeni": "Útlum při dlouhé nepřítomnosti (topení)",
+            "susit_od": "Sušit od vlhkosti",
+            "dlouha_nepritomnost": "Přepínač dlouhé nepřítomnosti",
+            "dlouha_nepritomnost_h": "Nebo automaticky po",
+            "nazev": "Název"
+          },
+          "data_description": {
+            "klima_entita": "Jednotka, která obsluhuje víc místností. Vnitřní jednotku v jedné místnosti sem nedávej — tu zadáš u té místnosti a řídí se sama.",
+            "klima_umi": "Jednotka, která umí topit, se mimo topnou sezónu použije místo radiátorů. V sezóně topit nebude, aby si nelezly do cesty.",
+            "klima_v_pokoji": "Kde jednotka fyzicky stojí. Měří především tuhle místnost, takže se v její stupnici počítá cíl — do ostatních se chlad dotlačí nejvýš o dva stupně.",
+            "klima_pokoje": "Místnosti, které se do rozhodování počítají. Dílnu nebo spíž vynech, jinak by tahaly cíl.",
+            "chladit_od": "O kolik musí být v místnosti nad cílem, než se začne chladit.",
+            "topit_od": "O kolik musí být pod cílem, než se začne topit.",
+            "utlum_chlazeni": "Při dlouhé nepřítomnosti se nevypíná úplně, jen se drží tahle teplota. Rozhoupat byt zpátky je dražší než ho udržet.",
+            "utlum_topeni": "Totéž v topné sezóně.",
+            "susit_od": "Klimatizace umí odvlhčovat. Nula znamená nesušit — je to spotřeba za komfort, který nemusí být potřeba.",
+            "dlouha_nepritomnost": "Přepínač, kterým dáš najevo, že jste na dovolené.",
+            "dlouha_nepritomnost_h": "Když přepínač nemáš, po téhle době prázdného bytu se přejde na útlum sám.",
+            "nazev": "Jak se jednotka jmenuje, například Klimatizace obývák."
+          },
+          "submit": "Uložit"
+        },
+        "reconfigure": {
+          "title": "Úprava klimatizace",
+          "data": {
+            "klima_entita": "Klimatizace",
+            "klima_umi": "Co umí",
+            "klima_v_pokoji": "Stojí v místnosti",
+            "klima_pokoje": "Obsluhuje místnosti",
+            "chladit_od": "Chladit od překročení",
+            "topit_od": "Topit od nedostatku",
+            "utlum_chlazeni": "Útlum při dlouhé nepřítomnosti (chlazení)",
+            "utlum_topeni": "Útlum při dlouhé nepřítomnosti (topení)",
+            "susit_od": "Sušit od vlhkosti",
+            "dlouha_nepritomnost": "Přepínač dlouhé nepřítomnosti",
+            "dlouha_nepritomnost_h": "Nebo automaticky po",
+            "nazev": "Název"
+          },
+          "data_description": {
+            "klima_entita": "Jednotka, která obsluhuje víc místností. Vnitřní jednotku v jedné místnosti sem nedávej — tu zadáš u té místnosti a řídí se sama.",
+            "klima_umi": "Jednotka, která umí topit, se mimo topnou sezónu použije místo radiátorů. V sezóně topit nebude, aby si nelezly do cesty.",
+            "klima_v_pokoji": "Kde jednotka fyzicky stojí. Měří především tuhle místnost, takže se v její stupnici počítá cíl — do ostatních se chlad dotlačí nejvýš o dva stupně.",
+            "klima_pokoje": "Místnosti, které se do rozhodování počítají. Dílnu nebo spíž vynech, jinak by tahaly cíl.",
+            "chladit_od": "O kolik musí být v místnosti nad cílem, než se začne chladit.",
+            "topit_od": "O kolik musí být pod cílem, než se začne topit.",
+            "utlum_chlazeni": "Při dlouhé nepřítomnosti se nevypíná úplně, jen se drží tahle teplota. Rozhoupat byt zpátky je dražší než ho udržet.",
+            "utlum_topeni": "Totéž v topné sezóně.",
+            "susit_od": "Klimatizace umí odvlhčovat. Nula znamená nesušit — je to spotřeba za komfort, který nemusí být potřeba.",
+            "dlouha_nepritomnost": "Přepínač, kterým dáš najevo, že jste na dovolené.",
+            "dlouha_nepritomnost_h": "Když přepínač nemáš, po téhle době prázdného bytu se přejde na útlum sám.",
+            "nazev": "Jak se jednotka jmenuje, například Klimatizace obývák."
+          },
+          "submit": "Uložit"
+        }
+      }
     }
   },
   "selector": {
@@ -542,6 +617,13 @@
         "chyba": "Chyba pohonu",
         "souhrn": "Denní souhrn"
       }
+    },
+    "klima_umi": {
+      "options": {
+        "chlazeni": "Jen chladí",
+        "topeni": "Jen topí",
+        "oboji": "Chladí i topí"
+      }
     }
   },
   "title": "NaPohodu",
@@ -564,6 +646,9 @@
       },
       "stav_oblasti": {
         "name": "Sdílený vzduch"
+      },
+      "stav_klimy": {
+        "name": "Stav"
       }
     },
     "binary_sensor": {
@@ -618,6 +703,9 @@
       },
       "ovladat_stineni": {
         "name": "Ovládat stínění"
+      },
+      "ovladat_klimu": {
+        "name": "Ovládat klimatizaci"
       }
     },
     "button": {

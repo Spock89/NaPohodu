@@ -4,6 +4,7 @@ DOMAIN = "napohodu"
 
 PODENTITA_MISTNOST = "mistnost"
 PODENTITA_ZONA = "zona"
+PODENTITA_KLIMA = "klima"
 
 # --- globální nastavení ---
 CONF_T_VENKU = "t_venku"
@@ -116,6 +117,20 @@ CONF_TIMEOUT = "timeout_polohy_s"
 CONF_NAZEV_STAVU = "nazev_stavu"
 CONF_STAVY_TEXT = "stavy_text"
 CONF_KARTA_YAML = "karta_yaml"
+
+# --- sdílená klimatizace ---
+CONF_KLIMA_ENTITA = "klima_entita"
+CONF_KLIMA_UMI = "klima_umi"
+CONF_KLIMA_V_POKOJI = "klima_v_pokoji"
+CONF_KLIMA_POKOJE = "klima_pokoje"
+CONF_KLIMA_CHLADIT_OD = "chladit_od"
+CONF_KLIMA_TOPIT_OD = "topit_od"
+CONF_KLIMA_UTLUM_CHLAZENI = "utlum_chlazeni"
+CONF_KLIMA_UTLUM_TOPENI = "utlum_topeni"
+CONF_KLIMA_SUSIT_OD = "susit_od"
+CONF_KLIMA_DLOUHA = "dlouha_nepritomnost"
+CONF_KLIMA_DLOUHA_H = "dlouha_nepritomnost_h"
+UMI_KLIMA = ["chlazeni", "topeni", "oboji"]
 
 # --- zprávy ---
 CONF_ZPRAVY = "zpravy_kam"

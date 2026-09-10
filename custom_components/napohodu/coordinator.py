@@ -19,27 +19,31 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
 from . import (core, pritomnost as pr, prumery as pm, slunce as sl,
-               sousedstvi as so, vykon as vy, zpravy as zp)
+               sousedstvi as so, vykon as vy, zpravy as zp,
+               klima as kl)
 from .const import (
     CONF_AZIMUT, CONF_CIL_MAX, CONF_CIL_MIN, CONF_CISTICKA, CONF_CO2,
     CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT,
     CONF_DEST, CONF_DEST_PRAH, CONF_DOBEH, CONF_DOMA, CONF_DVERE,
     CONF_INDICIE_DOBEH, CONF_INDICIE_STAV, CONF_INDICIE_VYKON,
-    CONF_I_KDYZ_NIKDO, CONF_KLID_STINENI_MIN, CONF_KOMFORT_ODSTUP,
-    CONF_KVALITA, CONF_MAX_STARI, CONF_MISTNOSTI, CONF_NARAZ,
-    CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD,
-    CONF_ODCHYLKA, CONF_ODTAH, CONF_OKNA, CONF_PLOCHA, CONF_PM10,
-    CONF_PM25, CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRIORITA,
-    CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_RH_MAX, CONF_RH_VENKU,
-    CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_SEZONA_HYSTEREZE,
+    CONF_I_KDYZ_NIKDO, CONF_KLID_STINENI_MIN, CONF_KLIMA_CHLADIT_OD,
+    CONF_KLIMA_DLOUHA, CONF_KLIMA_DLOUHA_H, CONF_KLIMA_ENTITA,
+    CONF_KLIMA_POKOJE, CONF_KLIMA_SUSIT_OD, CONF_KLIMA_TOPIT_OD,
+    CONF_KLIMA_UMI, CONF_KLIMA_UTLUM_CHLAZENI, CONF_KLIMA_UTLUM_TOPENI,
+    CONF_KLIMA_V_POKOJI, CONF_KOMFORT_ODSTUP, CONF_KVALITA, CONF_MAX_STARI,
+    CONF_MISTNOSTI, CONF_NARAZ, CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOC_DO,
+    CONF_NOC_MIN, CONF_NOC_OD, CONF_ODCHYLKA, CONF_ODTAH, CONF_OKNA,
+    CONF_PLOCHA, CONF_PM10, CONF_PM25, CONF_PM_PLATNY, CONF_PRAH_VYKONU,
+    CONF_PRIORITA, CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_RH_MAX,
+    CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_SEZONA_HYSTEREZE,
     CONF_SEZONA_PRAH, CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI,
     CONF_SPANEK, CONF_STINENI_MAPA, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
     CONF_TEPLOTY, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
     CONF_T_VENKU_M, CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH,
     CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
     CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZPRAVY,
-    CONF_ZPRAVY_DRUHY, DOMAIN, INTERVAL_S, PODENTITA_MISTNOST,
-    PODENTITA_ZONA,
+    CONF_ZPRAVY_DRUHY, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
+    PODENTITA_MISTNOST, PODENTITA_ZONA,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -88,12 +92,26 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.zony: dict[str, VysledekZony] = {}
         self.topna_sezona: bool = True
         self.vitr_blokuje: bool = False
+        # hodnoty, které blokaci spustily — zpráva má říkat pravdu,
+        # ne aktuální stav, který už může být jiný
+        self.vitr_pricina: dict = {}
+        self.vitr_stav: dict = {}
+        self.klimy: dict[str, dict] = {}
+        self._klima_pamet: dict[str, kl.Pamet] = {}
+        self._prazdno_od: float | None = None
         # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
         self.souhrn: dict[str, dict] = {}
         self._souhrn_den: str = ""
         self.hlasic = zp.Hlasic()
         self._souhrn_odeslan: str = ""
         self.vitr_blokuje: bool = False
+        # hodnoty, které blokaci spustily — zpráva má říkat pravdu,
+        # ne aktuální stav, který už může být jiný
+        self.vitr_pricina: dict = {}
+        self.vitr_stav: dict = {}
+        self.klimy: dict[str, dict] = {}
+        self._klima_pamet: dict[str, kl.Pamet] = {}
+        self._prazdno_od: float | None = None
         # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
         self.souhrn: dict[str, dict] = {}
         self._souhrn_den: str = ""
@@ -253,9 +271,28 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         klid_v = float(g.get(CONF_VITR_KLID, 5.0))
 
         if vitr > prah_v or naraz > prah_n:
+            if not self.vitr_blokuje:
+                self.vitr_pricina = {
+                    "prumer": round(vitr, 1), "naraz": round(naraz, 1),
+                    "co_prekrocilo": "nárazy" if naraz > prah_n else "průměr",
+                    "prah": prah_n if naraz > prah_n else prah_v,
+                }
+                _LOGGER.info("NaPohodu: vítr blokuje — %s %.1f m/s nad "
+                             "prahem %.1f", self.vitr_pricina["co_prekrocilo"],
+                             max(vitr, naraz), self.vitr_pricina["prah"])
             self.vitr_blokuje = True
         elif vitr < klid_v and naraz < klid_v:
+            if self.vitr_blokuje:
+                _LOGGER.info("NaPohodu: vítr povolil (průměr %.1f, náraz "
+                             "%.1f pod %.1f)", vitr, naraz, klid_v)
             self.vitr_blokuje = False
+            self.vitr_pricina = {}
+        self.vitr_stav = {
+            "prumer": round(vitr, 1), "naraz": round(naraz, 1),
+            "blokuje": self.vitr_blokuje,
+            "prahy": {"prumer": prah_v, "naraz": prah_n, "povoli_pod": klid_v},
+            "pricina": self.vitr_pricina or None,
+        }
         return self.vitr_blokuje
 
     def _sezona(self, g: dict) -> bool:
@@ -431,7 +468,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     t_out, rh_out, dest, doma, vitr_blokuje, je_noc,
                     hodina, cas_s, noc_od, noc_do, slunce_el)
 
-        # ---------- 5. denní souhrn ----------
+        # ---------- 5. sdílená klimatizace ----------
+        if doma:
+            self._prazdno_od = None
+        elif self._prazdno_od is None:
+            self._prazdno_od = cas_s
+        await self._klima_krok(g, t_out, doma, cas_s)
+
+        # ---------- 6. denní souhrn ----------
         cas_souhrnu = self._hodina(g.get(CONF_SOUHRN_CAS), 21.0)
         if (hodina >= cas_souhrnu and self._souhrn_odeslan != dnes
                 and self.souhrn):
@@ -442,7 +486,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     await self._posli(g, "souhrn", m.nazev, cas_s,
                                       dnes=m.atributy.get("dnes", {}))
 
-        # ---------- 6. přehled oblasti ----------
+        # ---------- 7. přehled oblasti ----------
         self.zony = {}
         for o in okruhy:
             if o["pod"] is None:
@@ -476,6 +520,86 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 {"entity_id": kam, "message": text}, blocking=False)
         except Exception as e:  # pragma: no cover - výpadek notifikací
             _LOGGER.warning("NaPohodu: zprávu se nepodařilo poslat: %s", e)
+
+    async def _klima_krok(self, g: dict, t_out: float, doma: bool,
+                          cas_s: float) -> None:
+        """Sdílená jednotka obsluhuje víc místností, tak se musí rozhodnout.
+
+        Vnitřní jednotka v jedné místnosti se sem neplete — tu má
+        místnost u sebe a řídí se sama.
+        """
+        self.klimy = {}
+        for pod in self._podentity(PODENTITA_KLIMA):
+            d = pod.data
+            entita = d.get(CONF_KLIMA_ENTITA)
+            if not entita:
+                continue
+
+            vybrane = d.get(CONF_KLIMA_POKOJE) or list(self.mistnosti)
+            v_pokoji_id = d.get(CONF_KLIMA_V_POKOJI)
+            pokoje = []
+            for pid, m in self.mistnosti.items():
+                pokoje.append(kl.Pokoj(
+                    nazev=m.nazev,
+                    t_in=m.atributy.get("teplota_max"),
+                    cil=m.cil, obsazeno=m.obsazeno,
+                    pocita_se=pid in vybrane,
+                    rh_in=m.atributy.get("vlhkost"),
+                    okno_otevreno=m.okno_otevreno,
+                ))
+            v_pokoji = self.mistnosti.get(v_pokoji_id)
+
+            dlouho = bool(self._zapnuto(d.get(CONF_KLIMA_DLOUHA)))
+            if not dlouho and self._prazdno_od is not None:
+                hodin = float(d.get(CONF_KLIMA_DLOUHA_H, 24))
+                dlouho = (cas_s - self._prazdno_od) > hodin * 3600
+
+            susit = float(d.get(CONF_KLIMA_SUSIT_OD, 0)) or None
+            nast = kl.Nastaveni(
+                umi=d.get(CONF_KLIMA_UMI, "chlazeni"),
+                v_pokoji=v_pokoji.nazev if v_pokoji else "",
+                chladit_od=float(d.get(CONF_KLIMA_CHLADIT_OD, 1.0)),
+                topit_od=float(d.get(CONF_KLIMA_TOPIT_OD, 1.0)),
+                utlum_chlazeni=float(d.get(CONF_KLIMA_UTLUM_CHLAZENI, 28.0)),
+                utlum_topeni=float(d.get(CONF_KLIMA_UTLUM_TOPENI, 16.0)),
+                susit_od=susit, dlouha_nepritomnost=dlouho,
+            )
+            pamet = self._klima_pamet.setdefault(pod.subentry_id, kl.Pamet())
+            r = kl.rozhodni(pokoje, pamet, cas_s, t_out,
+                            self.topna_sezona, nast)
+
+            ovladat = self.hodnoty.get((pod.subentry_id, "ovladat"), 0.0) > 0
+            if ovladat and r.poslat:
+                await self._klima_povel(entita, r)
+
+            self.klimy[pod.subentry_id] = {
+                "nazev": pod.title, "stav": r.stav, "cil": r.cil,
+                "duvod": r.duvod, "podle": r.podle,
+                "ovladani": "zapnuto" if ovladat else "jen sleduje",
+                "dlouha_nepritomnost": dlouho,
+                "pocita_se": [self.mistnosti[x].nazev
+                              for x in vybrane if x in self.mistnosti],
+            }
+
+    async def _klima_povel(self, entita: str, r) -> None:
+        """Přeloží rozhodnutí na povely climate."""
+        rezimy = {kl.STAV_CHLADIT: "cool", kl.STAV_TOPIT: "heat",
+                  kl.STAV_SUSIT: "dry", kl.STAV_UTLUM: "cool",
+                  kl.STAV_VYP: "off"}
+        try:
+            await self.hass.services.async_call(
+                "climate", "set_hvac_mode",
+                {"entity_id": entita, "hvac_mode": rezimy[r.stav]},
+                blocking=False)
+            if r.cil is not None and r.stav != kl.STAV_VYP:
+                await self.hass.services.async_call(
+                    "climate", "set_temperature",
+                    {"entity_id": entita, "temperature": r.cil},
+                    blocking=False)
+            _LOGGER.info("NaPohodu: klimatizace %s -> %s %s (%s)",
+                         entita, r.stav, r.cil or "", r.duvod)
+        except Exception as e:  # pragma: no cover
+            _LOGGER.warning("NaPohodu: klimatizace %s selhala: %s", entita, e)
 
     async def _mistnost_krok(self, p, u, okruh, uprava, t_out, rh_out, dest,
                              doma, vitr_blokuje, je_noc, hodina, cas_s,
@@ -555,7 +679,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             g = {**self.entry.data, **self.entry.options}
             if r.akce is core.Akce.ZAVRIT and "větr" in r.duvod:
                 await self._posli(g, "vitr", m.nazev, cas_s,
-                                  naraz=self._cislo(g.get(CONF_NARAZ), 0))
+                                  **(self.vitr_pricina or {}))
             elif r.akce is core.Akce.ZAVRIT and "dešt" in r.duvod:
                 await self._posli(g, "dest", m.nazev, cas_s, dest=dest)
             elif r.akce is core.Akce.OTEVRIT and "nouzov" in r.duvod:
@@ -605,6 +729,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "nocni_klid": f"{self._cas(noc_od)} – {self._cas(noc_do)}",
             "rano_neotvirat_od": self._cas(noc_do),
             "je_noc": je_noc,
+            "vitr": self.vitr_stav,
             "dnes": {
                 "pohyby": sh["pohyby"],
                 "otevreno_min": round(sh["minut_otevreno"]),

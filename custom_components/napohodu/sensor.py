@@ -11,7 +11,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, PODENTITA_MISTNOST, PODENTITA_ZONA
+from .const import (DOMAIN, PODENTITA_KLIMA, PODENTITA_MISTNOST,
+                    PODENTITA_ZONA)
 from .entity import NaPohoduEntity
 
 
@@ -21,6 +22,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_ZONA:
             pridat([StavOblasti(k, pod)], config_subentry_id=pod.subentry_id)
+        elif pod.subentry_type == PODENTITA_KLIMA:
+            pridat([StavKlimy(k, pod)], config_subentry_id=pod.subentry_id)
         elif pod.subentry_type == PODENTITA_MISTNOST:
             pridat([StavMistnosti(k, pod), CilMistnosti(k, pod),
                     SlunceMistnosti(k, pod)],
@@ -155,3 +158,24 @@ class Prumer(CoordinatorEntity, SensorEntity):
                       "nahrada": "náhrada, chybí data"}.get(zdroj, zdroj),
             "vlastni_vypocet": None if vlastni is None else round(vlastni, 2),
         }
+
+
+class StavKlimy(NaPohoduEntity, SensorEntity):
+    """Co sdílená klimatizace dělá a podle koho."""
+
+    _attr_icon = "mdi:air-conditioner"
+
+    def __init__(self, k, pod):
+        super().__init__(k, pod, "stav_klimy")
+
+    @property
+    def native_value(self) -> str | None:
+        d = self.coordinator.klimy.get(self.pod_id)
+        if not d:
+            return None
+        cil = f" na {d['cil']} °C" if d.get("cil") is not None else ""
+        return f"{d['stav']}{cil}"
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return self.coordinator.klimy.get(self.pod_id) or {}
