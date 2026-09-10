@@ -45,6 +45,12 @@ CONF_MAX_STARI = "max_stari_h"
 CONF_CLIMATE = "climate"                 # radiátory, jen topí
 CONF_CLIMATE_CHLAZENI = "climate_chlazeni"   # jen chladí
 CONF_CLIMATE_OBOJI = "climate_oboji"         # tepelné čerpadlo, topí i chladí
+
+# --- řízení topení v místnosti ---
+CONF_TOPIT_UTLUM = "topit_utlum"           # při otevřeném okně
+CONF_TOPIT_MIMO_SEZONU = "topit_mimo_sezonu"
+CONF_ODVZDUSNENI_H = "odvzdusneni_h"
+CONF_ODVZDUSNENI_T = "odvzdusneni_t"
 CONF_UTLUM = "utlum"
 CONF_ODCHYLKA = "odchylka"
 CONF_NOC_MIN = "noc_min"
@@ -85,6 +91,7 @@ CONF_CO2_NOC_KRIZE = "co2_noc_krize"  # tohle přebije i teplotní mez
 CONF_ZALUZIE_STARE = "zaluzie_zony"   # dřívější název, kvůli starším verzím
 CONF_STINENI_MAPA = "stineni_mapa"   # {"cover.o1|zastinit": "zastíněno"}
 CONF_KLID_STINENI_MIN = "klid_stineni_min"
+CONF_STINENI_PREDSTIH = "stineni_predstih"
 
 # --- okna místnosti ---
 CONF_OKNA = "okna"

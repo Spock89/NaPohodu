@@ -43,6 +43,9 @@ class StavVykonu:
     zarizeni: dict[str, bool] = field(default_factory=dict)
     # poslední odeslaný povel si držíme, ať na kartě nezmizí po minutě
     posledni_popis: str | None = None
+    topeni_cil: float | None = None
+    topeni_rezim: str | None = None
+    topeni_cas_s: float = -1e9
 
 
 class Vykonavac:
@@ -111,6 +114,38 @@ class Vykonavac:
         return f"{sluzba} ({duvod})"
 
     # ------------------------------------------------------------ stínění
+
+    async def topeni(self, entity: list[str], rezim: str, cil: float,
+                     cas_s: float) -> str | None:
+        """Nastaví hlavicím teplotu. Posílá jen při skutečné změně."""
+        if not entity:
+            return None
+        zmena_rezimu = rezim != self.stav.topeni_rezim
+        zmena_cile = (self.stav.topeni_cil is None
+                      or abs(cil - self.stav.topeni_cil) >= TOPENI_ZMENA_MIN)
+        uplynulo = cas_s - self.stav.topeni_cas_s >= TOPENI_KLID_S
+        if not zmena_rezimu and not (zmena_cile and uplynulo):
+            return None
+
+        try:
+            if zmena_rezimu:
+                await self.hass.services.async_call(
+                    "climate", "set_hvac_mode",
+                    {"entity_id": entity, "hvac_mode": rezim}, blocking=False)
+            if rezim != "off":
+                await self.hass.services.async_call(
+                    "climate", "set_temperature",
+                    {"entity_id": entity, "temperature": cil}, blocking=False)
+        except Exception as e:  # pragma: no cover
+            self.stav.chyby.append(f"topení: {e}")
+            _LOGGER.warning("NaPohodu: topení %s selhalo: %s", entity, e)
+            return None
+
+        self.stav.topeni_rezim = rezim
+        self.stav.topeni_cil = cil
+        self.stav.topeni_cas_s = cas_s
+        _LOGGER.info("NaPohodu: topení %s -> %s %.1f °C", entity, rezim, cil)
+        return f"topení: {rezim} {cil:.1f} °C"
 
     async def zarizeni(self, entity: list[str], zapnout: bool | None,
                        klic: str) -> str | None:
@@ -267,3 +302,28 @@ def cile_zaluzii(role: str | None, mapa: dict) -> dict[str, str]:
         if r == role:
             cile[zaluzie] = nazev
     return cile
+
+
+# ---------------------------------------------------------------- topení
+
+TOPENI_ZMENA_MIN = 0.3       # menší rozdíl nemá cenu posílat
+TOPENI_KLID_S = 5 * 60
+
+
+def cil_topeni(cil: float, okno_otevreno: bool, utlum: float,
+               sezona: bool, topit_mimo: bool,
+               odvzdusneni: bool, odvzdusneni_t: float) -> tuple[str, float]:
+    """Jakou teplotu poslat hlavici a jaký režim.
+
+    Otevřené okno srazí teplotu na útlum, ne na vypnuto — hlavice, která
+    se úplně zavře, se pak dlouho vrací. Na začátku sezóny se naopak
+    nastaví vysoká teplota, aby ventil zůstal otevřený a rozvod se
+    odvzdušnil sám.
+    """
+    if not sezona and not topit_mimo:
+        return ("off", utlum)
+    if odvzdusneni:
+        return ("heat", odvzdusneni_t)
+    if okno_otevreno:
+        return ("heat", utlum)
+    return ("heat", cil)

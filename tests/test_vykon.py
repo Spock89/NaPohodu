@@ -334,3 +334,33 @@ def test_rezim_prazdna_odcloni_kdyz_je_zima():
 
 def test_rezim_vzdy_ignoruje_pritomnost_v_pokoji():
     assert st(rezim=REZIM_VZDY, horko=True, v_pokoji=True) == "zastinit"
+
+
+# ---------------------------------------------------------------- topení
+
+from vykon import cil_topeni
+
+
+def test_mimo_sezonu_se_netopi():
+    assert cil_topeni(22, False, 16, False, False, False, 28) == ("off", 16)
+
+
+def test_v_sezone_se_posila_cil():
+    assert cil_topeni(22.5, False, 16, True, False, False, 28) == ("heat", 22.5)
+
+
+def test_otevrene_okno_srazi_na_utlum_ne_na_vypnuto():
+    """Hlavice, která se úplně zavře, se pak dlouho vrací."""
+    assert cil_topeni(22.5, True, 16, True, False, False, 28) == ("heat", 16)
+
+
+def test_odvzdusneni_drzi_ventil_otevreny():
+    assert cil_topeni(22, False, 16, True, False, True, 28) == ("heat", 28)
+
+
+def test_odvzdusneni_prebiji_i_otevrene_okno():
+    assert cil_topeni(22, True, 16, True, False, True, 28)[1] == 28
+
+
+def test_topit_mimo_sezonu_jde_zapnout():
+    assert cil_topeni(22, False, 16, False, True, False, 28) == ("heat", 22)

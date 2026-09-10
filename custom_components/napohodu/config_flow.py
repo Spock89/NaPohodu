@@ -392,6 +392,11 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_CLIMATE): _ent(["climate"], True),
         vol.Optional(c.CONF_CLIMATE_CHLAZENI): _ent(["climate"], True),
         vol.Optional(c.CONF_CLIMATE_OBOJI): _ent(["climate"], True),
+        vol.Optional(c.CONF_TOPIT_UTLUM, default=16.0): _cislo(5, 20),
+        vol.Optional(c.CONF_TOPIT_MIMO_SEZONU, default=False):
+            selector.BooleanSelector(),
+        vol.Optional(c.CONF_ODVZDUSNENI_H, default=24): _cislo(0, 96, 1, "h"),
+        vol.Optional(c.CONF_ODVZDUSNENI_T, default=28.0): _cislo(22, 32),
         vol.Optional(c.CONF_ODCHYLKA, default=0.0): _cislo(-3, 3),
         vol.Optional(c.CONF_NOC_MIN, default=18.0): _cislo(14, 24),
         vol.Optional(c.CONF_UTLUM, default=16.0): _cislo(5, 20),
@@ -435,6 +440,8 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_SOUKROMI_KDY, default="nikdy"): _volba(
             c.SOUKROMI_KDY, "soukromi_kdy"
         ),
+        vol.Optional(c.CONF_STINENI_PREDSTIH, default=1.0):
+            _cislo(0, 5, 0.5),
         vol.Optional(c.CONF_KLID_STINENI_MIN, default=15):
             _cislo(1, 120, 1, "min"),
     }

@@ -31,6 +31,7 @@ ATRIBUTY_STAVU = [
     ("zastupce", "Větrá za nás", None),
     ("provedeno", "Poslední povel", None),
     ("ovladani", "Ovládání", None),
+    ("topeni", "Topení", None),
     ("duvody", "Diagnostika", None),
 ]
 
@@ -238,7 +239,9 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
 
     # --- ovládání a tlačítka ---
     polozky = []
-    for klic, popis in (("ovladat_okno", "okna"), ("ovladat_stineni", "žaluzie")):
+    for klic, popis in (("ovladat_okno", "okna"),
+                        ("ovladat_stineni", "žaluzie"),
+                        ("ovladat_topeni", "topení")):
         for m in mistnosti:
             eid = f"switch.napohodu_{m}_{klic}"
             if existuje(eid):

@@ -222,7 +222,12 @@
             "i_kdyz_nikdo_doma": "Větrat i když nikdo není doma",
             "t_venku_mistni": "Vlastní venkovní teplota",
             "rh_venku_mistni": "Vlastní venkovní vlhkost",
-            "min_drzeni_min": "Nejkratší doba držení polohy"
+            "min_drzeni_min": "Nejkratší doba držení polohy",
+            "topit_utlum": "Útlum topení při otevřeném okně",
+            "topit_mimo_sezonu": "Topit i mimo sezónu",
+            "odvzdusneni_h": "Odvzdušnění na začátku sezóny",
+            "odvzdusneni_t": "Teplota při odvzdušnění",
+            "stineni_predstih": "Předstih stínění"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -232,7 +237,7 @@
             "pm10": "Hrubší prach. Nechej prázdné, pokud ho čidlo neměří.",
             "pm_platny": "Prachové čidlo potřebuje proudící vzduch. Když má ventilátor, vyber jeho spínač — při stojícím ventilátoru se naměřeným hodnotám nevěří. Nemáš-li ventilátor, nech prázdné.",
             "kvalita": "Čidlo, které místo čísla hlásí slova good, fair, moderate, poor. Poor a horší spustí větrání, fair a lepší ho ukončí, moderate je mrtvá zóna.",
-            "climate": "Radiátorové hlavice, typicky přes Better Thermostat. Používají se jen v topné sezóně.",
+            "climate": "Hlavice místnosti — virtuální z Better Thermostatu i skutečná. Integrace jim posílá cílovou teplotu a režim, když je zapnutý přepínač Ovládat topení.",
             "odchylka": "Cílová teplota se počítá pro celý byt. Tady ji pro tuto místnost posuneš. Plus znamená tepleji.",
             "noc_min": "Pod tuto teplotu se v noci nevětrá. V ložnici nižší, v obývacím pokoji vyšší.",
             "utlum": "Na kolik se stáhne topení, když je otevřené okno.",
@@ -265,7 +270,12 @@
             "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené.",
             "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
             "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
-            "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam kvůli hodnotě skákající kolem prahu."
+            "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam kvůli hodnotě skákající kolem prahu.",
+            "topit_utlum": "Na tuhle teplotu se hlavice srazí, když je otevřené okno. Neposílá se vypnuto, protože úplně zavřená hlavice se pak dlouho vrací.",
+            "topit_mimo_sezonu": "Normálně se mimo topnou sezónu hlavice vypnou. Zapni, když má tahle místnost topit celoročně, například koupelna.",
+            "odvzdusneni_h": "Po začátku sezóny se tuhle dobu drží vysoká teplota, aby ventil zůstal otevřený a rozvod se sám odvzdušnil. Nula znamená neodvzdušňovat.",
+            "odvzdusneni_t": "Teplota, která zaručí plně otevřený ventil. Nemá topit doopravdy, jen otevřít.",
+            "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24."
           },
           "submit": "Další"
         },
@@ -364,7 +374,12 @@
             "i_kdyz_nikdo_doma": "Větrat i když nikdo není doma",
             "t_venku_mistni": "Vlastní venkovní teplota",
             "rh_venku_mistni": "Vlastní venkovní vlhkost",
-            "min_drzeni_min": "Nejkratší doba držení polohy"
+            "min_drzeni_min": "Nejkratší doba držení polohy",
+            "topit_utlum": "Útlum topení při otevřeném okně",
+            "topit_mimo_sezonu": "Topit i mimo sezónu",
+            "odvzdusneni_h": "Odvzdušnění na začátku sezóny",
+            "odvzdusneni_t": "Teplota při odvzdušnění",
+            "stineni_predstih": "Předstih stínění"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -374,7 +389,7 @@
             "pm10": "Hrubší prach. Nechej prázdné, pokud ho čidlo neměří.",
             "pm_platny": "Prachové čidlo potřebuje proudící vzduch. Když má ventilátor, vyber jeho spínač — při stojícím ventilátoru se naměřeným hodnotám nevěří. Nemáš-li ventilátor, nech prázdné.",
             "kvalita": "Čidlo, které místo čísla hlásí slova good, fair, moderate, poor. Poor a horší spustí větrání, fair a lepší ho ukončí, moderate je mrtvá zóna.",
-            "climate": "Radiátorové hlavice, typicky přes Better Thermostat. Používají se jen v topné sezóně.",
+            "climate": "Hlavice místnosti — virtuální z Better Thermostatu i skutečná. Integrace jim posílá cílovou teplotu a režim, když je zapnutý přepínač Ovládat topení.",
             "odchylka": "Cílová teplota se počítá pro celý byt. Tady ji pro tuto místnost posuneš. Plus znamená tepleji.",
             "noc_min": "Pod tuto teplotu se v noci nevětrá. V ložnici nižší, v obývacím pokoji vyšší.",
             "utlum": "Na kolik se stáhne topení, když je otevřené okno.",
@@ -418,7 +433,12 @@
             "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené.",
             "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
             "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
-            "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam kvůli hodnotě skákající kolem prahu."
+            "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam kvůli hodnotě skákající kolem prahu.",
+            "topit_utlum": "Na tuhle teplotu se hlavice srazí, když je otevřené okno. Neposílá se vypnuto, protože úplně zavřená hlavice se pak dlouho vrací.",
+            "topit_mimo_sezonu": "Normálně se mimo topnou sezónu hlavice vypnou. Zapni, když má tahle místnost topit celoročně, například koupelna.",
+            "odvzdusneni_h": "Po začátku sezóny se tuhle dobu drží vysoká teplota, aby ventil zůstal otevřený a rozvod se sám odvzdušnil. Nula znamená neodvzdušňovat.",
+            "odvzdusneni_t": "Teplota, která zaručí plně otevřený ventil. Nemá topit doopravdy, jen otevřít.",
+            "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24."
           },
           "submit": "Další"
         },
@@ -711,6 +731,9 @@
       },
       "ovladat_klimu": {
         "name": "Ovládat klimatizaci"
+      },
+      "ovladat_topeni": {
+        "name": "Ovládat topení"
       }
     },
     "button": {

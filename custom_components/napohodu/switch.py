@@ -22,7 +22,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     k = hass.data[DOMAIN][entry.entry_id]
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_MISTNOST:
-            pridat([OvladatOkno(k, pod), OvladatStineni(k, pod)],
+            pridat([OvladatOkno(k, pod), OvladatStineni(k, pod),
+                    OvladatTopeni(k, pod)],
                    config_subentry_id=pod.subentry_id)
         elif pod.subentry_type == PODENTITA_KLIMA:
             pridat([OvladatKlimu(k, pod)], config_subentry_id=pod.subentry_id)
@@ -86,3 +87,13 @@ class OvladatKlimu(NaPohoduPrepinac):
 
     def __init__(self, k, pod):
         super().__init__(k, pod, "ovladat_klimu")
+
+
+class OvladatTopeni(NaPohoduPrepinac):
+    """Povolí zapisovat cílovou teplotu do hlavic místnosti."""
+
+    _attr_icon = "mdi:radiator"
+    _klic_hodnoty = "ovladat_topeni"
+
+    def __init__(self, k, pod):
+        super().__init__(k, pod, "ovladat_topeni")

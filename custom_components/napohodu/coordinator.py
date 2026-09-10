@@ -22,28 +22,31 @@ from . import (core, pritomnost as pr, prumery as pm, slunce as sl,
                sousedstvi as so, vykon as vy, zpravy as zp,
                klima as kl)
 from .const import (
-    CONF_AZIMUT, CONF_CIL_MAX, CONF_CIL_MIN, CONF_CISTICKA, CONF_CO2,
-    CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT,
-    CONF_DEST, CONF_DEST_PRAH, CONF_DOBEH, CONF_DOMA, CONF_DVERE,
-    CONF_INDICIE_DOBEH, CONF_INDICIE_STAV, CONF_INDICIE_VYKON,
-    CONF_I_KDYZ_NIKDO, CONF_KLID_STINENI_MIN, CONF_KLIMA_CHLADIT_OD,
-    CONF_KLIMA_DLOUHA, CONF_KLIMA_DLOUHA_H, CONF_KLIMA_ENTITA,
-    CONF_KLIMA_POKOJE, CONF_KLIMA_SUSIT_OD, CONF_KLIMA_TOPIT_OD,
-    CONF_KLIMA_UMI, CONF_KLIMA_UTLUM_CHLAZENI, CONF_KLIMA_UTLUM_TOPENI,
+    CONF_AZIMUT, CONF_CIL_MAX, CONF_CIL_MIN, CONF_CISTICKA, CONF_CLIMATE,
+    CONF_CLIMATE_OBOJI, CONF_CO2, CONF_CO2_NOC, CONF_CO2_NOC_KRIZE,
+    CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT, CONF_DEST, CONF_DEST_PRAH,
+    CONF_DOBEH, CONF_DOMA, CONF_DVERE, CONF_INDICIE_DOBEH,
+    CONF_INDICIE_STAV, CONF_INDICIE_VYKON, CONF_I_KDYZ_NIKDO,
+    CONF_KLID_STINENI_MIN, CONF_KLIMA_CHLADIT_OD, CONF_KLIMA_DLOUHA,
+    CONF_KLIMA_DLOUHA_H, CONF_KLIMA_ENTITA, CONF_KLIMA_POKOJE,
+    CONF_KLIMA_SUSIT_OD, CONF_KLIMA_TOPIT_OD, CONF_KLIMA_UMI,
+    CONF_KLIMA_UTLUM_CHLAZENI, CONF_KLIMA_UTLUM_TOPENI,
     CONF_KLIMA_V_POKOJI, CONF_KOMFORT_ODSTUP, CONF_KVALITA, CONF_MAX_STARI,
     CONF_MIN_DRZENI, CONF_MISTNOSTI, CONF_NARAZ, CONF_NARAZ_PRAH,
     CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD, CONF_ODCHYLKA,
-    CONF_ODTAH, CONF_OKNA, CONF_PLOCHA, CONF_PM10, CONF_PM25,
-    CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRIORITA, CONF_PRITOMNOST,
-    CONF_PROJEZD_M, CONF_RH_MAX, CONF_RH_VENKU, CONF_RH_VENKU_M,
-    CONF_RH_VNITRNI, CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH,
-    CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
-    CONF_STINENI_MAPA, CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
-    CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_VITR,
-    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE,
-    CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
-    CONF_ZDROJ_OBSAZENOSTI, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, DOMAIN,
-    INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA,
+    CONF_ODTAH, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA,
+    CONF_PLOCHA, CONF_PM10, CONF_PM25, CONF_PM_PLATNY, CONF_PRAH_VYKONU,
+    CONF_PRIORITA, CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_RH_MAX,
+    CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_SEZONA_HYSTEREZE,
+    CONF_SEZONA_PRAH, CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI,
+    CONF_SPANEK, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
+    CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
+    CONF_TOPIT_MIMO_SEZONU, CONF_TOPIT_UTLUM, CONF_T_PRUMER, CONF_T_SEZONA,
+    CONF_T_VENKU, CONF_T_VENKU_M, CONF_VITR, CONF_VITR_KLID,
+    CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE,
+    CONF_ZARENI, CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZPRAVY,
+    CONF_ZPRAVY_DRUHY, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
+    PODENTITA_MISTNOST, PODENTITA_ZONA,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -99,6 +102,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.klimy: dict[str, dict] = {}
         self._klima_pamet: dict[str, kl.Pamet] = {}
         self._prazdno_od: float | None = None
+        self._sezona_od: float | None = None
         # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
         self.souhrn: dict[str, dict] = {}
         self._souhrn_den: str = ""
@@ -112,6 +116,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.klimy: dict[str, dict] = {}
         self._klima_pamet: dict[str, kl.Pamet] = {}
         self._prazdno_od: float | None = None
+        self._sezona_od: float | None = None
         # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
         self.souhrn: dict[str, dict] = {}
         self._souhrn_den: str = ""
@@ -360,7 +365,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self.souhrn = {}          # nový den, počítadla od nuly
         cas_s = dt_util.utcnow().timestamp()
         cil_zakl = self._cil_zakladni(g)
+        drive_sezona = self.topna_sezona
         self.topna_sezona = self._sezona(g)
+        if self.topna_sezona and not drive_sezona:
+            self._sezona_od = cas_s      # začátek sezóny, čas na odvzdušnění
+        elif not self.topna_sezona:
+            self._sezona_od = None
         noc_od = self._hodina(g.get(CONF_NOC_OD), 22.0)
         noc_do = self._hodina(g.get(CONF_NOC_DO), 6.5)
         je_noc = ((hodina >= noc_od or hodina < noc_do) if noc_od > noc_do
@@ -758,6 +768,40 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
         await self._stineni_krok(p, d, u, m, doma, slunce_el, cas_s)
         await self._pomocnici_krok(p, d, m, okruh)
+        await self._topeni_krok(p, d, m, cas_s)
+
+    async def _topeni_krok(self, p, d, m, cas_s: float) -> None:
+        """Napíše hlavicím cílovou teplotu.
+
+        Hlavice může být virtuální z Better Thermostatu i skutečná —
+        integrace posílá jen cíl a režim, o zbytek se stará ona.
+        """
+        hlavice = list(d.get(CONF_CLIMATE) or [])
+        hlavice += list(d.get(CONF_CLIMATE_OBOJI) or [])
+        if not hlavice:
+            return
+        if self.hodnoty.get((p.subentry_id, "ovladat_topeni"), 0.0) <= 0:
+            m.atributy["topeni"] = "jen sleduje"
+            return
+
+        odvzdusneni_h = float(d.get(CONF_ODVZDUSNENI_H, 24))
+        odvzdusneni = (self._sezona_od is not None and odvzdusneni_h > 0
+                       and cas_s - self._sezona_od < odvzdusneni_h * 3600)
+
+        rezim, cil = vy.cil_topeni(
+            m.cil, m.okno_otevreno,
+            float(d.get(CONF_TOPIT_UTLUM, 16.0)),
+            self.topna_sezona,
+            bool(d.get(CONF_TOPIT_MIMO_SEZONU, False)),
+            odvzdusneni, float(d.get(CONF_ODVZDUSNENI_T, 28.0)))
+
+        vyk = self.vykonavaci.setdefault(
+            p.subentry_id, vy.Vykonavac(self.hass, p.subentry_id))
+        poslano = await vyk.topeni(hlavice, rezim, cil, cas_s)
+        m.atributy["topeni"] = poslano or (
+            f"{vyk.stav.topeni_rezim} {vyk.stav.topeni_cil} °C"
+            if vyk.stav.topeni_rezim else None)
+        m.atributy["odvzdusneni"] = odvzdusneni
 
     async def _pomocnici_krok(self, p, d, m, okruh) -> None:
         """Čistička řeší prach, odtah vlhkost. Okno na to nemusí."""
@@ -799,7 +843,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             t_min = m.atributy.get("teplota_min")
             role = vy.role_stineni(
                 m.slunce, 150.0,
-                t_max is not None and t_max > m.cil + 0.5,
+                t_max is not None and t_max > m.cil - float(
+                    d.get(CONF_STINENI_PREDSTIH, 1.0)),
                 t_min is not None and t_min < m.cil - 0.5,
                 doma,
                 rezim=d.get(CONF_STINENI_REZIM, "vzdy"),
