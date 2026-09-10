@@ -37,15 +37,15 @@ from .const import (
     CONF_ODTAH, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA,
     CONF_PLOCHA, CONF_PM10, CONF_PM25, CONF_PM_PLATNY, CONF_PRAH_VYKONU,
     CONF_PRIORITA, CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_RH_MAX,
-    CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_SEZONA_HYSTEREZE,
-    CONF_SEZONA_PRAH, CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI,
-    CONF_SPANEK, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
-    CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
-    CONF_TOPIT_MIMO_SEZONU, CONF_TOPIT_UTLUM, CONF_T_PRUMER, CONF_T_SEZONA,
-    CONF_T_VENKU, CONF_T_VENKU_M, CONF_VITR, CONF_VITR_KLID,
+    CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI,
+    CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SOUHRN_CAS,
+    CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_MAPA,
+    CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
+    CONF_TEPLOTY, CONF_TOPIT_MIMO_SEZONU, CONF_TOPIT_UTLUM, CONF_T_PRUMER,
+    CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_VITR, CONF_VITR_KLID,
     CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE,
     CONF_ZARENI, CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZPRAVY,
-    CONF_ZPRAVY_DRUHY, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
+    CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
     PODENTITA_MISTNOST, PODENTITA_ZONA,
 )
 
@@ -781,7 +781,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if not hlavice:
             return
         if self.hodnoty.get((p.subentry_id, "ovladat_topeni"), 0.0) <= 0:
-            m.atributy["topeni"] = "jen sleduje"
+            m.atributy["topeni"] = "neovládám, přepínač je vypnutý"
             return
 
         odvzdusneni_h = float(d.get(CONF_ODVZDUSNENI_H, 24))
@@ -833,6 +833,19 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             m.atributy["odtah"] = await vyk.zarizeni(odtah, zapnout, "odtah")
             m.atributy["vlhkost"] = rh_in
         m.atributy["odtah_bezi"] = vyk.stav.zarizeni.get("odtah")
+
+        # zvlhčovač: v zimě vysychají sliznice, v paneláku běžně pod 30 %
+        zvlhcovac = d.get(CONF_ZVLHCOVAC) or []
+        if zvlhcovac and rh_in is not None:
+            rh_min = float(d.get(CONF_RH_MIN, 38.0))
+            zapnout = None
+            if rh_in < rh_min:
+                zapnout = True
+            elif rh_in > rh_min + 5:
+                zapnout = False
+            m.atributy["zvlhcovac"] = await vyk.zarizeni(
+                zvlhcovac, zapnout, "zvlhčovač")
+        m.atributy["zvlhcovac_bezi"] = vyk.stav.zarizeni.get("zvlhčovač")
 
     async def _stineni_krok(self, p, d, u, m, doma, slunce_el, cas_s):
         """Rozhodne o žaluziích místnosti. Slunce svítí do pokoje, ne do oblasti."""

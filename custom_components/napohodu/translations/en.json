@@ -227,7 +227,9 @@
             "topit_mimo_sezonu": "Topit i mimo sezónu",
             "odvzdusneni_h": "Odvzdušnění na začátku sezóny",
             "odvzdusneni_t": "Teplota při odvzdušnění",
-            "stineni_predstih": "Předstih stínění"
+            "stineni_predstih": "Předstih stínění",
+            "zvlhcovac": "Zvlhčovač",
+            "rh_min": "Zvlhčovat pod"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -275,7 +277,10 @@
             "topit_mimo_sezonu": "Normálně se mimo topnou sezónu hlavice vypnou. Zapni, když má tahle místnost topit celoročně, například koupelna.",
             "odvzdusneni_h": "Po začátku sezóny se tuhle dobu drží vysoká teplota, aby ventil zůstal otevřený a rozvod se sám odvzdušnil. Nula znamená neodvzdušňovat.",
             "odvzdusneni_t": "Teplota, která zaručí plně otevřený ventil. Nemá topit doopravdy, jen otevřít.",
-            "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24."
+            "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24.",
+            "zvlhcovac": "Zvlhčovač, spínač nebo pomocník. V zimě vysychá vzduch a klesá pod třicet procent, což už vysušuje sliznice.",
+            "rh_min": "Pod touto vlhkostí se zvlhčovač zapne, nad ní plus pět procent vypne. Nemá cenu jít výš než na padesát, jinak roste plíseň.",
+            "dvere": ""
           },
           "submit": "Další"
         },
@@ -379,7 +384,9 @@
             "topit_mimo_sezonu": "Topit i mimo sezónu",
             "odvzdusneni_h": "Odvzdušnění na začátku sezóny",
             "odvzdusneni_t": "Teplota při odvzdušnění",
-            "stineni_predstih": "Předstih stínění"
+            "stineni_predstih": "Předstih stínění",
+            "zvlhcovac": "Zvlhčovač",
+            "rh_min": "Zvlhčovat pod"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -438,7 +445,10 @@
             "topit_mimo_sezonu": "Normálně se mimo topnou sezónu hlavice vypnou. Zapni, když má tahle místnost topit celoročně, například koupelna.",
             "odvzdusneni_h": "Po začátku sezóny se tuhle dobu drží vysoká teplota, aby ventil zůstal otevřený a rozvod se sám odvzdušnil. Nula znamená neodvzdušňovat.",
             "odvzdusneni_t": "Teplota, která zaručí plně otevřený ventil. Nemá topit doopravdy, jen otevřít.",
-            "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24."
+            "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24.",
+            "zvlhcovac": "Zvlhčovač, spínač nebo pomocník. V zimě vysychá vzduch a klesá pod třicet procent, což už vysušuje sliznice.",
+            "rh_min": "Pod touto vlhkostí se zvlhčovač zapne, nad ní plus pět procent vypne. Nemá cenu jít výš než na padesát, jinak roste plíseň.",
+            "dvere": ""
           },
           "submit": "Další"
         },
@@ -450,7 +460,7 @@
       },
       "entry_type": "Místnost",
       "initiate_flow": {
-        "user": "+ místnost",
+        "user": "místnost",
         "reconfigure": "Upravit místnost"
       }
     },
@@ -470,7 +480,7 @@
             "nazev": "Jak se oblast jmenuje, například Obývák a kuchyně.",
             "mistnosti": "Místnosti, které spolu dýchají. Každá smí být jen v jedné oblasti.",
             "sousedi": "Oblasti za dveřmi. Když se v této oblasti spí, vyvětrá ji raději soused, aby ti nefoukalo na hlavu. Uplatní se jen v noci.",
-            "dvere": "Čidlo dveří. Při zavřených se zastupování nepoužije. Bez čidla se předpokládá otevřeno."
+            "dvere": "Čidla dveří mezi oblastmi, může jich být víc. Zastupování se použije jen tehdy, když jsou všechna otevřená. Bez čidla se předpokládá otevřeno."
           },
           "submit": "Uložit zónu"
         },
@@ -487,14 +497,14 @@
             "nazev": "Jak se oblast jmenuje, například Obývák a kuchyně.",
             "mistnosti": "Místnosti, které spolu dýchají. Každá smí být jen v jedné oblasti.",
             "sousedi": "Oblasti za dveřmi. Když se v této oblasti spí, vyvětrá ji raději soused, aby ti nefoukalo na hlavu. Uplatní se jen v noci.",
-            "dvere": "Čidlo dveří. Při zavřených se zastupování nepoužije. Bez čidla se předpokládá otevřeno."
+            "dvere": "Čidla dveří mezi oblastmi, může jich být víc. Zastupování se použije jen tehdy, když jsou všechna otevřená. Bez čidla se předpokládá otevřeno."
           },
           "submit": "Uložit"
         }
       },
       "entry_type": "Oblast",
       "initiate_flow": {
-        "user": "+ oblast",
+        "user": "oblast",
         "reconfigure": "Upravit oblast"
       },
       "error": {
@@ -505,7 +515,7 @@
       "title": "Sdílená klimatizace",
       "entry_type": "Klimatizace",
       "initiate_flow": {
-        "user": "+ klima",
+        "user": "klima",
         "reconfigure": "Upravit klimatizaci"
       },
       "step": {

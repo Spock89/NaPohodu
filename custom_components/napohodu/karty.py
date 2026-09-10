@@ -32,6 +32,10 @@ ATRIBUTY_STAVU = [
     ("provedeno", "Poslední povel", None),
     ("ovladani", "Ovládání", None),
     ("topeni", "Topení", None),
+    ("zvlhcovac_bezi", "Zvlhčovač", None),
+    ("cisticka_bezi", "Čistička", None),
+    ("odtah_bezi", "Odtah", None),
+    ("vlhkost", "Vlhkost v pokoji", " %"),
     ("duvody", "Diagnostika", None),
 ]
 
@@ -209,7 +213,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     polozky = []
     for klic, popis, kde in (("obsazeno", "obsazeno", None),
                              ("klid", "klid", s_klidem),
-                             ("okno_otevreno", "hlásí oknu topení", None)):
+                             ("okno_otevreno", "okno pro topení", None)):
         pridano = False
         for m in mistnosti:
             if kde is not None and m not in kde:

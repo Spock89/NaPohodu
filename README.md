@@ -118,6 +118,46 @@ Cíl se posílá jen při skutečné změně — aspoň půl stupně a nejčast�
 jednou za patnáct minut. Kompresor ani člověk nemá rád, když se hodnota
 vrtí každou minutu.
 
+### Topení
+
+Integrace posílá hlavicím cílovou teplotu a režim. Funguje na virtuální
+hlavici z Better Thermostatu i na skutečnou, protože používá jen běžné
+`set_temperature` a `set_hvac_mode` — o kalibraci a regulaci se stará
+hlavice sama.
+
+| situace | co se pošle |
+|---|---|
+| v sezóně, zavřené okno | cíl místnosti |
+| v sezóně, otevřené okno | útlum, výchozích 16 °C |
+| mimo topnou sezónu | vypnuto |
+| začátek sezóny | vysoká teplota kvůli odvzdušnění |
+
+**Při otevřeném okně se posílá útlum, ne vypnuto.** Úplně zavřená
+hlavice se pak dlouho vrací a některé si tím rozbijí svůj model tepelné
+zátěže.
+
+**Odvzdušnění.** Když integrace zaznamená přechod do topné sezóny, drží
+zvolenou dobu vysokou teplotu, aby ventil zůstal plně otevřený a rozvod
+se odvzdušnil sám. Přebíjí i otevřené okno, protože je to jednorázová
+věc. Nula hodin znamená neodvzdušňovat.
+
+### Zvlhčovač, čistička, odtah
+
+Kromě oken a topení umí integrace ovládat i pomocná zařízení, každé
+podle toho, co skutečně řeší.
+
+**Čistička** řeší prach, ne CO2. V zimě a v noci je lepší než otevřít
+okno, protože nechladí a nehučí.
+
+**Odtah** řeší vlhkost. Pomůže i tehdy, když je venku vlhčeji než
+uvnitř, kdy by okno situaci zhoršilo.
+
+**Zvlhčovač** řeší opačný problém. V zimě vysychá vzduch pod třicet
+procent, což už vysušuje sliznice.
+
+Povel jde vždy jen při změně. Opakované zapínání už zapnuté čističky nic
+nezlepší.
+
 ### Obsazenost z více důkazů
 
 Pohybové čidlo nevidí sedícího člověka a po vybití baterie zamrzne.
@@ -156,10 +196,15 @@ jsou prahy dobře nastavené.
 
 ## Co to nedělá
 
-Neřídí topení. Na to je
-[Better Thermostat](https://github.com/KartoffelToby/better_thermostat).
-NaPohodu mu dodá cílovou teplotu a virtuální okenní senzor, takže se
-topení vypne i v místnosti, jejíž okno je jinde.
+Neřeší regulaci samotné hlavice — kalibraci podle externího čidla,
+adaptaci, předehřívání. Na to je
+[Better Thermostat](https://github.com/KartoffelToby/better_thermostat)
+nebo vlastní algoritmus hlavice. NaPohodu jim posílá cíl a virtuální
+okenní senzor, takže se topení vypne i v místnosti, jejíž okno je jinde.
+
+Nepočítá polohu žaluzií podle azimutu za tebe. Používá pojmenované
+polohy, které si vyladíš testerem — u pohonů, které neumí naklápět
+lamely přímo, je to jediná cesta k rozumnému výsledku.
 
 ## Instalace přes HACS
 
@@ -184,8 +229,16 @@ Uložené stavy se pak vyvolávají službou `napohodu.nastav_stineni` nebo
 
 ## Bezpečnostní zásady
 
-Integrace nesáhne na pohon, dokud to nepovolíš přepínačem, a ten je ve
-výchozím stavu vypnutý. Do té doby jen počítá a ukazuje, co by udělala.
+Integrace nesáhne na nic, dokud to nepovolíš. Každá místnost má tři
+přepínače — **Ovládat okno**, **Ovládat žaluzie** a **Ovládat topení** —
+a všechny jsou po založení vypnuté. Sdílená klimatizace má svůj.
+
+Najdeš je jako entity na kartě zařízení té místnosti, ne v konfiguračním
+dialogu. Je to schválně: vypnout automatiku má jít jedním klepnutím
+z dashboardu, ne procházením nastavení.
+
+Dokud jsou vypnuté, integrace jen počítá a ukazuje, co by udělala. Ve
+stavu místnosti to poznáš podle atributu `ovladani`.
 
 Po startu se žaluziemi nehýbe. Předpokládá, že jsou tam, kde mají být —
 rozjet je jen proto, že se integrace znovu načetla, znamená zarachotit

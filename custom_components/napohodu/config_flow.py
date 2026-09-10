@@ -407,6 +407,9 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_RH_VNITRNI): _ent(["sensor"], trida=["humidity"]),
         vol.Optional(c.CONF_ODTAH): _ent(["fan", "switch"], True),
         vol.Optional(c.CONF_RH_MAX, default=60.0): _cislo(40, 80, 1, "%"),
+        vol.Optional(c.CONF_ZVLHCOVAC): _ent(
+            ["humidifier", "switch", "fan", "input_boolean"], True),
+        vol.Optional(c.CONF_RH_MIN, default=38.0): _cislo(20, 55, 1, "%"),
         vol.Optional(c.CONF_VENTILATOR_SMER, default="ven"): _volba(
             c.SMERY_VENTILACE, "ventilator_smer"
         ),
