@@ -38,7 +38,7 @@ from .const import (
     CONF_T_VENKU_M, CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH,
     CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
     CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZPRAVY,
-    CONF_ZPRAVY_UROVEN, DOMAIN, INTERVAL_S, PODENTITA_MISTNOST,
+    CONF_ZPRAVY_DRUHY, DOMAIN, INTERVAL_S, PODENTITA_MISTNOST,
     PODENTITA_ZONA,
 )
 
@@ -466,7 +466,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         kam = g.get(CONF_ZPRAVY) or []
         if not kam:
             return
-        self.hlasic.uroven = g.get(CONF_ZPRAVY_UROVEN, "dulezite")
+        self.hlasic.druhy = tuple(g.get(CONF_ZPRAVY_DRUHY) or zp.VYCHOZI)
         text = self.hlasic.zprava(druh, mistnost, cas_s, **udaje)
         if not text:
             return
@@ -562,6 +562,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 await self._posli(g, "nouzove", m.nazev, cas_s, co2=v.co2)
             elif r.akce is core.Akce.OTEVRIT:
                 await self._posli(g, "vetrani", m.nazev, cas_s,
+                                  duvod=r.duvod)
+            elif r.akce is core.Akce.ZAVRIT:
+                await self._posli(g, "zavirani", m.nazev, cas_s,
                                   duvod=r.duvod)
             if vyk.stav.chyby:
                 await self._posli(g, "chyba", m.nazev, cas_s,

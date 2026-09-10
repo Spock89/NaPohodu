@@ -79,9 +79,25 @@ def _graf(nadpis: str, hodin: int, polozky: list[tuple[str, str]],
     return r + [""]
 
 
+def _budik(eid: str, nazev: str, min_: float, max_: float,
+           pasma: bool = True) -> list[str]:
+    """Malý ručičkový ukazatel."""
+    r = ["      - type: gauge", f"        entity: {eid}",
+         f'        name: "{nazev}"', f"        min: {min_}",
+         f"        max: {max_}", "        needle: true"]
+    if pasma:
+        r += ["        segments:",
+              '          - from: 15', '            color: "#4a90d9"',
+              '          - from: 20', '            color: "#5cb85c"',
+              '          - from: 26', '            color: "#f0ad4e"',
+              '          - from: 28', '            color: "#d9534f"']
+    return r
+
+
 def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
               cidla: dict | None = None, zaluzie: dict | None = None,
-              venku: str | None = None) -> str:
+              venku: str | None = None, s_okny: set | None = None,
+              s_klidem: set | None = None) -> str:
     """Poskládá kartu. `existuje` řekne, jestli entita opravdu je.
 
     `cidla` a `zaluzie` jsou entity, které integrace nevytváří — teploměr
@@ -90,6 +106,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     """
     cidla = cidla or {}
     zaluzie = zaluzie or {}
+    s_okny = s_okny if s_okny is not None else set(mistnosti)
+    s_klidem = s_klidem if s_klidem is not None else set(mistnosti)
     c = ["# Vygenerováno integrací NaPohodu.",
          "# Vlož jako Manuální kartu. Až přidáš místnost, vygeneruj znovu.",
          "", "type: vertical-stack", "cards:"]
@@ -110,17 +128,22 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         if not existuje(stav):
             continue
         polozky = _radek(stav, "Rozhodnutí")
-        polozky += _radek(f"binary_sensor.napohodu_{m}_okno", "Okno")
+        if m in s_okny:
+            polozky += _radek(f"binary_sensor.napohodu_{m}_okno", "Okno")
         for a, n, s in ATRIBUTY_STAVU:
             polozky += _atribut(stav, a, n, s)
+
+        # ručičky nahoře: cíl vedle skutečnosti, ať je rozdíl vidět hned
+        cil = f"sensor.napohodu_{m}_cilova_teplota"
+        cidlo = cidla.get(m, "")
+        if existuje(cil) and existuje(cidlo):
+            c += ["  - type: horizontal-stack", "    cards:"]
+            c += _budik(cil, "Cíl", 15, 30)
+            c += _budik(cidlo, m.capitalize(), 15, 30)
+            c.append("")
+
         c += _karta("", "", polozky, nazev=m.capitalize())
         c.append("")
-        # cíl proti skutečnosti hned u té místnosti, ne až na konci karty
-        c += _graf(f"{m.capitalize()} — cíl proti skutečnosti", 48, [
-            (f"sensor.napohodu_{m}_cilova_teplota", "Cíl"),
-            (cidla.get(m, ""), "V místnosti"),
-            (venku or "", "Venku"),
-        ], existuje)
 
     # --- oblasti ---
     polozky = []
@@ -152,13 +175,19 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
 
     # --- obsazenost ---
     polozky = []
-    for klic, popis in (("obsazeno", "obsazeno"), ("klid", "klid"),
-                        ("okno_otevreno", "topení vypnuto")):
+    for klic, popis, kde in (("obsazeno", "obsazeno", None),
+                             ("klid", "klid", s_klidem),
+                             ("okno_otevreno", "topení vypnuto", None)):
+        pridano = False
         for m in mistnosti:
+            if kde is not None and m not in kde:
+                continue          # místnost, kde se klid neřeší
             eid = f"binary_sensor.napohodu_{m}_{klic}"
             if existuje(eid):
                 polozky += _radek(eid, f"{m.capitalize()} — {popis}")
-        polozky.append("      - type: divider")
+                pridano = True
+        if pridano:
+            polozky.append("      - type: divider")
     if polozky:
         c += _hlavicka("Obsazenost a klid", "mdi:account-check", "subtitle")
         c += _karta("", "", polozky[:-1])
@@ -187,13 +216,23 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     c += _karta("", "", polozky[:-1], nazev="Co smí ovládat")
     c.append("")
 
-    # --- grafy pohybů ---
-    okna = [(f"binary_sensor.napohodu_{m}_okno", f"Okno {m}") for m in mistnosti]
+    # --- grafy ---
+    teploty = [(f"sensor.napohodu_{m}_cilova_teplota", f"Cíl {m}")
+               for m in mistnosti]
+    teploty += [(cidla[m], m.capitalize()) for m in mistnosti if cidla.get(m)]
+    if venku:
+        teploty.append((venku, "Venku"))
+    c += _graf("Cíl proti skutečnosti", 48, teploty, existuje)
+
+    # do grafu pohybů patří jen to, co se opravdu hýbe
+    okna = [(f"binary_sensor.napohodu_{m}_okno", f"Okno {m}")
+            for m in mistnosti if m in s_okny]
     zal = []
     for m in mistnosti:
         for i, z in enumerate(zaluzie.get(m, []) or []):
             zal.append((z, f"Žaluzie {m}" + (f" {i + 1}" if i else "")))
-    klidy = [(f"binary_sensor.napohodu_{m}_klid", f"Klid {m}") for m in mistnosti]
+    klidy = [(f"binary_sensor.napohodu_{m}_klid", f"Klid {m}")
+             for m in mistnosti if m in s_klidem]
     c += _graf("Okna, žaluzie a klid", 24, okna + zal + klidy, existuje)
 
     polozky = []

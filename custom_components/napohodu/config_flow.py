@@ -78,8 +78,12 @@ SCHEMA_GLOBAL = vol.Schema(
         vol.Optional(c.CONF_NOC_OD, default="22:00:00"): selector.TimeSelector(),
         vol.Optional(c.CONF_NOC_DO, default="06:30:00"): selector.TimeSelector(),
         vol.Optional(c.CONF_ZPRAVY): _ent(["notify"], True),
-        vol.Optional(c.CONF_ZPRAVY_UROVEN, default="dulezite"): _volba(
-            c.UROVNE_ZPRAV, "zpravy_uroven"),
+        vol.Optional(c.CONF_ZPRAVY_DRUHY,
+                     default=["vitr", "dest", "chyba", "souhrn"]):
+            selector.SelectSelector(selector.SelectSelectorConfig(
+                options=c.DRUHY_ZPRAV, multiple=True,
+                translation_key="zpravy_druhy",
+                mode=selector.SelectSelectorMode.LIST)),
         vol.Optional(c.CONF_SOUHRN_CAS, default="21:00:00"):
             selector.TimeSelector(),
         vol.Optional(c.CONF_VITR_PRAH, default=7.0): _cislo(3, 30, 0.5, "m/s"),
@@ -193,6 +197,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
 
         mistnosti, oblasti = [], []
         cidla, zaluzie = {}, {}
+        s_okny, s_klidem = set(), set()
         for pod in self.config_entry.subentries.values():
             if pod.subentry_type == c.PODENTITA_MISTNOST:
                 k = klic(pod.title)
@@ -202,6 +207,10 @@ class NaPohoduOptionsFlow(OptionsFlow):
                     cidla[k] = teploty[0]
                 zaluzie[k] = (pod.data.get(c.CONF_ZALUZIE)
                               or pod.data.get(c.CONF_ZALUZIE_STARE) or [])
+                if pod.data.get(c.CONF_OKNA):
+                    s_okny.add(k)
+                if pod.data.get(c.CONF_ZDROJ_KLIDU, "spanek") != "zadny":
+                    s_klidem.add(k)
             elif pod.subentry_type == c.PODENTITA_ZONA:
                 oblasti.append(klic(pod.title))
 
@@ -209,7 +218,8 @@ class NaPohoduOptionsFlow(OptionsFlow):
         text = karty.dashboard(
             mistnosti, oblasti,
             lambda e: self.hass.states.get(e) is not None,
-            cidla=cidla, zaluzie=zaluzie, venku=g.get(c.CONF_T_VENKU))
+            cidla=cidla, zaluzie=zaluzie, venku=g.get(c.CONF_T_VENKU),
+            s_okny=s_okny, s_klidem=s_klidem)
 
         return self.async_show_form(
             step_id="karta",

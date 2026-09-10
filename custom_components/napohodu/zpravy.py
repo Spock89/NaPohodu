@@ -13,11 +13,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-# co se posílá
-UROVEN_NIC = "nic"
-UROVEN_DULEZITE = "dulezite"     # ochrana a chyby
-UROVEN_VSE = "vse"               # k tomu běžná větrání
-
 # jak dlouho se stejná zpráva neopakuje
 KLID_S = {
     "vitr": 30 * 60,
@@ -25,23 +20,23 @@ KLID_S = {
     "nouzove": 60 * 60,
     "chyba": 60 * 60,
     "vetrani": 20 * 60,
+    "zavirani": 20 * 60,
     "souhrn": 20 * 3600,
 }
 
-DULEZITE = {"vitr", "dest", "chyba", "souhrn"}
+DRUHY = ("vitr", "dest", "nouzove", "vetrani", "zavirani", "chyba", "souhrn")
+VYCHOZI = ("vitr", "dest", "chyba", "souhrn")
 
 
 @dataclass
 class Hlasic:
     """Rozhoduje, co odejde. Neposílá — to dělá koordinátor."""
 
-    uroven: str = UROVEN_DULEZITE
+    druhy: tuple[str, ...] = VYCHOZI
     posledni: dict[str, float] = field(default_factory=dict)
 
     def smi(self, druh: str, cas_s: float) -> bool:
-        if self.uroven == UROVEN_NIC:
-            return False
-        if self.uroven == UROVEN_DULEZITE and druh not in DULEZITE:
+        if druh not in self.druhy:
             return False
         if cas_s - self.posledni.get(druh, -1e9) < KLID_S.get(druh, 600):
             return False
@@ -78,6 +73,10 @@ def _vetrani(m, u):
     return f"{m}: otevírám, {u.get('duvod', '')}."
 
 
+def _zavirani(m, u):
+    return f"{m}: zavírám, {u.get('duvod', '')}."
+
+
 def _souhrn(m, u):
     d = u.get("dnes", {})
     return (f"{m} za dnešek: {d.get('pohyby', 0)}x pohyb okna, "
@@ -92,5 +91,6 @@ SKLADBA = {
     "nouzove": _nouzove,
     "chyba": _chyba,
     "vetrani": _vetrani,
+    "zavirani": _zavirani,
     "souhrn": _souhrn,
 }

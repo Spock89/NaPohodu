@@ -1,46 +1,55 @@
 """Testy hlášení."""
 
-from zpravy import UROVEN_DULEZITE, UROVEN_NIC, UROVEN_VSE, Hlasic
+from zpravy import VYCHOZI, DRUHY, Hlasic
 
 
-def test_uroven_nic_nepusti_nic():
-    h = Hlasic(UROVEN_NIC)
+def test_prazdny_vyber_nepusti_nic():
+    h = Hlasic(())
     assert h.zprava("vitr", "Kuchyně", 1000, naraz=15) is None
 
 
-def test_dulezite_pusti_ochranu_ne_bezne_vetrani():
-    h = Hlasic(UROVEN_DULEZITE)
+def test_posila_se_jen_zaskrtnute():
+    h = Hlasic(("vitr",))
     assert h.zprava("vitr", "Kuchyně", 1000, naraz=15)
     assert h.zprava("vetrani", "Kuchyně", 1000, duvod="CO2 900") is None
 
 
-def test_vse_pusti_i_vetrani():
-    h = Hlasic(UROVEN_VSE)
-    assert h.zprava("vetrani", "Kuchyně", 1000, duvod="CO2 900")
+def test_vychozi_vyber_obsahuje_ochranu():
+    assert "vitr" in VYCHOZI and "dest" in VYCHOZI and "souhrn" in VYCHOZI
+    assert "vetrani" not in VYCHOZI      # první dny ano, pak otravuje
+
+
+def test_kazdy_druh_ma_text():
+    h = Hlasic(DRUHY)
+    for i, druh in enumerate(DRUHY):
+        t = h.zprava(druh, "Kuchyně", i * 100000,
+                     naraz=12, dest=1.0, co2=1300, duvod="CO2 900",
+                     text="pohon mlčí", dnes={})
+        assert t, druh
 
 
 def test_stejna_zprava_se_neopakuje():
     """Automatika, která upozorňuje pořád, se přestane číst."""
-    h = Hlasic(UROVEN_DULEZITE)
+    h = Hlasic(VYCHOZI)
     assert h.zprava("vitr", "Kuchyně", 1000, naraz=15)
     assert h.zprava("vitr", "Kuchyně", 1100, naraz=15) is None
     assert h.zprava("vitr", "Kuchyně", 1000 + 31 * 60, naraz=15)
 
 
 def test_ruzne_druhy_se_neblokuji():
-    h = Hlasic(UROVEN_DULEZITE)
+    h = Hlasic(VYCHOZI)
     assert h.zprava("vitr", "Kuchyně", 1000, naraz=15)
     assert h.zprava("dest", "Kuchyně", 1000, dest=2.0)
 
 
 def test_text_obsahuje_mistnost_i_cislo():
-    h = Hlasic(UROVEN_DULEZITE)
+    h = Hlasic(VYCHOZI)
     t = h.zprava("vitr", "Ložnice", 1000, naraz=14)
     assert "Ložnice" in t and "14" in t
 
 
 def test_souhrn_shrne_den():
-    h = Hlasic(UROVEN_DULEZITE)
+    h = Hlasic(VYCHOZI)
     t = h.zprava("souhrn", "Kuchyně", 1000,
                  dnes={"pohyby": 4, "otevreno_min": 95, "co2_max": 1180,
                        "nejnizsi_teplota": 19.4})
@@ -48,5 +57,5 @@ def test_souhrn_shrne_den():
 
 
 def test_neznamy_druh_nespadne():
-    h = Hlasic(UROVEN_VSE)
+    h = Hlasic(DRUHY)
     assert h.zprava("cosi", "Kuchyně", 1000) is None

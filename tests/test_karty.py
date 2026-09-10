@@ -61,13 +61,56 @@ def test_posuvniky_jsou_pojmenovane_cesky():
 
 # ---------------------------------------------------------------- grafy
 
-def test_graf_cile_je_u_kazde_mistnosti():
+def test_budiky_u_kazde_mistnosti():
+    """Cíl vedle skutečnosti, ať je rozdíl vidět hned."""
+    s = dashboard(["kuchyne", "obyvak"], [], vzdy,
+                  cidla={"kuchyne": "sensor.t_kuchyne",
+                         "obyvak": "sensor.t_obyvak"})
+    assert s.count("type: gauge") == 4          # dvě místnosti po dvou
+    assert "sensor.t_kuchyne" in s
+
+
+def test_graf_teplot_je_jeden_pro_vsechny():
     s = dashboard(["kuchyne", "obyvak"], [], vzdy,
                   cidla={"kuchyne": "sensor.t_kuchyne",
                          "obyvak": "sensor.t_obyvak"},
                   venku="sensor.venku")
-    assert s.count("cíl proti skutečnosti") == 2
-    assert "sensor.t_kuchyne" in s and "sensor.venku" in s
+    assert s.count("Cíl proti skutečnosti") == 1
+    assert "sensor.venku" in s
+
+
+def _graf_pohybu(s):
+    """Vytáhne z karty jen graf oken a žaluzií."""
+    i = s.index("Okna, žaluzie a klid")
+    zbytek = s[i:]
+    konec = zbytek.find("  - type:", 10)
+    return zbytek[:konec if konec > 0 else None]
+
+
+def test_do_grafu_pohybu_jen_mistnosti_s_okny():
+    """Obývák bez ovládaného okna do grafu nepatří."""
+    s = dashboard(["kuchyne", "obyvak"], [], vzdy,
+                  s_okny={"kuchyne"}, s_klidem={"kuchyne", "obyvak"})
+    g = _graf_pohybu(s)
+    assert "napohodu_kuchyne_okno" in g
+    assert "napohodu_obyvak_okno" not in g
+
+
+def test_mistnost_bez_okna_nema_radek_okno():
+    import re
+    s = dashboard(["obyvak"], [], vzdy, s_okny=set())
+    entity = set(re.findall(r"entity: ([a-z_]+\.[a-z0-9_]+)", s))
+    assert "binary_sensor.napohodu_obyvak_okno" not in entity
+    # okenní senzor pro topení tam zůstává, ten s ovládáním nesouvisí
+    assert "binary_sensor.napohodu_obyvak_okno_otevreno" in entity
+    assert "sensor.napohodu_obyvak_stav" in entity
+
+
+def test_klid_se_neukazuje_kde_se_neresi():
+    s = dashboard(["kuchyne", "loznice"], [], vzdy,
+                  s_klidem={"loznice"})
+    assert "napohodu_loznice_klid" in s
+    assert "napohodu_kuchyne_klid" not in s
 
 
 def test_graf_pohybu_obsahuje_okna_zaluzie_i_klid():

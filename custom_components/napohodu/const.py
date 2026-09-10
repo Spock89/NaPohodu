@@ -119,8 +119,9 @@ CONF_KARTA_YAML = "karta_yaml"
 
 # --- zprávy ---
 CONF_ZPRAVY = "zpravy_kam"
-CONF_ZPRAVY_UROVEN = "zpravy_uroven"
+CONF_ZPRAVY_DRUHY = "zpravy_druhy"
 CONF_SOUHRN_CAS = "souhrn_cas"
-UROVNE_ZPRAV = ["nic", "dulezite", "vse"]
+DRUHY_ZPRAV = ["vitr", "dest", "nouzove", "vetrani", "zavirani",
+               "chyba", "souhrn"]
 
 INTERVAL_S = 60
