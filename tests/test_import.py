@@ -60,3 +60,87 @@ def test_vitr_blokuje_podle_dvou_prahu(nahradni_ha):
     assert f._vitr(g, vitr=2.0, naraz=2.0) is False      # povolilo
     assert f._vitr(g, vitr=3.0, naraz=12.0) is True      # náraz přes práh
     assert f._vitr({}, vitr=20.0, naraz=20.0) is True    # výchozí hodnoty
+
+
+# ------------------------------------------------- zakládání entit
+
+class FalesnaPodentita:
+    def __init__(self, typ, nazev, data=None):
+        self.subentry_type = typ
+        self.subentry_id = f"id_{nazev}"
+        self.title = nazev
+        self.data = data or {}
+
+
+class FalesnyEntry:
+    def __init__(self, podentity):
+        self.entry_id = "entry"
+        self.data = {}
+        self.options = {}
+        self.subentries = {p.subentry_id: p for p in podentity}
+
+
+def _entity_platformy(modul, podentity):
+    """Spustí zakládání entit a vrátí, co vzniklo."""
+    import asyncio
+    import importlib
+
+    m = importlib.import_module(f"napohodu.{modul}")
+    const = importlib.import_module("napohodu.const")
+    entry = FalesnyEntry(podentity)
+
+    class FalesnyHass:
+        data = {const.DOMAIN: {"entry": object()}}
+
+    vznikle = []
+
+    def pridat(seznam, config_subentry_id=None):
+        vznikle.extend(seznam)
+
+    asyncio.run(m.async_setup_entry(FalesnyHass(), entry, pridat))
+    return vznikle
+
+
+def _klice(entity):
+    return sorted(e._attr_translation_key for e in entity)
+
+
+def test_mistnost_dostane_vsechny_prepinace(nahradni_ha):
+    """Přepínače ovládání jsou entity, ne konfigurace. Když jeden chybí,
+    uživatel nemá čím automatiku povolit."""
+    import importlib
+    const = importlib.import_module("napohodu.const")
+    pod = FalesnaPodentita(const.PODENTITA_MISTNOST, "Kuchyne")
+    assert _klice(_entity_platformy("switch", [pod])) == [
+        "ovladat_okno", "ovladat_stineni", "ovladat_topeni"]
+
+
+def test_klima_dostane_svuj_prepinac(nahradni_ha):
+    import importlib
+    const = importlib.import_module("napohodu.const")
+    pod = FalesnaPodentita(const.PODENTITA_KLIMA, "Klima")
+    assert _klice(_entity_platformy("switch", [pod])) == ["ovladat_klimu"]
+
+
+def test_mistnost_dostane_tlacitka(nahradni_ha):
+    import importlib
+    const = importlib.import_module("napohodu.const")
+    pod = FalesnaPodentita(const.PODENTITA_MISTNOST, "Kuchyne")
+    klice = _klice(_entity_platformy("button", [pod]))
+    assert "srovnat_okno" in klice and "srovnat_stineni" in klice
+
+
+def test_mistnost_dostane_senzory(nahradni_ha):
+    import importlib
+    const = importlib.import_module("napohodu.const")
+    pod = FalesnaPodentita(const.PODENTITA_MISTNOST, "Kuchyne")
+    klice = _klice(_entity_platformy("sensor", [pod]))
+    for k in ("stav", "cil", "slunce"):
+        assert k in klice
+
+
+def test_oblast_dostane_sdileny_vzduch(nahradni_ha):
+    import importlib
+    const = importlib.import_module("napohodu.const")
+    pod = FalesnaPodentita(const.PODENTITA_ZONA, "Oblast")
+    assert "stav_oblasti" in _klice(_entity_platformy("sensor", [pod]))

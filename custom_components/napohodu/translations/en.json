@@ -674,10 +674,10 @@
         "name": "Slunce na oknech"
       },
       "prumer_tyden": {
-        "name": "Venkovní teplota, týdenní průměr"
+        "name": "Venku ⌀ za týden"
       },
       "prumer_tri_dny": {
-        "name": "Venkovní teplota, třídenní průměr"
+        "name": "Venku ⌀ za tři dny"
       },
       "stav_oblasti": {
         "name": "Sdílený vzduch"

@@ -134,8 +134,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
 
     # --- základ výpočtu ---
     polozky = []
-    for klic, jmeno in (("tydenni", "Venku za týden"),
-                        ("tridenni", "Venku za tři dny")):
+    for klic, jmeno in (("tydenni", "Venku \u2300 za týden"),
+                        ("tridenni", "Venku \u2300 za tři dny")):
         eid = f"sensor.napohodu_venkovni_teplota_{klic}_prumer"
         if not existuje(eid):
             continue
