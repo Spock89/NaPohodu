@@ -233,12 +233,11 @@ async def uloz_stav_stineni(hass: HomeAssistant, entita: str, nazev: str,
 
 async def zaregistruj(hass: HomeAssistant) -> None:
     """Zaregistruje služby. Volá se jednou při prvním nastavení."""
-    if hass.services.has_service(DOMAIN, "test_sekvence"):
-        return
-
-    stavy = Stavy(hass)
-    await stavy.nacti()
-    hass.data.setdefault(DOMAIN, {})["stavy_stineni"] = stavy
+    stavy = hass.data.get(DOMAIN, {}).get("stavy_stineni")
+    if stavy is None:
+        stavy = Stavy(hass)
+        await stavy.nacti()
+        hass.data.setdefault(DOMAIN, {})["stavy_stineni"] = stavy
 
     async def _proved(entita: str, zapis: str, timeout: float) -> dict:
         return await proved_sekvenci(hass, entita, zapis, timeout)
@@ -339,6 +338,10 @@ async def zaregistruj(hass: HomeAssistant) -> None:
         ("srovnej", srovnej, SCHEMA_SROVNEJ),
         ("dashboard", dashboard, vol.Schema({})),
     ):
+        # každá zvlášť: dřív stačila jedna existující a nové se
+        # po aktualizaci vůbec nezaregistrovaly
+        if hass.services.has_service(DOMAIN, jmeno):
+            continue
         hass.services.async_register(
             DOMAIN, jmeno, funkce, schema=schema,
             supports_response=SupportsResponse.OPTIONAL,

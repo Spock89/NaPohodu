@@ -151,7 +151,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
     async def async_step_init(self, user_input=None) -> FlowResult:
         return self.async_show_menu(
             step_id="init",
-            menu_options=["nastaveni", "tester", "stavy"]
+            menu_options=["nastaveni", "tester", "stavy", "karta"]
         )
 
     async def async_step_nastaveni(self, user_input=None) -> FlowResult:
@@ -163,6 +163,54 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 SCHEMA_GLOBAL,
                 {**self.config_entry.data, **self.config_entry.options},
             ),
+        )
+
+    # ------------------------------------------------------------ karta
+
+    async def async_step_karta(self, user_input=None) -> FlowResult:
+        """Vypíše hotovou kartu na dashboard.
+
+        Text je v poli, ze kterého se dá vybrat a zkopírovat. Vkládat ho
+        za uživatele nechceme — dashboard si kreslí sám a přepsat mu ho
+        by bylo drzé.
+        """
+        if user_input is not None:
+            return await self.async_step_init()
+
+        from unicodedata import normalize
+
+        from . import karty
+
+        def klic(nazev: str) -> str:
+            bez = normalize("NFKD", nazev).encode("ascii", "ignore").decode()
+            return "".join(z if z.isalnum() else "_"
+                           for z in bez.lower()).strip("_")
+
+        mistnosti, oblasti = [], []
+        for pod in self.config_entry.subentries.values():
+            if pod.subentry_type == c.PODENTITA_MISTNOST:
+                mistnosti.append(klic(pod.title))
+            elif pod.subentry_type == c.PODENTITA_ZONA:
+                oblasti.append(klic(pod.title))
+
+        text = karty.dashboard(
+            mistnosti, oblasti,
+            lambda e: self.hass.states.get(e) is not None)
+
+        return self.async_show_form(
+            step_id="karta",
+            data_schema=self.add_suggested_values_to_schema(
+                vol.Schema({
+                    vol.Optional(c.CONF_KARTA_YAML, default=""):
+                        selector.TextSelector(
+                            selector.TextSelectorConfig(multiline=True)),
+                }),
+                {c.CONF_KARTA_YAML: text},
+            ),
+            description_placeholders={
+                "pocet": str(len(mistnosti)),
+                "oblasti": str(len(oblasti)),
+            },
         )
 
     # ------------------------------------------------------------ stavy

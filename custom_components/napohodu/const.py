@@ -115,5 +115,6 @@ CONF_SEKVENCE = "sekvence"
 CONF_TIMEOUT = "timeout_polohy_s"
 CONF_NAZEV_STAVU = "nazev_stavu"
 CONF_STAVY_TEXT = "stavy_text"
+CONF_KARTA_YAML = "karta_yaml"
 
 INTERVAL_S = 60

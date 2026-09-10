@@ -57,7 +57,8 @@
         "menu_options": {
           "nastaveni": "Společná nastavení",
           "tester": "Tester žaluzií",
-          "stavy": "Stavy žaluzií"
+          "stavy": "Stavy žaluzií",
+          "karta": "Karta na dashboard"
         }
       },
       "nastaveni": {
@@ -147,6 +148,14 @@
           "nazev_stavu": "Název stavu"
         },
         "submit": "Uložit"
+      },
+      "karta": {
+        "title": "Karta na dashboard",
+        "description": "Hotová karta pro {pocet} místností a {oblasti} oblastí, poskládaná z entit, které opravdu existují.\n\nOznač celý text v poli níž a zkopíruj. Pak na dashboardu: tužka vpravo nahoře → Přidat kartu → úplně dole Manuální → smazat obsah → vložit.\n\nPo přidání místnosti si sem přijď pro novou verzi.",
+        "data": {
+          "karta_yaml": "YAML"
+        },
+        "submit": "Zpět"
       }
     },
     "error": {
