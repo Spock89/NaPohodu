@@ -112,14 +112,41 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
          "# Vlož jako Manuální kartu. Až přidáš místnost, vygeneruj znovu.",
          "", "type: vertical-stack", "cards:"]
 
-    # --- teploty ---
+    # --- odchylky s oddělovači, ať se místnosti nepletou ---
     polozky = []
-    for m in mistnosti:
-        polozky += _radek(f"number.napohodu_{m}_odchylka_teploty", m.capitalize())
-        polozky += _radek(f"sensor.napohodu_{m}_cilova_teplota", "   výsledný cíl")
+    for i, m in enumerate(mistnosti):
+        if i:
+            polozky.append("      - type: divider")
+        polozky += _radek(f"number.napohodu_{m}_odchylka_teploty",
+                          m.capitalize())
+        polozky += _radek(f"sensor.napohodu_{m}_cilova_teplota",
+                          "   výsledný cíl")
+        if cidla.get(m):
+            polozky += _radek(cidla[m], "   teď v místnosti")
     c += _hlavicka("Cílová teplota", "mdi:target")
     c += _karta("", "", [x for x in polozky if _ok(x, existuje)])
     c.append("")
+
+    # --- základ výpočtu ---
+    polozky = []
+    for klic, jmeno in (("tydenni", "Venku za týden"),
+                        ("tridenni", "Venku za tři dny")):
+        eid = f"sensor.napohodu_venkovni_teplota_{klic}_prumer"
+        if not existuje(eid):
+            continue
+        if polozky:
+            polozky.append("      - type: divider")
+        polozky += _radek(eid, jmeno)
+        polozky += _atribut(eid, "zdroj", "   odkud")
+        polozky += _atribut(eid, "vlastni_vypocet", "   vlastní výpočet", " °C")
+    if existuje("binary_sensor.napohodu_topna_sezona"):
+        polozky.append("      - type: divider")
+        polozky += _radek("binary_sensor.napohodu_topna_sezona",
+                          "Topná sezóna")
+    if polozky:
+        c += _hlavicka("Základ výpočtu", "mdi:calendar-week", "subtitle")
+        c += _karta("", "", polozky)
+        c.append("")
 
     # --- okna ---
     c += _hlavicka("Okna a proč", "mdi:window-open-variant")
@@ -151,6 +178,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         eid = f"sensor.napohodu_{o}_sdileny_vzduch"
         if not existuje(eid):
             continue
+        if polozky:
+            polozky.append("      - type: divider")
         polozky += _radek(eid, o.capitalize())
         polozky += _atribut(eid, "mistnosti", "   místnosti")
         polozky += _atribut(eid, "zastupce", "   větrá za nás")
@@ -165,6 +194,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         eid = f"sensor.napohodu_{m}_slunce_na_oknech"
         if not existuje(eid):
             continue
+        if polozky:
+            polozky.append("      - type: divider")
         polozky += _radek(eid, m.capitalize())
         polozky += _atribut(eid, "role_stineni", "   role")
         polozky += _atribut(eid, "stineni_stav", "   žaluzie stojí na")
@@ -217,12 +248,16 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     c.append("")
 
     # --- grafy ---
-    teploty = [(f"sensor.napohodu_{m}_cilova_teplota", f"Cíl {m}")
-               for m in mistnosti]
+    # Do jednoho grafu se nevejde všechno čitelně. Cíle jsou skoro
+    # totožné, takže stačí jeden, a k němu skutečné teploty místností.
+    hlavni = mistnosti[0] if mistnosti else None
+    teploty = []
+    if hlavni:
+        teploty.append((f"sensor.napohodu_{hlavni}_cilova_teplota", "Cíl"))
     teploty += [(cidla[m], m.capitalize()) for m in mistnosti if cidla.get(m)]
     if venku:
         teploty.append((venku, "Venku"))
-    c += _graf("Cíl proti skutečnosti", 48, teploty, existuje)
+    c += _graf("Teploty", 48, teploty, existuje)
 
     # do grafu pohybů patří jen to, co se opravdu hýbe
     okna = [(f"binary_sensor.napohodu_{m}_okno", f"Okno {m}")

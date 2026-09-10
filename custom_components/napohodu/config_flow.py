@@ -209,7 +209,10 @@ class NaPohoduOptionsFlow(OptionsFlow):
                               or pod.data.get(c.CONF_ZALUZIE_STARE) or [])
                 if pod.data.get(c.CONF_OKNA):
                     s_okny.add(k)
-                if pod.data.get(c.CONF_ZDROJ_KLIDU, "spanek") != "zadny":
+                # klid má smysl jen tam, kde ho něco spouští
+                zdroj = pod.data.get(c.CONF_ZDROJ_KLIDU, "spanek")
+                ma_spanek = bool(pod.data.get(c.CONF_SPANEK))
+                if zdroj == "noc" or (zdroj != "zadny" and ma_spanek):
                     s_klidem.add(k)
             elif pod.subentry_type == c.PODENTITA_ZONA:
                 oblasti.append(klic(pod.title))

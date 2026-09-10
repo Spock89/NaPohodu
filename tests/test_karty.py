@@ -75,8 +75,32 @@ def test_graf_teplot_je_jeden_pro_vsechny():
                   cidla={"kuchyne": "sensor.t_kuchyne",
                          "obyvak": "sensor.t_obyvak"},
                   venku="sensor.venku")
-    assert s.count("Cíl proti skutečnosti") == 1
+    assert s.count("title: Teploty") == 1
     assert "sensor.venku" in s
+
+
+def test_graf_teplot_ma_jen_jeden_cil():
+    """Cíle jsou skoro totožné, tři čáry navíc jen zaplevelí graf."""
+    s = dashboard(["kuchyne", "obyvak", "loznice"], [], vzdy,
+                  cidla={m: f"sensor.t_{m}" for m in
+                         ("kuchyne", "obyvak", "loznice")})
+    graf = s[s.index("title: Teploty"):]
+    assert graf.count("cilova_teplota") == 1
+
+
+def test_oddelovace_mezi_mistnostmi():
+    """Bez čáry se řádky tří místností slijou dohromady."""
+    s = dashboard(["kuchyne", "obyvak", "loznice"], [], vzdy,
+                  cidla={m: f"sensor.t_{m}" for m in
+                         ("kuchyne", "obyvak", "loznice")})
+    hlava = s[:s.index("Základ výpočtu")]
+    assert hlava.count("type: divider") == 2
+
+
+def test_zaklad_vypoctu_ukazuje_zdroj_u_oboji():
+    s = dashboard(["kuchyne"], [], vzdy)
+    zaklad = s[s.index("Základ výpočtu"):s.index("Okna a proč")]
+    assert zaklad.count("attribute: zdroj") == 2
 
 
 def _graf_pohybu(s):
