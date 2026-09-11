@@ -300,7 +300,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
     # ------------------------------------------------------------ hlavní
 
     def _vitr(self, g: dict, vitr: float, naraz: float) -> bool:
-        """Nárazy mají vlastní práh, protože pohon poškodí dřív než průměr.
+        """Nárazy mají vlastní práh, protože pohon poškodí dřív než
+        ustálená rychlost.
 
         Blokace povolí, až když obě hodnoty klesnou pod uklidňovací mez —
         jinak by se to na hraně překlápělo.
@@ -312,7 +313,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         drive = self.vitr_blokuje
         if vitr > prah_v or naraz > prah_n:
             self.vitr_blokuje = True
-            co = "nárazy" if naraz > prah_n else "průměr"
+            co = "nárazy" if naraz > prah_n else "rychlost"
             prah = prah_n if naraz > prah_n else prah_v
         elif vitr < klid_v and naraz < klid_v:
             self.vitr_blokuje = False
@@ -323,25 +324,27 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
         # příčina se přepisuje každý cyklus, aby zpráva nikdy nebyla prázdná
         self.vitr_pricina = {
-            "prumer": round(vitr, 1), "naraz": round(naraz, 1),
+            "rychlost": round(vitr, 1), "naraz": round(naraz, 1),
             "co_prekrocilo": co, "prah": prah,
-            "prahy": {"prumer": prah_v, "naraz": prah_n, "povoli_pod": klid_v},
+            "prahy": {"rychlost": prah_v, "naraz": prah_n,
+                      "povoli_pod": klid_v},
         } if self.vitr_blokuje else {}
 
         if drive != self.vitr_blokuje:
             _LOGGER.info(
-                "NaPohodu: vítr %s — průměr %.1f (práh %.1f), náraz %.1f "
+                "NaPohodu: vítr %s — rychlost %.1f (práh %.1f), náraz %.1f "
                 "(práh %.1f), povolí pod %.1f",
                 "blokuje" if self.vitr_blokuje else "povolil",
                 vitr, prah_v, naraz, prah_n, klid_v)
         else:
-            _LOGGER.debug("NaPohodu: vítr průměr %.1f náraz %.1f blokuje %s",
+            _LOGGER.debug("NaPohodu: vítr rychlost %.1f náraz %.1f blokuje %s",
                           vitr, naraz, self.vitr_blokuje)
         self.vitr_stav = {
             "jednotka": "m/s (přepočteno z čidla)",
-            "prumer": round(vitr, 1), "naraz": round(naraz, 1),
+            "rychlost": round(vitr, 1), "naraz": round(naraz, 1),
             "blokuje": self.vitr_blokuje,
-            "prahy": {"prumer": prah_v, "naraz": prah_n, "povoli_pod": klid_v},
+            "prahy": {"rychlost": prah_v, "naraz": prah_n,
+                      "povoli_pod": klid_v},
             "pricina": self.vitr_pricina or None,
         }
         return self.vitr_blokuje
