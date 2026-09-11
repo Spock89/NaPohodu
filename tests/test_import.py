@@ -194,3 +194,41 @@ def test_chybejici_jednotka_se_bere_jako_ms(nahradni_ha):
 
 def test_nesmyslna_hodnota_da_nahradu(nahradni_ha):
     assert _rychlost("unavailable", "km/h") == 0.0
+
+
+# ------------------------------------- atributy nezávislé na vybavení
+
+def test_vlhkost_se_ukazuje_i_bez_odtahu(nahradni_ha):
+    """Hodnotu, kterou známe, má být vidět — i když není čím odsávat."""
+    import asyncio
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    c = importlib.import_module("napohodu.const")
+
+    class FalesnyStavRH:
+        state = "43.5"
+        attributes: dict = {}
+
+    class Mistnost:
+        obsazeno = True
+        atributy: dict = {}
+
+    class Falesny:
+        _cislo = ko.NaPohoduCoordinator._cislo
+        _stav = staticmethod(lambda eid: FalesnyStavRH() if eid else None)
+        _pomocnici_krok = ko.NaPohoduCoordinator._pomocnici_krok
+        vykonavaci: dict = {}
+        hass = None
+
+    k = Falesny()
+    m = Mistnost()
+    m.atributy = {}
+    d = {c.CONF_RH_VNITRNI: "sensor.vlhkost"}      # žádný odtah, žádný zvlhčovač
+    asyncio.run(k._pomocnici_krok(_Pod(), d, m, {"pm25": 0, "pm10": 0}))
+    assert m.atributy["vlhkost"] == 43.5
+
+
+class _Pod:
+    subentry_id = "id"
+    title = "Kuchyne"

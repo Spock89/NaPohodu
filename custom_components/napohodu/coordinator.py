@@ -869,8 +869,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 cisticka, zapnout, "čistička")
         m.atributy["cisticka_bezi"] = vyk.stav.zarizeni.get("čistička")
 
-        odtah = d.get(CONF_ODTAH) or []
+        # vlhkost patří do atributů vždycky, když ji známe — nezávisle
+        # na tom, jestli je čím odsávat nebo zvlhčovat
         rh_in = self._cislo(d.get(CONF_RH_VNITRNI))
+        if rh_in is not None:
+            m.atributy["vlhkost"] = rh_in
+
+        odtah = d.get(CONF_ODTAH) or []
         if odtah and rh_in is not None:
             rh_max = float(d.get(CONF_RH_MAX, 60.0))
             zapnout = None
@@ -879,7 +884,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             elif rh_in < rh_max - 5:
                 zapnout = False
             m.atributy["odtah"] = await vyk.zarizeni(odtah, zapnout, "odtah")
-            m.atributy["vlhkost"] = rh_in
         m.atributy["odtah_bezi"] = vyk.stav.zarizeni.get("odtah")
 
         # zvlhčovač: v zimě vysychají sliznice, v paneláku běžně pod 30 %
