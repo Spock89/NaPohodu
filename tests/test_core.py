@@ -379,3 +379,74 @@ def test_diagnostika_zminuje_zastupce():
     from core import duvody
     v = stary(co2=900, t_in=21, cil=25.5, hodina=2, spanek=True, zastupce=True)
     assert any("soused" in x for x in duvody(v, Pamet(), N))
+
+
+# ---------------------------------------------------------- kódy důvodů
+
+def test_kod_odlisi_vitr_od_vyvetrano():
+    """„vyvětráno" obsahuje „větr" — rozhodovat se podle textu je past."""
+    vitr, _ = krok(stary(vitr_blokuje=True), otevreno=True)
+    cisto, _ = krok(stary(co2=500, cil=25.5), otevreno=True, cas_povelu_s=0)
+    assert vitr.kod == "vitr"
+    assert cisto.kod == "cisto"
+    assert "větr" in cisto.duvod        # text mate, kód ne
+
+
+def test_kody_hlavnich_rozhodnuti():
+    dest, _ = krok(stary(dest=2.0), otevreno=True)
+    pryc, _ = krok(stary(doma=False), otevreno=True)
+    rucni, _ = krok(stary(vynuceno=True))
+    assert (dest.kod, pryc.kod, rucni.kod) == ("dest", "pryc", "rucni")
+
+
+def test_kod_nouzoveho_vetrani():
+    r, _ = krok(stary(co2=1400, t_in=20.3, cil=25.5, hodina=2, spanek=True))
+    assert r.kod == "noc_krize"
+
+
+def test_drzeni_stavu_ma_vlastni_kod():
+    p = Pamet(otevreno=True, cas_povelu_s=0)
+    r = rozhodni(Vstup(co2=500, cil=25.5, cas_s=30), p, N)
+    assert r.kod == "drzeni"
+
+
+# ------------------------------------------------- noční hystereze
+
+def test_po_nocnim_zavreni_se_ceka_na_prohrati():
+    """Čidlo v okně po zavření vyskočí. Bez hystereze by se okno
+    otevřelo za pár minut znovu a fouká to na hlavu celou noc."""
+    p = Pamet(otevreno=True, cas_povelu_s=0,
+              noc_mez=18.0, noc_start=21.0)
+    # při otevřeném okně se k čidlu přičítá korekce, proto nižší hodnota
+    v = stary(co2=1200, t_in=17.0, t_out=10, cil=25.5, hodina=2, spanek=True)
+    zavreni = rozhodni(v, p, N)
+    assert zavreni.akce is Akce.ZAVRIT
+    assert p.noc_zavreno_teplotou is True
+
+    # čidlo vyskočilo na 19.5, ale pokoj prohřátý není
+    p.cas_povelu_s = 0
+    znovu = rozhodni(stary(co2=1200, t_in=19.5, cil=25.5, hodina=2,
+                           spanek=True), p, N)
+    assert znovu.akce is Akce.NIC
+    assert "prohřátí" in znovu.duvod
+
+
+def test_po_prohrati_se_otevre():
+    p = Pamet(cas_povelu_s=0, noc_zavreno_teplotou=True, noc_start=21.0)
+    r = rozhodni(stary(co2=1200, t_in=20.2, cil=25.5, hodina=2, spanek=True),
+                 p, N)
+    assert r.akce is Akce.OTEVRIT
+    assert p.noc_zavreno_teplotou is False
+
+
+def test_krize_prebiji_i_cekani_na_prohrati():
+    p = Pamet(cas_povelu_s=0, noc_zavreno_teplotou=True, noc_start=21.0)
+    r = rozhodni(stary(co2=1400, t_in=19.0, cil=25.5, hodina=2, spanek=True),
+                 p, N)
+    assert r.akce is Akce.OTEVRIT and r.kod == "noc_krize"
+
+
+def test_otevreni_si_zapamatuje_vychozi_teplotu():
+    p = Pamet(cas_povelu_s=0)
+    rozhodni(stary(co2=1200, t_in=21.0, cil=25.5, hodina=2, spanek=True), p, N)
+    assert p.noc_start == 21.0

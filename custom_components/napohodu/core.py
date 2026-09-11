@@ -114,6 +114,8 @@ class Pamet:
     rezim: str = "pulz"
     noc_mez: float | None = None
     noc_krize: bool = False
+    noc_zavreno_teplotou: bool = False
+    noc_start: float | None = None
     den_mez: float | None = None
     pohyby: int = 0
 
@@ -122,6 +124,10 @@ class Pamet:
 class Rozhodnuti:
     akce: Akce
     duvod: str
+    # Strojový kód důvodu. Rozhodovat se podle českého textu je past:
+    # „vyvětráno" obsahuje „větr" a zpráva o čistém vzduchu se pak pošle
+    # jako varování před větrem.
+    kod: str = ""
     limit_s: float | None = None
     t_in_korig: float = 0.0
     korekce: float = 0.0
@@ -161,6 +167,10 @@ def _je_noc(hodina: float, n: Nastaveni, spanek: bool) -> bool:
 
 
 # ---------------------------------------------------------------- jádro
+
+
+# o kolik pod původní teplotu smí místnost zůstat, než se znovu otevře
+NOCNI_VRATIT = 1.0
 
 
 def z_priority(priorita: float) -> tuple[float, float]:
@@ -235,18 +245,20 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     t_max = (v.t_in_max if v.t_in_max is not None else v.t_in) + korekce
     dew = rosny_bod(v.t_out, v.rh_out)
 
-    def hotovo(akce: Akce, duvod: str, limit_s: float | None = None) -> Rozhodnuti:
-        return Rozhodnuti(akce, duvod, limit_s, round(t_in, 2),
+    def hotovo(akce: Akce, duvod: str, limit_s: float | None = None,
+               kod: str = "") -> Rozhodnuti:
+        return Rozhodnuti(akce, duvod, kod, limit_s, round(t_in, 2),
                           round(korekce, 2), round(dew, 1), v.co2)
 
-    def otevri(duvod: str, limit_s: float | None, *, hned: bool = False) -> Rozhodnuti:
-        return _povel(True, duvod, limit_s, hned)
+    def otevri(duvod: str, limit_s: float | None, *, hned: bool = False,
+               kod: str = "") -> Rozhodnuti:
+        return _povel(True, duvod, limit_s, hned, kod)
 
-    def zavri(duvod: str, *, hned: bool = False) -> Rozhodnuti:
-        return _povel(False, duvod, None, hned)
+    def zavri(duvod: str, *, hned: bool = False, kod: str = "") -> Rozhodnuti:
+        return _povel(False, duvod, None, hned, kod)
 
-    def _povel(chci_otevreno: bool, duvod: str,
-               limit_s: float | None, hned: bool) -> Rozhodnuti:
+    def _povel(chci_otevreno: bool, duvod: str, limit_s: float | None,
+               hned: bool, kod: str = "") -> Rozhodnuti:
         limit = n.projezd_s if hned else max(n.projezd_s, n.min_drzeni_s)
         if v.cas_s - p.cas_povelu_s < limit:
             zbyva = int(limit - (v.cas_s - p.cas_povelu_s))
@@ -255,12 +267,13 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                 kolik = f"{zbyva // 60} min"
             else:
                 kolik = f"{zbyva} s"
-            return hotovo(Akce.NIC, f"chci {chci}, držím stav ještě {kolik}")
+            return hotovo(Akce.NIC, f"chci {chci}, držím stav ještě {kolik}",
+                          kod="drzeni")
         p.otevreno = chci_otevreno
         p.cas_povelu_s = v.cas_s
         p.pohyby += 1
         return hotovo(Akce.OTEVRIT if chci_otevreno else Akce.ZAVRIT,
-                      duvod, limit_s)
+                      duvod, limit_s, kod)
 
     def beze_zmeny(duvod: str, chci_otevreno: bool | None = None) -> Rozhodnuti:
         # obnova povelu, kdyby se stav rozešel se skutečností (ne v noci)
@@ -269,7 +282,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                 and v.cas_s - p.cas_povelu_s > n.obnova_s):
             p.cas_povelu_s = v.cas_s
             return hotovo(Akce.OTEVRIT if chci_otevreno else Akce.ZAVRIT,
-                          "obnova povelu")
+                          "obnova povelu", kod="obnova")
         return hotovo(Akce.NIC, duvod)
 
     # --- 1. vítr ---------------------------------------------------
@@ -277,7 +290,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         if not p.otevreno:
             return beze_zmeny("vítr, zavřeno", False)
         p.rezim = "pulz"
-        return zavri("zavírám kvůli větru", hned=True)
+        return zavri("zavírám kvůli větru", hned=True, kod="vitr")
 
     # --- 1b. déšť ---------------------------------------------------
     # Ochrana bytu stojí nad ručním rozhodnutím stejně jako vítr.
@@ -285,20 +298,20 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         if not p.otevreno:
             return beze_zmeny("prší, zavřeno", False)
         p.rezim = "pulz"
-        return zavri(f"zavírám kvůli dešti ({v.dest:.1f})", hned=True)
+        return zavri(f"zavírám kvůli dešti ({v.dest:.1f})", hned=True, kod="dest")
 
     # --- 2. nikdo doma ---------------------------------------------
     if not v.doma:
         if not p.otevreno:
             return beze_zmeny("nikdo doma")
         p.rezim = "pulz"
-        return zavri("nikdo není doma", hned=True)
+        return zavri("nikdo není doma", hned=True, kod="pryc")
 
     # --- 3. ruční otevření -----------------------------------------
     if v.vynuceno:
         if p.otevreno:
             return beze_zmeny("ručně otevřeno", True)
-        return otevri("ručně otevřeno", None, hned=True)
+        return otevri("ručně otevřeno", None, hned=True, kod="rucni")
 
     # --- 4. vzduch --------------------------------------------------
     rank = _kvalita_rank(v.kvalita)
@@ -378,21 +391,37 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
 
         if p.otevreno:
             if t_in <= mez:
-                return zavri(f"noc: kleslo na {t_in:.1f} °C")
+                p.noc_zavreno_teplotou = True
+                return zavri(f"noc: kleslo na {t_in:.1f} °C", kod="noc_zima")
             return beze_zmeny(f"noc: větrá {t_in:.1f} °C, CO2 {v.co2:.0f}", True)
+
+        # Po zavření kvůli teplotě se místnost musí znovu prohřát, ne jen
+        # na chvíli skočit. Čidlo umístěné v okně po zavření rychle
+        # vyskočí — bez téhle hystereze by se okno otevřelo za pár minut.
+        if p.noc_zavreno_teplotou and p.noc_start is not None:
+            vratit = p.noc_start - NOCNI_VRATIT
+            if t_in >= vratit:
+                p.noc_zavreno_teplotou = False
+            elif not krize:
+                return beze_zmeny(
+                    f"noc: čekám na prohřátí, {t_in:.1f} z {vratit:.1f} °C",
+                    False)
 
         if v.co2 > prah_noc or pm_spatne or kvalita_spatna or v.vetrat:
             if krize and t_in > n.nocni_min - n.krize_pod_mez:
                 p.noc_mez = n.nocni_min - n.krize_pod_mez
                 p.noc_krize = True
-                return otevri("noc: nouzové větrání", 12 * 60)
+                return otevri("noc: nouzové větrání", 12 * 60, kod="noc_krize")
             if rano:
                 return beze_zmeny(f"noc: ranní ruch, neotvírám (CO2 {v.co2:.0f})")
             if t_in <= n.nocni_min + n.nocni_rezerva:
                 return beze_zmeny(f"noc: dusno, ale jen {t_in:.1f} °C")
             p.noc_mez = max(n.nocni_min, t_in - n.nocni_pokles)
+            p.noc_start = t_in
             p.noc_krize = False
-            return otevri(f"noc: otevírám do {p.noc_mez:.1f} °C", 4 * 3600)
+            p.noc_zavreno_teplotou = False
+            return otevri(f"noc: otevírám do {p.noc_mez:.1f} °C", 4 * 3600,
+                          kod="noc_otevri")
         return beze_zmeny(f"noc: klid, CO2 {v.co2:.0f}", False)
 
     p.noc_mez = None
@@ -402,7 +431,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         if not p.otevreno:
             return beze_zmeny(f"čisto, CO2 {v.co2:.0f}", False)
         p.den_mez = None
-        return zavri(f"vyvětráno, CO2 {v.co2:.0f}")
+        return zavri(f"vyvětráno, CO2 {v.co2:.0f}", kod="cisto")
 
     # --- 8. pulzní větrání -------------------------------------------
     if potreba:

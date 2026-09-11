@@ -24,8 +24,9 @@ def vyk(po_startu=True):
     return h, v
 
 
-def r(akce, duvod="test", limit=None):
-    return core.Rozhodnuti(akce, duvod, limit)
+def r(akce, duvod="test", limit=None, kod=""):
+    # pojmenované argumenty schválně: pozice se v Rozhodnuti mění
+    return core.Rozhodnuti(akce=akce, duvod=duvod, kod=kod, limit_s=limit)
 
 
 def bez(coro):

@@ -741,12 +741,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     vyk.stav.posledni_popis = vysledek
 
             g = {**self.entry.data, **self.entry.options}
-            if r.akce is core.Akce.ZAVRIT and "větr" in r.duvod:
+            # routuje se podle strojového kódu, ne podle českého textu
+            if r.kod == "vitr":
                 await self._posli(g, "vitr", m.nazev, cas_s,
                                   **(self.vitr_pricina or {}))
-            elif r.akce is core.Akce.ZAVRIT and "dešt" in r.duvod:
+            elif r.kod == "dest":
                 await self._posli(g, "dest", m.nazev, cas_s, dest=dest)
-            elif r.akce is core.Akce.OTEVRIT and "nouzov" in r.duvod:
+            elif r.kod == "noc_krize":
                 await self._posli(g, "nouzove", m.nazev, cas_s, co2=v.co2)
             elif r.akce is core.Akce.OTEVRIT:
                 await self._posli(g, "vetrani", m.nazev, cas_s,
@@ -779,7 +780,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         m.atributy.update({
             "co2": v.co2, "uvnitr": r.t_in_korig, "korekce": r.korekce,
             "venku": t_ven, "rosny_bod": r.rosny_bod, "rezim": pamet.rezim,
-            "navrh": r.akce.value, "provedeno": provedeno,
+            "navrh": r.akce.value, "kod": r.kod, "provedeno": provedeno,
             "ovladani": "zapnuto" if ovladat else "jen sleduje",
             "oblast": okruh["nazev"] if okruh["pod"] else None,
             "prahy_z_oblasti": {
