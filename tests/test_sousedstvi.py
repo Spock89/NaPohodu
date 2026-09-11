@@ -94,3 +94,48 @@ def test_vychozi_prah_odpovida_nocnimu():
     zony = byt(loznice_co2=950)
     assert prerozdel(zony)["l"].zastupce is None
     assert prerozdel(byt(loznice_co2=1100))["l"].zastupce == "Kuchyně"
+
+
+# ------------------------------------------- obrácené zastupování
+
+def test_pod_cilem_je_vetrani_drahe():
+    """Obývák je pod cílem, okno by kmitalo. Ložnice, kde nikdo není,
+    to vyvětrá za něj."""
+    zony = [
+        ZonaStav("o", "Obývák", co2=1200, pod_cilem=True, sousedi=["l"]),
+        ZonaStav("l", "Ložnice", co2=600, sousedi=["o"]),
+    ]
+    u = prerozdel(zony)
+    assert u["o"].zastupce == "Ložnice"
+    assert u["l"].prevzate_co2 == 1200
+
+
+def test_soused_taky_pod_cilem_nepomuze():
+    zony = [
+        ZonaStav("o", "Obývák", co2=1200, pod_cilem=True, sousedi=["l"]),
+        ZonaStav("l", "Ložnice", co2=600, pod_cilem=True, sousedi=["o"]),
+    ]
+    assert prerozdel(zony)["o"].zastupce is None
+
+
+def test_soused_kde_se_spi_nepomuze_ani_v_tomto_smeru():
+    zony = [
+        ZonaStav("o", "Obývák", co2=1200, pod_cilem=True, sousedi=["l"]),
+        ZonaStav("l", "Ložnice", co2=600, klid=True, sousedi=["o"]),
+    ]
+    assert prerozdel(zony)["o"].zastupce is None
+
+
+def test_kdyz_je_vetrani_levne_zastupce_netreba():
+    zony = [
+        ZonaStav("o", "Obývák", co2=1200, sousedi=["l"]),
+        ZonaStav("l", "Ložnice", co2=600, sousedi=["o"]),
+    ]
+    assert prerozdel(zony)["o"].zastupce is None
+
+
+def test_draho_plati_pro_oba_duvody():
+    from sousedstvi import draho
+    assert draho(ZonaStav("a", "A", klid=True))
+    assert draho(ZonaStav("a", "A", pod_cilem=True))
+    assert not draho(ZonaStav("a", "A"))

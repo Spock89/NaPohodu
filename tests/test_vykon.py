@@ -339,29 +339,56 @@ def test_rezim_vzdy_ignoruje_pritomnost_v_pokoji():
 
 # ---------------------------------------------------------------- topení
 
-from vykon import cil_topeni
+from vykon import ZNACKA_MIMO_SEZONU, ZNACKA_OKNO, cil_topeni
 
 
-def test_mimo_sezonu_se_netopi():
-    assert cil_topeni(22, False, 16, False, False, False, 28) == ("off", 16)
+def test_teplota_se_posila_vzdycky():
+    """Bez cílové teploty hlavice neví, na co regulovat."""
+    for kw in ({}, {"sezona": True}, {"okno_otevreno": True}):
+        p = cil_topeni(22, kw.get("okno_otevreno", False), 16,
+                       kw.get("sezona", False), False, False, 28)
+        assert p.cil is not None
+
+
+def test_mimo_sezonu_znackova_teplota():
+    """7,7 prozradí, že spojení funguje a proč je vypnuto."""
+    p = cil_topeni(22, False, 16, False, False, False, 28)
+    assert p.cil == ZNACKA_MIMO_SEZONU
+    assert p.rezim is None          # režim si hlavice určuje sama
+
+
+def test_mimo_sezonu_lze_vypnout_natvrdo():
+    p = cil_topeni(22, False, 16, False, False, False, 28,
+                   sezonu_ridi_hlavice=False)
+    assert p.rezim == "off" and p.cil == ZNACKA_MIMO_SEZONU
 
 
 def test_v_sezone_se_posila_cil():
-    assert cil_topeni(22.5, False, 16, True, False, False, 28) == ("heat", 22.5)
+    p = cil_topeni(22.5, False, 16, True, False, False, 28)
+    assert p.cil == 22.5
 
 
-def test_otevrene_okno_srazi_na_utlum_ne_na_vypnuto():
-    """Hlavice, která se úplně zavře, se pak dlouho vrací."""
-    assert cil_topeni(22.5, True, 16, True, False, False, 28) == ("heat", 16)
+def test_okno_znackou_utlumi_hlavici_bez_senzoru():
+    """5,5 místo 5,0, ať se pozná, čí povel to byl."""
+    p = cil_topeni(22.5, True, 16, True, False, False, 28, pri_oknu="znacka")
+    assert p.cil == ZNACKA_OKNO and p.cil != 5.0
 
 
-def test_odvzdusneni_drzi_ventil_otevreny():
-    assert cil_topeni(22, False, 16, True, False, True, 28) == ("heat", 28)
+def test_okno_vychozi_nechava_na_hlavici():
+    p = cil_topeni(22.5, True, 16, True, False, False, 28)
+    assert p.cil == 22.5 and "hlavice" in p.duvod
 
 
-def test_odvzdusneni_prebiji_i_otevrene_okno():
-    assert cil_topeni(22, True, 16, True, False, True, 28)[1] == 28
+def test_okno_jde_srazit_na_utlum():
+    p = cil_topeni(22.5, True, 16, True, False, False, 28, pri_oknu="utlum")
+    assert p.cil == 16 and p.rezim == "heat"
 
 
-def test_topit_mimo_sezonu_jde_zapnout():
-    assert cil_topeni(22, False, 16, False, True, False, 28) == ("heat", 22)
+def test_odvzdusneni_prebiji_vse():
+    p = cil_topeni(22, True, 16, True, False, True, 28, pri_oknu="znacka")
+    assert p.cil == 28 and p.rezim == "heat"
+
+
+def test_znackove_hodnoty_jdou_zmenit():
+    p = cil_topeni(22, False, 16, False, False, False, 28, znacka_mimo=8.8)
+    assert p.cil == 8.8

@@ -340,6 +340,9 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     if v.co2 < n.co2_zavrit:
         p.vetra_se = False
     prah_startu = n.co2_zavrit if p.vetra_se else n.co2_otevrit
+    if v.zastupce:
+        # větrá za nás soused, sami otevřeme až když to nestačí
+        prah_startu = max(prah_startu, n.co2_noc)
 
     potreba = (v.co2 > prah_startu or v.vetrat or kvalita_spatna or pm_spatne)
     cisto = (v.co2 < n.co2_zavrit and not v.vetrat and kvalita_ok and pm_cisto)

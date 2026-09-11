@@ -128,13 +128,30 @@ hlavice sama.
 | situace | co se pošle |
 |---|---|
 | v sezóně, zavřené okno | cíl místnosti |
-| v sezóně, otevřené okno | útlum, výchozích 16 °C |
-| mimo topnou sezónu | vypnuto |
+| v sezóně, otevřené okno | nic, řeší si to hlavice sama |
+| mimo topnou sezónu | nic, sezónu si určuje hlavice |
 | začátek sezóny | vysoká teplota kvůli odvzdušnění |
 
-**Při otevřeném okně se posílá útlum, ne vypnuto.** Úplně zavřená
-hlavice se pak dlouho vrací a některé si tím rozbijí svůj model tepelné
-zátěže.
+**Co hlavice zvládne sama, do toho integrace nemluví.** Je to hlavní
+zásada celého napojení na topení, protože dvě věci, které rozhodují
+o jedné, se vždycky začnou přetahovat.
+
+Otevřené okno je toho příklad. Integrace hlavici posílá okenní senzor,
+podle kterého si topení vypne sama a po zavření se vrátí tam, kde byla.
+Posílat jí k tomu ještě útlumovou teplotu by byla druhá informace o téže
+věci. Volba **Při otevřeném okně** ale dovolí útlum nebo vypnuto zapnout
+— hodí se u hlavice, která okenní senzor neumí.
+
+Totéž platí o sezóně. Better Thermostat si podle venkovní teploty
+určuje sám, kdy topit, a jeho hranice nemusí souhlasit s tou naší.
+Ve výchozím nastavení proto integrace mimo sezónu do topení nemluví
+vůbec, takže se na přechodu nehádají. Vypnutím volby **Sezónu si řídí
+hlavice sama** převezme rozhodování integrace.
+
+Aby bylo poznat, co se doopravdy děje, ukazuje se v atributech vedle
+sebe obojí: `topeni` je to, co poslala integrace, a `topeni_hlavice`
+to, co hlásí sama hlavice. Když se rozejdou, je to vidět na první
+pohled.
 
 **Odvzdušnění.** Když integrace zaznamená přechod do topné sezóny, drží
 zvolenou dobu vysokou teplotu, aby ventil zůstal plně otevřený a rozvod
@@ -224,7 +241,9 @@ v procentech, `3s` je čekání, `=5` počká na potvrzení polohy, `stop`
 zastaví za jízdy, `tilt 40` naklopí lamely. Když výsledek sedí, uložíš ho
 pod jménem.
 
-Uložené stavy se pak vyvolávají službou `napohodu.nastav_stineni` nebo
+Pro každou přiřazenou roli vznikne u místnosti tlačítko, takže se
+stínění dá vyvolat rukou bez psaní automatizace. Uložené stavy jdou
+vyvolat i službou `napohodu.nastav_stineni` nebo
 `napohodu.stineni_mistnosti`, takže je můžeš dát na tlačítko.
 
 ## Bezpečnostní zásady

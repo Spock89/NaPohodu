@@ -281,11 +281,20 @@ def test_krize_prebiji_i_zastupce():
     assert r.akce is Akce.OTEVRIT
 
 
-def test_zastupce_ve_dne_nic_nemeni():
-    a, _ = krok(stary(co2=900, t_in=21, t_out=10, cil=25.5, hodina=14))
-    b, _ = krok(stary(co2=900, t_in=21, t_out=10, cil=25.5, hodina=14,
+def test_zastupce_zvedne_prah_i_ve_dne():
+    """Když za nás větrá soused, sami otevřeme až když to nestačí.
+    Jinak by okno v místnosti pod cílem kmitalo sem a tam."""
+    bez, _ = krok(stary(co2=900, t_in=21, t_out=10, cil=25.5, hodina=14))
+    se, _ = krok(stary(co2=900, t_in=21, t_out=10, cil=25.5, hodina=14,
+                       zastupce=True))
+    assert bez.akce is Akce.OTEVRIT
+    assert se.akce is Akce.NIC
+
+
+def test_zastupce_neudusi_kdyz_je_hodne_dusno():
+    r, _ = krok(stary(co2=1300, t_in=21, t_out=10, cil=25.5, hodina=14,
                       zastupce=True))
-    assert a.akce is b.akce is Akce.OTEVRIT
+    assert r.akce is Akce.OTEVRIT
 
 
 # ---------------------------------------------------------- déšť a priorita

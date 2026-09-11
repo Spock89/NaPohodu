@@ -130,6 +130,21 @@ def test_mistnost_dostane_tlacitka(nahradni_ha):
     assert "srovnat_okno" in klice and "srovnat_stineni" in klice
 
 
+def test_tlacitka_stineni_jen_pro_prirazene_role(nahradni_ha):
+    """Tlačítko, které nic nedělá, by jen zaplevelilo kartu."""
+    import importlib
+    const = importlib.import_module("napohodu.const")
+    bez = FalesnaPodentita(const.PODENTITA_MISTNOST, "Kuchyne")
+    assert "zastinit" not in _klice(_entity_platformy("button", [bez]))
+
+    s = FalesnaPodentita(const.PODENTITA_MISTNOST, "Obyvak", {
+        const.CONF_STINENI_MAPA: {"cover.o1|zastinit": "zastíněno",
+                                  "cover.o1|soukromi": "dolů"}})
+    klice = _klice(_entity_platformy("button", [s]))
+    assert "zastinit" in klice and "soukromi" in klice
+    assert "odstinit" not in klice
+
+
 def test_mistnost_dostane_senzory(nahradni_ha):
     import importlib
     const = importlib.import_module("napohodu.const")

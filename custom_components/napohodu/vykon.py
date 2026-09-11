@@ -115,12 +115,18 @@ class Vykonavac:
 
     # ------------------------------------------------------------ stínění
 
-    async def topeni(self, entity: list[str], rezim: str, cil: float,
+    async def topeni(self, entity: list[str], povel: "PovelTopeni",
                      cas_s: float) -> str | None:
-        """Nastaví hlavicím teplotu. Posílá jen při skutečné změně."""
-        if not entity:
+        """Nastaví hlavicím teplotu. Posílá jen při skutečné změně.
+
+        Režim None znamená nesahat na režim — o zapnutí si rozhoduje
+        hlavice sama. Teplota se posílá vždycky, bez ní hlavice neví,
+        na co regulovat.
+        """
+        rezim, cil = povel.rezim, povel.cil
+        if not entity or cil is None:
             return None
-        zmena_rezimu = rezim != self.stav.topeni_rezim
+        zmena_rezimu = rezim is not None and rezim != self.stav.topeni_rezim
         zmena_cile = (self.stav.topeni_cil is None
                       or abs(cil - self.stav.topeni_cil) >= TOPENI_ZMENA_MIN)
         uplynulo = cas_s - self.stav.topeni_cas_s >= TOPENI_KLID_S
@@ -132,20 +138,21 @@ class Vykonavac:
                 await self.hass.services.async_call(
                     "climate", "set_hvac_mode",
                     {"entity_id": entity, "hvac_mode": rezim}, blocking=False)
-            if rezim != "off":
-                await self.hass.services.async_call(
-                    "climate", "set_temperature",
-                    {"entity_id": entity, "temperature": cil}, blocking=False)
+            await self.hass.services.async_call(
+                "climate", "set_temperature",
+                {"entity_id": entity, "temperature": cil}, blocking=False)
         except Exception as e:  # pragma: no cover
             self.stav.chyby.append(f"topení: {e}")
             _LOGGER.warning("NaPohodu: topení %s selhalo: %s", entity, e)
             return None
 
-        self.stav.topeni_rezim = rezim
+        if rezim is not None:
+            self.stav.topeni_rezim = rezim
         self.stav.topeni_cil = cil
         self.stav.topeni_cas_s = cas_s
-        _LOGGER.info("NaPohodu: topení %s -> %s %.1f °C", entity, rezim, cil)
-        return f"topení: {rezim} {cil:.1f} °C"
+        _LOGGER.info("NaPohodu: topení %s -> %.1f °C (%s)",
+                     entity, cil, povel.duvod)
+        return f"{cil:.1f} °C — {povel.duvod}"
 
     async def zarizeni(self, entity: list[str], zapnout: bool | None,
                        klic: str) -> str | None:
@@ -310,20 +317,55 @@ TOPENI_ZMENA_MIN = 0.3       # menší rozdíl nemá cenu posílat
 TOPENI_KLID_S = 5 * 60
 
 
+# Značkové teploty. Poznáš z nich, že povel dorazil od nás a proč:
+# 5,5 je otevřené okno (Better Thermostat posílá 5,0), 7,7 je mimo
+# topnou sezónu. Kulaté číslo by se pletlo s ruční obsluhou.
+ZNACKA_OKNO = 5.5
+ZNACKA_MIMO_SEZONU = 7.7
+
+
+@dataclass
+class PovelTopeni:
+    """Co poslat hlavici. None znamená nesahat na to."""
+
+    rezim: str | None = None
+    cil: float | None = None
+    duvod: str = ""
+
+
 def cil_topeni(cil: float, okno_otevreno: bool, utlum: float,
                sezona: bool, topit_mimo: bool,
-               odvzdusneni: bool, odvzdusneni_t: float) -> tuple[str, float]:
+               odvzdusneni: bool, odvzdusneni_t: float,
+               pri_oknu: str = "nechat",
+               sezonu_ridi_hlavice: bool = True,
+               znacka_okno: float = ZNACKA_OKNO,
+               znacka_mimo: float = ZNACKA_MIMO_SEZONU) -> PovelTopeni:
     """Jakou teplotu poslat hlavici a jaký režim.
 
-    Otevřené okno srazí teplotu na útlum, ne na vypnuto — hlavice, která
-    se úplně zavře, se pak dlouho vrací. Na začátku sezóny se naopak
-    nastaví vysoká teplota, aby ventil zůstal otevřený a rozvod se
-    odvzdušnil sám.
+    Teplotu posíláme vždycky — bez ní hlavice neví, na co regulovat.
+    Režim necháváme na hlavici, když si sezónu určuje sama, ať se na
+    přechodu mezi sezónami nehádáme.
+
+    Zvláštní hodnoty místo vypnutí: hlavice, která neumí přečíst externí
+    okenní senzor, se utlumí tím, že dostane velmi nízký cíl. Značkové
+    číslo navíc prozradí, že povel přišel od integrace.
     """
-    if not sezona and not topit_mimo:
-        return ("off", utlum)
     if odvzdusneni:
-        return ("heat", odvzdusneni_t)
+        return PovelTopeni("heat", odvzdusneni_t, "odvzdušnění")
+
+    if not sezona and not topit_mimo:
+        rezim = None if sezonu_ridi_hlavice else "off"
+        return PovelTopeni(rezim, znacka_mimo, "mimo topnou sezónu")
+
     if okno_otevreno:
-        return ("heat", utlum)
-    return ("heat", cil)
+        if pri_oknu == "znacka":
+            return PovelTopeni(None, znacka_okno, "otevřené okno")
+        if pri_oknu == "vypnout":
+            return PovelTopeni("off", znacka_okno, "otevřené okno")
+        if pri_oknu == "utlum":
+            return PovelTopeni("heat", utlum, "otevřené okno, útlum")
+        # hlavice si otevřené okno ošetří sama z okenního senzoru
+        return PovelTopeni(None if sezonu_ridi_hlavice else "heat", cil,
+                           "otevřené okno, řeší hlavice")
+
+    return PovelTopeni(None if sezonu_ridi_hlavice else "heat", cil, "topím")

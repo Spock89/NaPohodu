@@ -38,14 +38,16 @@ from .const import (
     CONF_PLOCHA, CONF_PM10, CONF_PM25, CONF_PM_PLATNY, CONF_PRAH_VYKONU,
     CONF_PRIORITA, CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_RH_MAX,
     CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI,
-    CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SOUHRN_CAS,
-    CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_MAPA,
-    CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
-    CONF_TEPLOTY, CONF_TOPIT_MIMO_SEZONU, CONF_TOPIT_UTLUM, CONF_T_PRUMER,
-    CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_VITR, CONF_VITR_KLID,
+    CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SEZONU_RIDI_HLAVICE,
+    CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
+    CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC,
+    CONF_STINENI_REZIM, CONF_TEPLOTY, CONF_TOPIT_MIMO_SEZONU,
+    CONF_TOPIT_PRI_OKNU, CONF_TOPIT_UTLUM, CONF_T_PRUMER, CONF_T_SEZONA,
+    CONF_T_VENKU, CONF_T_VENKU_M, CONF_VITR, CONF_VITR_KLID,
     CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE,
-    CONF_ZARENI, CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZPRAVY,
-    CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
+    CONF_ZARENI, CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI,
+    CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY,
+    CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
     PODENTITA_MISTNOST, PODENTITA_ZONA,
 )
 
@@ -489,6 +491,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             o["spanek"] = spanek
             o["klid"] = any(self.mistnosti[x.subentry_id].klid
                             for x in o["cleni"])
+            # větrání pod cílovou teplotou stojí teplo a okno kmitá,
+            # takže je stejně drahé jako větrání tam, kde se spí
+            o["pod_cilem"] = any(
+                (self.mistnosti[x.subentry_id].atributy.get("teplota_min")
+                 or 99) < self.mistnosti[x.subentry_id].cil
+                for x in o["cleni"])
 
             # Vzduch je společný, takže o něm nemůžou dvě místnosti
             # rozhodovat jinak — jinak by jedna otevírala a druhá zavírala.
@@ -517,6 +525,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                        and q["pod"].subentry_id in (data.get(CONF_SOUSEDI) or [])]
             stavy.append(so.ZonaStav(
                 id=o["id"], nazev=o["nazev"], co2=o["co2"], klid=o["klid"],
+                pod_cilem=o["pod_cilem"],
                 muze_vetrat=not vitr_blokuje and doma, sousedi=sousedi,
                 dvere_otevrene=all(x is not False for x in dvere)))
         # Zastupování musí sáhnout po stejném prahu, od kterého by se
@@ -836,19 +845,40 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         odvzdusneni = (self._sezona_od is not None and odvzdusneni_h > 0
                        and cas_s - self._sezona_od < odvzdusneni_h * 3600)
 
-        rezim, cil = vy.cil_topeni(
+        povel = vy.cil_topeni(
             m.cil, m.okno_otevreno,
             float(d.get(CONF_TOPIT_UTLUM, 16.0)),
             self.topna_sezona,
             bool(d.get(CONF_TOPIT_MIMO_SEZONU, False)),
-            odvzdusneni, float(d.get(CONF_ODVZDUSNENI_T, 28.0)))
+            odvzdusneni, float(d.get(CONF_ODVZDUSNENI_T, 28.0)),
+            pri_oknu=d.get(CONF_TOPIT_PRI_OKNU, "nechat"),
+            sezonu_ridi_hlavice=bool(
+                d.get(CONF_SEZONU_RIDI_HLAVICE, True)),
+            znacka_okno=float(d.get(CONF_ZNACKA_OKNO, 5.5)),
+            znacka_mimo=float(d.get(CONF_ZNACKA_MIMO, 7.7)))
 
         vyk = self.vykonavaci.setdefault(
             p.subentry_id, vy.Vykonavac(self.hass, p.subentry_id))
-        poslano = await vyk.topeni(hlavice, rezim, cil, cas_s)
+        poslano = await vyk.topeni(hlavice, povel, cas_s)
+
+        # Co hlásí sama hlavice. Bez toho bychom tvrdili, co jsme poslali,
+        # a ona mohla dělat něco jiného — třeba proto, že si sezónu
+        # určuje podle venkovní teploty sama.
+        skutecnost = []
+        for h in hlavice:
+            st = self._stav(h)
+            if st is None:
+                continue
+            teplota = st.attributes.get("temperature")
+            skutecnost.append(
+                f"{st.state}" + (f" na {teplota} °C" if teplota else ""))
+
         m.atributy["topeni"] = poslano or (
-            f"{vyk.stav.topeni_rezim} {vyk.stav.topeni_cil} °C"
-            if vyk.stav.topeni_rezim else None)
+            f"{povel.cil:.1f} °C — {povel.duvod}"
+            if povel.cil is not None else None)
+        m.atributy["topeni_rezim"] = (
+            povel.rezim if povel.rezim else "řídí hlavice sama")
+        m.atributy["topeni_hlavice"] = ", ".join(skutecnost) or None
         m.atributy["odvzdusneni"] = odvzdusneni
 
     async def _pomocnici_krok(self, p, d, m, okruh) -> None:

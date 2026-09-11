@@ -48,6 +48,11 @@ CONF_CLIMATE_OBOJI = "climate_oboji"         # tepelné čerpadlo, topí i chlad
 
 # --- řízení topení v místnosti ---
 CONF_TOPIT_UTLUM = "topit_utlum"           # při otevřeném okně
+CONF_TOPIT_PRI_OKNU = "topit_pri_oknu"
+CONF_SEZONU_RIDI_HLAVICE = "sezonu_ridi_hlavice"
+PRI_OKNU = ["nechat", "znacka", "utlum", "vypnout"]
+CONF_ZNACKA_OKNO = "znacka_okno"
+CONF_ZNACKA_MIMO = "znacka_mimo_sezonu"
 CONF_TOPIT_MIMO_SEZONU = "topit_mimo_sezonu"
 CONF_ODVZDUSNENI_H = "odvzdusneni_h"
 CONF_ODVZDUSNENI_T = "odvzdusneni_t"

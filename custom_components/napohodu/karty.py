@@ -31,7 +31,10 @@ ATRIBUTY_STAVU = [
     ("zastupce", "Větrá za nás", None),
     ("provedeno", "Poslední povel", None),
     ("ovladani", "Ovládání", None),
-    ("topeni", "Topení", None),
+    ("topeni", "Topení — posíláme", None),
+    ("topeni_rezim", "Topení — režim", None),
+    ("topeni_hlavice", "Topení — hlásí hlavice", None),
+    ("odvzdusneni", "Odvzdušnění", None),
     ("zvlhcovac_bezi", "Zvlhčovač", None),
     ("cisticka_bezi", "Čistička", None),
     ("odtah_bezi", "Odtah", None),
@@ -197,6 +200,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         polozky += _radek(eid, o.capitalize())
         polozky += _atribut(eid, "mistnosti", "   místnosti")
         polozky += _atribut(eid, "zastupce", "   větrá za nás")
+        polozky += _atribut(eid, "vetra_i_za", "   větráme i za")
+        polozky += _atribut(eid, "klid", "   je klid")
     if polozky:
         c += _hlavicka("Sdílený vzduch", "mdi:home-group", "subtitle")
         c += _karta("", "", polozky)

@@ -229,7 +229,11 @@
             "odvzdusneni_t": "Teplota při odvzdušnění",
             "stineni_predstih": "Předstih stínění",
             "zvlhcovac": "Zvlhčovač",
-            "rh_min": "Zvlhčovat pod"
+            "rh_min": "Zvlhčovat pod",
+            "topit_pri_oknu": "Při otevřeném okně",
+            "sezonu_ridi_hlavice": "Sezónu si řídí hlavice sama",
+            "znacka_okno": "Značka pro otevřené okno",
+            "znacka_mimo_sezonu": "Značka mimo sezónu"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -273,14 +277,18 @@
             "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
             "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
             "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam kvůli hodnotě skákající kolem prahu.",
-            "topit_utlum": "Na tuhle teplotu se hlavice srazí, když je otevřené okno. Neposílá se vypnuto, protože úplně zavřená hlavice se pak dlouho vrací.",
+            "topit_utlum": "Teplota, na kterou se hlavice srazí, když je u volby Při otevřeném okně zvolený útlum. Neposílá se vypnuto, protože úplně zavřená hlavice se pak dlouho vrací.",
             "topit_mimo_sezonu": "Normálně se mimo topnou sezónu hlavice vypnou. Zapni, když má tahle místnost topit celoročně, například koupelna.",
             "odvzdusneni_h": "Po začátku sezóny se tuhle dobu drží vysoká teplota, aby ventil zůstal otevřený a rozvod se sám odvzdušnil. Nula znamená neodvzdušňovat.",
             "odvzdusneni_t": "Teplota, která zaručí plně otevřený ventil. Nemá topit doopravdy, jen otevřít.",
             "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24.",
             "zvlhcovac": "Zvlhčovač, spínač nebo pomocník. V zimě vysychá vzduch a klesá pod třicet procent, což už vysušuje sliznice.",
             "rh_min": "Pod touto vlhkostí se zvlhčovač zapne, nad ní plus pět procent vypne. Nemá cenu jít výš než na padesát, jinak roste plíseň.",
-            "dvere": ""
+            "dvere": "",
+            "topit_pri_oknu": "Hlavici posíláme okenní senzor, takže si otevřené okno umí ošetřit sama — to je výchozí volba Nechat na hlavici. Útlum nebo vypnuto použij jen u hlavice, která okenní senzor neumí, jinak jí posíláš dvě informace o téže věci.",
+            "sezonu_ridi_hlavice": "Better Thermostat si podle venkovní teploty určuje sám, kdy topit. Když je tohle zapnuté, integrace mimo sezónu do topení nemluví a nehádá se s ním na přechodu. Vypni, když má sezónu určovat integrace.",
+            "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
+            "znacka_mimo_sezonu": "Teplota mimo topnou sezónu. Neposílá se vypnuto, ale nízká hodnota, ze které je vidět, že spojení funguje a proč se netopí."
           },
           "submit": "Další"
         },
@@ -386,7 +394,11 @@
             "odvzdusneni_t": "Teplota při odvzdušnění",
             "stineni_predstih": "Předstih stínění",
             "zvlhcovac": "Zvlhčovač",
-            "rh_min": "Zvlhčovat pod"
+            "rh_min": "Zvlhčovat pod",
+            "topit_pri_oknu": "Při otevřeném okně",
+            "sezonu_ridi_hlavice": "Sezónu si řídí hlavice sama",
+            "znacka_okno": "Značka pro otevřené okno",
+            "znacka_mimo_sezonu": "Značka mimo sezónu"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -441,14 +453,18 @@
             "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
             "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
             "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam kvůli hodnotě skákající kolem prahu.",
-            "topit_utlum": "Na tuhle teplotu se hlavice srazí, když je otevřené okno. Neposílá se vypnuto, protože úplně zavřená hlavice se pak dlouho vrací.",
+            "topit_utlum": "Teplota, na kterou se hlavice srazí, když je u volby Při otevřeném okně zvolený útlum. Neposílá se vypnuto, protože úplně zavřená hlavice se pak dlouho vrací.",
             "topit_mimo_sezonu": "Normálně se mimo topnou sezónu hlavice vypnou. Zapni, když má tahle místnost topit celoročně, například koupelna.",
             "odvzdusneni_h": "Po začátku sezóny se tuhle dobu drží vysoká teplota, aby ventil zůstal otevřený a rozvod se sám odvzdušnil. Nula znamená neodvzdušňovat.",
             "odvzdusneni_t": "Teplota, která zaručí plně otevřený ventil. Nemá topit doopravdy, jen otevřít.",
             "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24.",
             "zvlhcovac": "Zvlhčovač, spínač nebo pomocník. V zimě vysychá vzduch a klesá pod třicet procent, což už vysušuje sliznice.",
             "rh_min": "Pod touto vlhkostí se zvlhčovač zapne, nad ní plus pět procent vypne. Nemá cenu jít výš než na padesát, jinak roste plíseň.",
-            "dvere": ""
+            "dvere": "",
+            "topit_pri_oknu": "Hlavici posíláme okenní senzor, takže si otevřené okno umí ošetřit sama — to je výchozí volba Nechat na hlavici. Útlum nebo vypnuto použij jen u hlavice, která okenní senzor neumí, jinak jí posíláš dvě informace o téže věci.",
+            "sezonu_ridi_hlavice": "Better Thermostat si podle venkovní teploty určuje sám, kdy topit. Když je tohle zapnuté, integrace mimo sezónu do topení nemluví a nehádá se s ním na přechodu. Vypni, když má sezónu určovat integrace.",
+            "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
+            "znacka_mimo_sezonu": "Teplota mimo topnou sezónu. Neposílá se vypnuto, ale nízká hodnota, ze které je vidět, že spojení funguje a proč se netopí."
           },
           "submit": "Další"
         },
@@ -659,6 +675,14 @@
         "topeni": "Jen topí",
         "oboji": "Chladí i topí"
       }
+    },
+    "topit_pri_oknu": {
+      "options": {
+        "nechat": "Nechat na hlavici (doporučeno)",
+        "znacka": "Poslat značkovou teplotu",
+        "utlum": "Srazit na útlum",
+        "vypnout": "Vypnout"
+      }
     }
   },
   "title": "NaPohodu",
@@ -758,6 +782,18 @@
       },
       "srovnat_vse": {
         "name": "Srovnat vše"
+      },
+      "zastinit": {
+        "name": "Zastínit"
+      },
+      "odstinit": {
+        "name": "Odclonit"
+      },
+      "soukromi": {
+        "name": "Zatáhnout kvůli soukromí"
+      },
+      "stineni_pryc": {
+        "name": "Nastavit jako když nikdo není doma"
       }
     }
   }

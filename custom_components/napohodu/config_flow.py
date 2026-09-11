@@ -392,7 +392,13 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_CLIMATE): _ent(["climate"], True),
         vol.Optional(c.CONF_CLIMATE_CHLAZENI): _ent(["climate"], True),
         vol.Optional(c.CONF_CLIMATE_OBOJI): _ent(["climate"], True),
+        vol.Optional(c.CONF_TOPIT_PRI_OKNU, default="nechat"): _volba(
+            c.PRI_OKNU, "topit_pri_oknu"),
         vol.Optional(c.CONF_TOPIT_UTLUM, default=16.0): _cislo(5, 20),
+        vol.Optional(c.CONF_SEZONU_RIDI_HLAVICE, default=True):
+            selector.BooleanSelector(),
+        vol.Optional(c.CONF_ZNACKA_OKNO, default=5.5): _cislo(4, 12, 0.1),
+        vol.Optional(c.CONF_ZNACKA_MIMO, default=7.7): _cislo(4, 15, 0.1),
         vol.Optional(c.CONF_TOPIT_MIMO_SEZONU, default=False):
             selector.BooleanSelector(),
         vol.Optional(c.CONF_ODVZDUSNENI_H, default=24): _cislo(0, 96, 1, "h"),
