@@ -144,6 +144,15 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         polozky += _radek(eid, jmeno)
         polozky += _atribut(eid, "zdroj", "   odkud")
         polozky += _atribut(eid, "vlastni_vypocet", "   vlastní výpočet", " °C")
+    if existuje("sensor.napohodu_vitr_v_narazech"):
+        polozky.append("      - type: divider")
+        polozky += _radek("sensor.napohodu_vitr_v_narazech", "Vítr v nárazech")
+        polozky += _atribut("sensor.napohodu_vitr_v_narazech", "prumer",
+                            "   průměr", " m/s")
+        polozky += _atribut("sensor.napohodu_vitr_v_narazech", "blokuje",
+                            "   blokuje okna")
+        polozky += _atribut("sensor.napohodu_vitr_v_narazech", "prahy",
+                            "   prahy")
     if existuje("binary_sensor.napohodu_topna_sezona"):
         polozky.append("      - type: divider")
         polozky += _radek("binary_sensor.napohodu_topna_sezona",

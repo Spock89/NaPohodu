@@ -684,6 +684,9 @@
       },
       "stav_klimy": {
         "name": "Stav"
+      },
+      "vitr": {
+        "name": "Vítr v nárazech"
       }
     },
     "binary_sensor": {

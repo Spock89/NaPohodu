@@ -103,20 +103,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._klima_pamet: dict[str, kl.Pamet] = {}
         self._prazdno_od: float | None = None
         self._sezona_od: float | None = None
-        # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
-        self.souhrn: dict[str, dict] = {}
-        self._souhrn_den: str = ""
-        self.hlasic = zp.Hlasic()
-        self._souhrn_odeslan: str = ""
-        self.vitr_blokuje: bool = False
-        # hodnoty, které blokaci spustily — zpráva má říkat pravdu,
-        # ne aktuální stav, který už může být jiný
-        self.vitr_pricina: dict = {}
-        self.vitr_stav: dict = {}
-        self.klimy: dict[str, dict] = {}
-        self._klima_pamet: dict[str, kl.Pamet] = {}
-        self._prazdno_od: float | None = None
-        self._sezona_od: float | None = None
+        self._overene_jednotky: set[str] = set()
         # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
         self.souhrn: dict[str, dict] = {}
         self._souhrn_den: str = ""
@@ -169,6 +156,53 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if st is None or str(st.state).lower() in NEPLATNE:
             return None
         return st
+
+    # na metry za sekundu; Home Assistant může senzor zobrazovat jinak,
+    # než v čem hlásí hodnotu, a prahy jsou v m/s
+    NA_MS = {
+        "m/s": 1.0, "km/h": 1 / 3.6, "kph": 1 / 3.6, "mph": 0.44704,
+        "kn": 0.514444, "kt": 0.514444, "ft/s": 0.3048,
+    }
+
+    def _zkontroluj_jednotku(self, eid: str | None, ocekavane: tuple,
+                             popis: str) -> None:
+        """Upozorní, když čidlo hlásí v jednotce, se kterou nepočítáme.
+
+        Prahy jsou v konkrétních jednotkách a Home Assistant může senzor
+        zobrazovat v jiné, než v jaké drží hodnotu. Tichý přepočet by byl
+        hádání, takže se to aspoň napíše do protokolu.
+        """
+        if not eid or eid in self._overene_jednotky:
+            return
+        st = self._stav(eid)
+        if st is None:
+            return
+        jednotka = (st.attributes.get("unit_of_measurement") or "").strip()
+        self._overene_jednotky.add(eid)
+        if jednotka and jednotka not in ocekavane:
+            _LOGGER.warning(
+                "NaPohodu: %s (%s) hlásí v %r, ale prahy jsou v %s — "
+                "hodnoty nebudou odpovídat",
+                popis, eid, jednotka, " nebo ".join(ocekavane))
+
+    def _rychlost(self, eid: str | None, nahrada: float = 0.0) -> float:
+        """Rychlost větru v metrech za sekundu, ať čidlo hlásí cokoli."""
+        st = self._stav(eid)
+        if st is None:
+            return nahrada
+        try:
+            hodnota = float(st.state)
+        except (TypeError, ValueError):
+            return nahrada
+        jednotka = (st.attributes.get("unit_of_measurement") or "").strip()
+        prevod = self.NA_MS.get(jednotka)
+        if prevod is None:
+            if jednotka:
+                _LOGGER.warning(
+                    "NaPohodu: neznámá jednotka rychlosti %r u %s, beru ji "
+                    "jako m/s", jednotka, eid)
+            return hodnota
+        return hodnota * prevod
 
     def _cislo(self, eid: str | None, nahrada: float | None = None):
         st = self._stav(eid)
@@ -304,6 +338,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("NaPohodu: vítr průměr %.1f náraz %.1f blokuje %s",
                           vitr, naraz, self.vitr_blokuje)
         self.vitr_stav = {
+            "jednotka": "m/s (přepočteno z čidla)",
             "prumer": round(vitr, 1), "naraz": round(naraz, 1),
             "blokuje": self.vitr_blokuje,
             "prahy": {"prumer": prah_v, "naraz": prah_n, "povoli_pod": klid_v},
@@ -347,11 +382,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._uloziste.async_delay_save(self.prumery.jako_slovnik, 300)
         rh_out = self._cislo(g.get(CONF_RH_VENKU), 50.0)
         dest = self._cislo(g.get(CONF_DEST), 0.0) or 0.0
+        self._zkontroluj_jednotku(g.get(CONF_T_VENKU), ("°C",), "teplota")
+        self._zkontroluj_jednotku(g.get(CONF_DEST),
+                                  ("mm/h", "in/h"), "déšť")
         doma = self._zapnuto(g.get(CONF_DOMA))
         doma = True if doma is None else doma
 
-        vitr = self._cislo(g.get(CONF_VITR), 0.0) or 0.0
-        naraz = self._cislo(g.get(CONF_NARAZ), vitr) or 0.0
+        vitr = self._rychlost(g.get(CONF_VITR), 0.0)
+        naraz = self._rychlost(g.get(CONF_NARAZ), vitr)
         vitr_blokuje = self._vitr(g, vitr, naraz)
 
         slunce_az, slunce_el = self._poloha_slunce()

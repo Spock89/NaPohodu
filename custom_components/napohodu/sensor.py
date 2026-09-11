@@ -29,7 +29,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                     SlunceMistnosti(k, pod)],
                    config_subentry_id=pod.subentry_id)
     pridat([Prumer(k, entry, "prumer_tyden", "tyden"),
-            Prumer(k, entry, "prumer_tri_dny", "tri_dny")])
+            Prumer(k, entry, "prumer_tri_dny", "tri_dny"),
+            Vitr(k, entry)])
 
 
 class StavMistnosti(NaPohoduEntity, SensorEntity):
@@ -179,3 +180,34 @@ class StavKlimy(NaPohoduEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict:
         return self.coordinator.klimy.get(self.pod_id) or {}
+
+
+class Vitr(CoordinatorEntity, SensorEntity):
+    """Vítr přepočtený na metry za sekundu.
+
+    Čidlo může hlásit v kilometrech za hodinu, i když ho Home Assistant
+    zobrazuje jinak — prahy jsou v m/s, takže se přepočítává. Tady je
+    vidět, s čím se opravdu porovnává.
+    """
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "vitr"
+    _attr_native_unit_of_measurement = "m/s"
+    _attr_suggested_display_precision = 1
+    _attr_icon = "mdi:weather-windy"
+
+    def __init__(self, koordinator, entry) -> None:
+        super().__init__(koordinator)
+        self._attr_unique_id = f"{entry.entry_id}_vitr"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name="NaPohodu", manufacturer="NaPohodu", model="Společné",
+        )
+
+    @property
+    def native_value(self):
+        return self.coordinator.vitr_stav.get("naraz")
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return self.coordinator.vitr_stav

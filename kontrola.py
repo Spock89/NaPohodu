@@ -31,6 +31,31 @@ for p in d.glob("*.py"):
                     f"{p.name}:{u.lineno}: {u.func.attr}() má "
                     f"{len(u.args)} argumentů, nejvýš {limit}")
 
+# 1c) zdvojená přiřazení v konstruktorech — zbytky po úpravách kódu
+for p in d.glob("*.py"):
+    for tr in ast.walk(ast.parse(p.read_text())):
+        if not isinstance(tr, ast.ClassDef):
+            continue
+        for f in tr.body:
+            if getattr(f, "name", "") != "__init__":
+                continue
+            jmena = [u.targets[0].attr for u in ast.walk(f)
+                     if isinstance(u, ast.Assign)
+                     and isinstance(u.targets[0], ast.Attribute)]
+            for jm in set(jmena):
+                if jmena.count(jm) > 1:
+                    chyby.append(
+                        f"{p.name}: {tr.name}.__init__ nastavuje "
+                        f"self.{jm} {jmena.count(jm)}krát")
+
+# 1d) zdvojené bloky: stejný neprázdný řádek hned dvakrát za sebou
+for p in d.glob("*.py"):
+    radky = p.read_text().splitlines()
+    for i in range(len(radky) - 1):
+        r = radky[i].strip()
+        if len(r) > 20 and r == radky[i + 1].strip() and not r.startswith("#"):
+            chyby.append(f"{p.name}:{i + 1}: řádek je tam dvakrát: {r[:40]}")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

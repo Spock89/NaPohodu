@@ -144,3 +144,53 @@ def test_oblast_dostane_sdileny_vzduch(nahradni_ha):
     const = importlib.import_module("napohodu.const")
     pod = FalesnaPodentita(const.PODENTITA_ZONA, "Oblast")
     assert "stav_oblasti" in _klice(_entity_platformy("sensor", [pod]))
+
+
+# ------------------------------------------------- jednotky větru
+
+class FalesnyStav:
+    def __init__(self, state, jednotka=None):
+        self.state = state
+        self.attributes = {"unit_of_measurement": jednotka} if jednotka else {}
+
+
+def _rychlost(state, jednotka):
+    """Zavolá převod bez celého koordinátoru."""
+    import importlib
+    ko = importlib.import_module("napohodu.coordinator")
+
+    class Falesny:
+        NA_MS = ko.NaPohoduCoordinator.NA_MS
+        _rychlost = ko.NaPohoduCoordinator._rychlost
+
+        def _stav(self, eid):
+            return FalesnyStav(state, jednotka)
+
+    return Falesny()._rychlost("sensor.vitr")
+
+
+def test_metry_za_sekundu_se_neprepocitavaji(nahradni_ha):
+    assert abs(_rychlost("7.0", "m/s") - 7.0) < 0.01
+
+
+def test_kilometry_za_hodinu_se_prepoctou(nahradni_ha):
+    """Ecowitt hlásí km/h, ale prahy jsou v m/s. Bez převodu by 7,2 km/h
+    přeteklo práh 7 m/s, což je vánek proti čerstvému větru."""
+    assert abs(_rychlost("7.2", "km/h") - 2.0) < 0.05
+
+
+def test_mile_a_uzly(nahradni_ha):
+    assert abs(_rychlost("10", "mph") - 4.47) < 0.05
+    assert abs(_rychlost("10", "kn") - 5.14) < 0.05
+
+
+def test_neznama_jednotka_se_bere_jako_ms(nahradni_ha):
+    assert _rychlost("5", "beaufort") == 5.0
+
+
+def test_chybejici_jednotka_se_bere_jako_ms(nahradni_ha):
+    assert _rychlost("5", None) == 5.0
+
+
+def test_nesmyslna_hodnota_da_nahradu(nahradni_ha):
+    assert _rychlost("unavailable", "km/h") == 0.0
