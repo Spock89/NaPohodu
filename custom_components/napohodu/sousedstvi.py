@@ -36,12 +36,15 @@ class Uprava:
     za_koho: list[str] = field(default_factory=list)
 
 
-def prerozdel(zony: list[ZonaStav], prah: float = 800.0) -> dict[str, Uprava]:
+def prerozdel(zony: list[ZonaStav], prah: float = 1000.0) -> dict[str, Uprava]:
     """Rozhodne, kdo koho zastoupí.
 
     Vrací úpravu pro každou zónu. Zóna se zástupcem se v noci sama
     neotevře, dokud nejde o krizi. Zastupující zóna dostane cizí CO2,
     takže se otevře dřív, než by musela kvůli sobě.
+
+    Práh má odpovídat tomu, od kterého by se zóna sama otevřela —
+    předává ho koordinátor podle nastavení místností.
     """
     podle_id = {z.id: z for z in zony}
     vysledek = {z.id: Uprava() for z in zony}

@@ -519,7 +519,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 id=o["id"], nazev=o["nazev"], co2=o["co2"], klid=o["klid"],
                 muze_vetrat=not vitr_blokuje and doma, sousedi=sousedi,
                 dvere_otevrene=all(x is not False for x in dvere)))
-        upravy = so.prerozdel(stavy)
+        # Zastupování musí sáhnout po stejném prahu, od kterého by se
+        # zóna sama otevřela. Jinak se zástupce přiřadí dřív, než je
+        # vůbec potřeba větrat.
+        prah_zastoupeni = min(
+            (o["prahy"][CONF_CO2_NOC] for o in okruhy if o.get("prahy")),
+            default=1000.0)
+        upravy = so.prerozdel(stavy, prah_zastoupeni)
 
         # ---------- 4. rozhodnutí a vykonání za místnost ----------
         for o in okruhy:

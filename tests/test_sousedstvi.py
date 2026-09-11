@@ -80,3 +80,17 @@ def test_vzajemne_zastoupeni_nevznikne():
 def test_zona_nezastoupi_sama_sebe():
     zony = [ZonaStav("a", "A", co2=1200, klid=True, sousedi=["a"])]
     assert prerozdel(zony)["a"].zastupce is None
+
+
+def test_prah_zastoupeni_jde_zadat():
+    """Zastupování má reagovat od stejné hodnoty, od které by se zóna
+    sama otevřela — ne od zadrátovaných 800."""
+    zony = byt(loznice_co2=900)
+    assert prerozdel(zony, prah=800)["l"].zastupce == "Kuchyně"
+    assert prerozdel(zony, prah=1000)["l"].zastupce is None
+
+
+def test_vychozi_prah_odpovida_nocnimu():
+    zony = byt(loznice_co2=950)
+    assert prerozdel(zony)["l"].zastupce is None
+    assert prerozdel(byt(loznice_co2=1100))["l"].zastupce == "Kuchyně"
