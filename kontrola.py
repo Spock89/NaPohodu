@@ -130,6 +130,16 @@ for jazyk in ("cs", "en"):
 
     projdi(t)
 
+# 5) verze v manifestu — ať se nestane, že vydám balíček se starým číslem
+manifest = json.loads((d / "manifest.json").read_text())
+ocekavana = (pathlib.Path(__file__).parent / "VERZE").read_text().strip() \
+    if (pathlib.Path(__file__).parent / "VERZE").exists() else None
+if ocekavana and manifest.get("version") != ocekavana:
+    chyby.append(
+        f"manifest má verzi {manifest.get('version')}, ale VERZE říká "
+        f"{ocekavana}")
+print("verze v manifestu:", manifest.get("version"))
+
 if chyby:
     print("NALEZENO:")
     for c in sorted(set(chyby)):
