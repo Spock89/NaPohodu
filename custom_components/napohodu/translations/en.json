@@ -245,7 +245,8 @@
             "topit_pri_oknu": "Při otevřeném okně",
             "sezonu_ridi_hlavice": "Sezónu si řídí hlavice sama",
             "znacka_okno": "Značka pro otevřené okno",
-            "znacka_mimo_sezonu": "Značka mimo sezónu"
+            "znacka_mimo_sezonu": "Značka mimo sezónu",
+            "pauza_po_pulzu_min": "Pauza po dojezdu větrání"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -300,7 +301,8 @@
             "topit_pri_oknu": "Hlavici posíláme okenní senzor, takže si otevřené okno umí ošetřit sama — to je výchozí volba Nechat na hlavici. Útlum nebo vypnuto použij jen u hlavice, která okenní senzor neumí, jinak jí posíláš dvě informace o téže věci.",
             "sezonu_ridi_hlavice": "Better Thermostat si podle venkovní teploty určuje sám, kdy topit. Když je tohle zapnuté, integrace mimo sezónu do topení nemluví a nehádá se s ním na přechodu. Vypni, když má sezónu určovat integrace.",
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
-            "znacka_mimo_sezonu": "Teplota mimo topnou sezónu. Neposílá se vypnuto, ale nízká hodnota, ze které je vidět, že spojení funguje a proč se netopí."
+            "znacka_mimo_sezonu": "Teplota mimo topnou sezónu. Neposílá se vypnuto, ale nízká hodnota, ze které je vidět, že spojení funguje a proč se netopí.",
+            "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu pulzu, i když vzduch ještě není vyvětraný. Bez pauzy by se okno hned otevřelo znovu. Kratší pauza znamená častější krátká větrání, delší méně častá a delší."
           },
           "submit": "Další"
         },
@@ -410,7 +412,8 @@
             "topit_pri_oknu": "Při otevřeném okně",
             "sezonu_ridi_hlavice": "Sezónu si řídí hlavice sama",
             "znacka_okno": "Značka pro otevřené okno",
-            "znacka_mimo_sezonu": "Značka mimo sezónu"
+            "znacka_mimo_sezonu": "Značka mimo sezónu",
+            "pauza_po_pulzu_min": "Pauza po dojezdu větrání"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -476,7 +479,8 @@
             "topit_pri_oknu": "Hlavici posíláme okenní senzor, takže si otevřené okno umí ošetřit sama — to je výchozí volba Nechat na hlavici. Útlum nebo vypnuto použij jen u hlavice, která okenní senzor neumí, jinak jí posíláš dvě informace o téže věci.",
             "sezonu_ridi_hlavice": "Better Thermostat si podle venkovní teploty určuje sám, kdy topit. Když je tohle zapnuté, integrace mimo sezónu do topení nemluví a nehádá se s ním na přechodu. Vypni, když má sezónu určovat integrace.",
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
-            "znacka_mimo_sezonu": "Teplota mimo topnou sezónu. Neposílá se vypnuto, ale nízká hodnota, ze které je vidět, že spojení funguje a proč se netopí."
+            "znacka_mimo_sezonu": "Teplota mimo topnou sezónu. Neposílá se vypnuto, ale nízká hodnota, ze které je vidět, že spojení funguje a proč se netopí.",
+            "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu pulzu, i když vzduch ještě není vyvětraný. Bez pauzy by se okno hned otevřelo znovu. Kratší pauza znamená častější krátká větrání, delší méně častá a delší."
           },
           "submit": "Další"
         },

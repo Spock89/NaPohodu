@@ -103,7 +103,7 @@ def test_pod_cilem_je_vetrani_drahe():
     to vyvětrá za něj."""
     zony = [
         ZonaStav("o", "Obývák", co2=1200, pod_cilem=True, sousedi=["l"]),
-        ZonaStav("l", "Ložnice", co2=600, sousedi=["o"]),
+        ZonaStav("l", "Ložnice", co2=600, obsazeno=False, sousedi=["o"]),
     ]
     u = prerozdel(zony)
     assert u["o"].zastupce == "Ložnice"
@@ -139,3 +139,28 @@ def test_draho_plati_pro_oba_duvody():
     assert draho(ZonaStav("a", "A", klid=True))
     assert draho(ZonaStav("a", "A", pod_cilem=True))
     assert not draho(ZonaStav("a", "A"))
+
+
+def test_kvuli_teplu_se_zastupuje_jen_do_prazdne():
+    """Otevřít okno tam, kde někdo je, obtěžuje. Ve dne proto pomůže
+    jen prázdná místnost."""
+    obsazena = [
+        ZonaStav("o", "Obývák", co2=1200, pod_cilem=True, sousedi=["l"]),
+        ZonaStav("l", "Ložnice", co2=600, obsazeno=True, sousedi=["o"]),
+    ]
+    assert prerozdel(obsazena)["o"].zastupce is None
+
+    prazdna = [
+        ZonaStav("o", "Obývák", co2=1200, pod_cilem=True, sousedi=["l"]),
+        ZonaStav("l", "Ložnice", co2=600, obsazeno=False, sousedi=["o"]),
+    ]
+    assert prerozdel(prazdna)["o"].zastupce == "Ložnice"
+
+
+def test_v_noci_pomuze_i_obsazena_kuchyne():
+    """Kuchyň je obsazená pořád, jinak by v noci nikdy nezastoupila."""
+    zony = [
+        ZonaStav("l", "Ložnice", co2=1200, klid=True, sousedi=["k"]),
+        ZonaStav("k", "Kuchyně", co2=600, obsazeno=True, sousedi=["l"]),
+    ]
+    assert prerozdel(zony)["l"].zastupce == "Kuchyně"

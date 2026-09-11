@@ -35,21 +35,21 @@ from .const import (
     CONF_MIN_DRZENI, CONF_MISTNOSTI, CONF_NARAZ, CONF_NARAZOVE,
     CONF_NARAZOVE_ODSTUP, CONF_NARAZOVE_STROP, CONF_NARAZ_PRAH, CONF_NAZEV,
     CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD, CONF_ODCHYLKA, CONF_ODTAH,
-    CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA, CONF_PLOCHA,
-    CONF_PM10, CONF_PM25, CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRIORITA,
-    CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_RH_MAX, CONF_RH_MIN,
-    CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_SEZONA_HYSTEREZE,
-    CONF_SEZONA_PRAH, CONF_SEZONU_RIDI_HLAVICE, CONF_SOUHRN_CAS,
-    CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_MAPA,
-    CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
-    CONF_TEPLOTY, CONF_TOPIT_MIMO_SEZONU, CONF_TOPIT_PRI_OKNU,
-    CONF_TOPIT_UTLUM, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
-    CONF_T_VENKU_M, CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH,
-    CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
-    CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZNACKA_MIMO,
-    CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC,
-    DOMAIN, INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST,
-    PODENTITA_ZONA,
+    CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA, CONF_PAUZA_PO_PULZU,
+    CONF_PLOCHA, CONF_PM10, CONF_PM25, CONF_PM_PLATNY, CONF_PRAH_VYKONU,
+    CONF_PRIORITA, CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_RH_MAX,
+    CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI,
+    CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SEZONU_RIDI_HLAVICE,
+    CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
+    CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC,
+    CONF_STINENI_REZIM, CONF_TEPLOTY, CONF_TOPIT_MIMO_SEZONU,
+    CONF_TOPIT_PRI_OKNU, CONF_TOPIT_UTLUM, CONF_T_PRUMER, CONF_T_SEZONA,
+    CONF_T_VENKU, CONF_T_VENKU_M, CONF_VITR, CONF_VITR_KLID,
+    CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE,
+    CONF_ZARENI, CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI,
+    CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY,
+    CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
+    PODENTITA_MISTNOST, PODENTITA_ZONA,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -538,6 +538,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             stavy.append(so.ZonaStav(
                 id=o["id"], nazev=o["nazev"], co2=o["co2"], klid=o["klid"],
                 pod_cilem=o["pod_cilem"],
+                obsazeno=any(self.mistnosti[x.subentry_id].obsazeno
+                             for x in o["cleni"]),
                 muze_vetrat=not vitr_blokuje and doma, sousedi=sousedi,
                 dvere_otevrene=all(x is not False for x in dvere)))
         # Zastupování musí sáhnout po stejném prahu, od kterého by se
@@ -800,6 +802,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 if vysledek:
                     provedeno = vysledek
                     vyk.stav.posledni_popis = vysledek
+
+            # Zavření po dojezdu pulzu musí nastavit i paměť jádra,
+            # jinak neplatí minimální doba držení stavu a okno se
+            # hned otevře znovu.
+            if vyk.stav.pulz_zavrel:
+                vyk.stav.pulz_zavrel = False
+                pamet.otevreno = False
+                # pauza se počítá od zavření; posunutím času povelu
+                # dopředu se dá udělat kratší než držení stavu
+                pauza = float(d.get(CONF_PAUZA_PO_PULZU, 15)) * 60
+                pamet.cas_povelu_s = cas_s + pauza - nast.min_drzeni_s
+                m.atributy["pauza_po_pulzu_min"] = round(pauza / 60)
 
             g = {**self.entry.data, **self.entry.options}
             # routuje se podle strojového kódu, ne podle českého textu

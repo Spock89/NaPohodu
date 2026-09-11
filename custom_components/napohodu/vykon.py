@@ -46,6 +46,9 @@ class StavVykonu:
     zarizeni: dict[str, bool] = field(default_factory=dict)
     # poslední odeslaný povel si držíme, ať na kartě nezmizí po minutě
     posledni_popis: str | None = None
+    # vykonavač zavřel po dojezdu pulzu — jádro o tom musí vědět,
+    # jinak hned otevře znovu a okno kmitá
+    pulz_zavrel: bool = False
     topeni_cil: float | None = None
     topeni_rezim: str | None = None
     topeni_cas_s: float = -1e9
@@ -110,6 +113,7 @@ class Vykonavac:
         if (self.stav.pulz_do_s is not None and otevreno
                 and cas_s >= self.stav.pulz_do_s):
             self.stav.pulz_do_s = None
+            self.stav.pulz_zavrel = True
             return await self._povel(okno_entita, "close_cover", cas_s,
                                      "pulz dojel")
 

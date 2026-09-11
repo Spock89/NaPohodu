@@ -446,3 +446,13 @@ def test_po_zapomenuti_se_stav_posle_znovu(monkeypatch):
     v.zkontroluj_polohu("cover.o2", 3.0)          # někdo přestavil
     bez(v.stineni({"cover.o2": "zastíněno"}, 1000 + 16 * 60, 15))
     assert p == [("cover.o2", "zastíněno")]
+
+
+def test_pulz_dojel_se_da_poznat():
+    """Koordinátor podle toho nastaví jádru držení stavu. Bez toho by
+    jádro hned otevřelo znovu a okno by kmitalo."""
+    h, v = vyk()
+    bez(v.okno("cover.okno", r(core.Akce.OTEVRIT, limit=600), 1000, False))
+    assert v.stav.pulz_zavrel is False
+    bez(v.okno("cover.okno", r(core.Akce.NIC), 1700, True))
+    assert v.stav.pulz_zavrel is True
