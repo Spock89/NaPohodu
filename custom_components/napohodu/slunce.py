@@ -23,7 +23,6 @@ class Okno:
     plocha: float = 1.0          # relativní váha, ne m2
     zorne_pole: float = 90.0     # ± od azimutu, za tím slunce nesvítí dovnitř
     min_elevace: float = 5.0     # pod tím stíní okolí
-    stinici_entita: str | None = None
 
 
 def _rozdil_uhlu(a: float, b: float) -> float:

@@ -86,6 +86,11 @@ SCHEMA_GLOBAL = vol.Schema(
                 mode=selector.SelectSelectorMode.LIST)),
         vol.Optional(c.CONF_SOUHRN_CAS, default="21:00:00"):
             selector.TimeSelector(),
+        vol.Optional(c.CONF_NARAZOVE, default=False):
+            selector.BooleanSelector(),
+        vol.Optional(c.CONF_NARAZOVE_ODSTUP, default=0.0): _cislo(0, 10, 0.5),
+        vol.Optional(c.CONF_NARAZOVE_STROP, default=10):
+            _cislo(3, 30, 1, "min"),
         vol.Optional(c.CONF_VITR_PRAH, default=7.0): _cislo(3, 30, 0.5, "m/s"),
         vol.Optional(c.CONF_NARAZ_PRAH, default=11.0): _cislo(3, 40, 0.5, "m/s"),
         vol.Optional(c.CONF_VITR_KLID, default=5.0): _cislo(2, 25, 0.5, "m/s"),

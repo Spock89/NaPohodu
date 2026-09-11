@@ -18,7 +18,6 @@ CONF_VITR = "vitr"
 CONF_NARAZ = "naraz_vetru"
 CONF_DEST = "dest"
 CONF_DOMA = "doma"
-CONF_POSUN = "posun"
 CONF_CIL_MIN = "cil_min"
 CONF_CIL_MAX = "cil_max"
 CONF_NOC_OD = "noc_od"
@@ -27,10 +26,14 @@ CONF_VITR_PRAH = "vitr_prah"       # průměrná rychlost
 CONF_NARAZ_PRAH = "naraz_prah"     # nárazy, ty poškodí pohon dřív
 CONF_VITR_KLID = "vitr_klid"      # pod tím blokace povolí
 
+# --- společné nárazové větrání ---
+CONF_NARAZOVE = "narazove_vetrani"
+CONF_NARAZOVE_ODSTUP = "narazove_odstup"
+CONF_NARAZOVE_STROP = "narazove_strop_min"
+
 # --- místnost ---
 CONF_NAZEV = "nazev"
 CONF_TEPLOTY = "teploty"
-CONF_VENTILATORY = "ventilatory"
 CONF_CO2 = "co2"
 CONF_PM25 = "pm25"
 CONF_PM10 = "pm10"
@@ -81,14 +84,9 @@ CONF_PRAH_VYKONU = "prah_vykonu"
 CONF_INDICIE_DOBEH = "indicie_dobeh_min"
 
 # --- zóna ---
-CONF_OKNO = "okno"
-CONF_PROJEZD = "projezd_s"
 CONF_MISTNOSTI = "mistnosti"
 CONF_SOUSEDI = "sousedi"
 CONF_DVERE = "dvere"
-CONF_KONTAKT = "kontakt"
-CONF_ZDROJ_OKENNIHO = "zdroj_okenniho_senzoru"
-CONF_VYNUCENO = "vynuceno"
 CONF_CO2_OTEVRIT = "co2_otevrit"
 CONF_CO2_ZAVRIT = "co2_zavrit"
 CONF_CO2_NOC = "co2_noc"              # v noci se otevírá až od tohoto
@@ -121,7 +119,6 @@ SOUKROMI_KDY = ["nikdy", "hned", "pri_pohybu"]
 # --- okna pro sluneční zisk ---
 CONF_AZIMUT = "azimut"
 CONF_PLOCHA = "plocha"
-CONF_ZORNE_POLE = "zorne_pole"
 
 ZDROJ_OKENNIHO = ["fyzicke", "nase_otevreni", "oboji", "nikdy"]
 

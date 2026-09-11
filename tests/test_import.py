@@ -15,7 +15,7 @@ import pytest
 KOREN = pathlib.Path(__file__).parent.parent
 MODULY = [
     "const", "core", "slunce", "pritomnost", "prumery", "sousedstvi",
-    "sekvence", "arbiter", "vykon", "entity", "coordinator", "config_flow",
+    "sekvence", "vykon", "entity", "coordinator", "config_flow",
     "services", "sensor", "binary_sensor", "number", "switch", "button",
     "karty", "zpravy", "klima",
 ]

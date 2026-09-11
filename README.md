@@ -67,8 +67,37 @@ Délka větrání se řídí **skutečným ochlazením místnosti**, ne stopkami
 teplota klesnout.
 
 Rosný bod z Magnusova vzorce zkracuje větrání, když hrozí kondenzace.
+Teplota se bere tak, jak ji čidlo hlásí — žádné dopočítávání, které by
+za rok nikdo nedokázal ověřit.
 Prachu se nevěří, když čidlo právě neměří — u čidel s ventilátorem se
 zadá jeho spínač.
+
+### Nárazové větrání
+
+Když je venku chladněji než cílová teplota, stojí každé větrání teplo.
+V takové chvíli je krátký průvan všemi okny naráz účinnější než dlouhé
+větrání jedním oknem — vzduch se vymění rychleji a stěny se nestihnou
+vychladit.
+
+Stačí, aby vzduch potřebovala jedna místnost, a otevřou se všechna okna,
+kterým v tom nic nebrání. Vítr, déšť, noční mez nebo prázdný byt
+zůstávají v platnosti a okno tam prostě zavřené zůstane.
+
+Nárazové větrání smí jít pod běžnou spodní hranici třiceti minut, protože
+o krátkost tady jde. Ve výchozím stavu je vypnuté.
+
+### Zastupování mezi oblastmi
+
+Někdy je větrání v jedné oblasti drahé a v sousední ne. Dva různé důvody,
+stejný důsledek: když se v místnosti spí, větrání budí; když je pod
+cílovou teplotou, stojí teplo a okno kmitá sem a tam.
+
+V obou případech vezme vzduch za ni soused za otevřenými dveřmi. Dostane
+její CO2, takže otevře dřív, než by musel kvůli sobě, a ona se sama
+otevře až při krizi.
+
+Nefunguje to, když by u souseda větrání stálo totéž — tam by se problém
+jen přestěhoval o místnost dál.
 
 ### Noční režim
 
@@ -125,12 +154,21 @@ hlavici z Better Thermostatu i na skutečnou, protože používá jen běžné
 `set_temperature` a `set_hvac_mode` — o kalibraci a regulaci se stará
 hlavice sama.
 
-| situace | co se pošle |
-|---|---|
-| v sezóně, zavřené okno | cíl místnosti |
-| v sezóně, otevřené okno | nic, řeší si to hlavice sama |
-| mimo topnou sezónu | nic, sezónu si určuje hlavice |
-| začátek sezóny | vysoká teplota kvůli odvzdušnění |
+| situace | teplota | režim |
+|---|---|---|
+| v sezóně | cíl místnosti | nechává se hlavici |
+| mimo topnou sezónu | 7,7 °C | nechává se hlavici |
+| otevřené okno, hlavice to umí | cíl místnosti | nechává se hlavici |
+| otevřené okno, hlavice to neumí | 5,5 °C | nechává se hlavici |
+| začátek sezóny | 28 °C | heat |
+
+**Teplota se posílá vždycky**, protože bez ní hlavice neví, na co
+regulovat. Mění se jen ta hodnota.
+
+Zvláštní čísla místo vypnutí mají svůj smysl: z hodnoty poznáš, že povel
+dorazil od integrace a proč. Better Thermostat posílá při otevřeném okně
+5,0, takže naše 5,5 jde odlišit. Kulaté číslo by se pletlo s ruční
+obsluhou. Obě hodnoty se dají změnit.
 
 **Co hlavice zvládne sama, do toho integrace nemluví.** Je to hlavní
 zásada celého napojení na topení, protože dvě věci, které rozhodují

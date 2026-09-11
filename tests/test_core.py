@@ -190,20 +190,13 @@ def test_hlaska_o_cekani_je_srozumitelna():
     assert "min" in r.duvod          # dlouhé čekání v minutách, ne v sekundách
 
 
-def test_korekce_ma_spravne_znamenko():
-    a, _ = krok(stary(t_in=21, t_out=14.5), otevreno=True)
-    assert a.korekce > 0 and a.t_in_korig > 21
-    b, _ = krok(stary(t_in=24, t_out=28), otevreno=True)
-    assert b.korekce < 0 and b.t_in_korig < 24
-    c, _ = krok(stary(t_in=21, t_out=14.5))
-    assert c.korekce == 0
-
-
-def test_korekce_je_umerna_rozdilu():
-    a, _ = krok(stary(t_in=21, t_out=14.5), otevreno=True)
-    b, _ = krok(stary(t_in=21, t_out=1), otevreno=True)
-    assert b.korekce > a.korekce
-    assert b.korekce <= N.korekce_max
+def test_teplota_se_nijak_neupravuje():
+    """Dřív se při otevřeném okně dopočítávala korekce. Hodnota pak
+    neodpovídala ničemu, co jde ověřit, tak je pryč."""
+    for otevreno in (False, True):
+        r, _ = krok(stary(t_in=21, t_out=14.5), otevreno=otevreno)
+        assert r.t_in_korig == 21
+        assert r.korekce == 0
 
 
 # ---------------------------------------------------------------- odolnost
@@ -320,7 +313,7 @@ def test_priorita_uprostred_odpovida_vychozim():
     n = Nastaveni()
     den, noc = z_priority(5)
     assert abs(den - n.denni_pokles) < 0.3
-    assert abs(noc - n.nocni_pokles_zaklad) < 0.1
+    assert abs(noc - n.nocni_pokles) < 0.1
 
 
 def test_priorita_je_monotonni():
@@ -459,3 +452,45 @@ def test_otevreni_si_zapamatuje_vychozi_teplotu():
     p = Pamet(cas_povelu_s=0)
     rozhodni(stary(co2=1200, t_in=21.0, cil=25.5, hodina=2, spanek=True), p, N)
     assert p.noc_start == 21.0
+
+
+# ------------------------------------------- společné nárazové větrání
+
+def test_narazove_zkrati_pulz():
+    """V mrazu krátký průvan místo dlouhého větrání jedním oknem."""
+    bez, _ = krok(stary(co2=900, t_in=21, t_out=14.5, cil=25.5))
+    s, _ = krok(stary(co2=900, t_in=21, t_out=14.5, cil=25.5, narazove=True))
+    assert bez.limit_s > s.limit_s
+    assert s.limit_s <= N.narazove_strop_s
+
+
+def test_narazove_prebiji_zastupce():
+    """Při nárazovém větrání se otevírá všude — o to právě jde."""
+    zastoupeno, _ = krok(stary(co2=900, t_in=21, t_out=5, cil=25.5,
+                               zastupce=True))
+    narazove, _ = krok(stary(co2=900, t_in=21, t_out=5, cil=25.5,
+                             zastupce=True, narazove=True))
+    assert zastoupeno.akce is Akce.NIC
+    assert narazove.akce is Akce.OTEVRIT
+
+
+def test_narazove_nepusti_okno_pres_ochranu():
+    """Vítr, déšť ani noční mez nárazové větrání nepřebije."""
+    vitr, _ = krok(stary(co2=900, narazove=True, vitr_blokuje=True),
+                   otevreno=True)
+    dest, _ = krok(stary(co2=900, narazove=True, dest=2.0), otevreno=True)
+    assert vitr.akce is Akce.ZAVRIT and dest.akce is Akce.ZAVRIT
+
+
+def test_narazove_v_noci_respektuje_mez():
+    r, _ = krok(stary(co2=1100, t_in=18.2, cil=25.5, hodina=2, spanek=True,
+                      narazove=True))
+    assert r.akce is Akce.NIC and "jen" in r.duvod
+
+
+def test_narazove_ma_vlastni_spodni_strop():
+    """Běžný pulz nikdy nejde pod 30 minut, nárazové ano — o to jde."""
+    bezne, _ = krok(stary(co2=900, t_in=21, t_out=-5, cil=20))
+    naraz, _ = krok(stary(co2=900, t_in=21, t_out=-5, cil=20, narazove=True))
+    assert bezne.limit_s == 30 * 60
+    assert naraz.limit_s < 30 * 60

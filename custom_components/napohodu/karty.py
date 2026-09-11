@@ -39,6 +39,8 @@ ATRIBUTY_STAVU = [
     ("cisticka_bezi", "Čistička", None),
     ("odtah_bezi", "Odtah", None),
     ("vlhkost", "Vlhkost v pokoji", " %"),
+    ("narazove_vetrani", "Nárazové větrání běží", None),
+    ("nocni_klid", "Noční klid", None),
     ("duvody", "Diagnostika", None),
 ]
 

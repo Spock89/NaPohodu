@@ -57,7 +57,6 @@ class Nastaveni:
     chlazeni_min_venku: float = 12.0
 
     denni_pokles: float = 1.5
-    nocni_pokles_zaklad: float = 3.0
     nocni_pokles: float = 3.0
     nocni_rezerva: float = 1.0
     nocni_min: float = 18.0
@@ -66,10 +65,9 @@ class Nastaveni:
     noc_od: float = 22.0
     noc_do: float = 6.5
 
-    korekce_k: float = 0.08
-    korekce_max: float = 1.5
 
     rozpocet_stupnominut: float = 200.0
+    narazove_strop_s: float = 10 * 60
 
 
 @dataclass
@@ -101,6 +99,8 @@ class Vstup:
 
     # větrá za nás jiná zóna, takže se sami otevřeme až při krizi
     zastupce: bool = False
+    # společné nárazové větrání: v mrazu otevřít všude naráz a krátce
+    narazove: bool = False
 
 
 @dataclass
@@ -130,7 +130,7 @@ class Rozhodnuti:
     kod: str = ""
     limit_s: float | None = None
     t_in_korig: float = 0.0
-    korekce: float = 0.0
+    korekce: float = 0.0     # ponecháno kvůli starším kartám, vždy nula
     rosny_bod: float = 0.0
     co2: float = 0.0
 
@@ -199,11 +199,7 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     if not v.doma:
         seznam.append("nikdo doma")
 
-    korekce = 0.0
-    if p.otevreno:
-        korekce = max(-n.korekce_max,
-                      min(n.korekce_max, n.korekce_k * (v.t_in - v.t_out)))
-    tin = v.t_in + korekce
+    tin = v.t_in
     noc = _je_noc(v.hodina, n, v.spanek)
 
     if noc:
@@ -234,21 +230,19 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
 def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     """Vrátí, co se má s oknem stát. Paměť se upravuje na místě."""
 
-    # korekce čidla: při otevřeném okně táhne k venkovní teplotě
-    korekce = 0.0
-    if p.otevreno:
-        korekce = max(-n.korekce_max,
-                      min(n.korekce_max, n.korekce_k * (v.t_in - v.t_out)))
-    t_in = v.t_in + korekce
+    # Teplota se bere tak, jak ji čidlo hlásí. Dřív se při otevřeném
+    # okně dopočítávala korekce, ale hodnota pak neodpovídala ničemu,
+    # co jde ověřit — a za rok si na to nikdo nevzpomene.
+    t_in = v.t_in
     # V zimě rozhoduje nejchladnější čidlo (kondenzace, topení), v horku
     # naopak nejteplejší — nechceme pouštět vedro do přehřáté místnosti.
-    t_max = (v.t_in_max if v.t_in_max is not None else v.t_in) + korekce
+    t_max = v.t_in_max if v.t_in_max is not None else v.t_in
     dew = rosny_bod(v.t_out, v.rh_out)
 
     def hotovo(akce: Akce, duvod: str, limit_s: float | None = None,
                kod: str = "") -> Rozhodnuti:
         return Rozhodnuti(akce, duvod, kod, limit_s, round(t_in, 2),
-                          round(korekce, 2), round(dew, 1), v.co2)
+                          0.0, round(dew, 1), v.co2)
 
     def otevri(duvod: str, limit_s: float | None, *, hned: bool = False,
                kod: str = "") -> Rozhodnuti:
@@ -282,7 +276,9 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                 and v.cas_s - p.cas_povelu_s > n.obnova_s):
             p.cas_povelu_s = v.cas_s
             return hotovo(Akce.OTEVRIT if chci_otevreno else Akce.ZAVRIT,
-                          "obnova povelu", kod="obnova")
+                          "obnova povelu: " + ("otevřít" if chci_otevreno
+                                               else "zavřít"),
+                          kod="obnova")
         return hotovo(Akce.NIC, duvod)
 
     # --- 1. vítr ---------------------------------------------------
@@ -340,8 +336,9 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     if v.co2 < n.co2_zavrit:
         p.vetra_se = False
     prah_startu = n.co2_zavrit if p.vetra_se else n.co2_otevrit
-    if v.zastupce:
-        # větrá za nás soused, sami otevřeme až když to nestačí
+    if v.zastupce and not v.narazove:
+        # větrá za nás soused, sami otevřeme až když to nestačí.
+        # Při nárazovém větrání naopak otevíráme všude, o to jde.
         prah_startu = max(prah_startu, n.co2_noc)
 
     potreba = (v.co2 > prah_startu or v.vetrat or kvalita_spatna or pm_spatne)
@@ -450,6 +447,10 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             minuty = max(5.0, min(45.0, n.rozpocet_stupnominut / dt))
         if noc:
             minuty *= 1.5
+        if v.narazove:
+            # Krátký průvan vymění vzduch rychleji než dlouhé větrání
+            # jedním oknem a stěny se nestihnou vychladit.
+            minuty = min(minuty, n.narazove_strop_s / 60)
 
         p.rezim = "pulz"
         p.den_mez = max(n.nocni_min + 1, t_in - n.denni_pokles)
@@ -458,6 +459,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             duvod = f"kvalita {v.kvalita}"
         if pm_spatne:
             duvod = f"PM2.5 {v.pm25:.0f}" + ("" if v.pm_platny else " (bez ventilátoru)")
-        return otevri(duvod, min(max(minuty, 30), 120) * 60)
+        dolni = 3 if v.narazove else 30
+        return otevri(duvod, min(max(minuty, dolni), 120) * 60, kod="pulz")
 
     return beze_zmeny(f"mrtvá zóna, CO2 {v.co2:.0f}")

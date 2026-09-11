@@ -56,6 +56,21 @@ for p in d.glob("*.py"):
         if len(r) > 20 and r == radky[i + 1].strip() and not r.startswith("#"):
             chyby.append(f"{p.name}:{i + 1}: řádek je tam dvakrát: {r[:40]}")
 
+# 1e) moduly, které nikdo neimportuje — mrtvý kód mate a duplikuje logiku
+VSTUPNI = {"__init__", "const", "config_flow", "coordinator", "entity",
+           "sensor", "binary_sensor", "number", "switch", "button",
+           "services", "karty"}
+importovane = set()
+for p in d.glob("*.py"):
+    for u in ast.walk(ast.parse(p.read_text())):
+        if isinstance(u, ast.ImportFrom) and u.level == 1:
+            if u.module:
+                importovane.add(u.module.split(".")[0])
+            importovane.update(a.name for a in u.names)
+for p in d.glob("*.py"):
+    if p.stem not in VSTUPNI and p.stem not in importovane:
+        chyby.append(f"{p.name}: modul nikdo neimportuje, je to mrtvý kód")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

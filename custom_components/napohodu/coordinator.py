@@ -32,23 +32,24 @@ from .const import (
     CONF_KLIMA_SUSIT_OD, CONF_KLIMA_TOPIT_OD, CONF_KLIMA_UMI,
     CONF_KLIMA_UTLUM_CHLAZENI, CONF_KLIMA_UTLUM_TOPENI,
     CONF_KLIMA_V_POKOJI, CONF_KOMFORT_ODSTUP, CONF_KVALITA, CONF_MAX_STARI,
-    CONF_MIN_DRZENI, CONF_MISTNOSTI, CONF_NARAZ, CONF_NARAZ_PRAH,
-    CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD, CONF_ODCHYLKA,
-    CONF_ODTAH, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA,
-    CONF_PLOCHA, CONF_PM10, CONF_PM25, CONF_PM_PLATNY, CONF_PRAH_VYKONU,
-    CONF_PRIORITA, CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_RH_MAX,
-    CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI,
-    CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SEZONU_RIDI_HLAVICE,
-    CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
-    CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC,
-    CONF_STINENI_REZIM, CONF_TEPLOTY, CONF_TOPIT_MIMO_SEZONU,
-    CONF_TOPIT_PRI_OKNU, CONF_TOPIT_UTLUM, CONF_T_PRUMER, CONF_T_SEZONA,
-    CONF_T_VENKU, CONF_T_VENKU_M, CONF_VITR, CONF_VITR_KLID,
-    CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE,
-    CONF_ZARENI, CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI,
-    CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY,
-    CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
-    PODENTITA_MISTNOST, PODENTITA_ZONA,
+    CONF_MIN_DRZENI, CONF_MISTNOSTI, CONF_NARAZ, CONF_NARAZOVE,
+    CONF_NARAZOVE_ODSTUP, CONF_NARAZOVE_STROP, CONF_NARAZ_PRAH, CONF_NAZEV,
+    CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD, CONF_ODCHYLKA, CONF_ODTAH,
+    CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA, CONF_PLOCHA,
+    CONF_PM10, CONF_PM25, CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRIORITA,
+    CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_RH_MAX, CONF_RH_MIN,
+    CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_SEZONA_HYSTEREZE,
+    CONF_SEZONA_PRAH, CONF_SEZONU_RIDI_HLAVICE, CONF_SOUHRN_CAS,
+    CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_MAPA,
+    CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
+    CONF_TEPLOTY, CONF_TOPIT_MIMO_SEZONU, CONF_TOPIT_PRI_OKNU,
+    CONF_TOPIT_UTLUM, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
+    CONF_T_VENKU_M, CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH,
+    CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
+    CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZNACKA_MIMO,
+    CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC,
+    DOMAIN, INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST,
+    PODENTITA_ZONA,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -106,6 +107,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._prazdno_od: float | None = None
         self._sezona_od: float | None = None
         self._overene_jednotky: set[str] = set()
+        self.narazove: bool = False
+        self.narazove_bezi: bool = False
+        self.narazove_co2: float = 0.0
+        self.narazove_strop_s: float = 600.0
         # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
         self.souhrn: dict[str, dict] = {}
         self._souhrn_den: str = ""
@@ -536,6 +541,30 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             default=1000.0)
         upravy = so.prerozdel(stavy, prah_zastoupeni)
 
+        # Společné nárazové větrání: když je venku zima a některá zóna
+        # potřebuje vzduch, otevře se všude naráz a krátce. Průvan vymění
+        # vzduch rychleji než dlouhé větrání jedním oknem a stěny se
+        # nestihnou vychladit. Kde tomu něco brání, se prostě neotevře.
+        self.narazove_strop_s = float(g.get(CONF_NARAZOVE_STROP, 10)) * 60
+        # Rozhoduje, jestli větrání stojí teplo — tedy jestli je venku
+        # chladněji než cíl. Pevná venkovní teplota by v lednu a v květnu
+        # znamenala něco jiného.
+        nejnizsi_cil = min((m.cil for m in self.mistnosti.values()),
+                           default=22.0)
+        odstup = float(g.get(CONF_NARAZOVE_ODSTUP, 0.0))
+        self.narazove = (bool(g.get(CONF_NARAZOVE, False))
+                         and t_out < nejnizsi_cil - odstup)
+        if self.narazove:
+            nejhorsi = max((o["co2"] for o in okruhy), default=0.0)
+            spousti = max(
+                (o["prahy"][CONF_CO2_OTEVRIT] for o in okruhy if o.get("prahy")),
+                default=800.0)
+            self.narazove_bezi = nejhorsi > spousti
+            self.narazove_co2 = nejhorsi
+        else:
+            self.narazove_bezi = False
+            self.narazove_co2 = 0.0
+
         # ---------- 4. rozhodnutí a vykonání za místnost ----------
         for o in okruhy:
             uprava = upravy.get(o["id"], so.Uprava())
@@ -697,7 +726,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         vynuceno = any(self._zapnuto(e) for e in (d.get(CONF_VYNUCENO_M) or []))
 
         v = core.Vstup(
-            co2=max(okruh["co2"], uprava.prevzate_co2),
+            co2=max(okruh["co2"], uprava.prevzate_co2,
+                    self.narazove_co2 if self.narazove_bezi else 0.0),
             pm25=okruh["pm25"], pm10=okruh["pm10"],
             pm_platny=okruh["pm_platny"], kvalita=okruh["kvalita"],
             t_in=self._min(d.get(CONF_TEPLOTY), 21.0),
@@ -708,6 +738,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             spanek=okruh["spanek"], vynuceno=vynuceno,
             hodina=hodina, cas_s=cas_s,
             zastupce=uprava.zastupce is not None,
+            narazove=self.narazove_bezi,
         )
         nast = core.Nastaveni(
             # prahy z oblasti, ať se místnosti nepřetahují
@@ -724,6 +755,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                                    float(d.get(CONF_NOC_MIN, 18))),
             komfort_odstup=float(d.get(CONF_KOMFORT_ODSTUP, 4.0)),
             noc_od=noc_od, noc_do=noc_do,
+            narazove_strop_s=self.narazove_strop_s,
         )
         den_pokles, noc_pokles = core.z_priority(
             self.hodnota(p.subentry_id, CONF_PRIORITA, 5.0))
@@ -736,6 +768,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
         prvni_okno = okna[0] if okna else None
         projezd = float(d.get(CONF_PROJEZD_M, 120))
+        stav_znamy = prvni_okno is None or self._stav(prvni_okno) is not None
         skutecne = self._okno_otevreno(prvni_okno, pamet, cas_s, projezd)
         pamet.otevreno = skutecne
 
@@ -751,7 +784,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             pamet = zaloha
 
         provedeno = vyk.stav.posledni_popis
-        if ovladat and okna:
+        if ovladat and okna and not stav_znamy:
+            _LOGGER.debug("NaPohodu: %s — okno nehlásí stav, nic neposílám",
+                          m.nazev)
+        if ovladat and okna and stav_znamy:
             for okno in okna:
                 vysledek = await vyk.okno(okno, r, cas_s, skutecne)
                 if vysledek:
@@ -796,10 +832,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         m.rozhodnuti = r
         m.okno_otevreno = skutecne
         m.atributy.update({
-            "co2": v.co2, "uvnitr": r.t_in_korig, "korekce": r.korekce,
+            "co2": v.co2, "uvnitr": r.t_in_korig,
             "venku": t_ven, "rosny_bod": r.rosny_bod, "rezim": pamet.rezim,
             "navrh": r.akce.value, "kod": r.kod, "provedeno": provedeno,
-            "ovladani": "zapnuto" if ovladat else "jen sleduje",
+            "ovladani": ("zapnuto" if ovladat else "jen sleduje")
+            + ("" if stav_znamy else " (okno nehlásí stav)"),
             "oblast": okruh["nazev"] if okruh["pod"] else None,
             "prahy_z_oblasti": {
                 "otevrit": okruh["prahy"][CONF_CO2_OTEVRIT],
@@ -813,6 +850,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "nocni_klid": f"{self._cas(noc_od)} – {self._cas(noc_do)}",
             "rano_neotvirat_od": self._cas(noc_do),
             "je_noc": je_noc,
+            "narazove_vetrani": self.narazove_bezi,
+            "narazove_mozne": self.narazove,
             "vitr": self.vitr_stav,
             "dnes": {
                 "pohyby": sh["pohyby"],

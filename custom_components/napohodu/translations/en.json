@@ -24,7 +24,10 @@
           "vitr_klid": "Vítr povolí pod",
           "zpravy_kam": "Kam posílat zprávy",
           "souhrn_cas": "Denní souhrn v",
-          "zpravy_druhy": "Co posílat"
+          "zpravy_druhy": "Co posílat",
+          "narazove_vetrani": "Nárazové větrání v zimě",
+          "narazove_strop_min": "Nejdéle",
+          "narazove_odstup": "Nárazové až o tolik pod cílem"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -47,7 +50,10 @@
           "vitr_klid": "Blokace povolí, až když obě hodnoty klesnou pod tuhle. Musí být níž než oba prahy, jinak se to překlápí na hraně.",
           "zpravy_kam": "Notify entity, například Telegram nebo mobilní aplikace. U Telegramu vytváří integrace jednu entitu na každý chat, takže příjemce vybereš tady, ne psaním čísla.",
           "souhrn_cas": "Kdy poslat souhrn dne: kolikrát se okno hýbalo, jak dlouho bylo otevřeno, nejvyšší CO2. Podle toho se pozná, jestli jsou prahy dobře.",
-          "zpravy_druhy": "Zaškrtni, co tě zajímá. První dny se hodí i běžné otevírání, pak většinou stačí ochrana a souhrn."
+          "zpravy_druhy": "Zaškrtni, co tě zajímá. První dny se hodí i běžné otevírání, pak většinou stačí ochrana a souhrn.",
+          "narazove_vetrani": "Když je venku zima a jedna zóna potřebuje vzduch, otevřou se všechna okna naráz a krátce. Průvan vymění vzduch rychleji než dlouhé větrání jedním oknem a stěny se nestihnou vychladit. Kde tomu něco brání — vítr, déšť, noční mez — se prostě neotevře.",
+          "narazove_strop_min": "Nejdelší doba nárazového větrání. Krátký průvan stačí, dlouhý už jen chladí.",
+          "narazove_odstup": "Nárazové větrání se použije, když je venku chladněji než cílová teplota — tedy když větrání stojí teplo. Nula znamená hned, vyšší číslo posune začátek do většího chladu. Pevná venkovní teplota by v lednu a v květnu znamenala něco jiného."
         },
         "title": "NaPohodu"
       }
@@ -90,7 +96,10 @@
           "vitr_klid": "Vítr povolí pod",
           "zpravy_kam": "Kam posílat zprávy",
           "souhrn_cas": "Denní souhrn v",
-          "zpravy_druhy": "Co posílat"
+          "zpravy_druhy": "Co posílat",
+          "narazove_vetrani": "Nárazové větrání v zimě",
+          "narazove_strop_min": "Nejdéle",
+          "narazove_odstup": "Nárazové až o tolik pod cílem"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -113,7 +122,10 @@
           "vitr_klid": "Blokace povolí, až když obě hodnoty klesnou pod tuhle. Musí být níž než oba prahy, jinak se to překlápí na hraně.",
           "zpravy_kam": "Notify entity, například Telegram nebo mobilní aplikace. U Telegramu vytváří integrace jednu entitu na každý chat, takže příjemce vybereš tady, ne psaním čísla.",
           "souhrn_cas": "Kdy poslat souhrn dne: kolikrát se okno hýbalo, jak dlouho bylo otevřeno, nejvyšší CO2. Podle toho se pozná, jestli jsou prahy dobře.",
-          "zpravy_druhy": "Zaškrtni, co tě zajímá. První dny se hodí i běžné otevírání, pak většinou stačí ochrana a souhrn."
+          "zpravy_druhy": "Zaškrtni, co tě zajímá. První dny se hodí i běžné otevírání, pak většinou stačí ochrana a souhrn.",
+          "narazove_vetrani": "Když je venku zima a jedna zóna potřebuje vzduch, otevřou se všechna okna naráz a krátce. Průvan vymění vzduch rychleji než dlouhé větrání jedním oknem a stěny se nestihnou vychladit. Kde tomu něco brání — vítr, déšť, noční mez — se prostě neotevře.",
+          "narazove_strop_min": "Nejdelší doba nárazového větrání. Krátký průvan stačí, dlouhý už jen chladí.",
+          "narazove_odstup": "Nárazové větrání se použije, když je venku chladněji než cílová teplota — tedy když větrání stojí teplo. Nula znamená hned, vyšší číslo posune začátek do většího chladu. Pevná venkovní teplota by v lednu a v květnu znamenala něco jiného."
         }
       },
       "tester": {
