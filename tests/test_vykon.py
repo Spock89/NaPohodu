@@ -127,7 +127,9 @@ def _naparuj_stineni(monkeypatch, selhavajici=()):
         provedeno.append((entita, nazev))
         if entita in selhavajici:
             return {"povedlo_se": False, "chyba": "pohon mlčí"}
-        return {"povedlo_se": True}
+        # skutečná služba polohu vrací, podle ní se pak pozná
+        # ruční přestavení
+        return {"povedlo_se": True, "poloha_po": 5.0}
 
     modul = types.ModuleType("napohodu.services")
     modul.proved_stav_stineni = proved
@@ -392,3 +394,55 @@ def test_odvzdusneni_prebiji_vse():
 def test_znackove_hodnoty_jdou_zmenit():
     p = cil_topeni(22, False, 16, False, False, False, 28, znacka_mimo=8.8)
     assert p.cil == 8.8
+
+
+# --------------------------------------------- ověření polohy žaluzie
+
+def _s_polohou(v, zaluzie="cover.o2", stav="zastíněno", poloha=5.0):
+    v.stav.posledni_stineni[zaluzie] = stav
+    v.stav.stineni_poloha[zaluzie] = poloha
+    return v
+
+
+def test_poloha_sedi_pamet_zustane():
+    h, v = vyk()
+    _s_polohou(v)
+    assert v.zkontroluj_polohu("cover.o2", 5.0) is None
+    assert v.stav.posledni_stineni["cover.o2"] == "zastíněno"
+
+
+def test_rucni_prestaveni_zahodi_pamet():
+    """Bez tohohle by paměť tvrdila, že je zastíněno, a po západu
+    slunce by se nic neposlalo."""
+    h, v = vyk()
+    _s_polohou(v)
+    assert v.zkontroluj_polohu("cover.o2", 3.0) == "zastíněno"
+    assert "cover.o2" not in v.stav.posledni_stineni
+
+
+def test_male_odchylky_se_toleruji():
+    h, v = vyk()
+    _s_polohou(v)
+    assert v.zkontroluj_polohu("cover.o2", 5.4) is None
+
+
+def test_bez_hlasene_polohy_se_nic_nedeje():
+    h, v = vyk()
+    _s_polohou(v)
+    assert v.zkontroluj_polohu("cover.o2", None) is None
+    assert "cover.o2" in v.stav.posledni_stineni
+
+
+def test_neznama_zaluzie_nespadne():
+    h, v = vyk()
+    assert v.zkontroluj_polohu("cover.jina", 50.0) is None
+
+
+def test_po_zapomenuti_se_stav_posle_znovu(monkeypatch):
+    p = _naparuj_stineni(monkeypatch)
+    h, v = vyk(po_startu=False)
+    bez(v.stineni({"cover.o2": "zastíněno"}, 1000, 15))
+    p.clear()
+    v.zkontroluj_polohu("cover.o2", 3.0)          # někdo přestavil
+    bez(v.stineni({"cover.o2": "zastíněno"}, 1000 + 16 * 60, 15))
+    assert p == [("cover.o2", "zastíněno")]

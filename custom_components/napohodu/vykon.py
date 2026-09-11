@@ -37,6 +37,9 @@ class StavVykonu:
     posledni_cas_s: float = -1e9
     pulz_do_s: float | None = None
     posledni_stineni: dict[str, str] = field(default_factory=dict)
+    # poloha, na které žaluzie po povelu skutečně skončila — podle ní
+    # se pozná ruční přestavení
+    stineni_poloha: dict[str, float] = field(default_factory=dict)
     stineni_cas_s: float = -1e9
     prvni_beh: bool = True
     chyby: list[str] = field(default_factory=list)
@@ -59,6 +62,29 @@ class Vykonavac:
 
     # ------------------------------------------------------------ okno
 
+    TOLERANCE_POLOHY = 0.6      # jemnější rozdíly pohon stejně neudrží
+
+    def zkontroluj_polohu(self, zaluzie: str,
+                          poloha: float | None) -> str | None:
+        """Ověří, že žaluzie je tam, kam jsme ji poslali.
+
+        Bez toho by ruční přestavení zůstalo skryté: paměť tvrdí, že je
+        zastíněno, takže se po západu slunce už nic nepošle. Když se
+        poloha rozešla, paměť se zahodí a příští rozhodnutí ji srovná.
+        """
+        ocekavana = self.stav.stineni_poloha.get(zaluzie)
+        if poloha is None or ocekavana is None:
+            return None
+        if abs(poloha - ocekavana) <= self.TOLERANCE_POLOHY:
+            return None
+
+        byval = self.stav.posledni_stineni.pop(zaluzie, None)
+        self.stav.stineni_poloha.pop(zaluzie, None)
+        _LOGGER.info("NaPohodu: %s je na %.1f %%, čekal jsem %.1f %% — "
+                     "někdo ji přestavil, zapomínám stav %s",
+                     zaluzie, poloha, ocekavana, byval)
+        return byval
+
     def zapomen(self) -> None:
         """Zahodí paměť o posledních povelech.
 
@@ -69,6 +95,7 @@ class Vykonavac:
         self.stav.posledni_povel = None
         self.stav.posledni_cas_s = -1e9
         self.stav.posledni_stineni.clear()
+        self.stav.stineni_poloha.clear()
         self.stav.stineni_cas_s = -1e9
         self.stav.prvni_beh = False    # tlačítko chce pohyb, ne mlčení
         self.stav.chyby.clear()
@@ -220,6 +247,9 @@ class Vykonavac:
             vysledek = await proved_stav_stineni(self.hass, z, nazev)
             if vysledek.get("povedlo_se"):
                 self.stav.posledni_stineni[z] = nazev
+                poloha = vysledek.get("poloha_po")
+                if poloha is not None:
+                    self.stav.stineni_poloha[z] = float(poloha)
                 hotovo.append(nazev)
                 _LOGGER.info("NaPohodu: žaluzie %s -> %s", z, nazev)
             else:

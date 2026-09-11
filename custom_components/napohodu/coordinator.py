@@ -142,15 +142,22 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         """Obnoví průměry i polohy žaluzií, ať se nezačíná od nuly."""
         self.prumery = pm.Prumery.ze_slovniku(await self._uloziste.async_load())
         ulozene = await self._uloziste_stineni.async_load() or {}
-        for pod_id, polohy in ulozene.items():
+        for pod_id, data in ulozene.items():
             vyk = self.vykonavaci.setdefault(
                 pod_id, vy.Vykonavac(self.hass, pod_id))
-            vyk.stav.posledni_stineni.update(polohy)
+            # starší formát ukládal jen mapu žaluzie -> stav
+            if "stavy" in data:
+                vyk.stav.posledni_stineni.update(data["stavy"])
+                vyk.stav.stineni_poloha.update(
+                    {k: float(x) for k, x in (data.get("polohy") or {}).items()})
+            else:
+                vyk.stav.posledni_stineni.update(data)
             # polohy známe z disku, ochrana po startu už netřeba
             vyk.stav.prvni_beh = False
 
     def _uloz_stineni(self) -> dict:
-        return {k: dict(v.stav.posledni_stineni)
+        return {k: {"stavy": dict(v.stav.posledni_stineni),
+                    "polohy": dict(v.stav.stineni_poloha)}
                 for k, v in self.vykonavaci.items()
                 if v.stav.posledni_stineni}
 
@@ -972,6 +979,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         """Rozhodne o žaluziích místnosti. Slunce svítí do pokoje, ne do oblasti."""
         vyk_m = self.vykonavaci.setdefault(
             p.subentry_id, vy.Vykonavac(self.hass, p.subentry_id))
+
+        # Nejdřív ověřit, kde žaluzie doopravdy jsou. Ruční přestavení
+        # jinak zůstane skryté a večer se nic nepošle.
+        prestaveno = []
+        for z in (d.get(CONF_ZALUZIE) or []):
+            byval = vyk_m.zkontroluj_polohu(z, self._poloha_krytu(z))
+            if byval:
+                prestaveno.append(f"{z}: bylo {byval}")
+        if prestaveno:
+            m.atributy["prestaveno_rukou"] = prestaveno
+            self._uloziste_stineni.async_delay_save(self._uloz_stineni, 10)
+
         if self.hodnoty.get((p.subentry_id, "ovladat_stineni"), 0.0) > 0:
             t_max = m.atributy.get("teplota_max")
             t_min = m.atributy.get("teplota_min")
@@ -1071,6 +1090,20 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             max_stari_s=float(d.get(CONF_MAX_STARI, 6)) * 3600,
             stineni_pryc=st, indicie=indicie,
         )
+
+    def _poloha_krytu(self, eid: str) -> float | None:
+        """Poloha žaluzie v procentech, nebo nic, když ji nehlásí."""
+        st = self._stav(eid)
+        if st is None:
+            return None
+        hodnota = st.attributes.get("current_position")
+        if hodnota is None:
+            return 100.0 if st.state == "open" else (
+                0.0 if st.state == "closed" else None)
+        try:
+            return float(hodnota)
+        except (TypeError, ValueError):
+            return None
 
     def _poloha_slunce(self) -> tuple[float, float]:
         st = self.hass.states.get("sun.sun")
