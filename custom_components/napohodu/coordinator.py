@@ -1031,7 +1031,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             m.atributy["role_stineni"] = role
             if stin:
                 self._uloziste_stineni.async_delay_save(self._uloz_stineni, 10)
+        # Pojmenovaný stav známe jen tam, kam jsme sami poslali povel.
+        # Skutečná poloha se dá přečíst vždycky, a právě ta člověka
+        # zajímá, když je paměť prázdná.
         m.atributy["stineni_stav"] = dict(vyk_m.stav.posledni_stineni)
+        m.atributy["zaluzie_poloha"] = {
+            z: self._poloha_krytu(z) for z in (d.get(CONF_ZALUZIE) or [])}
 
     # ------------------------------------------------------------ detaily
 
