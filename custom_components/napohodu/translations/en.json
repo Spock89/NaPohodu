@@ -27,7 +27,9 @@
           "zpravy_druhy": "Co posílat",
           "narazove_vetrani": "Nárazové větrání v zimě",
           "narazove_strop_min": "Nejdéle",
-          "narazove_odstup": "Nárazové až o tolik pod cílem"
+          "narazove_odstup": "Nárazové až o tolik pod cílem",
+          "pm25_venku": "Venkovní PM2.5",
+          "pm10_venku": "Venkovní PM10"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -53,7 +55,9 @@
           "zpravy_druhy": "Zaškrtni, co tě zajímá. První dny se hodí i běžné otevírání, pak většinou stačí ochrana a souhrn.",
           "narazove_vetrani": "Když je venku zima a jedna zóna potřebuje vzduch, otevřou se všechna okna naráz a krátce. Průvan vymění vzduch rychleji než dlouhé větrání jedním oknem a stěny se nestihnou vychladit. Kde tomu něco brání — vítr, déšť, noční mez — se prostě neotevře.",
           "narazove_strop_min": "Nejdelší doba nárazového větrání. Krátký průvan stačí, dlouhý už jen chladí.",
-          "narazove_odstup": "Nárazové větrání se použije, když je venku chladněji než cílová teplota — tedy když větrání stojí teplo. Nula znamená hned, vyšší číslo posune začátek do většího chladu. Pevná venkovní teplota by v lednu a v květnu znamenala něco jiného."
+          "narazove_odstup": "Nárazové větrání se použije, když je venku chladněji než cílová teplota — tedy když větrání stojí teplo. Nula znamená hned, vyšší číslo posune začátek do většího chladu. Pevná venkovní teplota by v lednu a v květnu znamenala něco jiného.",
+          "pm25_venku": "Prach venku. Podle něj se pozná, jestli má větrání kvůli prachu vůbec smysl — když je venku horší, otevřením se to nezlepší a jen by se větralo dokola. Bez tohohle čidla se řídí jen příznakem smogu.",
+          "pm10_venku": "Totéž pro větší částice. Nepovinné."
         },
         "title": "NaPohodu"
       }
@@ -99,7 +103,9 @@
           "zpravy_druhy": "Co posílat",
           "narazove_vetrani": "Nárazové větrání v zimě",
           "narazove_strop_min": "Nejdéle",
-          "narazove_odstup": "Nárazové až o tolik pod cílem"
+          "narazove_odstup": "Nárazové až o tolik pod cílem",
+          "pm25_venku": "Venkovní PM2.5",
+          "pm10_venku": "Venkovní PM10"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -125,7 +131,9 @@
           "zpravy_druhy": "Zaškrtni, co tě zajímá. První dny se hodí i běžné otevírání, pak většinou stačí ochrana a souhrn.",
           "narazove_vetrani": "Když je venku zima a jedna zóna potřebuje vzduch, otevřou se všechna okna naráz a krátce. Průvan vymění vzduch rychleji než dlouhé větrání jedním oknem a stěny se nestihnou vychladit. Kde tomu něco brání — vítr, déšť, noční mez — se prostě neotevře.",
           "narazove_strop_min": "Nejdelší doba nárazového větrání. Krátký průvan stačí, dlouhý už jen chladí.",
-          "narazove_odstup": "Nárazové větrání se použije, když je venku chladněji než cílová teplota — tedy když větrání stojí teplo. Nula znamená hned, vyšší číslo posune začátek do většího chladu. Pevná venkovní teplota by v lednu a v květnu znamenala něco jiného."
+          "narazove_odstup": "Nárazové větrání se použije, když je venku chladněji než cílová teplota — tedy když větrání stojí teplo. Nula znamená hned, vyšší číslo posune začátek do většího chladu. Pevná venkovní teplota by v lednu a v květnu znamenala něco jiného.",
+          "pm25_venku": "Prach venku. Podle něj se pozná, jestli má větrání kvůli prachu vůbec smysl — když je venku horší, otevřením se to nezlepší a jen by se větralo dokola. Bez tohohle čidla se řídí jen příznakem smogu.",
+          "pm10_venku": "Totéž pro větší částice. Nepovinné."
         }
       },
       "tester": {
@@ -175,9 +183,9 @@
       },
       "karta": {
         "title": "Karta na dashboard",
-        "description": "Hotová karta pro {pocet} místností a {oblasti} oblastí, poskládaná z entit, které opravdu existují.\n\nOznač celý text v poli níž a zkopíruj. Pak na dashboardu: tužka vpravo nahoře → Přidat kartu → úplně dole Manuální → smazat obsah → vložit.\n\nPo přidání místnosti si sem přijď pro novou verzi.",
+        "description": "Hotový pohled pro {pocet} místností a {oblasti} oblastí, poskládaný z entit, které opravdu existují.\n\nOznač celý text a zkopíruj. Pak na dashboardu: tužka vpravo nahoře → tři tečky → Upravit v YAML → vlož blok do seznamu views jako další položku.\n\nNa počítači se karty samy seřadí do sloupců, na telefonu pod sebe. Po přidání místnosti si sem přijď pro novou verzi.",
         "data": {
-          "karta_yaml": "YAML"
+          "karta_yaml": "YAML pohledu"
         },
         "submit": "Zpět"
       }
@@ -246,7 +254,8 @@
             "sezonu_ridi_hlavice": "Sezónu si řídí hlavice sama",
             "znacka_okno": "Značka pro otevřené okno",
             "znacka_mimo_sezonu": "Značka mimo sezónu",
-            "pauza_po_pulzu_min": "Pauza po dojezdu větrání"
+            "pauza_po_pulzu_min": "Pauza po dojezdu větrání",
+            "kvalita_cisto": "Za vyvětráno brát kvalitu od"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -302,7 +311,8 @@
             "sezonu_ridi_hlavice": "Better Thermostat si podle venkovní teploty určuje sám, kdy topit. Když je tohle zapnuté, integrace mimo sezónu do topení nemluví a nehádá se s ním na přechodu. Vypni, když má sezónu určovat integrace.",
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
             "znacka_mimo_sezonu": "Teplota mimo topnou sezónu. Neposílá se vypnuto, ale nízká hodnota, ze které je vidět, že spojení funguje a proč se netopí.",
-            "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu pulzu, i když vzduch ještě není vyvětraný. Bez pauzy by se okno hned otevřelo znovu. Kratší pauza znamená častější krátká větrání, delší méně častá a delší."
+            "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu pulzu, i když vzduch ještě není vyvětraný. Bez pauzy by se okno hned otevřelo znovu. Kratší pauza znamená častější krátká větrání, delší méně častá a delší.",
+            "kvalita_cisto": "Slovní kvalita vzduchu, od které se místnost bere za vyvětranou. Výchozí fair znamená, že stupeň moderate drží okno otevřené, i kdyby bylo CO2 na čtyřech stovkách. Když ti čidlo hlásí moderate pořád, zvol moderate."
           },
           "submit": "Další"
         },
@@ -413,7 +423,8 @@
             "sezonu_ridi_hlavice": "Sezónu si řídí hlavice sama",
             "znacka_okno": "Značka pro otevřené okno",
             "znacka_mimo_sezonu": "Značka mimo sezónu",
-            "pauza_po_pulzu_min": "Pauza po dojezdu větrání"
+            "pauza_po_pulzu_min": "Pauza po dojezdu větrání",
+            "kvalita_cisto": "Za vyvětráno brát kvalitu od"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -480,7 +491,8 @@
             "sezonu_ridi_hlavice": "Better Thermostat si podle venkovní teploty určuje sám, kdy topit. Když je tohle zapnuté, integrace mimo sezónu do topení nemluví a nehádá se s ním na přechodu. Vypni, když má sezónu určovat integrace.",
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
             "znacka_mimo_sezonu": "Teplota mimo topnou sezónu. Neposílá se vypnuto, ale nízká hodnota, ze které je vidět, že spojení funguje a proč se netopí.",
-            "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu pulzu, i když vzduch ještě není vyvětraný. Bez pauzy by se okno hned otevřelo znovu. Kratší pauza znamená častější krátká větrání, delší méně častá a delší."
+            "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu pulzu, i když vzduch ještě není vyvětraný. Bez pauzy by se okno hned otevřelo znovu. Kratší pauza znamená častější krátká větrání, delší méně častá a delší.",
+            "kvalita_cisto": "Slovní kvalita vzduchu, od které se místnost bere za vyvětranou. Výchozí fair znamená, že stupeň moderate drží okno otevřené, i kdyby bylo CO2 na čtyřech stovkách. Když ti čidlo hlásí moderate pořád, zvol moderate."
           },
           "submit": "Další"
         },
@@ -698,6 +710,14 @@
         "znacka": "Poslat značkovou teplotu",
         "utlum": "Srazit na útlum",
         "vypnout": "Vypnout"
+      }
+    },
+    "kvalita_cisto": {
+      "options": {
+        "poor": "poor — skoro cokoli",
+        "moderate": "moderate",
+        "fair": "fair (výchozí)",
+        "good": "good — jen to nejlepší"
       }
     }
   },

@@ -42,6 +42,7 @@ ATRIBUTY_STAVU = [
     ("narazove_vetrani", "Nárazové větrání běží", None),
     ("pauza_po_pulzu_min", "Pauza po větrání", " min"),
     ("nocni_klid", "Noční klid", None),
+    ("prach_zvenci", "Prach se tahá zvenčí", None),
     ("co_dal", "Co změnu spustí", None),
     ("duvody", "Diagnostika", None),
 ]
@@ -106,10 +107,22 @@ def _budik(eid: str, nazev: str, min_: float, max_: float,
     return r
 
 
+def _jako_pohled(radky: list[str]) -> list[str]:
+    """Udělá z karet celý pohled, ne jednu složenou kartu.
+
+    Karty vedle sebe natvrdo by na mobilu zůstaly vedle sebe a
+    zmáčkly se. Pohled typu masonry si je přeskládá sám — na počítači
+    do několika sloupců, na telefonu pod sebe.
+    """
+    out = ["title: NaPohodu", "path: napohodu", "icon: mdi:home-heart",
+           "type: masonry", "cards:"]
+    return out + radky
+
+
 def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
               cidla: dict | None = None, zaluzie: dict | None = None,
               venku: str | None = None, s_okny: set | None = None,
-              s_klidem: set | None = None) -> str:
+              s_klidem: set | None = None, jako_pohled: bool = True) -> str:
     """Poskládá kartu. `existuje` řekne, jestli entita opravdu je.
 
     `cidla` a `zaluzie` jsou entity, které integrace nevytváří — teploměr
@@ -120,9 +133,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     zaluzie = zaluzie or {}
     s_okny = s_okny if s_okny is not None else set(mistnosti)
     s_klidem = s_klidem if s_klidem is not None else set(mistnosti)
-    c = ["# Vygenerováno integrací NaPohodu.",
-         "# Vlož jako Manuální kartu. Až přidáš místnost, vygeneruj znovu.",
-         "", "type: vertical-stack", "cards:"]
+    c = []
 
     # --- odchylky s oddělovači, ať se místnosti nepletou ---
     polozky = []
@@ -308,7 +319,20 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
                 polozky += _radek(eid, f"{m.capitalize()} — {popis}")
     c += _karta("", "", polozky, nazev="Srovnat do žádané polohy")
 
-    return "\n".join(x for x in c if x is not None) + "\n"
+    karty = [x for x in c if x is not None]
+    if jako_pohled:
+        hlava = ["# Vygenerováno integrací NaPohodu.",
+                 "#",
+                 "# Dashboard -> tužka -> tři tečky -> Upravit v YAML.",
+                 "# Vlož tenhle blok do seznamu views jako další položku.",
+                 "# Na počítači se karty seřadí do sloupců, na telefonu",
+                 "# pod sebe.",
+                 ""]
+        return "\n".join(hlava + _jako_pohled(karty)) + "\n"
+
+    hlava = ["# Vygenerováno integrací NaPohodu.",
+             "# Vlož jako Manuální kartu.", ""]
+    return "\n".join(hlava + ["type: vertical-stack", "cards:"] + karty) + "\n"
 
 
 def _ok(radek: str, existuje) -> bool:

@@ -43,6 +43,15 @@ class Nastaveni:
     pm_prah: float = 35.0
     pm_prah_bez_ventilatoru: float = 50.0
     pm_prah_cisto: float = 20.0
+    # o kolik musí být venku lepší, aby mělo smysl otevřít
+    pm_rozdil: float = 5.0
+    # bez venkovního čidla se to pozná z toho, jak prach reaguje
+    # na otevřené okno
+    pm_uceni_s: float = 8 * 60      # než se vzduch v místnosti promíchá
+    pm_poznatek_s: float = 2 * 3600  # jak dlouho poznatek platí
+    # od kterého stupně se vzduch bere za vyvětraný; „moderate" jinak
+    # drží okno otevřené, i kdyby bylo CO2 na čtyřech stovkách
+    kvalita_cisto: int = 4
     pm_skok: float = 15.0
     pm_skok_min: float = 25.0
 
@@ -78,6 +87,9 @@ class Vstup:
     pm25: float = 0.0
     pm10: float = 0.0
     pm_platny: bool = True
+    # prach venku — bez něj se nepozná, jestli větrání pomůže
+    pm25_venku: float | None = None
+    pm10_venku: float | None = None
     kvalita: str | None = None
 
     t_in: float = 21.0          # nejchladnější místo — kondenzace, topení
@@ -118,6 +130,11 @@ class Pamet:
     noc_start: float | None = None
     den_mez: float | None = None
     komfort_start: float | None = None
+    # učení bez venkovního čidla: prach při otevření a jak dlouho
+    # ještě platí poznatek, že venku je horší
+    pm_pri_otevreni: float | None = None
+    pm_otevreno_od_s: float | None = None
+    pm_venku_horsi_do_s: float = 0.0
     pohyby: int = 0
 
 
@@ -221,6 +238,13 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         seznam.append("rosný bod")
     if v.smog:
         seznam.append("smog venku")
+    if v.cas_s < p.pm_venku_horsi_do_s:
+        seznam.append("prach se tahá zvenčí, zjištěno z posledního větrání")
+    if (v.pm25_venku is not None and v.pm25 > 0
+            and v.pm25_venku > v.pm25 - n.pm_rozdil):
+        seznam.append(f"prach venku je horší nebo stejný "
+                      f"({v.pm25_venku:.0f} proti {v.pm25:.0f}), "
+                      f"větráním to nespravím")
     if v.cas_s - p.cas_povelu_s < n.min_drzeni_s:
         zbyva = int((n.min_drzeni_s - (v.cas_s - p.cas_povelu_s)) / 60)
         seznam.append(f"drží se stav ještě {zbyva} min")
@@ -269,15 +293,49 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         elif p.den_mez is not None:
             seznam.append(f"zavřu při poklesu na {p.den_mez:.1f} °C "
                           f"(teď {t_in:.1f})")
-        if v.co2 > n.co2_zavrit:
-            seznam.append(f"nebo až CO2 klesne pod {n.co2_zavrit:.0f} "
-                          f"(teď {v.co2:.0f})")
+        else:
+            seznam.append("mez poklesu neznám — okno bylo otevřené už "
+                          "při startu nebo ho otevřel někdo jiný")
+        # Zavření nebrání jen CO2. „Vyvětráno" znamená všechno naráz,
+        # takže se musí vyjmenovat, co zbývá — jinak člověk kouká na
+        # nízké CO2 a nechápe, proč je pořád otevřeno.
+        chybi = []
+        if v.co2 >= n.co2_zavrit:
+            chybi.append(f"CO2 pod {n.co2_zavrit:.0f} (teď {v.co2:.0f})")
+        if v.vetrat:
+            chybi.append("vypnout ruční větrání")
+        # musí sedět s tím, jak se počítá kvalita_ok při rozhodování
+        rank = _kvalita_rank(v.kvalita)
+        if rank is not None and rank < n.kvalita_cisto:
+            chybi.append(f"kvalitu vzduchu aspoň "
+                         f"{KVALITA_STUPNE[n.kvalita_cisto]} "
+                         f"(teď {v.kvalita})")
+        venku_lepsi = (v.pm25_venku is None
+                       or v.pm25_venku <= v.pm25 - n.pm_rozdil)
+        if v.pm_platny and venku_lepsi and v.pm25 >= n.pm_prah_cisto:
+            chybi.append(f"PM2.5 pod {n.pm_prah_cisto:.0f} "
+                         f"(teď {v.pm25:.0f})")
+        if v.pm_platny and venku_lepsi and v.pm10 >= 30:
+            chybi.append(f"PM10 pod 30 (teď {v.pm10:.0f})")
+
+        if chybi:
+            seznam.append("k vyvětráno chybí: " + ", ".join(chybi))
         else:
             seznam.append("vyvětráno, čekám na pokles teploty "
                           "nebo na dojezd větrání")
     else:
         prah = n.co2_noc if noc else n.co2_otevrit
         seznam.append(f"otevřu nad CO2 {prah:.0f} (teď {v.co2:.0f})")
+        if (v.pm25_venku is not None and v.pm25 > 0
+                and v.pm25_venku > v.pm25 - n.pm_rozdil):
+            seznam.append(f"kvůli prachu neotevřu, venku je horší "
+                          f"({v.pm25_venku:.0f} proti {v.pm25:.0f}) — "
+                          f"větráním to nespravím")
+        elif v.cas_s < p.pm_venku_horsi_do_s:
+            kolik = int((p.pm_venku_horsi_do_s - v.cas_s) / 60)
+            seznam.append(f"kvůli prachu neotevřu — při posledním větrání "
+                          f"stoupal, takže se tahá zvenčí (platí ještě "
+                          f"{kolik} min)")
         if noc:
             seznam.append(f"a jen nad {n.nocni_min + n.nocni_rezerva:.1f} °C "
                           f"(teď {t_in:.1f})")
@@ -370,7 +428,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # --- 4. vzduch --------------------------------------------------
     rank = _kvalita_rank(v.kvalita)
     kvalita_spatna = rank is not None and rank <= 2
-    kvalita_ok = rank is None or rank >= 4
+    kvalita_ok = rank is None or rank >= n.kvalita_cisto
 
     if p.pm_prumer is None:
         p.pm_prumer = v.pm25
@@ -385,8 +443,39 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     else:
         pm_spatne = (v.pm25 > n.pm_prah_bez_ventilatoru or v.pm10 > 70) and not v.smog
 
+    # Venkovní prach rozhoduje, jestli má větrání vůbec smysl. Když je
+    # venku horší, otevřením se to nezlepší — jen by se větralo dokola
+    # a hodnota by rostla. Bez venkovního čidla se řídíme jen příznakem
+    # smogu, tedy jako dřív.
+    pm_venku_lepsi = True
+    if v.pm25_venku is not None:
+        pm_venku_lepsi = v.pm25_venku <= v.pm25 - n.pm_rozdil
+        if v.pm10_venku is not None and v.pm10 > 0:
+            pm_venku_lepsi = pm_venku_lepsi and (
+                v.pm10_venku <= v.pm10 - n.pm_rozdil)
+    else:
+        # Bez venkovního čidla se to pozná z chování: když prach uvnitř
+        # při otevřeném okně stoupá, tahá se dovnitř. Poznatek pár hodin
+        # vydrží, ať se okno nezkouší otevřít každou minutu.
+        if p.otevreno and v.pm_platny:
+            if p.pm_pri_otevreni is None:
+                p.pm_pri_otevreni = v.pm25
+                p.pm_otevreno_od_s = v.cas_s
+            elif (p.pm_otevreno_od_s is not None
+                    and v.cas_s - p.pm_otevreno_od_s >= n.pm_uceni_s
+                    and v.pm25 > p.pm_pri_otevreni + n.pm_rozdil):
+                p.pm_venku_horsi_do_s = v.cas_s + n.pm_poznatek_s
+        else:
+            p.pm_pri_otevreni = None
+            p.pm_otevreno_od_s = None
+        pm_venku_lepsi = v.cas_s >= p.pm_venku_horsi_do_s
+
+    if not pm_venku_lepsi:
+        pm_spatne = False          # větráním se prach nespraví
+
     pm_cisto = (not pm_spatne
                 and (not v.pm_platny
+                     or not pm_venku_lepsi
                      or (v.pm25 < n.pm_prah_cisto and v.pm10 < 30)))
 
     if v.co2 > n.co2_otevrit:

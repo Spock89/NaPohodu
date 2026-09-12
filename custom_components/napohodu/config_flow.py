@@ -436,6 +436,8 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
             c.ZDROJ_OKENNIHO, "zdroj_okenniho"),
         vol.Optional(c.CONF_VYNUCENO_M): _ent(
             ["input_boolean", "switch", "binary_sensor"], True),
+        vol.Optional(c.CONF_KVALITA_CISTO, default="fair"): _volba(
+            c.STUPNE_KVALITY, "kvalita_cisto"),
         vol.Optional(c.CONF_CO2_OTEVRIT, default=800): _cislo(500, 2000, 25, "ppm"),
         vol.Optional(c.CONF_CO2_ZAVRIT, default=700): _cislo(400, 1500, 25, "ppm"),
         vol.Optional(c.CONF_CO2_NOC, default=1000): _cislo(600, 2000, 25, "ppm"),

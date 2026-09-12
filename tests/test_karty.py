@@ -9,15 +9,38 @@ def vzdy(_):
     return True
 
 
+def vsechny_karty(s):
+    """Rozbalí vnořené stacky, ať testy nezávisí na dělení do sloupců."""
+    import yaml
+
+    def projdi(k):
+        yield k
+        for vnorena in k.get("cards", []) or []:
+            yield from projdi(vnorena)
+
+    return list(projdi(yaml.safe_load(s)))
+
+
+def blok(s, nadpis):
+    """Vytáhne úsek textu od nadpisu do dalšího nadpisu."""
+    i = s.index(nadpis)
+    zbytek = s[i:]
+    dalsi = zbytek.find("heading:", 10)
+    return zbytek[:dalsi if dalsi > 0 else None]
+
+
 def bez_loznice(e):
     return "loznice" not in e
 
 
-def test_karta_je_platny_yaml():
+def test_pohled_je_platny_yaml():
+    """Karty se dávají do pohledu, ne do jedné složené karty — jinak by
+    na mobilu zůstaly vedle sebe a zmáčkly se."""
     s = dashboard(["kuchyne", "obyvak"], ["kuchyn_a_obyvak"], vzdy)
     d = yaml.safe_load(s)
-    assert d["type"] == "vertical-stack"
-    assert len(d["cards"]) > 5
+    assert d["type"] == "masonry"
+    assert d["title"] == "NaPohodu"
+    assert len(d["cards"]) > 10
 
 
 def test_obsahuje_vsechny_mistnosti():
@@ -45,12 +68,12 @@ def test_s_oblasti_sekce_je():
 
 def test_prazdny_seznam_nespadne():
     d = yaml.safe_load(dashboard([], [], vzdy))
-    assert d["type"] == "vertical-stack"
+    assert d["type"] == "masonry"
 
 
 def test_kazda_karta_ma_typ():
-    d = yaml.safe_load(dashboard(["kuchyne", "obyvak"], ["o"], vzdy))
-    assert all("type" in k for k in d["cards"])
+    s = dashboard(["kuchyne", "obyvak"], ["o"], vzdy)
+    assert all("type" in k for k in vsechny_karty(s))
 
 
 def test_posuvniky_jsou_pojmenovane_cesky():
@@ -84,8 +107,11 @@ def test_graf_teplot_ma_jen_jeden_cil():
     s = dashboard(["kuchyne", "obyvak", "loznice"], [], vzdy,
                   cidla={m: f"sensor.t_{m}" for m in
                          ("kuchyne", "obyvak", "loznice")})
-    graf = s[s.index("title: Teploty"):]
-    assert graf.count("cilova_teplota") == 1
+    graf = [k for k in vsechny_karty(s)
+            if k.get("title") == "Teploty"][0]
+    cile = [e for e in graf["entities"]
+            if "cilova_teplota" in e["entity"]]
+    assert len(cile) == 1
 
 
 def test_oddelovace_mezi_mistnostmi():
@@ -93,14 +119,17 @@ def test_oddelovace_mezi_mistnostmi():
     s = dashboard(["kuchyne", "obyvak", "loznice"], [], vzdy,
                   cidla={m: f"sensor.t_{m}" for m in
                          ("kuchyne", "obyvak", "loznice")})
-    hlava = s[:s.index("Základ výpočtu")]
-    assert hlava.count("type: divider") == 2
+    # najít tu kartu, kde jsou posuvníky odchylky, a spočítat čáry v ní
+    karta = [k for k in vsechny_karty(s)
+             if any("odchylka_teploty" in (e.get("entity") or "")
+                    for e in (k.get("entities") or []))][0]
+    cary = [e for e in karta["entities"] if e.get("type") == "divider"]
+    assert len(cary) == 2
 
 
 def test_zaklad_vypoctu_ukazuje_zdroj_u_oboji():
     s = dashboard(["kuchyne"], [], vzdy)
-    zaklad = s[s.index("Základ výpočtu"):s.index("Okna a proč")]
-    assert zaklad.count("attribute: zdroj") == 2
+    assert blok(s, "Základ výpočtu").count("attribute: zdroj") == 2
 
 
 def _graf_pohybu(s):
@@ -156,5 +185,34 @@ def test_karta_s_grafy_je_platny_yaml():
     s = dashboard(["kuchyne", "loznice"], ["o"], vzdy,
                   cidla={"kuchyne": "sensor.a", "loznice": "sensor.b"},
                   zaluzie={"loznice": ["cover.z"]}, venku="sensor.v")
+    assert any(k["type"] == "history-graph" for k in vsechny_karty(s))
+
+
+# ---------------------------------------------------------------- sloupce
+
+def test_karty_jsou_samostatne_ne_v_jednom_stacku():
+    """Masonry si je přeskládá jen tehdy, když jsou na nejvyšší úrovni."""
+    import yaml
+    s = dashboard(["kuchyne", "obyvak", "loznice"], ["o"], vzdy,
+                  cidla={m: f"sensor.t_{m}" for m in
+                         ("kuchyne", "obyvak", "loznice")})
     d = yaml.safe_load(s)
-    assert any(k["type"] == "history-graph" for k in d["cards"])
+    assert len(d["cards"]) > 20
+    assert "vertical-stack" not in {k["type"] for k in d["cards"]}
+
+
+def test_jedna_karta_jde_vynutit():
+    import yaml
+    s = dashboard(["kuchyne"], [], vzdy, jako_pohled=False)
+    assert yaml.safe_load(s)["type"] == "vertical-stack"
+
+
+def test_nadpis_zustane_u_svych_karet():
+    """Rozseknout nadpis od karet, které k němu patří, by zamotalo."""
+    s = dashboard(["kuchyne"], [], vzdy)
+    radky = s.splitlines()
+    for i, r in enumerate(radky):
+        if "type: heading" in r:
+            zbytek = radky[i + 1:i + 8]
+            assert any("type: entities" in x or "type: heading" in x
+                       or "type: gauge" in x for x in zbytek)

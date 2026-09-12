@@ -570,3 +570,105 @@ def test_ocekavani_komfortu_bere_pokles_od_otevreni():
     t = " | ".join(ocekavani(
         Vstup(co2=500, t_in=24.4, cil=25.0, cas_s=100000), p, N))
     assert "23.5" in t
+
+
+# ------------------------------------------------- prach venku
+
+def test_prach_venku_horsi_neotvira():
+    """Částice šly do ložnice zvenčí. Větráním se to nespraví — jen by
+    se větralo donekonečna a hodnota by rostla."""
+    r, _ = krok(stary(co2=500, pm25=9.0, pm_platny=True, pm25_venku=25.0,
+                      t_in=21, t_out=10, cil=25.5))
+    assert r.akce is not Akce.OTEVRIT
+
+
+def test_prach_venku_lepsi_otevira():
+    r, _ = krok(stary(co2=500, pm25=40.0, pm_platny=True, pm25_venku=8.0,
+                      t_in=21, t_out=10, cil=25.5))
+    assert r.akce is Akce.OTEVRIT
+
+
+def test_prach_venku_horsi_nedrzi_okno_otevrene():
+    """Otevřené okno se musí zavřít, i když je vnitřní prach vysoký —
+    venku je horší, takže čekat nemá cenu."""
+    r, _ = krok(stary(co2=500, pm25=40.0, pm_platny=True, pm25_venku=60.0,
+                      t_in=21, t_out=10, cil=25.5),
+                otevreno=True, cas_povelu_s=0)
+    assert r.akce is Akce.ZAVRIT
+
+
+def test_bez_venkovniho_cidla_se_nic_nemeni():
+    r, _ = krok(stary(co2=500, pm25=40.0, pm_platny=True,
+                      t_in=21, t_out=10, cil=25.5))
+    assert r.akce is Akce.OTEVRIT
+
+
+def test_ocekavani_rekne_ze_venku_je_horsi():
+    from core import ocekavani
+    t = " ".join(ocekavani(
+        Vstup(co2=500, pm25=9.0, pm25_venku=25.0, pm_platny=True,
+              t_in=21, cil=25.5, cas_s=100000), Pamet(cas_povelu_s=0), N))
+    assert "nespravím" in t
+
+
+# ------------------------------- učení bez venkovního čidla na prach
+
+def _vetra(p, pm, cas, co2=1100):
+    return rozhodni(Vstup(co2=co2, pm25=pm, pm_platny=True, t_in=21,
+                          t_out=10, cil=25.5, cas_s=cas), p, N)
+
+
+def test_stoupajici_prach_pri_vetrani_se_pozna():
+    """Bez venkovního čidla se to pozná z chování: když prach uvnitř
+    při otevřeném okně stoupá, tahá se dovnitř."""
+    p = Pamet(otevreno=True, cas_povelu_s=0, den_mez=19.0, rezim="pulz")
+    _vetra(p, 9.0, 100000)
+    assert p.pm_pri_otevreni == 9.0
+    _vetra(p, 20.0, 100600)
+    assert p.pm_venku_horsi_do_s > 100600
+
+
+def test_kratke_vetrani_jeste_nestaci():
+    """Vzduch se musí promíchat, jinak by poznatek vznikal z šumu."""
+    p = Pamet(otevreno=True, cas_povelu_s=0, den_mez=19.0, rezim="pulz")
+    _vetra(p, 9.0, 100000)
+    _vetra(p, 20.0, 100060)
+    assert p.pm_venku_horsi_do_s == 0.0
+
+
+def test_klesajici_prach_poznatek_nevytvori():
+    p = Pamet(otevreno=True, cas_povelu_s=0, den_mez=19.0, rezim="pulz")
+    _vetra(p, 30.0, 100000)
+    _vetra(p, 12.0, 100600)
+    assert p.pm_venku_horsi_do_s == 0.0
+
+
+def test_poznatek_zabrani_otevreni_kvuli_prachu():
+    p = Pamet(cas_povelu_s=0, pm_venku_horsi_do_s=200000)
+    r = rozhodni(Vstup(co2=500, pm25=40.0, pm_platny=True, t_in=21,
+                       t_out=10, cil=25.5, cas_s=100000), p, N)
+    assert r.akce is not Akce.OTEVRIT
+
+
+def test_poznatek_vyprsi():
+    p = Pamet(cas_povelu_s=0, pm_venku_horsi_do_s=100000)
+    r = rozhodni(Vstup(co2=500, pm25=40.0, pm_platny=True, t_in=21,
+                       t_out=10, cil=25.5, cas_s=100001), p, N)
+    assert r.akce is Akce.OTEVRIT
+
+
+def test_zavreni_zapomene_vychozi_prach():
+    p = Pamet(otevreno=True, cas_povelu_s=0, den_mez=19.0, rezim="pulz")
+    _vetra(p, 9.0, 100000)
+    p.otevreno = False
+    _vetra(p, 9.0, 100600, co2=500)
+    assert p.pm_pri_otevreni is None
+
+
+def test_ocekavani_rekne_o_poznatku():
+    from core import ocekavani
+    p = Pamet(cas_povelu_s=0, pm_venku_horsi_do_s=104000)
+    t = " ".join(ocekavani(
+        Vstup(co2=500, pm25=40.0, pm_platny=True, t_in=21, cil=25.5,
+              cas_s=100000), p, N))
+    assert "tahá zvenčí" in t and "min" in t
