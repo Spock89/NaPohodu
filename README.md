@@ -306,18 +306,18 @@ bez důvodu. Srovnat se dá tlačítkem.
 Ochrana stojí nad tvým rozhodnutím: vítr a déšť zavřou okno i tehdy, když
 jsi ho otevřel ručně.
 
-## Ikona v Home Assistantu
+## Ikona
 
-V repozitáři jsou `icon.png` (256 px) a `icon@2x.png` (512 px) ve
-velikostech, které Home Assistant očekává.
+Obrázky jsou ve složce `custom_components/napohodu/brand/` jako
+`icon.png`, `icon@2x.png`, `logo.png` a `logo@2x.png`.
 
-Vlastní integrace ale ikonu z vlastního repozitáře nenačítá — bere ji
-z projektu [home-assistant/brands](https://github.com/home-assistant/brands).
-Dokud tam značka není, zobrazuje se zástupný obrázek. Přidat ji jde
-žádostí o sloučení do `custom_integrations/napohodu/`, kam patří přesně
-tyhle dva soubory.
+Od Home Assistanta 2026.3 si vlastní integrace nosí obrázky s sebou
+a nemusí je nikam hlásit. Místní soubory mají přednost před repozitářem
+značek, který pro vlastní integrace už nové žádosti ani nepřijímá.
 
-Na stránce repozitáře a v HACS se ikona ukazuje rovnou.
+Ikona se objeví v seznamu integrací i na stránkách zařízení. V HACS se
+zatím nemusí zobrazit, protože ten si obrázky tahá z vlastní služby —
+je to známá věc a na funkci to nemá vliv.
 
 ## Licence
 
