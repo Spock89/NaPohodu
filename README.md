@@ -1,3 +1,5 @@
+<img src="icon.png" alt="NaPohodu" width="128" align="right">
+
 # NaPohodu
 
 Integrace pro Home Assistant, která v každé místnosti udržuje zvolenou
@@ -303,6 +305,19 @@ bez důvodu. Srovnat se dá tlačítkem.
 
 Ochrana stojí nad tvým rozhodnutím: vítr a déšť zavřou okno i tehdy, když
 jsi ho otevřel ručně.
+
+## Ikona v Home Assistantu
+
+V repozitáři jsou `icon.png` (256 px) a `icon@2x.png` (512 px) ve
+velikostech, které Home Assistant očekává.
+
+Vlastní integrace ale ikonu z vlastního repozitáře nenačítá — bere ji
+z projektu [home-assistant/brands](https://github.com/home-assistant/brands).
+Dokud tam značka není, zobrazuje se zástupný obrázek. Přidat ji jde
+žádostí o sloučení do `custom_integrations/napohodu/`, kam patří přesně
+tyhle dva soubory.
+
+Na stránce repozitáře a v HACS se ikona ukazuje rovnou.
 
 ## Licence
 
