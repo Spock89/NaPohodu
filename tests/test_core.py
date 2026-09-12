@@ -532,3 +532,41 @@ def test_konec_komfortu_zapomene_vychozi_teplotu():
               komfort_start=25.0)
     rozhodni(stary(co2=550, t_in=23.0, t_out=22.0, cil=25.0, hodina=14), p, N)
     assert p.komfort_start is None
+
+
+# ---------------------------------------------- co změnu spustí
+
+def test_ocekavani_pri_otevrenem_vyvetranem():
+    """Otevřené okno u vyvětrané místnosti — člověk chce vědět, na co
+    se čeká, ne co se stalo."""
+    from core import ocekavani
+    p = Pamet(otevreno=True, cas_povelu_s=99000, den_mez=20.5, rezim="pulz")
+    t = ocekavani(Vstup(co2=640, t_in=22.0, cil=25.5, cas_s=100000), p, N)
+    text = " | ".join(t)
+    assert "20.5" in text and "vyvětráno" in text
+    assert "držím stav" in text
+
+
+def test_ocekavani_pri_zavrenem_rekne_prah():
+    from core import ocekavani
+    t = ocekavani(Vstup(co2=720, t_in=22.0, cil=25.5, cas_s=100000),
+                  Pamet(cas_povelu_s=0), N)
+    assert "800" in " ".join(t) and "720" in " ".join(t)
+
+
+def test_ocekavani_v_noci_uvadi_i_teplotni_mez():
+    from core import ocekavani
+    t = " | ".join(ocekavani(
+        Vstup(co2=720, t_in=19.0, cil=25.5, hodina=2, spanek=True,
+              cas_s=100000), Pamet(cas_povelu_s=0), N))
+    assert "1000" in t          # noční práh, ne denní
+    assert "19.0" in t
+
+
+def test_ocekavani_komfortu_bere_pokles_od_otevreni():
+    from core import ocekavani
+    p = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
+              komfort_start=25.0)
+    t = " | ".join(ocekavani(
+        Vstup(co2=500, t_in=24.4, cil=25.0, cas_s=100000), p, N))
+    assert "23.5" in t

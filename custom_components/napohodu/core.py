@@ -243,6 +243,48 @@ def _pod_cilem(v: Vstup, p: Pamet, n: Nastaveni, t_in: float) -> bool:
     return t_in <= mez
 
 
+def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
+    """Na co se čeká a co příští změnu spustí.
+
+    Popisek říká, co se stalo. Tohle říká, co se stane — bez toho člověk
+    kouká na otevřené okno u vyvětrané místnosti a neví, jestli se
+    zavře za minutu, nebo za hodinu.
+    """
+    seznam = []
+    t_in = v.t_in
+    noc = _je_noc(v.hodina, n, v.spanek)
+
+    zbyva = n.min_drzeni_s - (v.cas_s - p.cas_povelu_s)
+    if zbyva > 0:
+        seznam.append(f"nejdřív za {int(zbyva / 60)} min (držím stav)")
+
+    if p.otevreno:
+        if noc and p.noc_mez is not None:
+            seznam.append(f"zavřu při poklesu na {p.noc_mez:.1f} °C "
+                          f"(teď {t_in:.1f})")
+        elif p.rezim == "komfort" and p.komfort_start is not None:
+            mez = max(n.nocni_min, p.komfort_start - n.denni_pokles)
+            seznam.append(f"zavřu při poklesu na {mez:.1f} °C "
+                          f"(teď {t_in:.1f})")
+        elif p.den_mez is not None:
+            seznam.append(f"zavřu při poklesu na {p.den_mez:.1f} °C "
+                          f"(teď {t_in:.1f})")
+        if v.co2 > n.co2_zavrit:
+            seznam.append(f"nebo až CO2 klesne pod {n.co2_zavrit:.0f} "
+                          f"(teď {v.co2:.0f})")
+        else:
+            seznam.append("vyvětráno, čekám na pokles teploty "
+                          "nebo na dojezd větrání")
+    else:
+        prah = n.co2_noc if noc else n.co2_otevrit
+        seznam.append(f"otevřu nad CO2 {prah:.0f} (teď {v.co2:.0f})")
+        if noc:
+            seznam.append(f"a jen nad {n.nocni_min + n.nocni_rezerva:.1f} °C "
+                          f"(teď {t_in:.1f})")
+
+    return seznam
+
+
 def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     """Vrátí, co se má s oknem stát. Paměť se upravuje na místě."""
 

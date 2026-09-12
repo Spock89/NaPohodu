@@ -866,6 +866,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             },
             "zastupce": uprava.zastupce,
             "okna": okna,
+            "co_dal": core.ocekavani(v, pamet, nast),
             "duvody": (["větrá se"] if skutecne
                        else core.duvody(v, pamet, nast) or ["nic nebrání"]),
             "nocni_klid": f"{self._cas(noc_od)} – {self._cas(noc_do)}",
