@@ -494,3 +494,41 @@ def test_narazove_ma_vlastni_spodni_strop():
     naraz, _ = krok(stary(co2=900, t_in=21, t_out=-5, cil=20, narazove=True))
     assert bezne.limit_s == 30 * 60
     assert naraz.limit_s < 30 * 60
+
+
+# ------------------------------------- komfort a pokles čidla v okně
+
+def test_komfort_nezavre_hned_po_otevreni():
+    """Čidlo v okenním rámu po otevření spadne. Bez měření poklesu by
+    komfortní režim skončil do minuty po tom, co začal."""
+    p = Pamet(cas_povelu_s=0)
+    v = stary(co2=550, t_in=25.0, t_out=24.0, cil=25.0, hodina=14)
+    prvni = rozhodni(v, p, N)
+    assert prvni.akce is Akce.OTEVRIT
+    assert p.komfort_start == 25.0
+
+    # čidlo v okně spadlo na 24.2, ale pokoj se nevychladil
+    druhy = rozhodni(Vstup(co2=550, t_in=24.2, t_out=24.0, cil=25.0,
+                           hodina=14, cas_s=100200), p, N)
+    assert druhy.akce is not Akce.ZAVRIT
+
+
+def test_komfort_zavre_pri_skutecnem_ochlazeni():
+    p = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
+              komfort_start=25.0)
+    r = rozhodni(stary(co2=550, t_in=23.0, t_out=22.0, cil=25.0, hodina=14),
+                 p, N)
+    assert r.akce is Akce.ZAVRIT
+
+
+def test_pri_zavrenem_okne_se_poroznava_s_cilem():
+    """Zavřené okno čidlo nezkresluje, takže absolutní porovnání stačí."""
+    r, _ = krok(stary(co2=550, t_in=23.9, t_out=19.4, cil=25.5, hodina=20))
+    assert r.akce is Akce.NIC
+
+
+def test_konec_komfortu_zapomene_vychozi_teplotu():
+    p = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
+              komfort_start=25.0)
+    rozhodni(stary(co2=550, t_in=23.0, t_out=22.0, cil=25.0, hodina=14), p, N)
+    assert p.komfort_start is None

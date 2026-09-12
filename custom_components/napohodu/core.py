@@ -117,6 +117,7 @@ class Pamet:
     noc_zavreno_teplotou: bool = False
     noc_start: float | None = None
     den_mez: float | None = None
+    komfort_start: float | None = None
     pohyby: int = 0
 
 
@@ -225,6 +226,21 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         seznam.append(f"drží se stav ještě {zbyva} min")
 
     return seznam
+
+
+def _pod_cilem(v: Vstup, p: Pamet, n: Nastaveni, t_in: float) -> bool:
+    """Je v pokoji doopravdy chladno, nebo jen spadlo čidlo v okně?
+
+    Při zavřeném okně stačí porovnat s cílem. Při otevřeném ne: čidlo
+    ve okenním rámu se okamžitě stáhne k venkovní teplotě a vypadá to,
+    že se místnost vychladila, přestože se nestalo nic. Proto se měří
+    pokles od teploty, na které se otevíralo — stejně jako u pulzu
+    a u nočního režimu.
+    """
+    if not p.otevreno or p.komfort_start is None:
+        return t_in < v.cil - 0.5
+    mez = max(n.nocni_min, p.komfort_start - n.denni_pokles)
+    return t_in <= mez
 
 
 def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
@@ -362,11 +378,13 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         brani = "noční klid"
     elif t_max > v.cil and v.t_out > t_max:
         brani = "venku tepleji než uvnitř"
-    elif not chlazeni and t_in < v.cil - 0.5 and v.t_out < t_in:
+    elif not chlazeni and v.t_out < t_in and _pod_cilem(v, p, n, t_in):
         # když se zároveň někde přehřívá, chlazení má přednost
         brani = f"uvnitř {t_in:.1f} °C, pod cílem"
 
     if not brani:
+        if p.rezim != "komfort" or p.komfort_start is None:
+            p.komfort_start = t_in
         p.rezim = "komfort"
         if p.otevreno:
             return beze_zmeny("chladím" if chlazeni
@@ -376,6 +394,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
 
     if p.rezim == "komfort":
         p.rezim = "pulz"
+        p.komfort_start = None
         if not potreba:
             return zavri(f"zavírám, {brani}")
 
