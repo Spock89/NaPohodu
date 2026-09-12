@@ -71,6 +71,44 @@ for p in d.glob("*.py"):
     if p.stem not in VSTUPNI and p.stem not in importovane:
         chyby.append(f"{p.name}: modul nikdo neimportuje, je to mrtvý kód")
 
+# 1f) proměnná čtená dřív, než se přiřadí — projde syntaxí i pyflakes,
+# spadne až za běhu
+for p in d.glob("*.py"):
+    for tr in ast.walk(ast.parse(p.read_text())):
+        if not isinstance(tr, ast.ClassDef):
+            continue
+        for f in tr.body:
+            if not isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            parametry = {a.arg for a in f.args.args}
+            opakovane = set()
+            for u in ast.walk(f):
+                cil = getattr(u, "target", None)
+                if isinstance(u, (ast.For, ast.AsyncFor, ast.comprehension)) \
+                        and isinstance(cil, ast.Name):
+                    opakovane.add(cil.id)
+                # rozbalení do několika jmen naráz
+                if isinstance(u, ast.Assign):
+                    for t2 in u.targets:
+                        if isinstance(t2, (ast.Tuple, ast.List)):
+                            opakovane.update(
+                                x.id for x in t2.elts
+                                if isinstance(x, ast.Name))
+            prvni = {}
+            for u in ast.walk(f):
+                if isinstance(u, ast.Assign):
+                    for t2 in u.targets:
+                        if isinstance(t2, ast.Name):
+                            prvni.setdefault(t2.id, u.lineno)
+            for u in ast.walk(f):
+                if (isinstance(u, ast.Name) and isinstance(u.ctx, ast.Load)
+                        and u.id in prvni and u.id not in parametry
+                        and u.id not in opakovane
+                        and u.lineno < prvni[u.id]):
+                    chyby.append(
+                        f"{p.name}:{u.lineno}: {f.name} čte {u.id} dřív, "
+                        f"než se přiřadí (řádek {prvni[u.id]})")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

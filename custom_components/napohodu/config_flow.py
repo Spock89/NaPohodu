@@ -69,6 +69,8 @@ SCHEMA_GLOBAL = vol.Schema(
         vol.Optional(c.CONF_SEZONA_HYSTEREZE, default=1.0): _cislo(0, 5, 0.5),
         vol.Optional(c.CONF_RH_VENKU): _ent(["sensor"], trida=["humidity"]),
         vol.Optional(c.CONF_ZARENI): _ent(["sensor"]),
+        vol.Optional(c.CONF_PM25_VENKU): _ent(["sensor"]),
+        vol.Optional(c.CONF_PM10_VENKU): _ent(["sensor"]),
         vol.Optional(c.CONF_VITR): _ent(["sensor"]),
         vol.Optional(c.CONF_NARAZ): _ent(["sensor"]),
         vol.Optional(c.CONF_DEST): _ent(["sensor"]),
