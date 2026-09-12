@@ -40,6 +40,7 @@ class StavVykonu:
     # poloha, na které žaluzie po povelu skutečně skončila — podle ní
     # se pozná ruční přestavení
     stineni_poloha: dict[str, float] = field(default_factory=dict)
+    rozejiti: dict[str, int] = field(default_factory=dict)
     stineni_cas_s: float = -1e9
     prvni_beh: bool = True
     chyby: list[str] = field(default_factory=list)
@@ -65,24 +66,43 @@ class Vykonavac:
 
     # ------------------------------------------------------------ okno
 
-    TOLERANCE_POLOHY = 0.6      # jemnější rozdíly pohon stejně neudrží
+    TOLERANCE_POLOHY = 1.2      # pohon polohu neudrží přesněji
+    ODKLAD_KONTROLY_S = 180.0   # než pohon dojede a ustálí se
+    ROZEJITI_KRAT = 2           # dvakrát po sobě, ať to není jen dojezd
 
-    def zkontroluj_polohu(self, zaluzie: str,
-                          poloha: float | None) -> str | None:
+    def zkontroluj_polohu(self, zaluzie: str, poloha: float | None,
+                          cas_s: float = 0.0,
+                          jede: bool = False) -> str | None:
         """Ověří, že žaluzie je tam, kam jsme ji poslali.
 
         Bez toho by ruční přestavení zůstalo skryté: paměť tvrdí, že je
-        zastíněno, takže se po západu slunce už nic nepošle. Když se
-        poloha rozešla, paměť se zahodí a příští rozhodnutí ji srovná.
+        zastíněno, takže se po západu slunce už nic nepošle.
+
+        Tři pojistky proti falešnému poplachu. Za jízdy se nekontroluje
+        vůbec. Chvíli po povelu taky ne, protože pohon dojíždí a hlásí
+        polohu se zpožděním. A rozejití se musí potvrdit dvakrát za
+        sebou — jednorázový přeskok je skoro vždycky dojezd, ne ruka.
         """
         ocekavana = self.stav.stineni_poloha.get(zaluzie)
-        if poloha is None or ocekavana is None:
+        if poloha is None or ocekavana is None or jede:
             return None
+        if cas_s - self.stav.stineni_cas_s < self.ODKLAD_KONTROLY_S:
+            return None
+
         if abs(poloha - ocekavana) <= self.TOLERANCE_POLOHY:
+            self.stav.rozejiti.pop(zaluzie, None)
+            return None
+
+        kolikrat = self.stav.rozejiti.get(zaluzie, 0) + 1
+        self.stav.rozejiti[zaluzie] = kolikrat
+        if kolikrat < self.ROZEJITI_KRAT:
+            _LOGGER.debug("NaPohodu: %s je na %.1f %% místo %.1f %%, "
+                          "čekám na potvrzení", zaluzie, poloha, ocekavana)
             return None
 
         byval = self.stav.posledni_stineni.pop(zaluzie, None)
         self.stav.stineni_poloha.pop(zaluzie, None)
+        self.stav.rozejiti.pop(zaluzie, None)
         _LOGGER.info("NaPohodu: %s je na %.1f %%, čekal jsem %.1f %% — "
                      "někdo ji přestavil, zapomínám stav %s",
                      zaluzie, poloha, ocekavana, byval)
@@ -99,6 +119,7 @@ class Vykonavac:
         self.stav.posledni_cas_s = -1e9
         self.stav.posledni_stineni.clear()
         self.stav.stineni_poloha.clear()
+        self.stav.rozejiti.clear()
         self.stav.stineni_cas_s = -1e9
         self.stav.prvni_beh = False    # tlačítko chce pohyb, ne mlčení
         self.stav.chyby.clear()

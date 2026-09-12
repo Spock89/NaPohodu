@@ -401,13 +401,17 @@ def test_znackove_hodnoty_jdou_zmenit():
 def _s_polohou(v, zaluzie="cover.o2", stav="zastíněno", poloha=5.0):
     v.stav.posledni_stineni[zaluzie] = stav
     v.stav.stineni_poloha[zaluzie] = poloha
+    v.stav.stineni_cas_s = 0.0
     return v
+
+
+POZDE = 1000.0      # po odkladu kontroly
 
 
 def test_poloha_sedi_pamet_zustane():
     h, v = vyk()
     _s_polohou(v)
-    assert v.zkontroluj_polohu("cover.o2", 5.0) is None
+    assert v.zkontroluj_polohu("cover.o2", 5.0, POZDE) is None
     assert v.stav.posledni_stineni["cover.o2"] == "zastíněno"
 
 
@@ -416,26 +420,28 @@ def test_rucni_prestaveni_zahodi_pamet():
     slunce by se nic neposlalo."""
     h, v = vyk()
     _s_polohou(v)
-    assert v.zkontroluj_polohu("cover.o2", 3.0) == "zastíněno"
+    # jednou nestačí, to bývá dojezd pohonu
+    assert v.zkontroluj_polohu("cover.o2", 3.0, POZDE) is None
+    assert v.zkontroluj_polohu("cover.o2", 3.0, POZDE) == "zastíněno"
     assert "cover.o2" not in v.stav.posledni_stineni
 
 
 def test_male_odchylky_se_toleruji():
     h, v = vyk()
     _s_polohou(v)
-    assert v.zkontroluj_polohu("cover.o2", 5.4) is None
+    assert v.zkontroluj_polohu("cover.o2", 5.4, POZDE) is None
 
 
 def test_bez_hlasene_polohy_se_nic_nedeje():
     h, v = vyk()
     _s_polohou(v)
-    assert v.zkontroluj_polohu("cover.o2", None) is None
+    assert v.zkontroluj_polohu("cover.o2", None, POZDE) is None
     assert "cover.o2" in v.stav.posledni_stineni
 
 
 def test_neznama_zaluzie_nespadne():
     h, v = vyk()
-    assert v.zkontroluj_polohu("cover.jina", 50.0) is None
+    assert v.zkontroluj_polohu("cover.jina", 50.0, POZDE) is None
 
 
 def test_po_zapomenuti_se_stav_posle_znovu(monkeypatch):
@@ -443,8 +449,10 @@ def test_po_zapomenuti_se_stav_posle_znovu(monkeypatch):
     h, v = vyk(po_startu=False)
     bez(v.stineni({"cover.o2": "zastíněno"}, 1000, 15))
     p.clear()
-    v.zkontroluj_polohu("cover.o2", 3.0)          # někdo přestavil
-    bez(v.stineni({"cover.o2": "zastíněno"}, 1000 + 16 * 60, 15))
+    pozdeji = 1000 + 16 * 60
+    for _ in range(2):
+        v.zkontroluj_polohu("cover.o2", 3.0, pozdeji)   # někdo přestavil
+    bez(v.stineni({"cover.o2": "zastíněno"}, pozdeji, 15))
     assert p == [("cover.o2", "zastíněno")]
 
 
@@ -456,3 +464,30 @@ def test_pulz_dojel_se_da_poznat():
     assert v.stav.pulz_zavrel is False
     bez(v.okno("cover.okno", r(core.Akce.NIC), 1700, True))
     assert v.stav.pulz_zavrel is True
+
+
+def test_hned_po_povelu_se_nekontroluje():
+    """Pohon ještě dojíždí a hlásí polohu se zpožděním."""
+    h, v = vyk()
+    _s_polohou(v)
+    for _ in range(5):
+        assert v.zkontroluj_polohu("cover.o2", 3.0, cas_s=60.0) is None
+    assert "cover.o2" in v.stav.posledni_stineni
+
+
+def test_za_jizdy_se_nekontroluje():
+    h, v = vyk()
+    _s_polohou(v)
+    for _ in range(5):
+        assert v.zkontroluj_polohu("cover.o2", 3.0, POZDE, jede=True) is None
+    assert "cover.o2" in v.stav.posledni_stineni
+
+
+def test_navrat_do_polohy_zrusi_pocitadlo():
+    """Jeden přeskok a zpět nesmí paměť zahodit."""
+    h, v = vyk()
+    _s_polohou(v)
+    v.zkontroluj_polohu("cover.o2", 3.0, POZDE)
+    v.zkontroluj_polohu("cover.o2", 5.0, POZDE)
+    assert v.zkontroluj_polohu("cover.o2", 3.0, POZDE) is None
+    assert "cover.o2" in v.stav.posledni_stineni

@@ -998,7 +998,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # jinak zůstane skryté a večer se nic nepošle.
         prestaveno = []
         for z in (d.get(CONF_ZALUZIE) or []):
-            byval = vyk_m.zkontroluj_polohu(z, self._poloha_krytu(z))
+            st = self._stav(z)
+            jede = st is not None and st.state in ("opening", "closing")
+            byval = vyk_m.zkontroluj_polohu(
+                z, self._poloha_krytu(z), cas_s, jede)
             if byval:
                 prestaveno.append(f"{z}: bylo {byval}")
         if prestaveno:
