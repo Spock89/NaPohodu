@@ -33,20 +33,26 @@ class Hlasic:
     """Rozhoduje, co odejde. Neposílá — to dělá koordinátor."""
 
     druhy: tuple[str, ...] = VYCHOZI
-    posledni: dict[str, float] = field(default_factory=dict)
+    posledni: dict[tuple[str, str], float] = field(default_factory=dict)
 
-    def smi(self, druh: str, cas_s: float) -> bool:
+    def smi(self, druh: str, mistnost: str, cas_s: float) -> bool:
+        """Opakování se hlídá pro každou místnost zvlášť.
+
+        Se společným klíčem by zpráva z ložnice umlčela kuchyni —
+        a ta místnost, která pošle jako první, by ostatní přehlušila.
+        """
         if druh not in self.druhy:
             return False
-        if cas_s - self.posledni.get(druh, -1e9) < KLID_S.get(druh, 600):
+        klic = (druh, mistnost)
+        if cas_s - self.posledni.get(klic, -1e9) < KLID_S.get(druh, 600):
             return False
-        self.posledni[druh] = cas_s
+        self.posledni[klic] = cas_s
         return True
 
     def zprava(self, druh: str, mistnost: str, cas_s: float,
                **udaje) -> str | None:
         """Vrátí text, nebo nic, když se posílat nemá."""
-        if not self.smi(druh, cas_s):
+        if not self.smi(druh, mistnost, cas_s):
             return None
         return SKLADBA.get(druh, lambda m, u: None)(mistnost, udaje)
 

@@ -28,6 +28,20 @@ def test_kazdy_druh_ma_text():
         assert t, druh
 
 
+def test_zpravy_z_ruznych_mistnosti_se_neumlcuji():
+    """Se společným klíčem by ložnice umlčela kuchyni na 20 minut."""
+    h = Hlasic(DRUHY)
+    assert h.zprava("vetrani", "Ložnice", 1000, duvod="CO2 900")
+    assert h.zprava("vetrani", "Kuchyně", 1001, duvod="CO2 850")
+    assert h.zprava("vetrani", "Obývák", 1002, duvod="CO2 870")
+
+
+def test_stejna_mistnost_se_neopakuje():
+    h = Hlasic(DRUHY)
+    assert h.zprava("vetrani", "Kuchyně", 1000, duvod="CO2 900")
+    assert h.zprava("vetrani", "Kuchyně", 1100, duvod="CO2 900") is None
+
+
 def test_stejna_zprava_se_neopakuje():
     """Automatika, která upozorňuje pořád, se přestane číst."""
     h = Hlasic(VYCHOZI)
