@@ -375,11 +375,21 @@ def _koordinator(nahradni_ha=None):
     import importlib
     ko = importlib.import_module("napohodu.coordinator")
 
+    class FalesneUloziste:
+        def async_delay_save(self, *a, **kw):
+            pass
+
     class Falesny:
-        hodnoty: dict = {}
-        _formular: dict = {}
         formular_zmenen = ko.NaPohoduCoordinator.formular_zmenen
+        prepsano_formularem = ko.NaPohoduCoordinator.prepsano_formularem
         _srovnej_posuvniky = ko.NaPohoduCoordinator._srovnej_posuvniky
+
+        def __init__(self):
+            self.hodnoty = {}
+            self._formular = {}
+            self._prepsano = set()
+            self._uloziste_pameti = FalesneUloziste()
+            self._uloz_pameti = lambda: {}
 
     return Falesny()
 
@@ -413,6 +423,17 @@ def test_nezmenene_pole_soupatkem_nehne(nahradni_ha):
     for _ in range(5):
         k._srovnej_posuvniky("m1", {c.CONF_NOC_MIN: 18.0})
     assert k.hodnoty[("m1", c.CONF_NOC_MIN)] == 19.5
+
+
+def test_prepsane_klice_maji_prednost_pred_obnovou(nahradni_ha):
+    """Uložení formuláře znovu načte integraci. Bez tohohle by obnovená
+    hodnota šoupátka změnu přepsala zpátky."""
+    import importlib
+    c = importlib.import_module("napohodu.const")
+    k = _koordinator()
+    k._srovnej_posuvniky("m1", {c.CONF_CO2_OTEVRIT: 800.0})
+    assert k.prepsano_formularem(("m1", c.CONF_CO2_OTEVRIT)) is True
+    assert k.prepsano_formularem(("m1", c.CONF_NOC_MIN)) is False
 
 
 def test_formular_zmenen_hlasi_jen_zmenu(nahradni_ha):

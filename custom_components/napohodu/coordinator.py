@@ -113,8 +113,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.narazove_bezi: bool = False
         self.narazove_co2: float = 0.0
         self.narazove_strop_s: float = 600.0
-        # poslední viděné hodnoty z formuláře, kvůli rozpoznání změny
+        # Poslední viděné hodnoty z formuláře. Musí přežít znovunačtení
+        # integrace, protože uložení formuláře ho spustí — jinak by se
+        # změna nikdy nepoznala a šoupátko by po restartu vyhrálo.
         self._formular: dict[tuple, float] = {}
+        # klíče, které formulář v tomhle běhu přepsal
+        self._prepsano: set[tuple] = set()
+        self._posledni_snimek: dict | None = None
         # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
         self.souhrn: dict[str, dict] = {}
         self._souhrn_den: str = ""
@@ -165,7 +170,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     def _uloz_pameti(self) -> dict:
         """Stav rozhodování, aby restart nezačínal od nuly."""
-        out = {}
+        out = {"_formular": {f"{a}|{b}": v
+                             for (a, b), v in self._formular.items()}}
         for pid, pamet in self.pameti.items():
             zaznam = asdict(pamet)
             vyk = self.vykonavaci.get(pid)
@@ -178,6 +184,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     async def _nacti_pameti(self) -> None:
         ulozene = await self._uloziste_pameti.async_load() or {}
+        for klic, v in (ulozene.pop("_formular", None) or {}).items():
+            a, _, b = klic.partition("|")
+            self._formular[(a, b)] = v
         pole = {f.name for f in fields(core.Pamet)}
         for pid, zaznam in ulozene.items():
             pamet = core.Pamet(**{k: v for k, v in zaznam.items()
@@ -300,8 +309,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             hodnota = float(d[p2.klic])
             if self.formular_zmenen((pod_id, p2.klic), hodnota):
                 self.hodnoty[(pod_id, p2.klic)] = hodnota
-                _LOGGER.debug("NaPohodu: %s.%s z nastavení -> %s",
-                              pod_id, p2.klic, hodnota)
+                self._prepsano.add((pod_id, p2.klic))
+                _LOGGER.info("NaPohodu: %s.%s z nastavení -> %s",
+                             pod_id, p2.klic, hodnota)
+                self._posledni_snimek = None      # vynutí zápis
+
+    def prepsano_formularem(self, klic: tuple) -> bool:
+        """Přepsal tenhle klíč formulář? Pak má přednost před uloženou
+        hodnotou šoupátka, kterou by obnova jinak vrátila."""
+        return klic in self._prepsano
 
     def formular_zmenen(self, klic: tuple, hodnota: float) -> bool:
         """Změnil se od minula údaj ve formuláři?
@@ -689,7 +705,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             }
             self.zony[o["id"]] = z
 
-        self._uloziste_pameti.async_delay_save(self._uloz_pameti, 30)
+        # Zápis jen při skutečné změně. Ukládat každou minutu celý stav
+        # znamená čtrnáct set zápisů denně a na paměťové kartě to není
+        # zdravé.
+        snimek = self._uloz_pameti()
+        if snimek != self._posledni_snimek:
+            self._posledni_snimek = snimek
+            self._uloziste_pameti.async_delay_save(lambda: snimek, 30)
+
         return {"zony": self.zony, "mistnosti": self.mistnosti}
 
     async def _posli(self, g: dict, druh: str, mistnost: str,

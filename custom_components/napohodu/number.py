@@ -89,11 +89,10 @@ class NaPohoduNumber(NaPohoduEntity, RestoreNumber, NumberEntity):
         ulozene = await self.async_get_last_number_data()
         if ulozene and ulozene.native_value is not None:
             hodnota = float(ulozene.native_value)
-        # formulář vyhrává, když se od minula změnil — je to výslovný
-        # pokyn, kdežto uložená hodnota šoupátka je jen minulý stav
-        if self.coordinator.formular_zmenen(klic, self._vychozi):
+        # Formulář vyhrává, když ho člověk právě přepsal — je to výslovný
+        # pokyn, kdežto uložená hodnota šoupátka je jen minulý stav.
+        if self.coordinator.prepsano_formularem(klic):
             hodnota = self._vychozi
-        self.coordinator.hodnoty.setdefault(klic, hodnota)
         self.coordinator.hodnoty[klic] = hodnota
 
     @property
