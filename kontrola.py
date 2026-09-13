@@ -109,6 +109,32 @@ for p in d.glob("*.py"):
                         f"{p.name}:{u.lineno}: {f.name} čte {u.id} dřív, "
                         f"než se přiřadí (řádek {prvni[u.id]})")
 
+# 1g) pole Vstup, která koordinátor nikdy nenastaví — funkce, kterou
+# jádro umí, ale nikdo ji nespustí, je horší než chybějící
+jadro = (d / "core.py").read_text()
+ko_text = (d / "coordinator.py").read_text()
+if "v = core.Vstup(" in ko_text:
+    i = ko_text.index("v = core.Vstup(")
+    hloubka, konec = 0, len(ko_text)
+    for j in range(i + len("v = core.Vstup"), len(ko_text)):
+        if ko_text[j] == "(":
+            hloubka += 1
+        elif ko_text[j] == ")":
+            hloubka -= 1
+            if hloubka == 0:
+                konec = j
+                break
+    predane = set(re.findall(r"(\w+)=", ko_text[i:konec]))
+    for tr in ast.walk(ast.parse(jadro)):
+        if isinstance(tr, ast.ClassDef) and tr.name == "Vstup":
+            for u in tr.body:
+                if (isinstance(u, ast.AnnAssign)
+                        and isinstance(u.target, ast.Name)
+                        and u.target.id not in predane):
+                    chyby.append(
+                        f"coordinator.py: Vstup.{u.target.id} se nikdy "
+                        f"nenastaví, zůstane na výchozí hodnotě")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

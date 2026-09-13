@@ -69,6 +69,8 @@ SCHEMA_GLOBAL = vol.Schema(
         vol.Optional(c.CONF_SEZONA_HYSTEREZE, default=1.0): _cislo(0, 5, 0.5),
         vol.Optional(c.CONF_RH_VENKU): _ent(["sensor"], trida=["humidity"]),
         vol.Optional(c.CONF_ZARENI): _ent(["sensor"]),
+        vol.Optional(c.CONF_SMOG): _ent(
+            ["binary_sensor", "input_boolean", "switch"]),
         vol.Optional(c.CONF_PM25_VENKU): _ent(["sensor"]),
         vol.Optional(c.CONF_PM10_VENKU): _ent(["sensor"]),
         vol.Optional(c.CONF_VITR): _ent(["sensor"]),
@@ -436,6 +438,8 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_ZDROJ_OKENNIHO_M, default="nase_otevreni"): _volba(
             c.ZDROJ_OKENNIHO, "zdroj_okenniho"),
         vol.Optional(c.CONF_VYNUCENO_M): _ent(
+            ["input_boolean", "switch", "binary_sensor"], True),
+        vol.Optional(c.CONF_VETRAT): _ent(
             ["input_boolean", "switch", "binary_sensor"], True),
         vol.Optional(c.CONF_KVALITA_CISTO, default="fair"): _volba(
             c.STUPNE_KVALITY, "kvalita_cisto"),

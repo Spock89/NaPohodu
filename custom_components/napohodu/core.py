@@ -181,10 +181,16 @@ def _kvalita_rank(kvalita: str | None) -> int | None:
 
 def _je_noc(hodina: float, n: Nastaveni, spanek: bool,
             resi_klid: bool = True) -> bool:
-    if not resi_klid:
-        return False
+    """Platí pro tuhle místnost noční pravidla?
+
+    Výslovný klid — zapnutý spánek — platí vždycky, i mimo noční hodiny.
+    Podmínka resi_klid se týká jen hodin: místnost, kde je klid navázaný
+    pouze na spánek, se v noci sama od sebe neuspí.
+    """
     if spanek:
         return True
+    if not resi_klid:
+        return False
     if n.noc_od > n.noc_do:          # přes půlnoc
         return hodina >= n.noc_od or hodina < n.noc_do
     return n.noc_od <= hodina < n.noc_do

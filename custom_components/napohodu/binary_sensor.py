@@ -10,7 +10,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from homeassistant.helpers.device_registry import DeviceInfo
 
-from .const import DOMAIN, PODENTITA_MISTNOST
+from .const import CONF_ZDROJ_OKENNIHO_M, DOMAIN, PODENTITA_MISTNOST
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .entity import NaPohoduEntity
@@ -49,11 +49,23 @@ class OknoOtevreno(NaPohoduEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         m = self.mistnost
-        return bool(m and m.okno_otevreno)
+        if m is None:
+            return False
+        zdroj = self.pod.data.get(CONF_ZDROJ_OKENNIHO_M, "nase_otevreni")
+        kontakt = m.atributy.get("kontakt_hlasi")
+        if zdroj == "nikdy":
+            return False          # topení se otevřeným oknem neřídí
+        if zdroj == "fyzicke":
+            return bool(kontakt)
+        if zdroj == "oboji":
+            return bool(m.okno_otevreno or kontakt)
+        return bool(m.okno_otevreno)
 
     @property
     def extra_state_attributes(self) -> dict:
-        return {"k_cemu": "vstup pro Better Thermostat, ne stav topení"}
+        return {"k_cemu": "vstup pro Better Thermostat, ne stav topení",
+                "zdroj": self.pod.data.get(CONF_ZDROJ_OKENNIHO_M,
+                                           "nase_otevreni")}
 
 
 class Obsazeno(NaPohoduEntity, BinarySensorEntity):

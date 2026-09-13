@@ -283,3 +283,45 @@ def test_nouzovy_prah_pod_nocnim_neprojde(nahradni_ha):
 
 def test_chybejici_hodnoty_nevadi(nahradni_ha):
     assert _prahy(otevrit=800) == {}
+
+
+# --------------------------------- zdroj okenního senzoru pro topení
+
+def _okno_pro_topeni(zdroj, nase, kontakt):
+    """Postaví entitu bez Home Assistantu a zeptá se na stav."""
+    import importlib
+    bs = importlib.import_module("napohodu.binary_sensor")
+    c = importlib.import_module("napohodu.const")
+
+    class Mistnost:
+        okno_otevreno = nase
+        atributy = {"kontakt_hlasi": kontakt}
+
+    class Falesna:
+        pod = type("P", (), {"data": {c.CONF_ZDROJ_OKENNIHO_M: zdroj}})()
+        mistnost = Mistnost()
+        is_on = bs.OknoOtevreno.is_on
+
+    return Falesna().is_on
+
+
+def test_zdroj_nase_otevreni(nahradni_ha):
+    assert _okno_pro_topeni("nase_otevreni", True, False) is True
+    assert _okno_pro_topeni("nase_otevreni", False, True) is False
+
+
+def test_zdroj_fyzicke(nahradni_ha):
+    """Pozná i okno otevřené rukou, o kterém pohon nic neví."""
+    assert _okno_pro_topeni("fyzicke", False, True) is True
+    assert _okno_pro_topeni("fyzicke", True, False) is False
+
+
+def test_zdroj_oboji(nahradni_ha):
+    assert _okno_pro_topeni("oboji", True, False) is True
+    assert _okno_pro_topeni("oboji", False, True) is True
+    assert _okno_pro_topeni("oboji", False, False) is False
+
+
+def test_zdroj_nikdy(nahradni_ha):
+    """Pro hlavici, která si otevřené okno pozná sama z poklesu."""
+    assert _okno_pro_topeni("nikdy", True, True) is False

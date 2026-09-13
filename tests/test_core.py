@@ -677,10 +677,10 @@ def test_ocekavani_rekne_o_poznatku():
 # ------------------------------- noční klid se místnosti nemusí týkat
 
 def test_kuchyne_bez_klidu_vetra_i_kdyz_se_vedle_spi():
-    """Volba „klid se neřeší" má platit i pro okna, ne jen pro senzor.
-    Spánek v sousední místnosti oblasti jinak kuchyni zavře okno."""
+    """Spánek se bere z té místnosti, ne z celé oblasti. Kuchyň, kde se
+    nespí, má vlastní klid vypnutý, i když se spí v obýváku vedle."""
     r, _ = krok(stary(co2=1111, t_in=20.6, t_out=10, cil=25.5, hodina=7,
-                      spanek=True, resi_klid=False))
+                      spanek=False, resi_klid=False))
     assert r.akce is Akce.OTEVRIT
 
 
@@ -698,9 +698,11 @@ def test_bez_klidu_plati_denni_prah():
     assert r.akce is Akce.OTEVRIT
 
 
-def test_spanek_nezapne_noc_kde_se_klid_neresi():
-    r, _ = krok(stary(co2=850, t_in=21, t_out=10, cil=25.5, hodina=14,
-                      spanek=True, resi_klid=False))
+def test_klid_zadny_neuspi_ani_v_nocnich_hodinach():
+    """Místnost s klidem „žádný" nemá vlastní klid nikdy — spánek se
+    k ní nedostane, protože se počítá z jejího nastavení."""
+    r, _ = krok(stary(co2=850, t_in=21, t_out=10, cil=25.5, hodina=2,
+                      spanek=False, resi_klid=False))
     assert r.akce is Akce.OTEVRIT
 
 
@@ -733,3 +735,56 @@ def test_klid_podle_noci_plati_v_noci_ne_rano():
                          spanek=False, resi_klid=True))
     assert v_noci.akce is Akce.NIC       # noční práh je 1000
     assert rano.akce is Akce.OTEVRIT     # ráno už noc není
+
+
+def test_spanek_plati_i_mimo_nocni_hodiny():
+    """Zapnutý spánek je výslovný pokyn. Musí platit, i když je klid
+    navázaný jen na spánek a ne na hodiny."""
+    r, _ = krok(stary(co2=1056, t_in=20.6, t_out=8, cil=25.5, hodina=7.97,
+                      spanek=True, resi_klid=False))
+    assert r.akce is Akce.NIC and "ranní" in r.duvod
+
+
+def test_spanek_v_poledne_taky_plati():
+    r, _ = krok(stary(co2=900, t_in=21, t_out=8, cil=25.5, hodina=13,
+                      spanek=True, resi_klid=False))
+    assert "noc" in r.duvod
+
+
+def test_bez_spanku_a_bez_nocnich_hodin_denni_rezim():
+    for hodina in (2, 7.97, 13):
+        r, _ = krok(stary(co2=1056, t_in=20.6, t_out=8, cil=25.5,
+                          hodina=hodina, spanek=False, resi_klid=False))
+        assert r.akce is Akce.OTEVRIT, hodina
+
+
+# ------------------------------------- smog a ruční žádost o vyvětrání
+
+def test_smog_zabrani_otevreni_kvuli_prachu():
+    r, _ = krok(stary(co2=500, pm25=60.0, pm_platny=True, smog=True,
+                      t_in=21, t_out=10, cil=25.5))
+    assert r.akce is not Akce.OTEVRIT
+
+
+def test_bez_smogu_se_kvuli_prachu_otevre():
+    r, _ = krok(stary(co2=500, pm25=60.0, pm_platny=True, smog=False,
+                      t_in=21, t_out=10, cil=25.5))
+    assert r.akce is Akce.OTEVRIT
+
+
+def test_rucni_zadost_otevre_i_pri_cistem_vzduchu():
+    r, _ = krok(stary(co2=450, vetrat=True, t_in=21, t_out=10, cil=25.5))
+    assert r.akce is Akce.OTEVRIT
+
+
+def test_rucni_zadost_nedrzi_okno_pres_vitr():
+    """Na rozdíl od vynuceného otevření platí ochrana dál."""
+    r, _ = krok(stary(co2=450, vetrat=True, vitr_blokuje=True),
+                otevreno=True)
+    assert r.akce is Akce.ZAVRIT
+
+
+def test_rucni_zadost_brani_prohlaseni_za_vyvetrano():
+    r, _ = krok(stary(co2=450, vetrat=True, t_in=21, t_out=10, cil=25.5),
+                otevreno=True, cas_povelu_s=0)
+    assert r.akce is not Akce.ZAVRIT

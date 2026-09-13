@@ -31,7 +31,7 @@ from .const import (
     CONF_KLIMA_DLOUHA_H, CONF_KLIMA_ENTITA, CONF_KLIMA_POKOJE,
     CONF_KLIMA_SUSIT_OD, CONF_KLIMA_TOPIT_OD, CONF_KLIMA_UMI,
     CONF_KLIMA_UTLUM_CHLAZENI, CONF_KLIMA_UTLUM_TOPENI,
-    CONF_KLIMA_V_POKOJI, CONF_KOMFORT_ODSTUP, CONF_KVALITA,
+    CONF_KLIMA_V_POKOJI, CONF_KOMFORT_ODSTUP, CONF_KONTAKT_M, CONF_KVALITA,
     CONF_KVALITA_CISTO, CONF_MAX_STARI, CONF_MIN_DRZENI, CONF_MISTNOSTI,
     CONF_NARAZ, CONF_NARAZOVE, CONF_NARAZOVE_ODSTUP, CONF_NARAZOVE_STROP,
     CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD,
@@ -41,16 +41,17 @@ from .const import (
     CONF_PRAH_VYKONU, CONF_PRIORITA, CONF_PRITOMNOST, CONF_PROJEZD_M,
     CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M,
     CONF_RH_VNITRNI, CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH,
-    CONF_SEZONU_RIDI_HLAVICE, CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY,
-    CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
-    CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
-    CONF_TOPIT_MIMO_SEZONU, CONF_TOPIT_PRI_OKNU, CONF_TOPIT_UTLUM,
-    CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM,
-    CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYNUCENO_M,
-    CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
-    CONF_ZDROJ_OBSAZENOSTI, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO,
-    CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S,
-    PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA,
+    CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG, CONF_SOUHRN_CAS,
+    CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_MAPA,
+    CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
+    CONF_TEPLOTY, CONF_TOPIT_MIMO_SEZONU, CONF_TOPIT_PRI_OKNU,
+    CONF_TOPIT_UTLUM, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
+    CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT, CONF_VITR, CONF_VITR_KLID,
+    CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE,
+    CONF_ZARENI, CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI,
+    CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY,
+    CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
+    PODENTITA_MISTNOST, PODENTITA_ZONA,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -763,6 +764,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Noční režim se řídí klidem TÉHLE místnosti, ne oblasti.
             # Spánek v obýváku nemá kuchyni zavřít okno, když má klid
             # nastavený na spánek a sama se v ní nespí.
+            smog=bool(self._zapnuto(g.get(CONF_SMOG))),
+            vetrat=any(self._zapnuto(e)
+                       for e in (d.get(CONF_VETRAT) or [])),
             spanek=m.klid,
             # a noční doba platí jen tam, kde je klid navázaný na noc
             resi_klid=d.get(CONF_ZDROJ_KLIDU, "spanek") in (
@@ -806,6 +810,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         projezd = float(d.get(CONF_PROJEZD_M, 120))
         stav_znamy = prvni_okno is None or self._stav(prvni_okno) is not None
         skutecne = self._okno_otevreno(prvni_okno, pamet, cas_s, projezd)
+
+        # Fyzický kontakt ví o skutečnosti nejlíp — pozná i okno
+        # otevřené rukou, o kterém pohon nic neví.
+        kontakty = d.get(CONF_KONTAKT_M) or []
+        rucne = any(self._zapnuto(e) for e in kontakty)
+        if kontakty and rucne and not skutecne:
+            skutecne = True
+            stav_znamy = True
         pamet.otevreno = skutecne
 
         if ovladat and okna:
@@ -893,6 +905,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             },
             "zastupce": uprava.zastupce,
             "okna": okna,
+            "kontakt_hlasi": rucne if kontakty else None,
             "co_dal": core.ocekavani(v, pamet, nast),
             "prach_zvenci": cas_s < pamet.pm_venku_horsi_do_s,
             "duvody": (["větrá se"] if skutecne
