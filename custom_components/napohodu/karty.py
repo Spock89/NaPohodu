@@ -122,7 +122,7 @@ def _jako_pohled(radky: list[str]) -> list[str]:
 def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
               cidla: dict | None = None, zaluzie: dict | None = None,
               venku: str | None = None, s_okny: set | None = None,
-              s_klidem: set | None = None, jako_pohled: bool = True) -> str:
+              s_klidem: set | None = None, jako_pohled: bool = False) -> str:
     """Poskládá kartu. `existuje` řekne, jestli entita opravdu je.
 
     `cidla` a `zaluzie` jsou entity, které integrace nevytváří — teploměr
@@ -331,7 +331,11 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         return "\n".join(hlava + _jako_pohled(karty)) + "\n"
 
     hlava = ["# Vygenerováno integrací NaPohodu.",
-             "# Vlož jako Manuální kartu.", ""]
+             "#",
+             "# Dashboard -> tužka -> Přidat kartu -> úplně dole Manuální.",
+             "# Smaž obsah a vlož tenhle text.",
+             "# Po přidání místnosti si přijď pro novou verzi.",
+             ""]
     return "\n".join(hlava + ["type: vertical-stack", "cards:"] + karty) + "\n"
 
 

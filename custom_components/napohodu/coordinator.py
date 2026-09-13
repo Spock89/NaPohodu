@@ -502,14 +502,26 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             o["kvalita"] = kvalita
             o["pm_platny"] = True if pm_platny is None else pm_platny
             o["spanek"] = spanek
-            o["klid"] = any(self.mistnosti[x.subentry_id].klid
-                            for x in o["cleni"])
-            # větrání pod cílovou teplotou stojí teplo a okno kmitá,
-            # takže je stejně drahé jako větrání tam, kde se spí
-            o["pod_cilem"] = any(
-                (self.mistnosti[x.subentry_id].atributy.get("teplota_min")
-                 or 99) < self.mistnosti[x.subentry_id].cil
-                for x in o["cleni"])
+            # Klidová je oblast až tehdy, když klid vyžadují všechny
+            # místnosti, které mají okno. Jinak by spánek v obýváku
+            # zabránil kuchyni, aby vyvětrala za ložnici — přestože
+            # kuchyň sama žádný klid neřeší.
+            s_okny = [x for x in o["cleni"]
+                      if podklady[x.subentry_id]["d"].get(CONF_OKNA)]
+            if s_okny:
+                o["klid"] = all(self.mistnosti[x.subentry_id].klid
+                                for x in s_okny)
+            else:
+                o["klid"] = any(self.mistnosti[x.subentry_id].klid
+                                for x in o["cleni"])
+            # Drahé je větrání tam, kde se otevírá — místnost bez okna
+            # k tomu nemá co říct. Bez oken se bere celá oblast.
+            def pod(x):
+                m2 = self.mistnosti[x.subentry_id]
+                return (m2.atributy.get("teplota_min") or 99) < m2.cil
+
+            o["pod_cilem"] = (all(pod(x) for x in s_okny) if s_okny
+                              else any(pod(x) for x in o["cleni"]))
 
             # Vzduch je společný, takže o něm nemůžou dvě místnosti
             # rozhodovat jinak — jinak by jedna otevírala a druhá zavírala.
@@ -749,6 +761,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             dest=dest, vitr_blokuje=vitr_blokuje,
             doma=doma or i_kdyz_nikdo,
             spanek=okruh["spanek"], vynuceno=vynuceno,
+            resi_klid=d.get(CONF_ZDROJ_KLIDU, "spanek") != "zadny",
             hodina=hodina, cas_s=cas_s,
             zastupce=uprava.zastupce is not None,
             narazove=self.narazove_bezi,

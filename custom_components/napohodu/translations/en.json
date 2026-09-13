@@ -183,9 +183,9 @@
       },
       "karta": {
         "title": "Karta na dashboard",
-        "description": "Hotový pohled pro {pocet} místností a {oblasti} oblastí, poskládaný z entit, které opravdu existují.\n\nOznač celý text a zkopíruj. Pak na dashboardu: tužka vpravo nahoře → tři tečky → Upravit v YAML → vlož blok do seznamu views jako další položku.\n\nNa počítači se karty samy seřadí do sloupců, na telefonu pod sebe. Po přidání místnosti si sem přijď pro novou verzi.",
+        "description": "Hotová karta pro {pocet} místností a {oblasti} oblastí, poskládaná z entit, které opravdu existují.\n\nOznač celý text v poli níž a zkopíruj. Pak na dashboardu: tužka vpravo nahoře → Přidat kartu → úplně dole Manuální → smazat obsah → vložit.\n\nPo přidání místnosti si sem přijď pro novou verzi.",
         "data": {
-          "karta_yaml": "YAML pohledu"
+          "karta_yaml": "YAML"
         },
         "submit": "Zpět"
       }
@@ -312,7 +312,8 @@
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
             "znacka_mimo_sezonu": "Teplota mimo topnou sezónu. Neposílá se vypnuto, ale nízká hodnota, ze které je vidět, že spojení funguje a proč se netopí.",
             "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu pulzu, i když vzduch ještě není vyvětraný. Bez pauzy by se okno hned otevřelo znovu. Kratší pauza znamená častější krátká větrání, delší méně častá a delší.",
-            "kvalita_cisto": "Slovní kvalita vzduchu, od které se místnost bere za vyvětranou. Výchozí fair znamená, že stupeň moderate drží okno otevřené, i kdyby bylo CO2 na čtyřech stovkách. Když ti čidlo hlásí moderate pořád, zvol moderate."
+            "kvalita_cisto": "Slovní kvalita vzduchu, od které se místnost bere za vyvětranou. Výchozí fair znamená, že stupeň moderate drží okno otevřené, i kdyby bylo CO2 na čtyřech stovkách. Když ti čidlo hlásí moderate pořád, zvol moderate.",
+            "zdroj_klidu": "Kdy má místnost vyžadovat klid. Platí to i pro okna."
           },
           "submit": "Další"
         },
@@ -442,7 +443,7 @@
             "ventilator": "Ventilátor nebo rekuperace. Můžeš vybrat víc entit. Použije se, když okno větrat nemůže.",
             "ventilator_smer": "Kam ventilátor fouká.",
             "zdroj_obsazenosti": "Obsazená místnost se udržuje na cíli. Prázdná se nechá být.",
-            "zdroj_klidu": "V klidu se okny hýbe co nejméně, aby nerušila.",
+            "zdroj_klidu": "Kdy má místnost vyžadovat klid. Platí to i pro okna.",
             "spanek": "Přepínač, kterým dáváš najevo, že se v místnosti spí.",
             "pritomnost": "Čidlo pohybu. Samo o sobě nestačí, protože nevidí sedícího člověka.",
             "dobeh_min": "Jak dlouho po posledním pohybu se místnost ještě považuje za obsazenou.",

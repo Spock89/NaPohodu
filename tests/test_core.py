@@ -672,3 +672,40 @@ def test_ocekavani_rekne_o_poznatku():
         Vstup(co2=500, pm25=40.0, pm_platny=True, t_in=21, cil=25.5,
               cas_s=100000), p, N))
     assert "tahá zvenčí" in t and "min" in t
+
+
+# ------------------------------- noční klid se místnosti nemusí týkat
+
+def test_kuchyne_bez_klidu_vetra_i_kdyz_se_vedle_spi():
+    """Volba „klid se neřeší" má platit i pro okna, ne jen pro senzor.
+    Spánek v sousední místnosti oblasti jinak kuchyni zavře okno."""
+    r, _ = krok(stary(co2=1111, t_in=20.6, t_out=10, cil=25.5, hodina=7,
+                      spanek=True, resi_klid=False))
+    assert r.akce is Akce.OTEVRIT
+
+
+def test_mistnost_s_klidem_rano_neotvira():
+    r, _ = krok(stary(co2=1111, t_in=20.6, t_out=10, cil=25.5, hodina=7,
+                      spanek=True, resi_klid=True))
+    assert r.akce is Akce.NIC
+    assert "ranní" in r.duvod
+
+
+def test_bez_klidu_plati_denni_prah():
+    """V noci by se otevíralo až od 1000, přes den od 800."""
+    r, _ = krok(stary(co2=850, t_in=21, t_out=10, cil=25.5, hodina=2,
+                      resi_klid=False))
+    assert r.akce is Akce.OTEVRIT
+
+
+def test_spanek_nezapne_noc_kde_se_klid_neresi():
+    r, _ = krok(stary(co2=850, t_in=21, t_out=10, cil=25.5, hodina=14,
+                      spanek=True, resi_klid=False))
+    assert r.akce is Akce.OTEVRIT
+
+
+def test_diagnostika_bez_klidu_nemluvi_o_noci():
+    from core import duvody
+    d = duvody(stary(co2=500, t_in=21, cil=25.5, hodina=2, resi_klid=False),
+               Pamet(), N)
+    assert not any("noční" in x for x in d)

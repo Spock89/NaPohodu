@@ -164,3 +164,22 @@ def test_v_noci_pomuze_i_obsazena_kuchyne():
         ZonaStav("k", "Kuchyně", co2=600, obsazeno=True, sousedi=["l"]),
     ]
     assert prerozdel(zony)["l"].zastupce == "Kuchyně"
+
+
+def test_oblast_s_bdelou_kuchyni_muze_zastoupit():
+    """Spánek v obýváku nesmí zabránit kuchyni, aby vyvětrala za
+    ložnici. Kuchyň má okno a klid neřeší."""
+    zony = [
+        ZonaStav("l", "Ložnice", co2=1200, klid=True, sousedi=["k"]),
+        ZonaStav("k", "Kuchyň a obývák", co2=600, klid=False,
+                 obsazeno=True, sousedi=["l"]),
+    ]
+    assert prerozdel(zony)["l"].zastupce == "Kuchyň a obývák"
+
+
+def test_oblast_kde_spi_vsichni_nezastoupi():
+    zony = [
+        ZonaStav("l", "Ložnice", co2=1200, klid=True, sousedi=["k"]),
+        ZonaStav("k", "Kuchyň a obývák", co2=600, klid=True, sousedi=["l"]),
+    ]
+    assert prerozdel(zony)["l"].zastupce is None

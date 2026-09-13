@@ -103,6 +103,9 @@ class Vstup:
     smog: bool = False
     doma: bool = True
     spanek: bool = False
+    # řídí se tahle místnost nočním klidem? Kuchyň, kde se nespí ani
+    # neruší, má větrat v noci stejně jako přes den
+    resi_klid: bool = True
     vetrat: bool = False
     vynuceno: bool = False
 
@@ -176,7 +179,10 @@ def _kvalita_rank(kvalita: str | None) -> int | None:
     return KVALITA_STUPNE.index(k) if k in KVALITA_STUPNE else None
 
 
-def _je_noc(hodina: float, n: Nastaveni, spanek: bool) -> bool:
+def _je_noc(hodina: float, n: Nastaveni, spanek: bool,
+            resi_klid: bool = True) -> bool:
+    if not resi_klid:
+        return False
     if spanek:
         return True
     if n.noc_od > n.noc_do:          # přes půlnoc
@@ -218,7 +224,7 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         seznam.append("nikdo doma")
 
     tin = v.t_in
-    noc = _je_noc(v.hodina, n, v.spanek)
+    noc = _je_noc(v.hodina, n, v.spanek, v.resi_klid)
 
     if noc:
         seznam.append("noční klid")
@@ -276,7 +282,7 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     """
     seznam = []
     t_in = v.t_in
-    noc = _je_noc(v.hodina, n, v.spanek)
+    noc = _je_noc(v.hodina, n, v.spanek, v.resi_klid)
 
     zbyva = n.min_drzeni_s - (v.cas_s - p.cas_povelu_s)
     if zbyva > 0:
@@ -388,7 +394,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     def beze_zmeny(duvod: str, chci_otevreno: bool | None = None) -> Rozhodnuti:
         # obnova povelu, kdyby se stav rozešel se skutečností (ne v noci)
         if (chci_otevreno is not None
-                and not _je_noc(v.hodina, n, v.spanek)
+                and not _je_noc(v.hodina, n, v.spanek, v.resi_klid)
                 and v.cas_s - p.cas_povelu_s > n.obnova_s):
             p.cas_povelu_s = v.cas_s
             return hotovo(Akce.OTEVRIT if chci_otevreno else Akce.ZAVRIT,
@@ -492,7 +498,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     cisto = (v.co2 < n.co2_zavrit and not v.vetrat and kvalita_ok and pm_cisto)
 
     # --- 5. komfort a chlazení --------------------------------------
-    noc = _je_noc(v.hodina, n, v.spanek)
+    noc = _je_noc(v.hodina, n, v.spanek, v.resi_klid)
     chlazeni = (t_max > v.cil + n.chlazeni_nad_cil
                 and v.t_out < t_max - n.chlazeni_rozdil
                 and v.t_out > n.chlazeni_min_venku

@@ -33,14 +33,17 @@ def bez_loznice(e):
     return "loznice" not in e
 
 
-def test_pohled_je_platny_yaml():
-    """Karty se dávají do pohledu, ne do jedné složené karty — jinak by
-    na mobilu zůstaly vedle sebe a zmáčkly se."""
+def test_karta_je_platny_yaml():
+    """Výchozí výstup je jedna karta, která jde vložit jako Manuální."""
     s = dashboard(["kuchyne", "obyvak"], ["kuchyn_a_obyvak"], vzdy)
     d = yaml.safe_load(s)
-    assert d["type"] == "masonry"
-    assert d["title"] == "NaPohodu"
+    assert d["type"] == "vertical-stack"
     assert len(d["cards"]) > 10
+
+
+def test_pohled_jde_vynutit():
+    s = dashboard(["kuchyne"], [], vzdy, jako_pohled=True)
+    assert yaml.safe_load(s)["type"] == "masonry"
 
 
 def test_obsahuje_vsechny_mistnosti():
@@ -68,7 +71,7 @@ def test_s_oblasti_sekce_je():
 
 def test_prazdny_seznam_nespadne():
     d = yaml.safe_load(dashboard([], [], vzdy))
-    assert d["type"] == "masonry"
+    assert d["type"] == "vertical-stack"
 
 
 def test_kazda_karta_ma_typ():
@@ -190,8 +193,7 @@ def test_karta_s_grafy_je_platny_yaml():
 
 # ---------------------------------------------------------------- sloupce
 
-def test_karty_jsou_samostatne_ne_v_jednom_stacku():
-    """Masonry si je přeskládá jen tehdy, když jsou na nejvyšší úrovni."""
+def test_karty_jsou_na_jedne_urovni():
     import yaml
     s = dashboard(["kuchyne", "obyvak", "loznice"], ["o"], vzdy,
                   cidla={m: f"sensor.t_{m}" for m in
@@ -199,12 +201,6 @@ def test_karty_jsou_samostatne_ne_v_jednom_stacku():
     d = yaml.safe_load(s)
     assert len(d["cards"]) > 20
     assert "vertical-stack" not in {k["type"] for k in d["cards"]}
-
-
-def test_jedna_karta_jde_vynutit():
-    import yaml
-    s = dashboard(["kuchyne"], [], vzdy, jako_pohled=False)
-    assert yaml.safe_load(s)["type"] == "vertical-stack"
 
 
 def test_nadpis_zustane_u_svych_karet():
