@@ -77,6 +77,7 @@ class Nastaveni:
 
     rozpocet_stupnominut: float = 200.0
     narazove_strop_s: float = 10 * 60
+    rucni_klid_s: float = 30 * 60
 
 
 @dataclass
@@ -138,6 +139,9 @@ class Pamet:
     pm_pri_otevreni: float | None = None
     pm_otevreno_od_s: float | None = None
     pm_venku_horsi_do_s: float = 0.0
+    # po ručním zásahu se čeká na nový podnět, ať se s člověkem
+    # automatika nepřetahuje
+    rucni_do_s: float = 0.0
     pohyby: int = 0
 
 
@@ -290,6 +294,10 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     t_in = v.t_in
     noc = _je_noc(v.hodina, n, v.spanek, v.resi_klid)
 
+    if v.cas_s < p.rucni_do_s:
+        seznam.append(f"sáhl jsi na okno, čekám na nový podnět "
+                      f"(ještě {int((p.rucni_do_s - v.cas_s) / 60)} min)")
+
     zbyva = n.min_drzeni_s - (v.cas_s - p.cas_povelu_s)
     if zbyva > 0:
         seznam.append(f"nejdřív za {int(zbyva / 60)} min (držím stav)")
@@ -353,6 +361,24 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
                           f"(teď {t_in:.1f})")
 
     return seznam
+
+
+def rucni_zasah(p: Pamet, n: Nastaveni, cas_s: float, otevreno: bool) -> None:
+    """Někdo sáhl na okno rukou. Rozdělaná akce se ruší.
+
+    Bez tohohle by automatika po uplynutí doby držení stavu poslala
+    povel znovu a přetahovala se s člověkem. Rozdělané větrání tedy
+    zahodíme a počkáme na nový podnět — vyšší CO2, jiná teplota, noc.
+    Ochrana proti větru a dešti se tím neruší, ta stojí nad vším.
+    """
+    p.otevreno = otevreno
+    p.rezim = "pulz"
+    p.den_mez = None
+    p.noc_mez = None
+    p.komfort_start = None
+    p.vetra_se = otevreno
+    p.cas_povelu_s = cas_s
+    p.rucni_do_s = cas_s + n.rucni_klid_s
 
 
 def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
@@ -430,6 +456,14 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             return beze_zmeny("nikdo doma")
         p.rezim = "pulz"
         return zavri("nikdo není doma", hned=True, kod="pryc")
+
+    # --- 2b. čerstvý ruční zásah ------------------------------------
+    # Ochrana výš už proběhla, takže vítr a déšť okno zavřou i tak.
+    if v.cas_s < p.rucni_do_s:
+        zbyva = int((p.rucni_do_s - v.cas_s) / 60)
+        return hotovo(Akce.NIC,
+                      f"sáhl jsi na okno, nechávám to na tobě "
+                      f"(ještě {zbyva} min)", kod="rucni_zasah")
 
     # --- 3. ruční otevření -----------------------------------------
     if v.vynuceno:

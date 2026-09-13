@@ -788,3 +788,50 @@ def test_rucni_zadost_brani_prohlaseni_za_vyvetrano():
     r, _ = krok(stary(co2=450, vetrat=True, t_in=21, t_out=10, cil=25.5),
                 otevreno=True, cas_povelu_s=0)
     assert r.akce is not Akce.ZAVRIT
+
+
+# ------------------------------------------------- ruční zásah
+
+def test_rucni_zasah_zrusi_rozdelane_vetrani():
+    """Automatika se s člověkem nemá přetahovat."""
+    from core import rucni_zasah
+    p = Pamet(otevreno=True, cas_povelu_s=0, den_mez=20.0, rezim="pulz",
+              vetra_se=True)
+    rucni_zasah(p, N, 100000, otevreno=False)
+    assert p.den_mez is None and p.vetra_se is False
+    assert p.rucni_do_s == 100000 + N.rucni_klid_s
+
+
+def test_po_rucnim_zasahu_se_neotevira():
+    p = Pamet(cas_povelu_s=0, rucni_do_s=101000)
+    r = rozhodni(Vstup(co2=1400, t_in=21, t_out=10, cil=25.5, cas_s=100000),
+                 p, N)
+    assert r.akce is Akce.NIC and r.kod == "rucni_zasah"
+
+
+def test_vitr_prebiji_i_rucni_zasah():
+    """Ochrana bytu stojí nad vším."""
+    p = Pamet(otevreno=True, cas_povelu_s=0, rucni_do_s=101000)
+    r = rozhodni(Vstup(co2=500, vitr_blokuje=True, cas_s=100000), p, N)
+    assert r.akce is Akce.ZAVRIT and r.kod == "vitr"
+
+
+def test_dest_prebiji_i_rucni_zasah():
+    p = Pamet(otevreno=True, cas_povelu_s=0, rucni_do_s=101000)
+    r = rozhodni(Vstup(co2=500, dest=2.0, cas_s=100000), p, N)
+    assert r.akce is Akce.ZAVRIT and r.kod == "dest"
+
+
+def test_po_uplynuti_klidu_automatika_pokracuje():
+    p = Pamet(cas_povelu_s=0, rucni_do_s=100000)
+    r = rozhodni(Vstup(co2=1400, t_in=21, t_out=10, cil=25.5, cas_s=100001),
+                 p, N)
+    assert r.akce is Akce.OTEVRIT
+
+
+def test_ocekavani_zminuje_rucni_zasah():
+    from core import ocekavani
+    p = Pamet(cas_povelu_s=0, rucni_do_s=101200)
+    t = " ".join(ocekavani(Vstup(co2=900, t_in=21, cil=25.5, cas_s=100000),
+                           p, N))
+    assert "sáhl jsi na okno" in t

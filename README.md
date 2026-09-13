@@ -101,6 +101,36 @@ otevře až při krizi.
 Nefunguje to, když by u souseda větrání stálo totéž — tam by se problém
 jen přestěhoval o místnost dál.
 
+### Ruční zásah
+
+Když okno otevřeš nebo zavřeš rukou, integrace to pozná — skutečnost se
+rozejde s tím, co naposledy poslala. Rozdělané větrání se tím ruší a
+půl hodiny se do okna nemluví. Pak se čeká na nový podnět: vyšší CO2,
+jiná teplota, příchod noci.
+
+Smyslem je, aby se automatika s člověkem nepřetahovala. Bez toho by po
+uplynutí doby držení stavu poslala povel znovu.
+
+**Vítr a déšť platí dál.** Ochrana bytu stojí nad ručním rozhodnutím
+stejně jako nad automatikou.
+
+Totéž u žaluzií. Po každém povelu si integrace zapamatuje, na jaké
+poloze skutečně skončily, a porovnává ji se skutečností. Když se
+rozejde, stav zapomene a příště ho nastaví znovu.
+
+### Prach a co s ním
+
+Prach je jediná veličina, kterou větrání umí zhoršit. Když je venku hůř
+než uvnitř, otevřením se natáhne dovnitř a hodnota roste — takže by se
+větralo donekonečna.
+
+Se zadaným venkovním čidlem se porovnávají hodnoty přímo. Bez něj se to
+integrace naučí z chování: když prach uvnitř při otevřeném okně stoupá,
+tahá se zvenčí, a poznatek pár hodin platí.
+
+Na prach se ostatně větrat nemusí. Čistička ho vyřeší bez tepelné
+ztráty a v zimě je to skoro vždycky lepší volba.
+
 ### Noční režim
 
 Jedno dlouhé provětrání místo několika krátkých. Zavírá se podle teploty,
@@ -304,7 +334,11 @@ rozjet je jen proto, že se integrace znovu načetla, znamená zarachotit
 bez důvodu. Srovnat se dá tlačítkem.
 
 Ochrana stojí nad tvým rozhodnutím: vítr a déšť zavřou okno i tehdy, když
-jsi ho otevřel ručně.
+jsi ho otevřel ručně nebo vynutil přepínačem.
+
+Naopak všechno ostatní tvoje rozhodnutí respektuje. Ruční zásah zruší
+rozdělanou akci, vynucené otevření přebije vzduch i teploty a přepínače
+ovládání vypnou automatiku úplně.
 
 ## Ikona
 

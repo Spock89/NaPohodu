@@ -40,8 +40,8 @@ from .const import (
     CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU, CONF_PM_PLATNY,
     CONF_PRAH_VYKONU, CONF_PRIORITA, CONF_PRITOMNOST, CONF_PROJEZD_M,
     CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M,
-    CONF_RH_VNITRNI, CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH,
-    CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG, CONF_SOUHRN_CAS,
+    CONF_RH_VNITRNI, CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE,
+    CONF_SEZONA_PRAH, CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG, CONF_SOUHRN_CAS,
     CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_MAPA,
     CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
     CONF_TEPLOTY, CONF_TOPIT_MIMO_SEZONU, CONF_TOPIT_PRI_OKNU,
@@ -796,6 +796,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 float(d.get(CONF_KOMFORT_ODSTUP, 4.0))),
             noc_od=noc_od, noc_do=noc_do,
             narazove_strop_s=self.narazove_strop_s,
+            rucni_klid_s=float(d.get(CONF_RUCNI_KLID, 30)) * 60,
         )
         den_pokles, noc_pokles = core.z_priority(
             self.hodnota(p.subentry_id, CONF_PRIORITA, 5.0))
@@ -818,7 +819,26 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if kontakty and rucne and not skutecne:
             skutecne = True
             stav_znamy = True
+
+        # Po dojezdu se povel a skutečnost musí shodovat. Když ne, sáhl
+        # na okno člověk — rozdělaná akce se ruší a čeká se na nový
+        # podnět, ať se s ním automatika nepřetahuje. Ochrana proti
+        # větru a dešti tím dotčená není, ta je v rozhodování výš.
+        if (ovladat and okna and stav_znamy
+                and vyk.stav.posledni_povel is not None
+                and cas_s - pamet.cas_povelu_s > projezd * 2
+                and pamet.otevreno != skutecne
+                and cas_s >= pamet.rucni_do_s):
+            _LOGGER.info(
+                "NaPohodu: %s — okno je %s, ale posílal jsem %s. "
+                "Ruční zásah, nechávám to na tobě.",
+                m.nazev, "otevřené" if skutecne else "zavřené",
+                "otevřít" if pamet.otevreno else "zavřít")
+            core.rucni_zasah(pamet, nast, cas_s, skutecne)
+            vyk.stav.pulz_do_s = None
+
         pamet.otevreno = skutecne
+        m.atributy["rucni_zasah"] = cas_s < pamet.rucni_do_s
 
         if ovladat and okna:
             r = core.rozhodni(v, pamet, nast)

@@ -42,6 +42,8 @@ ATRIBUTY_STAVU = [
     ("narazove_vetrani", "Nárazové větrání běží", None),
     ("pauza_po_pulzu_min", "Pauza po větrání", " min"),
     ("nocni_klid", "Noční klid", None),
+    ("rucni_zasah", "Sáhl jsi na okno", None),
+    ("kontakt_hlasi", "Kontakt hlásí otevřeno", None),
     ("prach_zvenci", "Prach se tahá zvenčí", None),
     ("co_dal", "Co změnu spustí", None),
     ("duvody", "Diagnostika", None),

@@ -259,7 +259,8 @@
             "znacka_mimo_sezonu": "Značka mimo sezónu",
             "pauza_po_pulzu_min": "Pauza po dojezdu větrání",
             "kvalita_cisto": "Za vyvětráno brát kvalitu od",
-            "vetrat": "Ruční žádost o vyvětrání"
+            "vetrat": "Ruční žádost o vyvětrání",
+            "rucni_klid_min": "Po ručním zásahu nechat být"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -317,7 +318,8 @@
             "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu pulzu, i když vzduch ještě není vyvětraný. Bez pauzy by se okno hned otevřelo znovu. Kratší pauza znamená častější krátká větrání, delší méně častá a delší.",
             "kvalita_cisto": "Slovní kvalita vzduchu, od které se místnost bere za vyvětranou. Výchozí fair znamená, že stupeň moderate drží okno otevřené, i kdyby bylo CO2 na čtyřech stovkách. Když ti čidlo hlásí moderate pořád, zvol moderate.",
             "zdroj_klidu": "Kdy má místnost vyžadovat klid. Platí to i pro okna.",
-            "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš."
+            "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
+            "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice."
           },
           "submit": "Další"
         },
@@ -429,7 +431,8 @@
             "znacka_mimo_sezonu": "Značka mimo sezónu",
             "pauza_po_pulzu_min": "Pauza po dojezdu větrání",
             "kvalita_cisto": "Za vyvětráno brát kvalitu od",
-            "vetrat": "Ruční žádost o vyvětrání"
+            "vetrat": "Ruční žádost o vyvětrání",
+            "rucni_klid_min": "Po ručním zásahu nechat být"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -497,7 +500,8 @@
             "znacka_mimo_sezonu": "Teplota mimo topnou sezónu. Neposílá se vypnuto, ale nízká hodnota, ze které je vidět, že spojení funguje a proč se netopí.",
             "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu pulzu, i když vzduch ještě není vyvětraný. Bez pauzy by se okno hned otevřelo znovu. Kratší pauza znamená častější krátká větrání, delší méně častá a delší.",
             "kvalita_cisto": "Slovní kvalita vzduchu, od které se místnost bere za vyvětranou. Výchozí fair znamená, že stupeň moderate drží okno otevřené, i kdyby bylo CO2 na čtyřech stovkách. Když ti čidlo hlásí moderate pořád, zvol moderate.",
-            "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš."
+            "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
+            "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice."
           },
           "submit": "Další"
         },

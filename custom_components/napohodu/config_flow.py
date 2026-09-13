@@ -434,6 +434,7 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_MIN_DRZENI, default=20): _cislo(1, 120, 1, "min"),
         vol.Optional(c.CONF_PAUZA_PO_PULZU, default=15):
             _cislo(1, 120, 1, "min"),
+        vol.Optional(c.CONF_RUCNI_KLID, default=30): _cislo(0, 240, 5, "min"),
         vol.Optional(c.CONF_KONTAKT_M): _ent(["binary_sensor"], True),
         vol.Optional(c.CONF_ZDROJ_OKENNIHO_M, default="nase_otevreni"): _volba(
             c.ZDROJ_OKENNIHO, "zdroj_okenniho"),
