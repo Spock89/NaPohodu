@@ -115,6 +115,8 @@ CONF_VYNUCENO_M = "vynuceno_okno"
 CONF_VETRAT = "vetrat"             # ruční žádost o vyvětrání
 CONF_DEST_PRAH = "dest_prah"
 CONF_I_KDYZ_NIKDO = "i_kdyz_nikdo_doma"
+CONF_OCHOTA = "ochota_vetrat"
+OCHOTA_VETRAT = ["ochotna", "normalne", "nerada"]
 CONF_T_VENKU_M = "t_venku_mistni"
 CONF_RH_VENKU_M = "rh_venku_mistni"
 
@@ -137,6 +139,8 @@ CONF_TIMEOUT = "timeout_polohy_s"
 CONF_NAZEV_STAVU = "nazev_stavu"
 CONF_STAVY_TEXT = "stavy_text"
 CONF_KARTA_YAML = "karta_yaml"
+CONF_PODOBA = "podoba"
+PODOBY = ["karta", "stranka"]
 
 # --- sdílená klimatizace ---
 CONF_KLIMA_ENTITA = "klima_entita"

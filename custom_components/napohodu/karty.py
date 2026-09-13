@@ -122,10 +122,63 @@ def _jako_pohled(radky: list[str]) -> list[str]:
     return out + radky
 
 
+def _do_sekci(radky: list[str]) -> list[str]:
+    """Celá stránka: menší celky, aby se daly přeskládat.
+
+    Sekce se na stránce dají chytat a přesouvat, takže má smysl dělit
+    jemně — nová sekce začíná u každého nadpisu a u každé místnosti.
+    Home Assistant je pak sám rozloží do sloupců podle šířky obrazovky.
+    """
+    STROP = 6          # víc karet v jedné sekci už dělá dlouhý sloupec
+
+    # rozdělit na karty
+    karty, jedna = [], []
+    for r in radky:
+        if r.startswith("  - type:") and jedna:
+            karty.append(jedna)
+            jedna = []
+        jedna.append(r)
+    if jedna:
+        karty.append(jedna)
+
+    # seskupit: nová sekce u nadpisu i u budíků nové místnosti
+    sekce, drzim, pocet = [], [], 0
+    for k in karty:
+        zacatek = any(("type: heading" in r or "type: horizontal-stack" in r)
+                      for r in k[:1])
+        if (zacatek or pocet >= STROP) and drzim:
+            sekce.append(drzim)
+            drzim, pocet = [], 0
+        drzim.extend(k)
+        pocet += 1
+    if drzim:
+        sekce.append(drzim)
+
+    # Sekce, která obsahuje jen nadpis a budíky, patří k následující —
+    # jinak by ručička visela zvlášť od údajů té místnosti.
+    slozene = []
+    for s2 in sekce:
+        posledni_jen_nadpis = (
+            slozene and not any("type: entities" in r
+                                for r in slozene[-1]))
+        if posledni_jen_nadpis:
+            slozene[-1].extend(s2)
+        else:
+            slozene.append(s2)
+
+    out = ["type: sections", "max_columns: 4", "title: NaPohodu",
+           "path: napohodu", "icon: mdi:home-heart", "sections:"]
+    for s2 in slozene:
+        out += ["  - type: grid", "    cards:"]
+        out += ["    " + r if r.strip() else r for r in s2]
+    return out
+
+
 def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
               cidla: dict | None = None, zaluzie: dict | None = None,
               venku: str | None = None, s_okny: set | None = None,
-              s_klidem: set | None = None, jako_pohled: bool = False) -> str:
+              s_klidem: set | None = None, jako_pohled: bool = False,
+              podoba: str = "karta") -> str:
     """Poskládá kartu. `existuje` řekne, jestli entita opravdu je.
 
     `cidla` a `zaluzie` jsou entity, které integrace nevytváří — teploměr
@@ -323,6 +376,19 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     c += _karta("", "", polozky, nazev="Srovnat do žádané polohy")
 
     karty = [x for x in c if x is not None]
+
+    if podoba == "stranka":
+        hlava = ["# Vygenerováno integrací NaPohodu.",
+                 "#",
+                 "# Celá stránka. Dashboard -> tužka -> tři tečky ->",
+                 "# Nezpracovaný editor konfigurace. Vlož tenhle blok do",
+                 "# seznamu views jako další položku, na úroveň ostatních",
+                 "# položek začínajících pomlčkou.",
+                 "#",
+                 "# Sekce se pak dají chytat a přesouvat.",
+                 ""]
+        return "\n".join(hlava + _do_sekci(karty)) + "\n"
+
     if jako_pohled:
         hlava = ["# Vygenerováno integrací NaPohodu.",
                  "#",

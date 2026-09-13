@@ -35,9 +35,9 @@ from .const import (
     CONF_KVALITA_CISTO, CONF_MAX_STARI, CONF_MIN_DRZENI, CONF_MISTNOSTI,
     CONF_NARAZ, CONF_NARAZOVE, CONF_NARAZOVE_ODSTUP, CONF_NARAZOVE_STROP,
     CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD,
-    CONF_ODCHYLKA, CONF_ODTAH, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T,
-    CONF_OKNA, CONF_PAUZA_PO_PULZU, CONF_PLOCHA, CONF_PM10,
-    CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU, CONF_PM_PLATNY,
+    CONF_OCHOTA, CONF_ODCHYLKA, CONF_ODTAH, CONF_ODVZDUSNENI_H,
+    CONF_ODVZDUSNENI_T, CONF_OKNA, CONF_PAUZA_PO_PULZU, CONF_PLOCHA,
+    CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU, CONF_PM_PLATNY,
     CONF_PRAH_VYKONU, CONF_PRIORITA, CONF_PRITOMNOST, CONF_PROJEZD_M,
     CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M,
     CONF_RH_VNITRNI, CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE,
@@ -598,6 +598,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             o["pod_cilem"] = (all(pod(x) for x in s_okny) if s_okny
                               else any(pod(x) for x in o["cleni"]))
 
+            # ochota větrat: od kuchyňského okna táhne, kdežto v ložnici
+            # může být otevřeno celý den a nikomu to nevadí
+            def ochota(x, jaka):
+                return (podklady[x.subentry_id]["d"]
+                        .get(CONF_OCHOTA, "normalne") == jaka)
+
+            o["nerada"] = any(ochota(x, "nerada") for x in s_okny)
+            o["ochotna"] = bool(s_okny) and all(
+                ochota(x, "ochotna") for x in s_okny)
+
             # Vzduch je společný, takže o něm nemůžou dvě místnosti
             # rozhodovat jinak — jinak by jedna otevírala a druhá zavírala.
             # Bere se nejcitlivější nastavení: stačí jedna místnost,
@@ -626,6 +636,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             stavy.append(so.ZonaStav(
                 id=o["id"], nazev=o["nazev"], co2=o["co2"], klid=o["klid"],
                 pod_cilem=o["pod_cilem"],
+                nerada=o["nerada"], ochotna=o["ochotna"],
                 obsazeno=any(self.mistnosti[x.subentry_id].obsazeno
                              for x in o["cleni"]),
                 muze_vetrat=not vitr_blokuje and doma, sousedi=sousedi,

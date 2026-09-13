@@ -183,3 +183,51 @@ def test_oblast_kde_spi_vsichni_nezastoupi():
         ZonaStav("k", "Kuchyň a obývák", co2=600, klid=True, sousedi=["l"]),
     ]
     assert prerozdel(zony)["l"].zastupce is None
+
+
+# ------------------------------------------- ochota větrat
+
+def test_nerada_posle_vzduch_sousedovi_i_pres_den():
+    """Od kuchyňského okna táhne na člověka u linky. Ložnice, kde je
+    otevřeno celý den a nikoho to netrápí, to vyvětrá za ni."""
+    zony = [
+        ZonaStav("k", "Kuchyň", co2=1200, nerada=True, sousedi=["l"]),
+        ZonaStav("l", "Ložnice", co2=600, ochotna=True, obsazeno=False,
+                 sousedi=["k"]),
+    ]
+    u = prerozdel(zony)
+    assert u["k"].zastupce == "Ložnice"
+    assert u["l"].prevzate_co2 == 1200
+
+
+def test_ochotna_pomuze_i_kdyz_je_obsazena():
+    """V ložnici může být otevřeno, i když tam někdo je — proto ochotná."""
+    zony = [
+        ZonaStav("k", "Kuchyň", co2=1200, nerada=True, sousedi=["l"]),
+        ZonaStav("l", "Ložnice", co2=600, ochotna=True, obsazeno=True,
+                 sousedi=["k"]),
+    ]
+    assert prerozdel(zony)["k"].zastupce == "Ložnice"
+
+
+def test_ochotna_se_nebere_za_drahou_ani_pod_cilem():
+    from sousedstvi import draho
+    assert draho(ZonaStav("l", "L", pod_cilem=True)) is True
+    assert draho(ZonaStav("l", "L", pod_cilem=True, ochotna=True)) is False
+
+
+def test_spanek_prebiji_ochotu():
+    """V ložnici může být otevřeno celý den — ale ne když se v ní spí."""
+    from sousedstvi import draho
+    assert draho(ZonaStav("l", "L", klid=True, ochotna=True)) is True
+    zony = [
+        ZonaStav("k", "Kuchyň", co2=1200, nerada=True, sousedi=["l"]),
+        ZonaStav("l", "Ložnice", co2=600, ochotna=True, klid=True,
+                 obsazeno=True, sousedi=["k"]),
+    ]
+    assert prerozdel(zony)["k"].zastupce is None
+
+
+def test_nerada_bez_souseda_vetra_sama():
+    zony = [ZonaStav("k", "Kuchyň", co2=1200, nerada=True)]
+    assert prerozdel(zony)["k"].zastupce is None

@@ -187,7 +187,23 @@
       },
       "karta": {
         "title": "Karta na dashboard",
-        "description": "Hotová karta pro {pocet} místností a {oblasti} oblastí, poskládaná z entit, které opravdu existují.\n\nOznač celý text v poli níž a zkopíruj. Pak na dashboardu: tužka vpravo nahoře → Přidat kartu → úplně dole Manuální → smazat obsah → vložit.\n\nPo přidání místnosti si sem přijď pro novou verzi.",
+        "description": "Jedna karta se vloží rychle, celá stránka se líp přeskládává a vyplní šířku obrazovky.",
+        "menu_options": {
+          "karta_jedna": "Jedna karta (Manuální karta)",
+          "karta_stranka": "Celá stránka (editor YAML)"
+        }
+      },
+      "karta_jedna": {
+        "title": "Jedna karta",
+        "description": "Karta pro {pocet} místností a {oblasti} oblastí, poskládaná z entit, které opravdu existují.\n\nOznač text a zkopíruj. Pak na dashboardu: tužka → Přidat kartu → úplně dole Manuální → smazat obsah → vložit.",
+        "data": {
+          "karta_yaml": "YAML"
+        },
+        "submit": "Zpět"
+      },
+      "karta_stranka": {
+        "title": "Celá stránka",
+        "description": "Stránka pro {pocet} místností a {oblasti} oblastí, rozdělená do sekcí, které se dají chytat a přesouvat.\n\nOznač text a zkopíruj. Pak na dashboardu: tužka → tři tečky → Nezpracovaný editor konfigurace → vlož blok do seznamu views jako další položku.",
         "data": {
           "karta_yaml": "YAML"
         },
@@ -260,7 +276,8 @@
             "pauza_po_pulzu_min": "Pauza po dojezdu větrání",
             "kvalita_cisto": "Za vyvětráno brát kvalitu od",
             "vetrat": "Ruční žádost o vyvětrání",
-            "rucni_klid_min": "Po ručním zásahu nechat být"
+            "rucni_klid_min": "Po ručním zásahu nechat být",
+            "ochota_vetrat": "Ochota větrat"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -319,7 +336,8 @@
             "kvalita_cisto": "Slovní kvalita vzduchu, od které se místnost bere za vyvětranou. Výchozí fair znamená, že stupeň moderate drží okno otevřené, i kdyby bylo CO2 na čtyřech stovkách. Když ti čidlo hlásí moderate pořád, zvol moderate.",
             "zdroj_klidu": "Kdy má místnost vyžadovat klid. Platí to i pro okna: „žádný\" znamená, že se v ní větrá v noci stejně jako přes den a spánek v sousední místnosti oblasti ji neomezí.",
             "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
-            "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice."
+            "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
+            "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak."
           },
           "submit": "Další"
         },
@@ -432,7 +450,8 @@
             "pauza_po_pulzu_min": "Pauza po dojezdu větrání",
             "kvalita_cisto": "Za vyvětráno brát kvalitu od",
             "vetrat": "Ruční žádost o vyvětrání",
-            "rucni_klid_min": "Po ručním zásahu nechat být"
+            "rucni_klid_min": "Po ručním zásahu nechat být",
+            "ochota_vetrat": "Ochota větrat"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -501,7 +520,8 @@
             "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu větrání, i když vzduch ještě není vyvětraný. Když se nedaří vyvětrat, každá další pauza je dvojnásobná, nejvýš hodinová — typicky když tahle místnost větrá za jinou, jejíž vzduch svým oknem skoro neovlivní.",
             "kvalita_cisto": "Slovní kvalita vzduchu, od které se místnost bere za vyvětranou. Výchozí fair znamená, že stupeň moderate drží okno otevřené, i kdyby bylo CO2 na čtyřech stovkách. Když ti čidlo hlásí moderate pořád, zvol moderate.",
             "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
-            "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice."
+            "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
+            "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak."
           },
           "submit": "Další"
         },
@@ -732,6 +752,13 @@
         "moderate": "moderate",
         "fair": "fair (výchozí)",
         "good": "good — jen to nejlepší"
+      }
+    },
+    "ochota_vetrat": {
+      "options": {
+        "ochotna": "Tady větrání nevadí — vyvětrám i za sousedy",
+        "normalne": "Normálně",
+        "nerada": "Tady je větrání nepříjemné — ať vyvětrá soused"
       }
     }
   },

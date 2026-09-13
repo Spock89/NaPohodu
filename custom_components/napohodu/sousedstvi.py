@@ -24,6 +24,8 @@ class ZonaStav:
     klid: bool = False           # některá místnost zóny vyžaduje klid
     pod_cilem: bool = False      # větrání by tady stálo teplo
     obsazeno: bool = True        # je v některé místnosti někdo
+    nerada: bool = False         # tady je větrání nepříjemné, od okna táhne
+    ochotna: bool = False        # tady otevřené okno nikoho netrápí
     muze_vetrat: bool = True     # neblokuje ji vítr, zima ani nepřítomnost
     sousedi: list[str] = field(default_factory=list)   # id sousedních zón
     dvere_otevrene: bool = True  # bez otevřených dveří se vzduch nevymění
@@ -39,13 +41,22 @@ class Uprava:
 
 
 def draho(z: ZonaStav) -> bool:
-    """Je větrání v téhle zóně drahé?
+    """Je větrání v téhle zóně nepříjemné nebo drahé?
 
-    Dva různé důvody, stejný důsledek. Když se v ní spí, větrání budí.
-    Když je pod cílovou teplotou, větrání stojí teplo a okno pak kmitá
-    sem a tam. V obou případech je lepší nechat vyvětrat souseda.
+    Tři různé důvody, stejný důsledek. Když se v ní spí, větrání budí.
+    Když je pod cílovou teplotou, stojí teplo a okno kmitá sem a tam.
+    A někde je nepříjemné samo o sobě — od kuchyňského okna táhne na
+    člověka u linky, i když je teplota v pořádku.
+
+    Zóna označená jako ochotná se za drahou nebere kvůli teplotě ani
+    nechuti: v ložnici může být otevřeno celý den a nikoho to netrápí.
+    Spánek ale ochota nepřebíjí — tam se větrat nebude tak jako tak.
     """
-    return z.klid or z.pod_cilem
+    if z.klid:
+        return True
+    if z.ochotna:
+        return False
+    return z.pod_cilem or z.nerada
 
 
 def prerozdel(zony: list[ZonaStav], prah: float = 1000.0) -> dict[str, Uprava]:
@@ -68,7 +79,7 @@ def prerozdel(zony: list[ZonaStav], prah: float = 1000.0) -> dict[str, Uprava]:
         # Kvůli teplu se zastupuje jen do prázdné místnosti. V noci je to
         # jinak: tam stačí, že se u souseda nespí, protože přes den je
         # kuchyně obsazená pořád a jinak by nikdy nepomohla.
-        jen_prazdne = z.pod_cilem and not z.klid
+        jen_prazdne = (z.pod_cilem or z.nerada) and not z.klid
 
         for sid in z.sousedi:
             soused = podle_id.get(sid)
@@ -76,7 +87,7 @@ def prerozdel(zony: list[ZonaStav], prah: float = 1000.0) -> dict[str, Uprava]:
                 continue
             if draho(soused):
                 continue      # tam by to stálo totéž, nepomůže
-            if jen_prazdne and soused.obsazeno:
+            if jen_prazdne and soused.obsazeno and not soused.ochotna:
                 continue      # otevřít okno tam, kde někdo je, obtěžuje
             if not soused.muze_vetrat:
                 continue      # sám nemůže, třeba kvůli větru

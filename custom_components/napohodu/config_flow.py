@@ -187,6 +187,17 @@ class NaPohoduOptionsFlow(OptionsFlow):
     # ------------------------------------------------------------ karta
 
     async def async_step_karta(self, user_input=None) -> FlowResult:
+        """Výběr podoby: jedna karta, nebo celá stránka."""
+        return self.async_show_menu(
+            step_id="karta", menu_options=["karta_jedna", "karta_stranka"])
+
+    async def async_step_karta_jedna(self, user_input=None) -> FlowResult:
+        return await self._vypis("karta", user_input)
+
+    async def async_step_karta_stranka(self, user_input=None) -> FlowResult:
+        return await self._vypis("stranka", user_input)
+
+    async def _vypis(self, podoba: str, user_input=None) -> FlowResult:
         """Vypíše hotovou kartu na dashboard.
 
         Text je v poli, ze kterého se dá vybrat a zkopírovat. Vkládat ho
@@ -232,10 +243,10 @@ class NaPohoduOptionsFlow(OptionsFlow):
             mistnosti, oblasti,
             lambda e: self.hass.states.get(e) is not None,
             cidla=cidla, zaluzie=zaluzie, venku=g.get(c.CONF_T_VENKU),
-            s_okny=s_okny, s_klidem=s_klidem)
+            s_okny=s_okny, s_klidem=s_klidem, podoba=podoba)
 
         return self.async_show_form(
-            step_id="karta",
+            step_id="karta_jedna" if podoba == "karta" else "karta_stranka",
             data_schema=self.add_suggested_values_to_schema(
                 vol.Schema({
                     vol.Optional(c.CONF_KARTA_YAML, default=""):
@@ -451,6 +462,8 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_DEST_PRAH, default=0.3): _cislo(0, 20, 0.1, "mm/h"),
         vol.Optional(c.CONF_I_KDYZ_NIKDO, default=False):
             selector.BooleanSelector(),
+        vol.Optional(c.CONF_OCHOTA, default="normalne"): _volba(
+            c.OCHOTA_VETRAT, "ochota_vetrat"),
         vol.Optional(c.CONF_T_VENKU_M): _ent(["sensor"], trida=["temperature"]),
         vol.Optional(c.CONF_RH_VENKU_M): _ent(["sensor"], trida=["humidity"]),
 
