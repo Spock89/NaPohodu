@@ -135,6 +135,24 @@ if "v = core.Vstup(" in ko_text:
                         f"coordinator.py: Vstup.{u.target.id} se nikdy "
                         f"nenastaví, zůstane na výchozí hodnotě")
 
+# 1h) importy uvnitř funkcí. V běžícím jádře Home Assistantu je to
+# blokující operace a v cyklu koordinátoru se opakuje každou minutu.
+V_JADRE = {"coordinator", "sensor", "binary_sensor", "number", "switch",
+           "button", "entity"}
+for p in d.glob("*.py"):
+    if p.stem not in V_JADRE:
+        continue
+    for f in ast.walk(ast.parse(p.read_text())):
+        if not isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        for u in ast.walk(f):
+            if isinstance(u, (ast.Import, ast.ImportFrom)):
+                jm = getattr(u, "module", None) or ",".join(
+                    a.name for a in u.names)
+                chyby.append(
+                    f"{p.name}:{u.lineno}: {f.name} importuje {jm} "
+                    f"až za běhu, patří to nahoru")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

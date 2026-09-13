@@ -9,6 +9,8 @@ být libovolně a dají se kdykoli upravit bez restartu.
 
 from __future__ import annotations
 
+import logging
+import unicodedata
 from typing import Any
 
 import voluptuous as vol
@@ -26,7 +28,9 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
-from . import const as c
+from . import const as c, karty
+
+_LOGGER = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------- selektory
 
@@ -207,12 +211,10 @@ class NaPohoduOptionsFlow(OptionsFlow):
         if user_input is not None:
             return await self.async_step_init()
 
-        from unicodedata import normalize
-
-        from . import karty
 
         def klic(nazev: str) -> str:
-            bez = normalize("NFKD", nazev).encode("ascii", "ignore").decode()
+            bez = unicodedata.normalize(
+                "NFKD", nazev).encode("ascii", "ignore").decode()
             return "".join(z if z.isalnum() else "_"
                            for z in bez.lower()).strip("_")
 
@@ -239,11 +241,16 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 oblasti.append(klic(pod.title))
 
         g = {**self.config_entry.data, **self.config_entry.options}
-        text = karty.dashboard(
-            mistnosti, oblasti,
-            lambda e: self.hass.states.get(e) is not None,
-            cidla=cidla, zaluzie=zaluzie, venku=g.get(c.CONF_T_VENKU),
-            s_okny=s_okny, s_klidem=s_klidem, podoba=podoba)
+        try:
+            text = karty.dashboard(
+                mistnosti, oblasti,
+                lambda e: self.hass.states.get(e) is not None,
+                cidla=cidla, zaluzie=zaluzie, venku=g.get(c.CONF_T_VENKU),
+                s_okny=s_okny, s_klidem=s_klidem, podoba=podoba)
+        except Exception as e:  # pragma: no cover
+            # Chyba v generování nesmí položit celý dialog nastavení.
+            _LOGGER.exception("NaPohodu: kartu se nepodařilo poskládat")
+            text = f"# Kartu se nepodařilo poskládat: {e}"
 
         return self.async_show_form(
             step_id="karta_jedna" if podoba == "karta" else "karta_stranka",

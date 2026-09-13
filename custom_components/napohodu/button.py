@@ -17,7 +17,9 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import vykon as vy
 from .const import CONF_STINENI_MAPA, DOMAIN, PODENTITA_MISTNOST
+from .services import proved_stav_stineni
 from .entity import NaPohoduEntity
 
 
@@ -85,14 +87,9 @@ class Stineni(NaPohoduEntity, ButtonEntity):
         self._role = role
 
     async def async_press(self) -> None:
-        from . import vykon as vy
-        from .const import CONF_STINENI_MAPA
-
         cile = vy.cile_zaluzii(self._role,
                                self.pod.data.get(CONF_STINENI_MAPA) or {})
         for zaluzie, nazev in cile.items():
-            from .services import proved_stav_stineni
-
             await proved_stav_stineni(self.hass, zaluzie, nazev)
         vyk = self.coordinator.vykonavaci.get(self.pod_id)
         if vyk is not None:

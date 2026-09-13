@@ -18,6 +18,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
+from .number import MISTNOST as POSUVNIKY_MISTNOSTI
 from . import (core, pritomnost as pr, prumery as pm, slunce as sl,
                sousedstvi as so, vykon as vy, zpravy as zp,
                klima as kl)
@@ -301,9 +302,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     def _srovnej_posuvniky(self, pod_id: str, d: dict) -> None:
         """Změnu v nastavení místnosti přenese na šoupátka."""
-        from .number import MISTNOST
-
-        for p2 in MISTNOST:
+        for p2 in POSUVNIKY_MISTNOSTI:
             if p2.klic not in d:
                 continue
             hodnota = float(d[p2.klic])
