@@ -401,7 +401,6 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_CLIMATE_OBOJI): _ent(["climate"], True),
         vol.Optional(c.CONF_TOPIT_PRI_OKNU, default="nechat"): _volba(
             c.PRI_OKNU, "topit_pri_oknu"),
-        vol.Optional(c.CONF_TOPIT_UTLUM, default=16.0): _cislo(5, 20),
         vol.Optional(c.CONF_SEZONU_RIDI_HLAVICE, default=True):
             selector.BooleanSelector(),
         vol.Optional(c.CONF_ZNACKA_OKNO, default=5.5): _cislo(4, 12, 0.1),
@@ -498,6 +497,28 @@ SCHEMA_INDICIE = vol.Schema(
 )
 
 
+def _zkontroluj_prahy(data: dict) -> dict:
+    """Prahy musí jít vzestupně, jinak dávají nesmysl.
+
+    Zavírací práh nad otevíracím obrátí mrtvou zónu naruby: okno by se
+    otevřelo a hned zavřelo. Noční práh pod denním by znamenal, že se
+    v noci větrá ochotněji než přes den.
+    """
+    chyby = {}
+    otevrit = data.get(c.CONF_CO2_OTEVRIT)
+    zavrit = data.get(c.CONF_CO2_ZAVRIT)
+    noc = data.get(c.CONF_CO2_NOC)
+    krize = data.get(c.CONF_CO2_NOC_KRIZE)
+
+    if otevrit is not None and zavrit is not None and zavrit >= otevrit:
+        chyby[c.CONF_CO2_ZAVRIT] = "zavrit_nad_otevrit"
+    if otevrit is not None and noc is not None and noc < otevrit:
+        chyby[c.CONF_CO2_NOC] = "noc_pod_dnem"
+    if noc is not None and krize is not None and krize <= noc:
+        chyby[c.CONF_CO2_NOC_KRIZE] = "krize_pod_noci"
+    return chyby
+
+
 class MistnostSubentryFlow(ConfigSubentryFlow):
     """Přidání a úprava místnosti. Tři kroky, ať formulář není nekonečný."""
 
@@ -518,11 +539,17 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         return await self.async_step_zaklad(user_input)
 
     async def async_step_zaklad(self, user_input=None) -> SubentryFlowResult:
+        chyby = {}
         if user_input is not None:
-            self._data.update(user_input)
-            return await self.async_step_stineni()
+            chyby = _zkontroluj_prahy(user_input)
+            if not chyby:
+                self._data.update(user_input)
+                return await self.async_step_stineni()
         return self.async_show_form(
-            step_id="zaklad", data_schema=_schema_mistnost(self._stavy()))
+            step_id="zaklad",
+            data_schema=self.add_suggested_values_to_schema(
+                _schema_mistnost(self._stavy()), user_input or {}),
+            errors=chyby)
 
     async def async_step_stineni(self, user_input=None) -> SubentryFlowResult:
         """Ke každé žaluzii se přiřadí, který její stav plní kterou roli.
@@ -589,10 +616,13 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
 
     async def async_step_reconfigure(self, user_input=None) -> SubentryFlowResult:
         self._uprava = True
+        chyby = {}
         if user_input is not None:
-            self._data.update(user_input)
-            # žaluzie mohly přibýt, takže se projde i krok se stavy
-            return await self.async_step_stineni()
+            chyby = _zkontroluj_prahy(user_input)
+            if not chyby:
+                self._data.update(user_input)
+                # žaluzie mohly přibýt, projde se i krok se stavy
+                return await self.async_step_stineni()
         self._data = dict(self._get_reconfigure_subentry().data)
         return self.async_show_form(
             step_id="reconfigure",
@@ -600,8 +630,9 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
                 _schema_mistnost(self._stavy())
                 .extend(SCHEMA_PRITOMNOST.schema)
                 .extend(SCHEMA_INDICIE.schema),
-                self._data,
+                {**self._data, **(user_input or {})},
             ),
+            errors=chyby,
         )
 
 

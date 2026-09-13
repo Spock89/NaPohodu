@@ -243,7 +243,6 @@
             "t_venku_mistni": "Vlastní venkovní teplota",
             "rh_venku_mistni": "Vlastní venkovní vlhkost",
             "min_drzeni_min": "Nejkratší doba držení polohy",
-            "topit_utlum": "Útlum topení při otevřeném okně",
             "topit_mimo_sezonu": "Topit i mimo sezónu",
             "odvzdusneni_h": "Odvzdušnění na začátku sezóny",
             "odvzdusneni_t": "Teplota při odvzdušnění",
@@ -299,7 +298,6 @@
             "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
             "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
             "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam kvůli hodnotě skákající kolem prahu.",
-            "topit_utlum": "Teplota, na kterou se hlavice srazí, když je u volby Při otevřeném okně zvolený útlum. Neposílá se vypnuto, protože úplně zavřená hlavice se pak dlouho vrací.",
             "topit_mimo_sezonu": "Normálně se mimo topnou sezónu hlavice vypnou. Zapni, když má tahle místnost topit celoročně, například koupelna.",
             "odvzdusneni_h": "Po začátku sezóny se tuhle dobu drží vysoká teplota, aby ventil zůstal otevřený a rozvod se sám odvzdušnil. Nula znamená neodvzdušňovat.",
             "odvzdusneni_t": "Teplota, která zaručí plně otevřený ventil. Nemá topit doopravdy, jen otevřít.",
@@ -413,7 +411,6 @@
             "t_venku_mistni": "Vlastní venkovní teplota",
             "rh_venku_mistni": "Vlastní venkovní vlhkost",
             "min_drzeni_min": "Nejkratší doba držení polohy",
-            "topit_utlum": "Útlum topení při otevřeném okně",
             "topit_mimo_sezonu": "Topit i mimo sezónu",
             "odvzdusneni_h": "Odvzdušnění na začátku sezóny",
             "odvzdusneni_t": "Teplota při odvzdušnění",
@@ -480,7 +477,6 @@
             "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
             "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
             "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam kvůli hodnotě skákající kolem prahu.",
-            "topit_utlum": "Teplota, na kterou se hlavice srazí, když je u volby Při otevřeném okně zvolený útlum. Neposílá se vypnuto, protože úplně zavřená hlavice se pak dlouho vrací.",
             "topit_mimo_sezonu": "Normálně se mimo topnou sezónu hlavice vypnou. Zapni, když má tahle místnost topit celoročně, například koupelna.",
             "odvzdusneni_h": "Po začátku sezóny se tuhle dobu drží vysoká teplota, aby ventil zůstal otevřený a rozvod se sám odvzdušnil. Nula znamená neodvzdušňovat.",
             "odvzdusneni_t": "Teplota, která zaručí plně otevřený ventil. Nemá topit doopravdy, jen otevřít.",
@@ -507,6 +503,11 @@
       "initiate_flow": {
         "user": "místnost",
         "reconfigure": "Upravit místnost"
+      },
+      "error": {
+        "zavrit_nad_otevrit": "Zavírací práh musí být nižší než otevírací, jinak se okno otevře a hned zavře.",
+        "noc_pod_dnem": "Noční práh nemá být nižší než denní — v noci se má větrat později, ne dřív.",
+        "krize_pod_noci": "Nouzový práh musí být vyšší než noční, jinak nemá co přebít."
       }
     },
     "zona": {

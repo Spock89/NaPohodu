@@ -45,9 +45,9 @@ from .const import (
     CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
     CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
     CONF_TOPIT_MIMO_SEZONU, CONF_TOPIT_PRI_OKNU, CONF_TOPIT_UTLUM,
-    CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_VITR,
-    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE,
-    CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
+    CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM,
+    CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYNUCENO_M,
+    CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
     CONF_ZDROJ_OBSAZENOSTI, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO,
     CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S,
     PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA,
@@ -781,7 +781,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 float(d.get(CONF_MIN_DRZENI, 20))) * 60,
             nocni_min=self.hodnota(p.subentry_id, CONF_NOC_MIN,
                                    float(d.get(CONF_NOC_MIN, 18))),
-            komfort_odstup=float(d.get(CONF_KOMFORT_ODSTUP, 4.0)),
+            komfort_odstup=self.hodnota(
+                p.subentry_id, CONF_KOMFORT_ODSTUP,
+                float(d.get(CONF_KOMFORT_ODSTUP, 4.0))),
             noc_od=noc_od, noc_do=noc_do,
             narazove_strop_s=self.narazove_strop_s,
         )
@@ -928,7 +930,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
         povel = vy.cil_topeni(
             m.cil, m.okno_otevreno,
-            float(d.get(CONF_TOPIT_UTLUM, 16.0)),
+            self.hodnota(p.subentry_id, CONF_UTLUM, float(
+                d.get(CONF_UTLUM, d.get(CONF_TOPIT_UTLUM, 16.0)))),
             self.topna_sezona,
             bool(d.get(CONF_TOPIT_MIMO_SEZONU, False)),
             odvzdusneni, float(d.get(CONF_ODVZDUSNENI_T, 28.0)),

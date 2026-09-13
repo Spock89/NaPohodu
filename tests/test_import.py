@@ -247,3 +247,39 @@ def test_vlhkost_se_ukazuje_i_bez_odtahu(nahradni_ha):
 class _Pod:
     subentry_id = "id"
     title = "Kuchyne"
+
+
+# ------------------------------------------- kontrola prahů ve formuláři
+
+def _prahy(**kw):
+    import importlib
+    cf = importlib.import_module("napohodu.config_flow")
+    c = importlib.import_module("napohodu.const")
+    klice = {"otevrit": c.CONF_CO2_OTEVRIT, "zavrit": c.CONF_CO2_ZAVRIT,
+             "noc": c.CONF_CO2_NOC, "krize": c.CONF_CO2_NOC_KRIZE}
+    return cf._zkontroluj_prahy({klice[k]: v for k, v in kw.items()})
+
+
+def test_rozumne_prahy_projdou(nahradni_ha):
+    assert _prahy(otevrit=800, zavrit=700, noc=1000, krize=1250) == {}
+
+
+def test_zaviraci_prah_nad_oteviracim_neprojde(nahradni_ha):
+    """Obrácená mrtvá zóna by okno otevřela a hned zavřela."""
+    assert _prahy(otevrit=800, zavrit=900)
+
+
+def test_stejne_prahy_neprojdou(nahradni_ha):
+    assert _prahy(otevrit=800, zavrit=800)
+
+
+def test_nocni_prah_pod_dennim_neprojde(nahradni_ha):
+    assert _prahy(otevrit=800, noc=700)
+
+
+def test_nouzovy_prah_pod_nocnim_neprojde(nahradni_ha):
+    assert _prahy(noc=1000, krize=900)
+
+
+def test_chybejici_hodnoty_nevadi(nahradni_ha):
+    assert _prahy(otevrit=800) == {}
