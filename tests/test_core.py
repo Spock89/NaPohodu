@@ -709,3 +709,27 @@ def test_diagnostika_bez_klidu_nemluvi_o_noci():
     d = duvody(stary(co2=500, t_in=21, cil=25.5, hodina=2, resi_klid=False),
                Pamet(), N)
     assert not any("noční" in x for x in d)
+
+
+def test_spanek_vedle_nezavre_kuchyni():
+    """Kuchyň má klid navázaný na spánek, ale sama se v ní nespí.
+    Spánek v obýváku ve stejné oblasti ji nesmí uspat taky."""
+    r, _ = krok(stary(co2=1073, t_in=20.6, t_out=8, cil=25.5, hodina=7,
+                      spanek=False, resi_klid=False))
+    assert r.akce is Akce.OTEVRIT
+
+
+def test_kde_se_spi_nocni_rezim_plati():
+    r, _ = krok(stary(co2=1073, t_in=20.6, t_out=8, cil=25.5, hodina=7,
+                      spanek=True, resi_klid=True))
+    assert r.akce is Akce.NIC and "ranní" in r.duvod
+
+
+def test_klid_podle_noci_plati_v_noci_ne_rano():
+    """Volba „podle noci" znamená noční hodiny, ne ranní ruch po nich."""
+    v_noci, _ = krok(stary(co2=850, t_in=21, t_out=8, cil=25.5, hodina=2,
+                           spanek=True, resi_klid=True))
+    rano, _ = krok(stary(co2=850, t_in=21, t_out=8, cil=25.5, hodina=7,
+                         spanek=False, resi_klid=True))
+    assert v_noci.akce is Akce.NIC       # noční práh je 1000
+    assert rano.akce is Akce.OTEVRIT     # ráno už noc není

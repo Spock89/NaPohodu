@@ -760,8 +760,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             t_out=t_ven, rh_out=rh_ven, cil=m.cil,
             dest=dest, vitr_blokuje=vitr_blokuje,
             doma=doma or i_kdyz_nikdo,
-            spanek=okruh["spanek"], vynuceno=vynuceno,
-            resi_klid=d.get(CONF_ZDROJ_KLIDU, "spanek") != "zadny",
+            # Noční režim se řídí klidem TÉHLE místnosti, ne oblasti.
+            # Spánek v obýváku nemá kuchyni zavřít okno, když má klid
+            # nastavený na spánek a sama se v ní nespí.
+            spanek=m.klid,
+            # a noční doba platí jen tam, kde je klid navázaný na noc
+            resi_klid=d.get(CONF_ZDROJ_KLIDU, "spanek") in (
+                "noc", "spanek_nebo_noc"),
+            vynuceno=vynuceno,
             hodina=hodina, cas_s=cas_s,
             zastupce=uprava.zastupce is not None,
             narazove=self.narazove_bezi,
