@@ -61,7 +61,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
 
 class NaPohoduNumber(NaPohoduEntity, RestoreNumber, NumberEntity):
-    """Hodnota přežije restart. Výchozí bere z konfigurace místnosti."""
+    """Šoupátko a pole ve formuláři ukazují tutéž hodnotu.
+
+    Jediné, kde hodnota doopravdy žije, je koordinátor. Šoupátko do něj
+    zapisuje a zároveň z něj čte, takže když někdo změní pole v nastavení
+    místnosti, šoupátko se posune taky. Dvě místa pro tutéž hodnotu jsou
+    past: člověk pak neví, co platí.
+    """
 
     _attr_mode = NumberMode.SLIDER
     _attr_entity_category = EntityCategory.CONFIG
@@ -74,21 +80,28 @@ class NaPohoduNumber(NaPohoduEntity, RestoreNumber, NumberEntity):
         self._attr_native_step = p.krok
         self._attr_native_unit_of_measurement = p.jednotka
         self._attr_icon = p.ikona
-        self._hodnota = float(pod.data.get(p.klic, p.vychozi))
+        self._vychozi = float(pod.data.get(p.klic, p.vychozi))
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
+        klic = (self.pod_id, self._p.klic)
+        hodnota = self._vychozi
         ulozene = await self.async_get_last_number_data()
         if ulozene and ulozene.native_value is not None:
-            self._hodnota = float(ulozene.native_value)
-        self.coordinator.hodnoty[(self.pod_id, self._p.klic)] = self._hodnota
+            hodnota = float(ulozene.native_value)
+        # formulář vyhrává, když se od minula změnil — je to výslovný
+        # pokyn, kdežto uložená hodnota šoupátka je jen minulý stav
+        if self.coordinator.formular_zmenen(klic, self._vychozi):
+            hodnota = self._vychozi
+        self.coordinator.hodnoty.setdefault(klic, hodnota)
+        self.coordinator.hodnoty[klic] = hodnota
 
     @property
     def native_value(self) -> float:
-        return self._hodnota
+        return self.coordinator.hodnoty.get(
+            (self.pod_id, self._p.klic), self._vychozi)
 
     async def async_set_native_value(self, value: float) -> None:
-        self._hodnota = value
         self.coordinator.hodnoty[(self.pod_id, self._p.klic)] = value
         self.async_write_ha_state()
         await self.coordinator.async_request_refresh()

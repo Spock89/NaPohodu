@@ -113,6 +113,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.narazove_bezi: bool = False
         self.narazove_co2: float = 0.0
         self.narazove_strop_s: float = 600.0
+        # poslední viděné hodnoty z formuláře, kvůli rozpoznání změny
+        self._formular: dict[tuple, float] = {}
         # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
         self.souhrn: dict[str, dict] = {}
         self._souhrn_den: str = ""
@@ -287,6 +289,29 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         return min(h) if h else nahrada
 
     # ------------------------------------------------------------ pomocné
+
+    def _srovnej_posuvniky(self, pod_id: str, d: dict) -> None:
+        """Změnu v nastavení místnosti přenese na šoupátka."""
+        from .number import MISTNOST
+
+        for p2 in MISTNOST:
+            if p2.klic not in d:
+                continue
+            hodnota = float(d[p2.klic])
+            if self.formular_zmenen((pod_id, p2.klic), hodnota):
+                self.hodnoty[(pod_id, p2.klic)] = hodnota
+                _LOGGER.debug("NaPohodu: %s.%s z nastavení -> %s",
+                              pod_id, p2.klic, hodnota)
+
+    def formular_zmenen(self, klic: tuple, hodnota: float) -> bool:
+        """Změnil se od minula údaj ve formuláři?
+
+        Když ano, má přednost před hodnotou šoupátka — uživatel ji právě
+        vědomě přepsal. Když ne, platí šoupátko, protože s ním se ladí.
+        """
+        zmena = self._formular.get(klic) != hodnota
+        self._formular[klic] = hodnota
+        return zmena
 
     def hodnota(self, pod_id: str, klic: str, vychozi: float) -> float:
         """Hodnota z posuvníku, jinak z konfigurace."""
@@ -474,6 +499,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 d[CONF_ZALUZIE] = d[CONF_ZALUZIE_STARE]
 
             jmeno = d.get(CONF_NAZEV, p.title)
+            self._srovnej_posuvniky(p.subentry_id, d)
             odchylka = self.hodnota(p.subentry_id, CONF_ODCHYLKA,
                                     float(d.get(CONF_ODCHYLKA, 0.0)))
             sig = self._signaly(d, doma, hodina, noc_od, noc_do)

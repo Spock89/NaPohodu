@@ -367,3 +367,56 @@ def test_vsechna_pole_pameti_jsou_serializovatelna(nahradni_ha):
 
     core = importlib.import_module("napohodu.core")
     json.dumps(asdict(core.Pamet()))
+
+
+# ------------------------------- šoupátko a formulář ukazují totéž
+
+def _koordinator(nahradni_ha=None):
+    import importlib
+    ko = importlib.import_module("napohodu.coordinator")
+
+    class Falesny:
+        hodnoty: dict = {}
+        _formular: dict = {}
+        formular_zmenen = ko.NaPohoduCoordinator.formular_zmenen
+        _srovnej_posuvniky = ko.NaPohoduCoordinator._srovnej_posuvniky
+
+    return Falesny()
+
+
+def test_zmena_ve_formulari_prepise_soupatko(nahradni_ha):
+    """Dvě místa pro tutéž hodnotu je past. Formulář je výslovný pokyn."""
+    import importlib
+    c = importlib.import_module("napohodu.const")
+    k = _koordinator()
+
+    # první cyklus: hodnota z formuláře se zapamatuje
+    k._srovnej_posuvniky("m1", {c.CONF_CO2_OTEVRIT: 800.0})
+    assert k.hodnoty[("m1", c.CONF_CO2_OTEVRIT)] == 800.0
+
+    # člověk pohne šoupátkem
+    k.hodnoty[("m1", c.CONF_CO2_OTEVRIT)] = 900.0
+    k._srovnej_posuvniky("m1", {c.CONF_CO2_OTEVRIT: 800.0})
+    assert k.hodnoty[("m1", c.CONF_CO2_OTEVRIT)] == 900.0   # šoupátko platí
+
+    # člověk přepíše pole v nastavení
+    k._srovnej_posuvniky("m1", {c.CONF_CO2_OTEVRIT: 750.0})
+    assert k.hodnoty[("m1", c.CONF_CO2_OTEVRIT)] == 750.0
+
+
+def test_nezmenene_pole_soupatkem_nehne(nahradni_ha):
+    import importlib
+    c = importlib.import_module("napohodu.const")
+    k = _koordinator()
+    k._srovnej_posuvniky("m1", {c.CONF_NOC_MIN: 18.0})
+    k.hodnoty[("m1", c.CONF_NOC_MIN)] = 19.5
+    for _ in range(5):
+        k._srovnej_posuvniky("m1", {c.CONF_NOC_MIN: 18.0})
+    assert k.hodnoty[("m1", c.CONF_NOC_MIN)] == 19.5
+
+
+def test_formular_zmenen_hlasi_jen_zmenu(nahradni_ha):
+    k = _koordinator()
+    assert k.formular_zmenen(("m", "x"), 1.0) is True     # poprvé
+    assert k.formular_zmenen(("m", "x"), 1.0) is False
+    assert k.formular_zmenen(("m", "x"), 2.0) is True
