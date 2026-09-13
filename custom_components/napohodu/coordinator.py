@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import copy
 import logging
-from dataclasses import dataclass, field, replace
+from dataclasses import asdict, dataclass, field, fields, replace
 from datetime import timedelta
 
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
@@ -128,6 +128,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # Bez tohohle by se po každém znovunačtení integrace žaluzie
         # rozjely znovu do stejné polohy. Zarachotí a nikdo neví proč.
         self._uloziste_stineni = Store(hass, 1, f"{DOMAIN}.stineni_pamet")
+        # Bez tohohle se po restartu zapomene rozdělané větrání, doba
+        # držení stavu i běžící pulz — okno by se mohlo hned rozjet.
+        self._uloziste_pameti = Store(hass, 1, f"{DOMAIN}.pameti")
         self.mistnosti: dict[str, VysledekMistnosti] = {}
 
     def srovnej(self, pod_id: str | None = None) -> None:
@@ -143,6 +146,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
     async def async_nacti(self) -> None:
         """Obnoví průměry i polohy žaluzií, ať se nezačíná od nuly."""
         self.prumery = pm.Prumery.ze_slovniku(await self._uloziste.async_load())
+        await self._nacti_pameti()
         ulozene = await self._uloziste_stineni.async_load() or {}
         for pod_id, data in ulozene.items():
             vyk = self.vykonavaci.setdefault(
@@ -156,6 +160,34 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 vyk.stav.posledni_stineni.update(data)
             # polohy známe z disku, ochrana po startu už netřeba
             vyk.stav.prvni_beh = False
+
+    def _uloz_pameti(self) -> dict:
+        """Stav rozhodování, aby restart nezačínal od nuly."""
+        out = {}
+        for pid, pamet in self.pameti.items():
+            zaznam = asdict(pamet)
+            vyk = self.vykonavaci.get(pid)
+            if vyk is not None:
+                zaznam["_pulz_do_s"] = vyk.stav.pulz_do_s
+                zaznam["_topeni_cil"] = vyk.stav.topeni_cil
+                zaznam["_topeni_rezim"] = vyk.stav.topeni_rezim
+            out[pid] = zaznam
+        return out
+
+    async def _nacti_pameti(self) -> None:
+        ulozene = await self._uloziste_pameti.async_load() or {}
+        pole = {f.name for f in fields(core.Pamet)}
+        for pid, zaznam in ulozene.items():
+            pamet = core.Pamet(**{k: v for k, v in zaznam.items()
+                                  if k in pole})
+            self.pameti[pid] = pamet
+            vyk = self.vykonavaci.setdefault(
+                pid, vy.Vykonavac(self.hass, pid))
+            vyk.stav.pulz_do_s = zaznam.get("_pulz_do_s")
+            vyk.stav.topeni_cil = zaznam.get("_topeni_cil")
+            vyk.stav.topeni_rezim = zaznam.get("_topeni_rezim")
+        if ulozene:
+            _LOGGER.debug("NaPohodu: obnoveno %d pamětí", len(ulozene))
 
     def _uloz_stineni(self) -> dict:
         return {k: {"stavy": dict(v.stav.posledni_stineni),
@@ -631,6 +663,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             }
             self.zony[o["id"]] = z
 
+        self._uloziste_pameti.async_delay_save(self._uloz_pameti, 30)
         return {"zony": self.zony, "mistnosti": self.mistnosti}
 
     async def _posli(self, g: dict, druh: str, mistnost: str,

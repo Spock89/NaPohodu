@@ -325,3 +325,45 @@ def test_zdroj_oboji(nahradni_ha):
 def test_zdroj_nikdy(nahradni_ha):
     """Pro hlavici, která si otevřené okno pozná sama z poklesu."""
     assert _okno_pro_topeni("nikdy", True, True) is False
+
+
+# ------------------------------------------- přežití restartu
+
+def test_pamet_jde_ulozit_a_nacist(nahradni_ha):
+    """Po restartu se nesmí zapomenout rozdělané větrání ani časovače."""
+    import importlib
+    from dataclasses import asdict, fields
+
+    core = importlib.import_module("napohodu.core")
+    p = core.Pamet(otevreno=True, rezim="pulz", den_mez=20.5,
+                   cas_povelu_s=12345.0, vetra_se=True,
+                   noc_mez=18.0, komfort_start=24.0,
+                   rucni_do_s=99999.0, pm_venku_horsi_do_s=5555.0)
+
+    zaznam = asdict(p)
+    pole = {f.name for f in fields(core.Pamet)}
+    obnovena = core.Pamet(**{k: v for k, v in zaznam.items() if k in pole})
+
+    assert obnovena == p
+
+
+def test_ulozena_pamet_snese_neznama_pole(nahradni_ha):
+    """Starší uložený stav nesmí shodit načtení."""
+    import importlib
+    from dataclasses import fields
+
+    core = importlib.import_module("napohodu.core")
+    zaznam = {"otevreno": True, "rezim": "pulz", "_pulz_do_s": 500,
+              "nezname_pole": 1}
+    pole = {f.name for f in fields(core.Pamet)}
+    p = core.Pamet(**{k: v for k, v in zaznam.items() if k in pole})
+    assert p.otevreno is True and p.rezim == "pulz"
+
+
+def test_vsechna_pole_pameti_jsou_serializovatelna(nahradni_ha):
+    import importlib
+    import json
+    from dataclasses import asdict
+
+    core = importlib.import_module("napohodu.core")
+    json.dumps(asdict(core.Pamet()))

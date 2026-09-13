@@ -33,12 +33,7 @@ sama za sebe a nic jí nechybí.
 
 ### Proč zrovna takhle
 
-Dřív okna patřila oblasti a rychle se ukázalo, proč to nefunguje. Když
-má každá místnost svoje okno, musel bys zakládat oblast na každou z nich,
-přestože nic nepropojuje. A vznikala nesouměrnost: žaluzie patřily
-místnosti, okna oblasti, i když obojí visí na téže stěně.
-
-Rozdělení je teď jednoduché. **Cokoli, co se ovládá, patří místnosti.
+Rozdělení je jednoduché. **Cokoli, co se ovládá, patří místnosti.
 Oblast je jen informace o tom, že vzduch teče i mezi nimi.**
 
 Příklad: kuchyň a obývák jsou průchozí, tvoří oblast. Ložnice za dveřmi
@@ -339,19 +334,6 @@ jsi ho otevřel ručně nebo vynutil přepínačem.
 Naopak všechno ostatní tvoje rozhodnutí respektuje. Ruční zásah zruší
 rozdělanou akci, vynucené otevření přebije vzduch i teploty a přepínače
 ovládání vypnou automatiku úplně.
-
-## Ikona
-
-Obrázky jsou ve složce `custom_components/napohodu/brand/` jako
-`icon.png`, `icon@2x.png`, `logo.png` a `logo@2x.png`.
-
-Od Home Assistanta 2026.3 si vlastní integrace nosí obrázky s sebou
-a nemusí je nikam hlásit. Místní soubory mají přednost před repozitářem
-značek, který pro vlastní integrace už nové žádosti ani nepřijímá.
-
-Ikona se objeví v seznamu integrací i na stránkách zařízení. V HACS se
-zatím nemusí zobrazit, protože ten si obrázky tahá z vlastní služby —
-je to známá věc a na funkci to nemá vliv.
 
 ## Licence
 
