@@ -45,6 +45,7 @@ ATRIBUTY_STAVU = [
     ("rucni_zasah", "Sáhl jsi na okno", None),
     ("kontakt_hlasi", "Kontakt hlásí otevřeno", None),
     ("prach_zvenci", "Prach se tahá zvenčí", None),
+    ("co_bylo", "Poslední rozhodnutí", None),
     ("co_dal", "Co změnu spustí", None),
     ("duvody", "Diagnostika", None),
 ]

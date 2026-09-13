@@ -901,9 +901,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             if vyk.stav.pulz_zavrel:
                 vyk.stav.pulz_zavrel = False
                 pamet.otevreno = False
-                # pauza se počítá od zavření; posunutím času povelu
-                # dopředu se dá udělat kratší než držení stavu
-                pauza = float(d.get(CONF_PAUZA_PO_PULZU, 15)) * 60
+                pamet.pulzy_za_sebou += 1
+
+                # Když větrání nezabírá, nemá cenu zkoušet to pořád
+                # dokola stejně — pauza se s každým dalším pulzem
+                # zdvojnásobí, nejvýš na hodinu. Typicky se to stane,
+                # když tahle místnost větrá za jinou, jejíž vzduch
+                # svým oknem skoro neovlivní.
+                zaklad = float(d.get(CONF_PAUZA_PO_PULZU, 15)) * 60
+                pauza = min(zaklad * 2 ** (pamet.pulzy_za_sebou - 1), 3600)
                 pamet.cas_povelu_s = cas_s + pauza - nast.min_drzeni_s
                 m.atributy["pauza_po_pulzu_min"] = round(pauza / 60)
 
@@ -960,6 +966,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "okna": okna,
             "kontakt_hlasi": rucne if kontakty else None,
             "co_dal": core.ocekavani(v, pamet, nast),
+            "co_bylo": core.posledni(pamet, cas_s),
+            "vetrani_za_sebou": pamet.pulzy_za_sebou,
             "prach_zvenci": cas_s < pamet.pm_venku_horsi_do_s,
             "duvody": (["větrá se"] if skutecne
                        else core.duvody(v, pamet, nast) or ["nic nebrání"]),

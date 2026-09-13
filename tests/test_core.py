@@ -835,3 +835,46 @@ def test_ocekavani_zminuje_rucni_zasah():
     t = " ".join(ocekavani(Vstup(co2=900, t_in=21, cil=25.5, cas_s=100000),
                            p, N))
     assert "sáhl jsi na okno" in t
+
+
+# ------------------------------- couvání a záznam posledního rozhodnutí
+
+def test_uspesne_vyvetrani_zrusi_couvani():
+    p = Pamet(otevreno=True, cas_povelu_s=0, pulzy_za_sebou=3)
+    r = rozhodni(Vstup(co2=500, t_in=21, t_out=10, cil=25.5, cas_s=100000),
+                 p, N)
+    assert r.kod == "cisto"
+    assert p.pulzy_za_sebou == 0
+
+
+def test_posledni_rozhodnuti_se_zapamatuje():
+    from core import posledni
+    p = Pamet(cas_povelu_s=0)
+    rozhodni(Vstup(co2=1200, t_in=21, t_out=10, cil=25.5, cas_s=100000), p, N)
+    assert p.posledni_akce == "otevřít"
+    assert p.posledni_co2 == 1200
+    t = " ".join(posledni(p, 100600))
+    assert "otevřít" in t and "před 10 min" in t and "1200" in t
+
+
+def test_bez_rozhodnuti_se_to_prizna():
+    from core import posledni
+    assert "zatím nic" in " ".join(posledni(Pamet(), 100000))
+
+
+def test_zaznam_zminuje_opakovana_vetrani():
+    from core import posledni
+    p = Pamet(posledni_akce="zavřít", posledni_duvod="pulz",
+              posledni_kdy_s=100000, pulzy_za_sebou=4)
+    assert "4. větrání" in " ".join(posledni(p, 100000))
+
+
+def test_narazove_zkraceni_je_videt_v_duvodu():
+    """Krátký pulz v mírném počasí mate — má být poznat proč."""
+    r, _ = krok(stary(co2=911, t_in=21, t_out=15.5, cil=22, narazove=True))
+    assert "nárazově" in r.duvod
+
+
+def test_bez_narazoveho_se_duvod_nemeni():
+    r, _ = krok(stary(co2=911, t_in=21, t_out=15.5, cil=22))
+    assert "nárazově" not in r.duvod

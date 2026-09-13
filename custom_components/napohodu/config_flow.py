@@ -92,7 +92,7 @@ SCHEMA_GLOBAL = vol.Schema(
             selector.TimeSelector(),
         vol.Optional(c.CONF_NARAZOVE, default=False):
             selector.BooleanSelector(),
-        vol.Optional(c.CONF_NARAZOVE_ODSTUP, default=0.0): _cislo(0, 10, 0.5),
+        vol.Optional(c.CONF_NARAZOVE_ODSTUP, default=6.0): _cislo(0, 15, 0.5),
         vol.Optional(c.CONF_NARAZOVE_STROP, default=10):
             _cislo(3, 30, 1, "min"),
         vol.Optional(c.CONF_VITR_PRAH, default=7.0): _cislo(3, 30, 0.5, "m/s"),

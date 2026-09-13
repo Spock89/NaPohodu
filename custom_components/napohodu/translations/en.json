@@ -56,7 +56,7 @@
           "zpravy_druhy": "Zaškrtni, co tě zajímá. První dny se hodí i běžné otevírání, pak většinou stačí ochrana a souhrn.",
           "narazove_vetrani": "Když je venku zima a jedna zóna potřebuje vzduch, otevřou se všechna okna naráz a krátce. Průvan vymění vzduch rychleji než dlouhé větrání jedním oknem a stěny se nestihnou vychladit. Kde tomu něco brání — vítr, déšť, noční mez — se prostě neotevře.",
           "narazove_strop_min": "Nejdelší doba nárazového větrání. Krátký průvan stačí, dlouhý už jen chladí.",
-          "narazove_odstup": "Nárazové větrání se použije, když je venku chladněji než cílová teplota — tedy když větrání stojí teplo. Nula znamená hned, vyšší číslo posune začátek do většího chladu. Pevná venkovní teplota by v lednu a v květnu znamenala něco jiného.",
+          "narazove_odstup": "Nárazové větrání zkracuje každé větrání na pár minut, takže patří do mrazu — v mírném počasí by se jen kmitalo a nestihlo vyvětrat. Číslo říká, o kolik musí být venku chladněji než cíl. Šest stupňů znamená, že při cíli 22 se zapne pod 16 °C.",
           "pm25_venku": "Prach venku. Podle něj se pozná, jestli má větrání kvůli prachu vůbec smysl — když je venku horší, otevřením se to nezlepší a jen by se větralo dokola. Bez tohohle čidla se řídí jen příznakem smogu.",
           "pm10_venku": "Totéž pro větší částice. Nepovinné.",
           "smog_venku": "Přepínač nebo čidlo, které říká, že venkovní vzduch nestojí za nadechnutí. Zapnutý znamená, že se kvůli prachu neotevírá — větráním by se to jen zhoršilo."
@@ -134,7 +134,7 @@
           "zpravy_druhy": "Zaškrtni, co tě zajímá. První dny se hodí i běžné otevírání, pak většinou stačí ochrana a souhrn.",
           "narazove_vetrani": "Když je venku zima a jedna zóna potřebuje vzduch, otevřou se všechna okna naráz a krátce. Průvan vymění vzduch rychleji než dlouhé větrání jedním oknem a stěny se nestihnou vychladit. Kde tomu něco brání — vítr, déšť, noční mez — se prostě neotevře.",
           "narazove_strop_min": "Nejdelší doba nárazového větrání. Krátký průvan stačí, dlouhý už jen chladí.",
-          "narazove_odstup": "Nárazové větrání se použije, když je venku chladněji než cílová teplota — tedy když větrání stojí teplo. Nula znamená hned, vyšší číslo posune začátek do většího chladu. Pevná venkovní teplota by v lednu a v květnu znamenala něco jiného.",
+          "narazove_odstup": "Nárazové větrání zkracuje každé větrání na pár minut, takže patří do mrazu — v mírném počasí by se jen kmitalo a nestihlo vyvětrat. Číslo říká, o kolik musí být venku chladněji než cíl. Šest stupňů znamená, že při cíli 22 se zapne pod 16 °C.",
           "pm25_venku": "Prach venku. Podle něj se pozná, jestli má větrání kvůli prachu vůbec smysl — když je venku horší, otevřením se to nezlepší a jen by se větralo dokola. Bez tohohle čidla se řídí jen příznakem smogu.",
           "pm10_venku": "Totéž pro větší částice. Nepovinné.",
           "smog_venku": "Přepínač nebo čidlo, které říká, že venkovní vzduch nestojí za nadechnutí. Zapnutý znamená, že se kvůli prachu neotevírá — větráním by se to jen zhoršilo."
@@ -315,7 +315,7 @@
             "sezonu_ridi_hlavice": "Better Thermostat si podle venkovní teploty určuje sám, kdy topit. Když je tohle zapnuté, integrace mimo sezónu do topení nemluví a nehádá se s ním na přechodu. Vypni, když má sezónu určovat integrace.",
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
             "znacka_mimo_sezonu": "Teplota mimo topnou sezónu. Neposílá se vypnuto, ale nízká hodnota, ze které je vidět, že spojení funguje a proč se netopí.",
-            "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu pulzu, i když vzduch ještě není vyvětraný. Bez pauzy by se okno hned otevřelo znovu. Kratší pauza znamená častější krátká větrání, delší méně častá a delší.",
+            "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu větrání, i když vzduch ještě není vyvětraný. Když se nedaří vyvětrat, každá další pauza je dvojnásobná, nejvýš hodinová — typicky když tahle místnost větrá za jinou, jejíž vzduch svým oknem skoro neovlivní.",
             "kvalita_cisto": "Slovní kvalita vzduchu, od které se místnost bere za vyvětranou. Výchozí fair znamená, že stupeň moderate drží okno otevřené, i kdyby bylo CO2 na čtyřech stovkách. Když ti čidlo hlásí moderate pořád, zvol moderate.",
             "zdroj_klidu": "Kdy má místnost vyžadovat klid. Platí to i pro okna.",
             "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
@@ -498,7 +498,7 @@
             "sezonu_ridi_hlavice": "Better Thermostat si podle venkovní teploty určuje sám, kdy topit. Když je tohle zapnuté, integrace mimo sezónu do topení nemluví a nehádá se s ním na přechodu. Vypni, když má sezónu určovat integrace.",
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
             "znacka_mimo_sezonu": "Teplota mimo topnou sezónu. Neposílá se vypnuto, ale nízká hodnota, ze které je vidět, že spojení funguje a proč se netopí.",
-            "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu pulzu, i když vzduch ještě není vyvětraný. Bez pauzy by se okno hned otevřelo znovu. Kratší pauza znamená častější krátká větrání, delší méně častá a delší.",
+            "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu větrání, i když vzduch ještě není vyvětraný. Když se nedaří vyvětrat, každá další pauza je dvojnásobná, nejvýš hodinová — typicky když tahle místnost větrá za jinou, jejíž vzduch svým oknem skoro neovlivní.",
             "kvalita_cisto": "Slovní kvalita vzduchu, od které se místnost bere za vyvětranou. Výchozí fair znamená, že stupeň moderate drží okno otevřené, i kdyby bylo CO2 na čtyřech stovkách. Když ti čidlo hlásí moderate pořád, zvol moderate.",
             "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice."

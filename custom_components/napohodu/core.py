@@ -142,6 +142,15 @@ class Pamet:
     # po ručním zásahu se čeká na nový podnět, ať se s člověkem
     # automatika nepřetahuje
     rucni_do_s: float = 0.0
+    # kolik pulzů po sobě skončilo, aniž by se vzduch dostal pod práh.
+    # Když větrání nezabírá, nemá cenu zkoušet to pořád dokola stejně.
+    pulzy_za_sebou: int = 0
+    # poslední skutečné rozhodnutí, ať jde dohledat, co se dělo
+    posledni_akce: str = ""
+    posledni_duvod: str = ""
+    posledni_kdy_s: float = 0.0
+    posledni_co2: float = 0.0
+    posledni_t_in: float = 0.0
     pohyby: int = 0
 
 
@@ -283,6 +292,21 @@ def _pod_cilem(v: Vstup, p: Pamet, n: Nastaveni, t_in: float) -> bool:
     return t_in <= mez
 
 
+def posledni(p: Pamet, cas_s: float) -> list[str]:
+    """Co a proč se naposledy stalo. Doplněk k tomu, co teprve bude."""
+    if not p.posledni_akce:
+        return ["zatím nic, integrace jen sleduje"]
+    pred = int((cas_s - p.posledni_kdy_s) / 60)
+    kdy = f"před {pred} min" if pred else "právě teď"
+    radky = [f"{p.posledni_akce} — {p.posledni_duvod} ({kdy})",
+             f"tehdy CO2 {p.posledni_co2:.0f}, uvnitř "
+             f"{p.posledni_t_in:.1f} °C"]
+    if p.pulzy_za_sebou > 1:
+        radky.append(f"{p.pulzy_za_sebou}. větrání po sobě bez vyvětrání, "
+                     f"pauzy se prodlužují")
+    return radky
+
+
 def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     """Na co se čeká a co příští změnu spustí.
 
@@ -320,6 +344,9 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         # takže se musí vyjmenovat, co zbývá — jinak člověk kouká na
         # nízké CO2 a nechápe, proč je pořád otevřeno.
         chybi = []
+        if v.narazove:
+            seznam.append(f"nárazové větrání zkracuje na "
+                          f"{n.narazove_strop_s / 60:.0f} min")
         if v.co2 >= n.co2_zavrit:
             chybi.append(f"CO2 pod {n.co2_zavrit:.0f} (teď {v.co2:.0f})")
         if v.vetrat:
@@ -420,6 +447,11 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         p.otevreno = chci_otevreno
         p.cas_povelu_s = v.cas_s
         p.pohyby += 1
+        p.posledni_akce = "otevřít" if chci_otevreno else "zavřít"
+        p.posledni_duvod = duvod
+        p.posledni_kdy_s = v.cas_s
+        p.posledni_co2 = v.co2
+        p.posledni_t_in = t_in
         return hotovo(Akce.OTEVRIT if chci_otevreno else Akce.ZAVRIT,
                       duvod, limit_s, kod)
 
@@ -627,6 +659,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         if not p.otevreno:
             return beze_zmeny(f"čisto, CO2 {v.co2:.0f}", False)
         p.den_mez = None
+        p.pulzy_za_sebou = 0          # povedlo se, couvání se ruší
         return zavri(f"vyvětráno, CO2 {v.co2:.0f}", kod="cisto")
 
     # --- 8. pulzní větrání -------------------------------------------
@@ -643,9 +676,12 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             minuty = max(5.0, min(45.0, n.rozpocet_stupnominut / dt))
         if noc:
             minuty *= 1.5
+        zkraceno = False
         if v.narazove:
             # Krátký průvan vymění vzduch rychleji než dlouhé větrání
             # jedním oknem a stěny se nestihnou vychladit.
+            if minuty > n.narazove_strop_s / 60:
+                zkraceno = True
             minuty = min(minuty, n.narazove_strop_s / 60)
 
         p.rezim = "pulz"
@@ -656,6 +692,8 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         if pm_spatne:
             duvod = f"PM2.5 {v.pm25:.0f}" + ("" if v.pm_platny else " (bez ventilátoru)")
         dolni = 3 if v.narazove else 30
+        if zkraceno:
+            duvod += f", nárazově jen {minuty:.0f} min"
         return otevri(duvod, min(max(minuty, dolni), 120) * 60, kod="pulz")
 
     return beze_zmeny(f"mrtvá zóna, CO2 {v.co2:.0f}")
