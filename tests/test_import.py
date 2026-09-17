@@ -460,3 +460,88 @@ def test_diagnostika_bez_okna(nahradni_ha):
     assert d([], False, v, p, n) == ["okno tady neovládáme"]
     assert d(["cover.x"], True, v, p, n) == ["větrá se"]
     assert d(["cover.x"], False, v, p, n)      # něco tam být musí
+
+
+# ------------------------------------------- úkoly ventilátoru
+
+def _ukoly(ukoly, rh=None, pm=0, t_max=None, venku=None, cil=22.0,
+           dusno=False):
+    import importlib
+    ko = importlib.import_module("napohodu.coordinator")
+
+    class Mistnost:
+        atributy = {"potreba_vzduchu": dusno, "teplota_max": t_max,
+                    "venku": venku}
+
+    class Falesny:
+        _ukoly_ventilatoru = ko.NaPohoduCoordinator._ukoly_ventilatoru
+
+    m = Mistnost()
+    m.cil = cil
+    return Falesny()._ukoly_ventilatoru(ukoly, {}, m, rh, {"pm25": pm})
+
+
+def test_ventilator_na_vlhkost(nahradni_ha):
+    """Odtah v koupelně řeší vlhkost, nic jiného."""
+    assert _ukoly(["vlhkost"], rh=75) == ["vlhkost 75 %"]
+    assert _ukoly(["vlhkost"], rh=45) == []
+    assert _ukoly(["vlhkost"], rh=45, dusno=True) == []
+
+
+def test_ventilator_na_vzduch(nahradni_ha):
+    assert _ukoly(["vzduch"], dusno=True) == ["dusno"]
+    assert _ukoly(["vzduch"], dusno=False) == []
+
+
+def test_ventilator_na_chlazeni(nahradni_ha):
+    """Venku musí být chladněji, jinak by průvan situaci zhoršil."""
+    assert _ukoly(["chlazeni"], t_max=26.0, venku=18.0, cil=22.0)
+    assert _ukoly(["chlazeni"], t_max=26.0, venku=28.0, cil=22.0) == []
+    assert _ukoly(["chlazeni"], t_max=21.0, venku=15.0, cil=22.0) == []
+
+
+def test_ventilator_vic_ukolu_naraz(nahradni_ha):
+    d = _ukoly(["vzduch", "vlhkost", "prach"], rh=75, pm=60, dusno=True)
+    assert len(d) == 3
+
+
+def test_ventilator_trvaly_provoz(nahradni_ha):
+    assert _ukoly(["vzdy"]) == ["trvalý provoz"]
+
+
+def test_ventilator_bez_ukolu_nebezi(nahradni_ha):
+    assert _ukoly([], rh=90, pm=99, dusno=True) == []
+
+
+# ------------------------------------------- režim topné sezóny
+
+def _sezona(rezim, tri_dny=None):
+    import importlib
+    ko = importlib.import_module("napohodu.coordinator")
+    c = importlib.import_module("napohodu.const")
+
+    class Falesny:
+        topna_sezona = False
+        pouzity = {"tri_dny": (None, "")}
+        _sezona = ko.NaPohoduCoordinator._sezona
+        _sezona_podle_prumeru = ko.NaPohoduCoordinator._sezona_podle_prumeru
+        _cislo = staticmethod(lambda eid, nahrada=None: tri_dny)
+
+        class prumery:
+            tri_dny = None
+
+    return Falesny()._sezona({c.CONF_SEZONA_REZIM: rezim})
+
+
+def test_sezona_vzdy_topi(nahradni_ha):
+    """Když sezónu určuješ sám jinde, tohle ji zapne nastálo."""
+    assert _sezona("vzdy") is True
+
+
+def test_sezona_nikdy_netopi(nahradni_ha):
+    assert _sezona("nikdy") is False
+
+
+def test_sezona_podle_prumeru_rozhoduje_teplota(nahradni_ha):
+    assert _sezona("podle_prumeru", tri_dny=8.0) is True
+    assert _sezona("podle_prumeru", tri_dny=22.0) is False

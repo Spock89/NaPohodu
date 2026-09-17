@@ -13,7 +13,8 @@ from __future__ import annotations
 # pořadí a názvy, aby karta dávala smysl a nebyla jen výpisem
 POSUVNIKY = [
     ("odchylka_teploty", "Odchylka teploty"),
-    ("vzduch_proti_teplu", "Vzduch proti teplu"),
+    ("denni_pokles", "Ve dne smí klesnout o"),
+    ("nocni_pokles", "V noci smí klesnout o"),
     ("minimum_na_noc", "Minimum na noc"),
     ("trvale_otevreno_do_rozdilu", "Trvale otevřeno do rozdílu"),
     ("utlum_pri_otevrenem_okne", "Útlum při otevřeném okně"),
@@ -36,6 +37,8 @@ ATRIBUTY_STAVU = [
     ("topeni_hlavice", "Topení — hlásí hlavice", None),
     ("odvzdusneni", "Odvzdušnění", None),
     ("zvlhcovac_bezi", "Zvlhčovač", None),
+    ("ventilator_bezi", "Ventilátor", None),
+    ("ventilator_proc", "Ventilátor proč", None),
     ("cisticka_bezi", "Čistička", None),
     ("odtah_bezi", "Odtah", None),
     ("vlhkost", "Vlhkost v pokoji", " %"),

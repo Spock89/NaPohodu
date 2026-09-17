@@ -24,8 +24,8 @@ from . import (core, pritomnost as pr, prumery as pm, slunce as sl,
                klima as kl)
 from .const import (
     CONF_AZIMUT, CONF_CIL_MAX, CONF_CIL_MIN, CONF_CISTICKA, CONF_CLIMATE,
-    CONF_CLIMATE_OBOJI, CONF_CO2, CONF_CO2_NOC, CONF_CO2_NOC_KRIZE,
-    CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT, CONF_DEST, CONF_DEST_PRAH,
+    CONF_CO2, CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT,
+    CONF_CO2_ZAVRIT, CONF_DENNI_POKLES, CONF_DEST, CONF_DEST_PRAH,
     CONF_DOBEH, CONF_DOMA, CONF_DVERE, CONF_INDICIE_DOBEH,
     CONF_INDICIE_STAV, CONF_INDICIE_VYKON, CONF_I_KDYZ_NIKDO,
     CONF_KLID_STINENI_MIN, CONF_KLIMA_CHLADIT_OD, CONF_KLIMA_DLOUHA,
@@ -35,19 +35,20 @@ from .const import (
     CONF_KLIMA_V_POKOJI, CONF_KOMFORT_ODSTUP, CONF_KONTAKT_M,
     CONF_MAX_STARI, CONF_MIN_DRZENI, CONF_MISTNOSTI, CONF_NARAZ,
     CONF_NARAZOVE, CONF_NARAZOVE_ODSTUP, CONF_NARAZOVE_STROP,
-    CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD,
-    CONF_OCHOTA, CONF_ODCHYLKA, CONF_ODTAH, CONF_ODVZDUSNENI_H,
-    CONF_ODVZDUSNENI_T, CONF_OKNA, CONF_PAUZA_PO_PULZU, CONF_PLOCHA,
-    CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU, CONF_PM_PLATNY,
-    CONF_PRAH_VYKONU, CONF_PRIORITA, CONF_PRITOMNOST, CONF_PROJEZD_M,
-    CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M,
-    CONF_RH_VNITRNI, CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE,
-    CONF_SEZONA_PRAH, CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG, CONF_SOUHRN_CAS,
+    CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOCNI_POKLES, CONF_NOC_DO,
+    CONF_NOC_MIN, CONF_NOC_OD, CONF_OCHOTA, CONF_ODCHYLKA, CONF_ODTAH,
+    CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA, CONF_PAUZA_PO_PULZU,
+    CONF_PLOCHA, CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU,
+    CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRIORITA, CONF_PRITOMNOST,
+    CONF_PROJEZD_M, CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU,
+    CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_RUCNI_KLID,
+    CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SEZONA_REZIM,
+    CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG, CONF_SOUHRN_CAS,
     CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_MAPA,
     CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
-    CONF_TEPLOTY, CONF_TOPIT_MIMO_SEZONU, CONF_TOPIT_PRI_OKNU,
-    CONF_TOPIT_UTLUM, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
-    CONF_T_VENKU_M, CONF_UTLUM, CONF_VENTILATOR, CONF_VENTILATOR_SMER,
+    CONF_TEPLOTY, CONF_TOPIT_PRI_OKNU, CONF_TOPIT_UTLUM, CONF_T_PRUMER,
+    CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM,
+    CONF_VENTILATOR, CONF_VENTILATOR_SMER, CONF_VENTILATOR_UKOLY,
     CONF_VETRAT, CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH,
     CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
     CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZNACKA_MIMO,
@@ -439,6 +440,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         return self.vitr_blokuje
 
     def _sezona(self, g: dict) -> bool:
+        rezim = g.get(CONF_SEZONA_REZIM, "podle_prumeru")
+        if rezim == "vzdy":
+            self.pouzity["tri_dny"] = (None, "nastaveno natvrdo")
+            return True
+        if rezim == "nikdy":
+            self.pouzity["tri_dny"] = (None, "nastaveno natvrdo")
+            return False
+        return self._sezona_podle_prumeru(g)
+
+    def _sezona_podle_prumeru(self, g: dict) -> bool:
         """Topná sezóna podle třídenního průměru, s hysterezí kolem prahu.
 
         Bez vlastní entity se použije počítaný průměr.
@@ -831,6 +842,31 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         except Exception as e:  # pragma: no cover
             _LOGGER.warning("NaPohodu: klimatizace %s selhala: %s", entita, e)
 
+    def _ukoly_ventilatoru(self, ukoly: list, d: dict, m, rh_in, okruh
+                           ) -> list[str]:
+        """Které z vybraných úkolů právě platí.
+
+        Prázdný seznam znamená, že ventilátor běžet nemá. Úkol „vždy"
+        je pro trvalé provětrávání, kde se nic nevyhodnocuje.
+        """
+        duvody = []
+        if "vzdy" in ukoly:
+            duvody.append("trvalý provoz")
+        if "vzduch" in ukoly and m.atributy.get("potreba_vzduchu"):
+            duvody.append("dusno")
+        if "prach" in ukoly and (okruh["pm25"] or 0) > 35:
+            duvody.append("prach")
+        if ("vlhkost" in ukoly and rh_in is not None
+                and rh_in > float(d.get(CONF_RH_MAX, 60.0))):
+            duvody.append(f"vlhkost {rh_in:.0f} %")
+        if "chlazeni" in ukoly:
+            t_max = m.atributy.get("teplota_max")
+            venku = m.atributy.get("venku")
+            if (t_max is not None and venku is not None
+                    and t_max > m.cil + 0.5 and venku < t_max - 1):
+                duvody.append("chlazení venkovním vzduchem")
+        return duvody
+
     @staticmethod
     def _bez_okna(okruh) -> list[str]:
         """Co říct místnosti, která okno neovládá."""
@@ -915,8 +951,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             narazove_strop_s=self.narazove_strop_s,
             rucni_klid_s=float(d.get(CONF_RUCNI_KLID, 30)) * 60,
         )
-        den_pokles, noc_pokles = core.z_priority(
-            self.hodnota(p.subentry_id, CONF_PRIORITA, 5.0))
+        # Dřív to byl posuvník nula až deset, u kterého nebylo poznat,
+        # co dělá. Teď se rovnou zadává, o kolik stupňů smí teplota
+        # při větrání klesnout.
+        vychozi = core.z_priority(
+            self.hodnota(p.subentry_id, CONF_PRIORITA,
+                         float(d.get(CONF_PRIORITA, 5.0))))
+        den_pokles = self.hodnota(p.subentry_id, CONF_DENNI_POKLES,
+                                  float(d.get(CONF_DENNI_POKLES,
+                                              vychozi[0])))
+        noc_pokles = self.hodnota(p.subentry_id, CONF_NOCNI_POKLES,
+                                  float(d.get(CONF_NOCNI_POKLES,
+                                              vychozi[1])))
         nast = replace(nast, denni_pokles=den_pokles, nocni_pokles=noc_pokles)
 
         vyk = self.vykonavaci.setdefault(
@@ -1085,7 +1131,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         integrace posílá jen cíl a režim, o zbytek se stará ona.
         """
         hlavice = list(d.get(CONF_CLIMATE) or [])
-        hlavice += list(d.get(CONF_CLIMATE_OBOJI) or [])
         if not hlavice:
             return
         if self.hodnoty.get((p.subentry_id, "ovladat_topeni"), 0.0) <= 0:
@@ -1101,7 +1146,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self.hodnota(p.subentry_id, CONF_UTLUM, float(
                 d.get(CONF_UTLUM, d.get(CONF_TOPIT_UTLUM, 16.0)))),
             self.topna_sezona,
-            bool(d.get(CONF_TOPIT_MIMO_SEZONU, False)),
+            False,
             odvzdusneni, float(d.get(CONF_ODVZDUSNENI_T, 28.0)),
             pri_oknu=d.get(CONF_TOPIT_PRI_OKNU, "nechat"),
             sezonu_ridi_hlavice=bool(
@@ -1182,17 +1227,22 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         m.atributy["zvlhcovac_bezi"] = vyk.stav.zarizeni.get("zvlhčovač")
 
         # Ventilátor umí vyměnit vzduch tam, kde okno nemůže — v mrazu,
-        # při větru, v noci nebo v místnosti bez ovládaného okna.
-        # Nepouštíme ho zároveň s otevřeným oknem, to by se přetahovali.
+        # při větru, v noci nebo v místnosti bez ovládaného okna. Jenže
+        # k čemu přesně je, záleží na tom, co za ventilátor to je: odtah
+        # vlhkosti, výměna vzduchu, chlazení průvanem. Vyjmenovat všechny
+        # možnosti nejde, tak se úkoly vybírají.
         ventilator = d.get(CONF_VENTILATOR) or []
         if ventilator:
+            ukoly = list(d.get(CONF_VENTILATOR_UKOLY) or ["vzduch"])
+            duvody = self._ukoly_ventilatoru(ukoly, d, m, rh_in, okruh)
             zapnout = None
-            if m.atributy.get("potreba_vzduchu") and not m.okno_otevreno:
+            if duvody and not m.okno_otevreno:
                 zapnout = True
-            elif not m.atributy.get("potreba_vzduchu") or m.okno_otevreno:
+            elif not duvody or m.okno_otevreno:
                 zapnout = False
             m.atributy["ventilator"] = await vyk.zarizeni(
                 ventilator, zapnout, "ventilátor")
+            m.atributy["ventilator_proc"] = duvody or None
             m.atributy["ventilator_smer"] = d.get(
                 CONF_VENTILATOR_SMER, "ven")
         m.atributy["ventilator_bezi"] = vyk.stav.zarizeni.get("ventilátor")

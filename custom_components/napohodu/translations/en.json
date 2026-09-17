@@ -30,7 +30,8 @@
           "narazove_odstup": "Nárazové až o tolik pod cílem",
           "pm25_venku": "Venkovní PM2.5",
           "pm10_venku": "Venkovní PM10",
-          "smog_venku": "Smog venku"
+          "smog_venku": "Smog venku",
+          "sezona_rezim": "Topná sezóna"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -59,7 +60,8 @@
           "narazove_odstup": "Nárazové větrání zkracuje každé větrání na pár minut, takže patří do mrazu — v mírném počasí by se jen kmitalo a nestihlo vyvětrat. Číslo říká, o kolik musí být venku chladněji než cíl. Šest stupňů znamená, že při cíli 22 se zapne pod 16 °C.",
           "pm25_venku": "Prach venku. Podle něj se pozná, jestli má větrání kvůli prachu vůbec smysl — když je venku horší, otevřením se to nezlepší a jen by se větralo dokola. Bez tohohle čidla se řídí jen příznakem smogu.",
           "pm10_venku": "Totéž pro větší částice. Nepovinné.",
-          "smog_venku": "Přepínač nebo čidlo, které říká, že venkovní vzduch nestojí za nadechnutí. Zapnutý znamená, že se kvůli prachu neotevírá — větráním by se to jen zhoršilo."
+          "smog_venku": "Přepínač nebo čidlo, které říká, že venkovní vzduch nestojí za nadechnutí. Zapnutý znamená, že se kvůli prachu neotevírá — větráním by se to jen zhoršilo.",
+          "sezona_rezim": "Podle průměru se sezóna pozná z venkovní teploty za tři dny. Vždy znamená topit celoročně, nikdy vůbec — hodí se, když sezónu určuješ sám jinde."
         },
         "title": "NaPohodu"
       }
@@ -108,7 +110,8 @@
           "narazove_odstup": "Nárazové až o tolik pod cílem",
           "pm25_venku": "Venkovní PM2.5",
           "pm10_venku": "Venkovní PM10",
-          "smog_venku": "Smog venku"
+          "smog_venku": "Smog venku",
+          "sezona_rezim": "Topná sezóna"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -137,7 +140,8 @@
           "narazove_odstup": "Nárazové větrání zkracuje každé větrání na pár minut, takže patří do mrazu — v mírném počasí by se jen kmitalo a nestihlo vyvětrat. Číslo říká, o kolik musí být venku chladněji než cíl. Šest stupňů znamená, že při cíli 22 se zapne pod 16 °C.",
           "pm25_venku": "Prach venku. Podle něj se pozná, jestli má větrání kvůli prachu vůbec smysl — když je venku horší, otevřením se to nezlepší a jen by se větralo dokola. Bez tohohle čidla se řídí jen příznakem smogu.",
           "pm10_venku": "Totéž pro větší částice. Nepovinné.",
-          "smog_venku": "Přepínač nebo čidlo, které říká, že venkovní vzduch nestojí za nadechnutí. Zapnutý znamená, že se kvůli prachu neotevírá — větráním by se to jen zhoršilo."
+          "smog_venku": "Přepínač nebo čidlo, které říká, že venkovní vzduch nestojí za nadechnutí. Zapnutý znamená, že se kvůli prachu neotevírá — větráním by se to jen zhoršilo.",
+          "sezona_rezim": "Podle průměru se sezóna pozná z venkovní teploty za tři dny. Vždy znamená topit celoročně, nikdy vůbec — hodí se, když sezónu určuješ sám jinde."
         }
       },
       "tester": {
@@ -239,11 +243,8 @@
             "odtah": "Odtahový ventilátor",
             "rh_vnitrni": "Čidlo vlhkosti",
             "rh_max": "Odtah zapnout nad",
-            "climate_chlazeni": "Klimatizace (jen chladí)",
-            "climate_oboji": "Klimatizace, která umí i topit",
             "priorita_vzduchu": "Vzduch proti teplu",
             "azimut": "Azimut oken",
-            "plocha": "Relativní plocha oken",
             "klid_stineni_min": "Nejčastěji hýbat jednou za",
             "stineni_rezim": "Kdy smí automatika hýbat žaluziemi",
             "soukromi_kdy": "Zatáhnout po setmění",
@@ -262,7 +263,6 @@
             "t_venku_mistni": "Vlastní venkovní teplota",
             "rh_venku_mistni": "Vlastní venkovní vlhkost",
             "min_drzeni_min": "Nejkratší doba držení polohy",
-            "topit_mimo_sezonu": "Topit i mimo sezónu",
             "odvzdusneni_h": "Odvzdušnění na začátku sezóny",
             "odvzdusneni_t": "Teplota při odvzdušnění",
             "stineni_predstih": "Předstih stínění",
@@ -275,7 +275,10 @@
             "pauza_po_pulzu_min": "Pauza po dojezdu větrání",
             "vetrat": "Ruční žádost o vyvětrání",
             "rucni_klid_min": "Po ručním zásahu nechat být",
-            "ochota_vetrat": "Ochota větrat"
+            "ochota_vetrat": "Ochota větrat",
+            "ventilator_ukoly": "K čemu ventilátor je",
+            "denni_pokles": "Ve dne smí klesnout o",
+            "nocni_pokles": "V noci smí klesnout o"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -290,16 +293,13 @@
             "utlum": "Na kolik se stáhne topení, když je otevřené okno. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "komfort_odstup": "Jak moc smí být venku chladněji než cíl, aby šlo nechat okno trvale otevřené. Nízká hodnota znamená otevřeno jen za teplého počasí, vysoká skoro pořád. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "ventilator": "Ventilátor, který umí vyměnit vzduch bez otevřeného okna — v mrazu, při větru, v noci nebo v místnosti, kde okno neovládáme. Zapne se, když je dusno a okno zavřené; s otevřeným oknem neběží, to by se přetahovali.",
-            "ventilator_smer": "Kterým směrem ventilátor tlačí vzduch. Slouží jen k záznamu a pro tvoje automatizace, na rozhodování to nemá vliv.",
+            "ventilator_smer": "Kterým směrem ventilátor tlačí vzduch. Slouží k záznamu a pro tvoje automatizace.",
             "cisticka": "Čistička vzduchu. Umí prach, ne CO2. V zimě a v noci je lepší než otevřít okno.",
             "odtah": "Ventilátor na odtah, typicky kvůli vlhkosti. Pomůže i tehdy, když je venku vlhčeji než uvnitř.",
             "rh_vnitrni": "Čidlo vlhkosti v místnosti. Bez něj se odtah neřídí.",
             "rh_max": "Nad touto vlhkostí se zapne odtah. V koupelně obvykle 65 %, jinde 60 %.",
-            "climate_chlazeni": "Jednotka, která umí jen chladit. Nasadí se, až když nestačí zastínit a vyvětrat.",
-            "climate_oboji": "Tepelné čerpadlo nebo klimatizace s topením. Mimo topnou sezónu se použije na topení místo radiátorů, v sezóně naopak topit nebude, aby si s radiátory nelezly do cesty.",
             "priorita_vzduchu": "Nula znamená držet teplo za každou cenu, deset vyvětrat za každou cenu. Pětka je vyvážená. Ovládá, o kolik smí teplota při větrání klesnout — ve dne i v noci.",
             "azimut": "Kam okna směřují. 0 sever, 90 východ, 180 jih, 270 západ. Podle toho se pozná, kdy do místnosti svítí.",
-            "plocha": "Kolikrát jsou okna větší než běžné okno v bytě. Slouží jen k porovnání slunečního zisku mezi místnostmi.",
             "klid_stineni_min": "Minimální odstup mezi pohyby žaluzií, aby se lamely nehoupaly při každém mráčku.",
             "stineni_rezim": "Když si žaluzie v této místnosti nastavuješ ručně, vyber „jen když nikdo není doma“. Automatika je pak nechá být, dokud jsi doma. Zatažení po setmění platí i tak.",
             "soukromi_kdy": "Po západu slunce je do rozsvícené místnosti vidět. „Hned“ zatáhne při setmění, „až při pohybu“ počká, dokud někdo do místnosti nepřijde. Zatáhne se jednou a dál se s nimi nehýbe.",
@@ -318,7 +318,6 @@
             "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
             "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
             "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam kvůli hodnotě skákající kolem prahu.",
-            "topit_mimo_sezonu": "Normálně se mimo topnou sezónu hlavice vypnou. Zapni, když má tahle místnost topit celoročně, například koupelna.",
             "odvzdusneni_h": "Po začátku sezóny se tuhle dobu drží vysoká teplota, aby ventil zůstal otevřený a rozvod se sám odvzdušnil. Nula znamená neodvzdušňovat.",
             "odvzdusneni_t": "Teplota, která zaručí plně otevřený ventil. Nemá topit doopravdy, jen otevřít.",
             "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24.",
@@ -333,7 +332,10 @@
             "zdroj_klidu": "Kdy má místnost vyžadovat klid. Platí to i pro okna.",
             "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
-            "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak."
+            "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
+            "ventilator_ukoly": "Zaškrtni, co má ventilátor řešit. Odtah v koupelně bude mít vlhkost, rekuperace vzduch, ventilátor v okně chlazení venkovním vzduchem. Zapne se, když platí aspoň jeden zaškrtnutý úkol a okno je zavřené.",
+            "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
+            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých."
           },
           "submit": "Další"
         },
@@ -409,11 +411,8 @@
             "odtah": "Odtahový ventilátor",
             "rh_vnitrni": "Čidlo vlhkosti",
             "rh_max": "Odtah zapnout nad",
-            "climate_chlazeni": "Klimatizace (jen chladí)",
-            "climate_oboji": "Klimatizace, která umí i topit",
             "priorita_vzduchu": "Vzduch proti teplu",
             "azimut": "Azimut oken",
-            "plocha": "Relativní plocha oken",
             "klid_stineni_min": "Nejčastěji hýbat jednou za",
             "stineni_rezim": "Kdy smí automatika hýbat žaluziemi",
             "soukromi_kdy": "Zatáhnout po setmění",
@@ -432,7 +431,6 @@
             "t_venku_mistni": "Vlastní venkovní teplota",
             "rh_venku_mistni": "Vlastní venkovní vlhkost",
             "min_drzeni_min": "Nejkratší doba držení polohy",
-            "topit_mimo_sezonu": "Topit i mimo sezónu",
             "odvzdusneni_h": "Odvzdušnění na začátku sezóny",
             "odvzdusneni_t": "Teplota při odvzdušnění",
             "stineni_predstih": "Předstih stínění",
@@ -445,7 +443,10 @@
             "pauza_po_pulzu_min": "Pauza po dojezdu větrání",
             "vetrat": "Ruční žádost o vyvětrání",
             "rucni_klid_min": "Po ručním zásahu nechat být",
-            "ochota_vetrat": "Ochota větrat"
+            "ochota_vetrat": "Ochota větrat",
+            "ventilator_ukoly": "K čemu ventilátor je",
+            "denni_pokles": "Ve dne smí klesnout o",
+            "nocni_pokles": "V noci smí klesnout o"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -460,7 +461,7 @@
             "utlum": "Na kolik se stáhne topení, když je otevřené okno. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "komfort_odstup": "Jak moc smí být venku chladněji než cíl, aby šlo nechat okno trvale otevřené. Nízká hodnota znamená otevřeno jen za teplého počasí, vysoká skoro pořád. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "ventilator": "Ventilátor, který umí vyměnit vzduch bez otevřeného okna — v mrazu, při větru, v noci nebo v místnosti, kde okno neovládáme. Zapne se, když je dusno a okno zavřené; s otevřeným oknem neběží, to by se přetahovali.",
-            "ventilator_smer": "Kterým směrem ventilátor tlačí vzduch. Slouží jen k záznamu a pro tvoje automatizace, na rozhodování to nemá vliv.",
+            "ventilator_smer": "Kterým směrem ventilátor tlačí vzduch. Slouží k záznamu a pro tvoje automatizace.",
             "zdroj_obsazenosti": "Obsazená místnost se udržuje na cíli. Prázdná se nechá být.",
             "zdroj_klidu": "Kdy má místnost vyžadovat klid. Platí to i pro okna.",
             "spanek": "Přepínač, kterým dáváš najevo, že se v místnosti spí.",
@@ -476,11 +477,8 @@
             "odtah": "Ventilátor na odtah, typicky kvůli vlhkosti. Pomůže i tehdy, když je venku vlhčeji než uvnitř.",
             "rh_vnitrni": "Čidlo vlhkosti v místnosti. Bez něj se odtah neřídí.",
             "rh_max": "Nad touto vlhkostí se zapne odtah. V koupelně obvykle 65 %, jinde 60 %.",
-            "climate_chlazeni": "Jednotka, která umí jen chladit. Nasadí se, až když nestačí zastínit a vyvětrat.",
-            "climate_oboji": "Tepelné čerpadlo nebo klimatizace s topením. Mimo topnou sezónu se použije na topení místo radiátorů, v sezóně naopak topit nebude, aby si s radiátory nelezly do cesty.",
             "priorita_vzduchu": "Nula znamená držet teplo za každou cenu, deset vyvětrat za každou cenu. Pětka je vyvážená. Ovládá, o kolik smí teplota při větrání klesnout — ve dne i v noci.",
             "azimut": "Kam okna směřují. 0 sever, 90 východ, 180 jih, 270 západ. Podle toho se pozná, kdy do místnosti svítí.",
-            "plocha": "Kolikrát jsou okna větší než běžné okno v bytě. Slouží jen k porovnání slunečního zisku mezi místnostmi.",
             "klid_stineni_min": "Minimální odstup mezi pohyby žaluzií, aby se lamely nehoupaly při každém mráčku.",
             "stineni_rezim": "Když si žaluzie v této místnosti nastavuješ ručně, vyber „jen když nikdo není doma“. Automatika je pak nechá být, dokud jsi doma. Zatažení po setmění platí i tak.",
             "soukromi_kdy": "Po západu slunce je do rozsvícené místnosti vidět. „Hned“ zatáhne při setmění, „až při pohybu“ počká, dokud někdo do místnosti nepřijde. Zatáhne se jednou a dál se s nimi nehýbe.",
@@ -499,7 +497,6 @@
             "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
             "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
             "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam kvůli hodnotě skákající kolem prahu.",
-            "topit_mimo_sezonu": "Normálně se mimo topnou sezónu hlavice vypnou. Zapni, když má tahle místnost topit celoročně, například koupelna.",
             "odvzdusneni_h": "Po začátku sezóny se tuhle dobu drží vysoká teplota, aby ventil zůstal otevřený a rozvod se sám odvzdušnil. Nula znamená neodvzdušňovat.",
             "odvzdusneni_t": "Teplota, která zaručí plně otevřený ventil. Nemá topit doopravdy, jen otevřít.",
             "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24.",
@@ -513,7 +510,10 @@
             "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu větrání, i když vzduch ještě není vyvětraný. Když se nedaří vyvětrat, každá další pauza je dvojnásobná, nejvýš hodinová — typicky když tahle místnost větrá za jinou, jejíž vzduch svým oknem skoro neovlivní.",
             "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
-            "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak."
+            "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
+            "ventilator_ukoly": "Zaškrtni, co má ventilátor řešit. Odtah v koupelně bude mít vlhkost, rekuperace vzduch, ventilátor v okně chlazení venkovním vzduchem. Zapne se, když platí aspoň jeden zaškrtnutý úkol a okno je zavřené.",
+            "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
+            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých."
           },
           "submit": "Další"
         },
@@ -744,6 +744,22 @@
         "normalne": "Normálně",
         "nerada": "Tady je větrání nepříjemné — ať vyvětrá soused"
       }
+    },
+    "ventilator_ukoly": {
+      "options": {
+        "vzduch": "Výměna vzduchu (dusno)",
+        "prach": "Prach",
+        "vlhkost": "Odtah vlhkosti",
+        "chlazeni": "Chlazení venkovním vzduchem",
+        "vzdy": "Trvalý provoz"
+      }
+    },
+    "sezona_rezim": {
+      "options": {
+        "podle_prumeru": "Podle venkovní teploty",
+        "vzdy": "Topit celoročně",
+        "nikdy": "Netopit vůbec"
+      }
     }
   },
   "title": "NaPohodu",
@@ -821,6 +837,12 @@
       },
       "co2_noc_krize": {
         "name": "Nouzově otevřít nad CO2"
+      },
+      "denni_pokles": {
+        "name": "Ve dne smí klesnout o"
+      },
+      "nocni_pokles": {
+        "name": "V noci smí klesnout o"
       }
     },
     "switch": {

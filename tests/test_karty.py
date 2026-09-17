@@ -81,7 +81,7 @@ def test_kazda_karta_ma_typ():
 
 def test_posuvniky_jsou_pojmenovane_cesky():
     s = dashboard(["kuchyne"], [], vzdy)
-    assert "Vzduch proti teplu" in s
+    assert "Ve dne smí klesnout o" in s
     assert "Nouzově otevřít nad" in s
 
 

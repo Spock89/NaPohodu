@@ -10,6 +10,10 @@ PODENTITA_KLIMA = "klima"
 CONF_T_VENKU = "t_venku"
 CONF_T_PRUMER = "t_prumer"          # týdenní průměr pro adaptivní cíl
 CONF_T_SEZONA = "t_sezona"          # třídenní průměr pro topnou sezónu
+CONF_SEZONA_REZIM = "sezona_rezim"
+REZIMY_SEZONY = ["podle_prumeru", "vzdy", "nikdy"]
+CONF_DENNI_POKLES = "denni_pokles"
+CONF_NOCNI_POKLES = "nocni_pokles"
 CONF_SEZONA_PRAH = "sezona_prah"
 CONF_SEZONA_HYSTEREZE = "sezona_hystereze"
 CONF_RH_VENKU = "rh_venku"
@@ -58,7 +62,6 @@ CONF_SEZONU_RIDI_HLAVICE = "sezonu_ridi_hlavice"
 PRI_OKNU = ["nechat", "znacka", "utlum", "vypnout"]
 CONF_ZNACKA_OKNO = "znacka_okno"
 CONF_ZNACKA_MIMO = "znacka_mimo_sezonu"
-CONF_TOPIT_MIMO_SEZONU = "topit_mimo_sezonu"
 CONF_ODVZDUSNENI_H = "odvzdusneni_h"
 CONF_ODVZDUSNENI_T = "odvzdusneni_t"
 CONF_UTLUM = "utlum"
@@ -78,6 +81,9 @@ CONF_RH_MIN = "rh_min"
 CONF_VENTILATOR = "ventilator"
 CONF_VENTILATOR_SMER = "ventilator_smer"
 SMERY_VENTILACE = ["ven", "dovnitr", "oboji"]
+CONF_VENTILATOR_UKOLY = "ventilator_ukoly"
+# k čemu ventilátor je. Vyjmenovat všechno nejde, tak ať se dá vybrat.
+UKOLY_VENTILATORU = ["vzduch", "prach", "vlhkost", "chlazeni", "vzdy"]
 
 # indicie obsazenosti
 CONF_INDICIE_STAV = "indicie_stav"      # entity, kde "on"/"playing" = obsazeno

@@ -69,6 +69,8 @@ SCHEMA_GLOBAL = vol.Schema(
         vol.Required(c.CONF_T_VENKU): _ent(["sensor"], trida=["temperature"]),
         vol.Optional(c.CONF_T_PRUMER): _ent(["sensor"], trida=["temperature"]),
         vol.Optional(c.CONF_T_SEZONA): _ent(["sensor"], trida=["temperature"]),
+        vol.Optional(c.CONF_SEZONA_REZIM, default="podle_prumeru"): _volba(
+            c.REZIMY_SEZONY, "sezona_rezim"),
         vol.Optional(c.CONF_SEZONA_PRAH, default=15.0): _cislo(8, 22),
         vol.Optional(c.CONF_SEZONA_HYSTEREZE, default=1.0): _cislo(0, 5, 0.5),
         vol.Optional(c.CONF_RH_VENKU): _ent(["sensor"], trida=["humidity"]),
@@ -434,7 +436,6 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         # --- stínění patří k místnosti, protože slunce svítí do pokoje ---
         vol.Optional(c.CONF_ZALUZIE): _ent(["cover"], True),
         vol.Optional(c.CONF_AZIMUT, default=180): _cislo(0, 359, 1, "°"),
-        vol.Optional(c.CONF_PLOCHA, default=1.0): _cislo(0.1, 5, 0.1, ""),
         vol.Optional(c.CONF_STINENI_REZIM, default="vzdy"): _volba(
             c.REZIMY_STINENI, "stineni_rezim"
         ),
