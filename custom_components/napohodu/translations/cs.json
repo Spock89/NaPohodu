@@ -289,8 +289,8 @@
             "noc_min": "Pod tuto teplotu se v noci nevětrá. V ložnici nižší, v obývacím pokoji vyšší. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "utlum": "Na kolik se stáhne topení, když je otevřené okno. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "komfort_odstup": "Jak moc smí být venku chladněji než cíl, aby šlo nechat okno trvale otevřené. Nízká hodnota znamená otevřeno jen za teplého počasí, vysoká skoro pořád. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "ventilator": "Ventilátor nebo rekuperace. Můžeš vybrat víc entit. Použije se, když okno větrat nemůže.",
-            "ventilator_smer": "Kam ventilátor fouká.",
+            "ventilator": "Ventilátor, který umí vyměnit vzduch bez otevřeného okna — v mrazu, při větru, v noci nebo v místnosti, kde okno neovládáme. Zapne se, když je dusno a okno zavřené; s otevřeným oknem neběží, to by se přetahovali.",
+            "ventilator_smer": "Kterým směrem ventilátor tlačí vzduch. Slouží jen k záznamu a pro tvoje automatizace, na rozhodování to nemá vliv.",
             "cisticka": "Čistička vzduchu. Umí prach, ne CO2. V zimě a v noci je lepší než otevřít okno.",
             "odtah": "Ventilátor na odtah, typicky kvůli vlhkosti. Pomůže i tehdy, když je venku vlhčeji než uvnitř.",
             "rh_vnitrni": "Čidlo vlhkosti v místnosti. Bez něj se odtah neřídí.",
@@ -459,8 +459,8 @@
             "noc_min": "Pod tuto teplotu se v noci nevětrá. V ložnici nižší, v obývacím pokoji vyšší. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "utlum": "Na kolik se stáhne topení, když je otevřené okno. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "komfort_odstup": "Jak moc smí být venku chladněji než cíl, aby šlo nechat okno trvale otevřené. Nízká hodnota znamená otevřeno jen za teplého počasí, vysoká skoro pořád. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "ventilator": "Ventilátor nebo rekuperace. Můžeš vybrat víc entit. Použije se, když okno větrat nemůže.",
-            "ventilator_smer": "Kam ventilátor fouká.",
+            "ventilator": "Ventilátor, který umí vyměnit vzduch bez otevřeného okna — v mrazu, při větru, v noci nebo v místnosti, kde okno neovládáme. Zapne se, když je dusno a okno zavřené; s otevřeným oknem neběží, to by se přetahovali.",
+            "ventilator_smer": "Kterým směrem ventilátor tlačí vzduch. Slouží jen k záznamu a pro tvoje automatizace, na rozhodování to nemá vliv.",
             "zdroj_obsazenosti": "Obsazená místnost se udržuje na cíli. Prázdná se nechá být.",
             "zdroj_klidu": "Kdy má místnost vyžadovat klid. Platí to i pro okna: „žádný\" znamená, že se v ní větrá v noci stejně jako přes den a spánek v sousední místnosti oblasti ji neomezí.",
             "spanek": "Přepínač, kterým dáváš najevo, že se v místnosti spí.",
@@ -519,7 +519,7 @@
         },
         "stineni": {
           "title": "Stavy žaluzií",
-          "description": "Ke každé žaluzii vyber, který její uložený stav plní kterou roli. Nabízejí se jen stavy, které ta konkrétní žaluzie má — dvě žaluzie v jednom pokoji je můžou mít pojmenované jinak.\n\n**zastínit** — svítí slunce a je horko\n**odclonit** — svítí slunce a je chladno, pustí se dovnitř\n**soukromí po setmění** — aby nebylo vidět dovnitř\n**nikdo doma** — když je byt prázdný\n\nCo necháš prázdné, se v té situaci nehne. Nové stavy se ladí v Testeru žaluzií.\n\nŽaluzie: {zaluzie}",
+          "description": "Ke každé žaluzii vyber, který její uložený stav plní kterou roli. Nabízejí se jen stavy, které ta konkrétní žaluzie má — dvě žaluzie v jednom pokoji je můžou mít pojmenované jinak.\n\n**zastínit** — svítí slunce a je horko\n**odclonit** — svítí slunce a je chladno, pustí se dovnitř\n**soukromí po setmění** — aby nebylo vidět dovnitř\n**nikdo doma** — když je byt prázdný\n**jinak** — výchozí stav, když nic z toho neplatí\n\nCo necháš prázdné, se v té situaci nehne. Výchozí stav se vyplatí vyplnit, jinak žaluzie většinu dne žádnou žádanou polohu nemají.\n\nŽaluzie: {zaluzie}",
           "submit": "Další"
         }
       },

@@ -231,11 +231,13 @@ class StineniMistnosti(NaPohoduEntity, SensorEntity):
         m = self.mistnost
         if m is None:
             return None
-        stavy = m.atributy.get("stineni_stav") or {}
-        if not stavy:
-            return "neznámo"
-        jmena = sorted(set(stavy.values()))
-        return ", ".join(jmena)[:255]
+        # Nejdřív to, co má platit teď. Když automatika nic nechce,
+        # ukáže se poslední nastavený stav — a až nakonec neznámo.
+        for klic in ("zadana_poloha", "stineni_stav"):
+            stavy = m.atributy.get(klic) or {}
+            if stavy:
+                return ", ".join(sorted(set(stavy.values())))[:255]
+        return "neznámo"
 
     @property
     def extra_state_attributes(self) -> dict:
@@ -243,5 +245,5 @@ class StineniMistnosti(NaPohoduEntity, SensorEntity):
         if not m:
             return {}
         return {k: v for k, v in m.atributy.items()
-                if k in ("stineni_stav", "zaluzie_poloha", "role_stineni",
-                         "prestaveno_rukou")}
+                if k in ("stineni_stav", "zadana_poloha", "zaluzie_poloha",
+                         "role_stineni", "prestaveno_rukou")}

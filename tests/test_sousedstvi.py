@@ -231,3 +231,15 @@ def test_spanek_prebiji_ochotu():
 def test_nerada_bez_souseda_vetra_sama():
     zony = [ZonaStav("k", "Kuchyň", co2=1200, nerada=True)]
     assert prerozdel(zony)["k"].zastupce is None
+
+
+def test_sousedstvi_plati_v_obou_smerech():
+    """Když oblast jmenuje ložnici, ložnice má za souseda ji. Jinak by
+    zastupování fungovalo jen jednou stranou."""
+    kuchyn = ZonaStav("k", "Kuchyň a obývák", co2=600, sousedi=["l"])
+    loznice = ZonaStav("l", "Ložnice", co2=1200, klid=True, sousedi=[])
+    # doplnění zpětné vazby dělá koordinátor; tady ho napodobíme
+    loznice.sousedi.append("k")
+    u = prerozdel([kuchyn, loznice])
+    assert u["l"].zastupce == "Kuchyň a obývák"
+    assert u["k"].prevzate_co2 == 1200

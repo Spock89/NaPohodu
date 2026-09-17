@@ -288,6 +288,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             polozky.append("      - type: divider")
         polozky += _radek(eid, m.capitalize())
         polozky += _atribut(eid, "role_stineni", "   co je teď potřeba")
+        polozky += _atribut(eid, "zadana_poloha", "   žádaná poloha")
         polozky += _atribut(eid, "stineni_stav", "   nastavený stav")
         polozky += _atribut(eid, "zaluzie_poloha", "   skutečná poloha")
         polozky += _atribut(eid, "prestaveno_rukou", "   přestaveno rukou")

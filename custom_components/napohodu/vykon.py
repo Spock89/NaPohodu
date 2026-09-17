@@ -320,7 +320,7 @@ SOUKROMI_HNED = "hned"            # hned po západu
 SOUKROMI_POHYB = "pri_pohybu"     # až když do místnosti někdo přijde
 
 
-ROLE = ("zastinit", "odstinit", "soukromi", "pryc")
+ROLE = ("zastinit", "odstinit", "soukromi", "pryc", "vychozi")
 
 
 def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
@@ -359,13 +359,16 @@ def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
         # někdo tu je, takže si žaluzie nastaví sám
         return None
 
-    if zisk < prah:
-        return None
-    if horko:
-        return "zastinit"
-    if zima:
-        return "odstinit"
-    return None
+    if zisk >= prah:
+        if horko:
+            return "zastinit"
+        if zima:
+            return "odstinit"
+
+    # Když nic zvláštního neplatí, žaluzie mají mít stejně kam patřit.
+    # Bez toho by po srovnání zůstala poloha neznámá, dokud nevysvitne
+    # slunce. Když výchozí stav není přiřazený, nic se nestane.
+    return "vychozi"
 
 
 def cile_zaluzii(role: str | None, mapa: dict) -> dict[str, str]:

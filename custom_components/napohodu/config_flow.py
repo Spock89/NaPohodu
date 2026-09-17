@@ -558,7 +558,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
             for role, popis in (("zastinit", "zastínit"),
                                 ("odstinit", "odclonit"),
                                 ("soukromi", "soukromí po setmění"),
-                                ("pryc", "nikdo doma")):
+                                ("pryc", "nikdo doma"),
+                                ("vychozi", "jinak")):
                 pole[vol.Optional(f"{z}|{role}")] = _stav_vyber(jmena)
 
         return self.async_show_form(
@@ -656,11 +657,22 @@ class ZonaSubentryFlow(ConfigSubentryFlow):
                 if p.subentry_type == typ and p.subentry_id != krome]
 
     def _zony(self) -> list[dict]:
+        """Možní sousedé: jiné oblasti i místnosti bez oblasti.
+
+        Místnost, která oblast nepotřebuje, musí jít taky vybrat —
+        jinak by ložnice, co stojí sama, nemohla nikoho zastoupit.
+        """
         try:
             sam = self._get_reconfigure_subentry().subentry_id
         except Exception:  # pragma: no cover
             sam = None
-        return self._seznam(c.PODENTITA_ZONA, krome=sam)
+        polozky = self._seznam(c.PODENTITA_ZONA, krome=sam)
+        obsazene = set(self._obsazene(krome=sam))
+        for m in self._seznam(c.PODENTITA_MISTNOST):
+            if m["value"] not in obsazene:
+                polozky.append({"value": m["value"],
+                                "label": f"{m['label']} (samostatná)"})
+        return polozky
 
     def _mistnosti(self) -> list[dict]:
         return self._seznam(c.PODENTITA_MISTNOST)

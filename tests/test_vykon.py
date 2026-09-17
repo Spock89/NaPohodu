@@ -102,17 +102,18 @@ def test_vybere_odstineni_kdyz_je_zima():
     assert role_stineni(400, 150, False, True, True) == "odstinit"
 
 
-def test_bez_slunce_se_nehybe():
-    assert role_stineni(50, 150, True, False, True) is None
+def test_bez_slunce_plati_vychozi():
+    assert role_stineni(50, 150, True, False, True) == "vychozi"
 
 
 def test_nikdo_doma_prebiji():
     assert role_stineni(400, 150, True, False, False) == "pryc"
 
 
-def test_vlazno_se_nestini():
-    """Ani horko, ani zima — žaluzie se nechá být."""
-    assert role_stineni(400, 150, False, False, True) is None
+def test_vlazno_znamena_vychozi_stav():
+    """Ani horko, ani zima — platí výchozí stav. Když ho nemáš
+    přiřazený, nic se nestane."""
+    assert role_stineni(400, 150, False, False, True) == "vychozi"
 
 
 
@@ -227,7 +228,9 @@ def test_rezim_nikdy_nesaha_ani_kdyz_odejdeme():
 def test_kuchyne_se_stini_i_kdyz_jsme_doma():
     """Kuchyň: roztaženo pořád, kromě horka od slunce."""
     assert st(rezim=REZIM_VZDY, horko=True) == "zastinit"
-    assert st(rezim=REZIM_VZDY) is None
+    # bez horka a zimy platí výchozí stav, ne prázdno — žaluzie mají
+    # mít vždycky kam patřit
+    assert st(rezim=REZIM_VZDY) == "vychozi"
 
 
 def test_soukromi_po_zapadu_hned():
@@ -245,7 +248,8 @@ def test_soukromi_az_pri_pohybu():
 
 
 def test_soukromi_neplati_pres_den():
-    assert st(po_zapadu=False, soukromi_kdy=SOUKROMI_HNED, pohyb=True) is None
+    assert st(po_zapadu=False, soukromi_kdy=SOUKROMI_HNED,
+              pohyb=True) == "vychozi"
 
 
 def test_soukromi_prebiji_rezim_jen_pryc():

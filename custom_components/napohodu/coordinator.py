@@ -47,12 +47,13 @@ from .const import (
     CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
     CONF_TEPLOTY, CONF_TOPIT_MIMO_SEZONU, CONF_TOPIT_PRI_OKNU,
     CONF_TOPIT_UTLUM, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
-    CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT, CONF_VITR, CONF_VITR_KLID,
-    CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE,
-    CONF_ZARENI, CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI,
-    CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY,
-    CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
-    PODENTITA_MISTNOST, PODENTITA_ZONA,
+    CONF_T_VENKU_M, CONF_UTLUM, CONF_VENTILATOR, CONF_VENTILATOR_SMER,
+    CONF_VETRAT, CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH,
+    CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
+    CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZNACKA_MIMO,
+    CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC,
+    DOMAIN, INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST,
+    PODENTITA_ZONA,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -625,9 +626,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         for o in okruhy:
             data = o["pod"].data if o["pod"] else {}
             dvere = [self._zapnuto(e) for e in (data.get(CONF_DVERE) or [])]
-            sousedi = [q["id"] for q in okruhy
-                       if q["pod"] is not None
-                       and q["pod"].subentry_id in (data.get(CONF_SOUSEDI) or [])]
+            # Sousedem může být oblast i samostatná místnost — ta má
+            # okruh pod svým vlastním identifikátorem. Bez tohohle by
+            # ložnice, která oblast nepotřebuje, nemohla nikoho zastoupit.
+            jmenovani = set(data.get(CONF_SOUSEDI) or [])
+            sousedi = [q["id"] for q in okruhy if q["id"] in jmenovani]
             stavy.append(so.ZonaStav(
                 id=o["id"], nazev=o["nazev"], co2=o["co2"], klid=o["klid"],
                 pod_cilem=o["pod_cilem"],
@@ -642,6 +645,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         prah_zastoupeni = min(
             (o["prahy"][CONF_CO2_NOC] for o in okruhy if o.get("prahy")),
             default=1000.0)
+        # Sousedství platí v obou směrech. Když oblast jmenuje ložnici,
+        # ložnice má za souseda ji — jinak by zastupování fungovalo
+        # jen jednou stranou a to nikdo nečeká.
+        podle_id = {z.id: z for z in stavy}
+        for z in stavy:
+            for sid in list(z.sousedi):
+                soused = podle_id.get(sid)
+                if soused is not None and z.id not in soused.sousedi:
+                    soused.sousedi.append(z.id)
+
         upravy = so.prerozdel(stavy, prah_zastoupeni)
 
         # Společné nárazové větrání: když je venku zima a některá zóna
@@ -817,6 +830,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                          entita, r.stav, r.cil or "", r.duvod)
         except Exception as e:  # pragma: no cover
             _LOGGER.warning("NaPohodu: klimatizace %s selhala: %s", entita, e)
+
+    @staticmethod
+    def _bez_okna(okruh) -> list[str]:
+        """Co říct místnosti, která okno neovládá."""
+        if okruh["pod"] is not None:
+            return [f"okno tady neovládáme, vzduch sdílíme s oblastí "
+                    f"{okruh['nazev']}"]
+        return ["okno tady neovládáme, o vzduch se stará jen čistička "
+                "nebo ventilátor"]
 
     @staticmethod
     def _diagnostika(okna, otevreno, v, pamet, nast) -> list[str]:
@@ -1031,8 +1053,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # o oknech jí nemá kdo nic říkat — hlášky o mezích poklesu
             # a o tom, co chybí k vyvětrání, by jen mátly.
             "co_dal": (core.ocekavani(v, pamet, nast) if okna
-                       else ["tato místnost okno neovládá, "
-                             "vzduch za ni řeší oblast"]),
+                       else self._bez_okna(okruh)),
             "co_bylo": (core.posledni(pamet, cas_s) if okna
                         else ["tato místnost okno neovládá"]),
             "vetrani_za_sebou": pamet.pulzy_za_sebou,
@@ -1160,6 +1181,22 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 zvlhcovac, zapnout, "zvlhčovač")
         m.atributy["zvlhcovac_bezi"] = vyk.stav.zarizeni.get("zvlhčovač")
 
+        # Ventilátor umí vyměnit vzduch tam, kde okno nemůže — v mrazu,
+        # při větru, v noci nebo v místnosti bez ovládaného okna.
+        # Nepouštíme ho zároveň s otevřeným oknem, to by se přetahovali.
+        ventilator = d.get(CONF_VENTILATOR) or []
+        if ventilator:
+            zapnout = None
+            if m.atributy.get("potreba_vzduchu") and not m.okno_otevreno:
+                zapnout = True
+            elif not m.atributy.get("potreba_vzduchu") or m.okno_otevreno:
+                zapnout = False
+            m.atributy["ventilator"] = await vyk.zarizeni(
+                ventilator, zapnout, "ventilátor")
+            m.atributy["ventilator_smer"] = d.get(
+                CONF_VENTILATOR_SMER, "ven")
+        m.atributy["ventilator_bezi"] = vyk.stav.zarizeni.get("ventilátor")
+
     async def _stineni_krok(self, p, d, u, m, doma, slunce_el, cas_s):
         """Rozhodne o žaluziích místnosti. Slunce svítí do pokoje, ne do oblasti."""
         vyk_m = self.vykonavaci.setdefault(
@@ -1167,8 +1204,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
         # Nejdřív ověřit, kde žaluzie doopravdy jsou. Ruční přestavení
         # jinak zůstane skryté a večer se nic nepošle.
+        zaluzie_mistnosti = d.get(CONF_ZALUZIE) or []
         prestaveno = []
-        for z in (d.get(CONF_ZALUZIE) or []):
+        for z in zaluzie_mistnosti:
             st = self._stav(z)
             jede = st is not None and st.state in ("opening", "closing")
             byval = vyk_m.zkontroluj_polohu(
@@ -1179,7 +1217,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             m.atributy["prestaveno_rukou"] = prestaveno
             self._uloziste_stineni.async_delay_save(self._uloz_stineni, 10)
 
-        if self.hodnoty.get((p.subentry_id, "ovladat_stineni"), 0.0) > 0:
+        # Role se počítá vždycky, i když se žaluzie neovládají — jinak
+        # by karta neměla co ukázat a graf by hlásil neznámo. Povel se
+        # posílá až dole, podle přepínače.
+        if zaluzie_mistnosti:
             t_max = m.atributy.get("teplota_max")
             t_min = m.atributy.get("teplota_min")
             role = vy.role_stineni(
