@@ -215,3 +215,33 @@ def test_nadpis_zustane_u_svych_karet():
             zbytek = radky[i + 1:i + 8]
             assert any("type: entities" in x or "type: heading" in x
                        or "type: gauge" in x for x in zbytek)
+
+
+def test_grafy_maji_vlastni_sekci():
+    """Ať je člověk nemusí hledat po stránce."""
+    import yaml
+    s = dashboard(["kuchyne", "obyvak"], [], vzdy,
+                  cidla={"kuchyne": "sensor.a", "obyvak": "sensor.b"},
+                  co2_cidla={"kuchyne": "sensor.c"},
+                  venku="sensor.v", podoba="stranka")
+    d = yaml.safe_load(s)
+    grafove = [sek for sek in d["sections"]
+               if any(k["type"] == "history-graph" for k in sek["cards"])]
+    assert len(grafove) == 1
+    # a nic jiného než nadpis a grafy v ní není
+    typy = {k["type"] for k in grafove[0]["cards"]}
+    assert typy <= {"heading", "history-graph"}
+
+
+def test_graf_co2_a_vlhkosti():
+    s = dashboard(["kuchyne"], [], vzdy,
+                  co2_cidla={"kuchyne": "sensor.co2"},
+                  rh_cidla={"kuchyne": "sensor.rh"})
+    assert "CO2 v místnostech" in s and "sensor.co2" in s
+    assert "title: Vlhkost" in s and "sensor.rh" in s
+
+
+def test_graf_jedne_veliciny_staci_jedna_cara():
+    """Vlhkost v jediné místnosti má taky co říct."""
+    s = dashboard(["loznice"], [], vzdy, rh_cidla={"loznice": "sensor.rh"})
+    assert "title: Vlhkost" in s

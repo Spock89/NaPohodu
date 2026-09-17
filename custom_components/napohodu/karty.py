@@ -86,10 +86,14 @@ def _hlavicka(text: str, ikona: str, styl: str = "title") -> list[str]:
 
 
 def _graf(nadpis: str, hodin: int, polozky: list[tuple[str, str]],
-          existuje) -> list[str]:
-    """Graf se vynechá, když by v něm nebylo co kreslit."""
+          existuje, min_radku: int = 2) -> list[str]:
+    """Graf se vynechá, když by v něm nebylo co kreslit.
+
+    Srovnávací grafy potřebují aspoň dvě čáry, u jedné veličiny stačí
+    jedna — vlhkost v jediné místnosti má taky co říct.
+    """
     radky = [(e, n) for e, n in polozky if existuje(e)]
-    if len(radky) < 2:
+    if len(radky) < min_radku:
         return []
     r = ["  - type: history-graph", f"    title: {nadpis}",
          f"    hours_to_show: {hodin}", "    entities:"]
@@ -145,17 +149,31 @@ def _do_sekci(radky: list[str]) -> list[str]:
         karty.append(jedna)
 
     # seskupit: nová sekce u nadpisu i u budíků nové místnosti
-    sekce, drzim, pocet = [], [], 0
+    sekce, drzim, pocet, po_grafu = [], [], 0, False
     for k in karty:
-        zacatek = any(("type: heading" in r or "type: horizontal-stack" in r)
-                      for r in k[:1])
-        if (zacatek or pocet >= STROP) and drzim:
+        zacatek = any(("type: heading" in r or "type: horizontal-stack" in r
+                       or "type: history-graph" in r) for r in k[:1])
+        # po grafu začíná nová sekce, jinak by se k němu přilepilo
+        # to, co následuje
+        if (zacatek or po_grafu or pocet >= STROP) and drzim:
             sekce.append(drzim)
             drzim, pocet = [], 0
         drzim.extend(k)
         pocet += 1
+        po_grafu = any("type: history-graph" in r for r in k[:1])
     if drzim:
         sekce.append(drzim)
+
+    # grafy patří k sobě, ať je nemusí člověk hledat po stránce
+    grafy, ostatni = [], []
+    for s2 in sekce:
+        (grafy if "type: history-graph" in "".join(s2) else ostatni).append(s2)
+    if grafy:
+        spojene = ["  - type: heading", "    heading: Grafy",
+                   "    heading_style: title", "    icon: mdi:chart-line", ""]
+        for g in grafy:
+            spojene.extend(g)
+        sekce = ostatni + [spojene]
 
     # Sekce, která obsahuje jen nadpis a budíky, patří k následující —
     # jinak by ručička visela zvlášť od údajů té místnosti.
@@ -179,7 +197,8 @@ def _do_sekci(radky: list[str]) -> list[str]:
 
 def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
               cidla: dict | None = None, zaluzie: dict | None = None,
-              venku: str | None = None, s_okny: set | None = None,
+              venku: str | None = None, co2_cidla: dict | None = None,
+              rh_cidla: dict | None = None, s_okny: set | None = None,
               s_klidem: set | None = None, jako_pohled: bool = False,
               podoba: str = "karta") -> str:
     """Poskládá kartu. `existuje` řekne, jestli entita opravdu je.
@@ -189,6 +208,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     z konfigurace.
     """
     cidla = cidla or {}
+    co2_cidla = co2_cidla or {}
+    rh_cidla = rh_cidla or {}
     zaluzie = zaluzie or {}
     s_okny = s_okny if s_okny is not None else set(mistnosti)
     s_klidem = s_klidem if s_klidem is not None else set(mistnosti)
@@ -356,6 +377,20 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     if venku:
         teploty.append((venku, "Venku"))
     c += _graf("Teploty", 48, teploty, existuje)
+
+    # CO2 je hodnota, podle které se větrá nejčastěji — bez grafu se
+    # prahy ladí naslepo.
+    c += _graf("CO2 v místnostech", 24,
+               [(co2_cidla[m], m.capitalize())
+                for m in mistnosti if co2_cidla.get(m)], existuje,
+               min_radku=1)
+
+    # vlhkost kolísá se větráním a topením, a pozná se z ní, jestli
+    # nehrozí plíseň nebo naopak vysušený vzduch
+    c += _graf("Vlhkost", 48,
+               [(rh_cidla[m], m.capitalize())
+                for m in mistnosti if rh_cidla.get(m)], existuje,
+               min_radku=1)
 
     # do grafu pohybů patří jen to, co se opravdu hýbe
     okna = [(f"binary_sensor.napohodu_{m}_okno", f"Okno {m}")

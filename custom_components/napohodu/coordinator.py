@@ -1131,7 +1131,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         integrace posílá jen cíl a režim, o zbytek se stará ona.
         """
         hlavice = list(d.get(CONF_CLIMATE) or [])
+        m.atributy["odvzdusneni"] = False
         if not hlavice:
+            m.atributy["topeni"] = "hlavice nenastavená"
+            m.atributy["topeni_rezim"] = "nenastaveno"
+            m.atributy["topeni_hlavice"] = None
             return
         if self.hodnoty.get((p.subentry_id, "ovladat_topeni"), 0.0) <= 0:
             m.atributy["topeni"] = "neovládám, přepínač je vypnutý"
@@ -1178,6 +1182,19 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         m.atributy["topeni_hlavice"] = ", ".join(skutecnost) or None
         m.atributy["odvzdusneni"] = odvzdusneni
 
+    @staticmethod
+    def _stav_pomocnika(entity, bezi) -> str:
+        """Čitelný stav pomocného zařízení.
+
+        Prázdný atribut se v kartě ukáže jako Neznámý a člověk pak neví,
+        jestli zařízení nemá, nebo jen ještě nedostalo povel.
+        """
+        if not entity:
+            return "nenastaveno"
+        if bezi is None:
+            return "zatím bez povelu"
+        return "běží" if bezi else "stojí"
+
     async def _pomocnici_krok(self, p, d, m, okruh) -> None:
         """Čistička řeší prach, odtah vlhkost. Okno na to nemusí."""
         vyk = self.vykonavaci.setdefault(
@@ -1194,13 +1211,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 zapnout = False
             m.atributy["cisticka"] = await vyk.zarizeni(
                 cisticka, zapnout, "čistička")
-        m.atributy["cisticka_bezi"] = vyk.stav.zarizeni.get("čistička")
+        m.atributy["cisticka_bezi"] = self._stav_pomocnika(
+            d.get(CONF_CISTICKA), vyk.stav.zarizeni.get("čistička"))
 
         # vlhkost patří do atributů vždycky, když ji známe — nezávisle
         # na tom, jestli je čím odsávat nebo zvlhčovat
         rh_in = self._cislo(d.get(CONF_RH_VNITRNI))
-        if rh_in is not None:
-            m.atributy["vlhkost"] = rh_in
+        m.atributy["vlhkost"] = (
+            rh_in if rh_in is not None else "čidlo nenastaveno")
 
         odtah = d.get(CONF_ODTAH) or []
         if odtah and rh_in is not None:
@@ -1211,7 +1229,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             elif rh_in < rh_max - 5:
                 zapnout = False
             m.atributy["odtah"] = await vyk.zarizeni(odtah, zapnout, "odtah")
-        m.atributy["odtah_bezi"] = vyk.stav.zarizeni.get("odtah")
+        m.atributy["odtah_bezi"] = self._stav_pomocnika(
+            d.get(CONF_ODTAH), vyk.stav.zarizeni.get("odtah"))
 
         # zvlhčovač: v zimě vysychají sliznice, v paneláku běžně pod 30 %
         zvlhcovac = d.get(CONF_ZVLHCOVAC) or []
@@ -1224,7 +1243,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 zapnout = False
             m.atributy["zvlhcovac"] = await vyk.zarizeni(
                 zvlhcovac, zapnout, "zvlhčovač")
-        m.atributy["zvlhcovac_bezi"] = vyk.stav.zarizeni.get("zvlhčovač")
+        m.atributy["zvlhcovac_bezi"] = self._stav_pomocnika(
+            d.get(CONF_ZVLHCOVAC), vyk.stav.zarizeni.get("zvlhčovač"))
 
         # Ventilátor umí vyměnit vzduch tam, kde okno nemůže — v mrazu,
         # při větru, v noci nebo v místnosti bez ovládaného okna. Jenže
@@ -1245,7 +1265,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             m.atributy["ventilator_proc"] = duvody or None
             m.atributy["ventilator_smer"] = d.get(
                 CONF_VENTILATOR_SMER, "ven")
-        m.atributy["ventilator_bezi"] = vyk.stav.zarizeni.get("ventilátor")
+        m.atributy["ventilator_bezi"] = self._stav_pomocnika(
+            d.get(CONF_VENTILATOR), vyk.stav.zarizeni.get("ventilátor"))
 
     async def _stineni_krok(self, p, d, u, m, doma, slunce_el, cas_s):
         """Rozhodne o žaluziích místnosti. Slunce svítí do pokoje, ne do oblasti."""
@@ -1296,6 +1317,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # Pojmenovaný stav známe jen tam, kam jsme sami poslali povel.
         # Skutečná poloha se dá přečíst vždycky, a právě ta člověka
         # zajímá, když je paměť prázdná.
+        if not zaluzie_mistnosti:
+            m.atributy["stineni"] = "žaluzie nenastavené"
+            m.atributy["role_stineni"] = None
+        elif self.hodnoty.get((p.subentry_id, "ovladat_stineni"), 0.0) <= 0:
+            m.atributy["stineni"] = "neovládám, přepínač je vypnutý"
+
         m.atributy["stineni_stav"] = dict(vyk_m.stav.posledni_stineni)
         m.atributy["zaluzie_poloha"] = {
             z: self._poloha_krytu(z) for z in (d.get(CONF_ZALUZIE) or [])}

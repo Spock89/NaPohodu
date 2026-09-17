@@ -222,6 +222,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
 
         mistnosti, oblasti = [], []
         cidla, zaluzie = {}, {}
+        co2_cidla, rh_cidla = {}, {}
         s_okny, s_klidem = set(), set()
         for pod in self.config_entry.subentries.values():
             if pod.subentry_type == c.PODENTITA_MISTNOST:
@@ -230,6 +231,12 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 teploty = pod.data.get(c.CONF_TEPLOTY) or []
                 if teploty:
                     cidla[k] = teploty[0]
+                co2 = pod.data.get(c.CONF_CO2) or []
+                if co2:
+                    co2_cidla[k] = co2[0]
+                rh = pod.data.get(c.CONF_RH_VNITRNI)
+                if rh:
+                    rh_cidla[k] = rh
                 zaluzie[k] = (pod.data.get(c.CONF_ZALUZIE)
                               or pod.data.get(c.CONF_ZALUZIE_STARE) or [])
                 if pod.data.get(c.CONF_OKNA):
@@ -248,6 +255,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 mistnosti, oblasti,
                 lambda e: self.hass.states.get(e) is not None,
                 cidla=cidla, zaluzie=zaluzie, venku=g.get(c.CONF_T_VENKU),
+                co2_cidla=co2_cidla, rh_cidla=rh_cidla,
                 s_okny=s_okny, s_klidem=s_klidem, podoba=podoba)
         except Exception as e:  # pragma: no cover
             # Chyba v generování nesmí položit celý dialog nastavení.

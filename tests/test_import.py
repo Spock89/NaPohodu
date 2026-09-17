@@ -233,6 +233,9 @@ def test_vlhkost_se_ukazuje_i_bez_odtahu(nahradni_ha):
         _cislo = ko.NaPohoduCoordinator._cislo
         _stav = staticmethod(lambda eid: FalesnyStavRH() if eid else None)
         _pomocnici_krok = ko.NaPohoduCoordinator._pomocnici_krok
+        _stav_pomocnika = staticmethod(
+            ko.NaPohoduCoordinator._stav_pomocnika)
+        _ukoly_ventilatoru = ko.NaPohoduCoordinator._ukoly_ventilatoru
         vykonavaci: dict = {}
         hass = None
 
@@ -242,6 +245,7 @@ def test_vlhkost_se_ukazuje_i_bez_odtahu(nahradni_ha):
     d = {c.CONF_RH_VNITRNI: "sensor.vlhkost"}      # žádný odtah, žádný zvlhčovač
     asyncio.run(k._pomocnici_krok(_Pod(), d, m, {"pm25": 0, "pm10": 0}))
     assert m.atributy["vlhkost"] == 43.5
+    assert m.atributy["odtah_bezi"] == "nenastaveno"
 
 
 class _Pod:
@@ -545,3 +549,17 @@ def test_sezona_nikdy_netopi(nahradni_ha):
 def test_sezona_podle_prumeru_rozhoduje_teplota(nahradni_ha):
     assert _sezona("podle_prumeru", tri_dny=8.0) is True
     assert _sezona("podle_prumeru", tri_dny=22.0) is False
+
+
+
+def test_stavy_pomocniku_jsou_citelne(nahradni_ha):
+    """Prázdný atribut se v kartě ukáže jako Neznámý a člověk neví,
+    jestli zařízení nemá, nebo jen ještě nedostalo povel."""
+    import importlib
+    ko = importlib.import_module("napohodu.coordinator")
+    f = ko.NaPohoduCoordinator._stav_pomocnika
+
+    assert f([], None) == "nenastaveno"
+    assert f(["switch.x"], None) == "zatím bez povelu"
+    assert f(["switch.x"], True) == "běží"
+    assert f(["switch.x"], False) == "stojí"
