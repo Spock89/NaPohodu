@@ -441,3 +441,22 @@ def test_formular_zmenen_hlasi_jen_zmenu(nahradni_ha):
     assert k.formular_zmenen(("m", "x"), 1.0) is True     # poprvé
     assert k.formular_zmenen(("m", "x"), 1.0) is False
     assert k.formular_zmenen(("m", "x"), 2.0) is True
+
+
+# ------------------- místnost bez ovládaného okna
+
+def test_diagnostika_bez_okna(nahradni_ha):
+    """Hlášky o mezích poklesu a vyvětrání by u místnosti bez okna
+    jen mátly."""
+    import importlib
+    ko = importlib.import_module("napohodu.coordinator")
+    core = importlib.import_module("napohodu.core")
+
+    d = ko.NaPohoduCoordinator._diagnostika
+    v = core.Vstup(co2=681, cil=22.0, cas_s=1000)
+    p = core.Pamet()
+    n = core.Nastaveni()
+
+    assert d([], False, v, p, n) == ["okno tady neovládáme"]
+    assert d(["cover.x"], True, v, p, n) == ["větrá se"]
+    assert d(["cover.x"], False, v, p, n)      # něco tam být musí

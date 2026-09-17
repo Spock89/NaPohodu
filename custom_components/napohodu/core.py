@@ -12,15 +12,6 @@ from enum import Enum
 
 # ---------------------------------------------------------------- konstanty
 
-KVALITA_STUPNE = [
-    "extremely_poor",
-    "very_poor",
-    "poor",
-    "moderate",
-    "fair",
-    "good",
-]
-
 MAGNUS_A = 17.27
 MAGNUS_B = 237.7
 
@@ -51,7 +42,6 @@ class Nastaveni:
     pm_poznatek_s: float = 2 * 3600  # jak dlouho poznatek platí
     # od kterého stupně se vzduch bere za vyvětraný; „moderate" jinak
     # drží okno otevřené, i kdyby bylo CO2 na čtyřech stovkách
-    kvalita_cisto: int = 4
     pm_skok: float = 15.0
     pm_skok_min: float = 25.0
 
@@ -91,7 +81,6 @@ class Vstup:
     # prach venku — bez něj se nepozná, jestli větrání pomůže
     pm25_venku: float | None = None
     pm10_venku: float | None = None
-    kvalita: str | None = None
 
     t_in: float = 21.0          # nejchladnější místo — kondenzace, topení
     t_in_max: float | None = None   # nejteplejší místo — přehřívání, chlazení
@@ -183,13 +172,6 @@ def cil_adaptivni(prumer_venku: float, posun: float = 0.0,
                   dolni: float = 20.0, horni: float = 27.0) -> float:
     """Adaptivní komfortní teplota podle EN 16798-1."""
     return round(min(max(0.33 * prumer_venku + 18.8 + posun, dolni), horni), 1)
-
-
-def _kvalita_rank(kvalita: str | None) -> int | None:
-    if not kvalita:
-        return None
-    k = str(kvalita).strip().lower().replace(" ", "_")
-    return KVALITA_STUPNE.index(k) if k in KVALITA_STUPNE else None
 
 
 def _je_noc(hodina: float, n: Nastaveni, spanek: bool,
@@ -351,12 +333,6 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
             chybi.append(f"CO2 pod {n.co2_zavrit:.0f} (teď {v.co2:.0f})")
         if v.vetrat:
             chybi.append("vypnout ruční větrání")
-        # musí sedět s tím, jak se počítá kvalita_ok při rozhodování
-        rank = _kvalita_rank(v.kvalita)
-        if rank is not None and rank < n.kvalita_cisto:
-            chybi.append(f"kvalitu vzduchu aspoň "
-                         f"{KVALITA_STUPNE[n.kvalita_cisto]} "
-                         f"(teď {v.kvalita})")
         venku_lepsi = (v.pm25_venku is None
                        or v.pm25_venku <= v.pm25 - n.pm_rozdil)
         if v.pm_platny and venku_lepsi and v.pm25 >= n.pm_prah_cisto:
@@ -504,10 +480,6 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         return otevri("ručně otevřeno", None, hned=True, kod="rucni")
 
     # --- 4. vzduch --------------------------------------------------
-    rank = _kvalita_rank(v.kvalita)
-    kvalita_spatna = rank is not None and rank <= 2
-    kvalita_ok = rank is None or rank >= n.kvalita_cisto
-
     if p.pm_prumer is None:
         p.pm_prumer = v.pm25
     pm_skok = (v.pm_platny
@@ -566,8 +538,8 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # Při nárazovém větrání naopak otevíráme všude, o to jde.
         prah_startu = max(prah_startu, n.co2_noc)
 
-    potreba = (v.co2 > prah_startu or v.vetrat or kvalita_spatna or pm_spatne)
-    cisto = (v.co2 < n.co2_zavrit and not v.vetrat and kvalita_ok and pm_cisto)
+    potreba = v.co2 > prah_startu or v.vetrat or pm_spatne
+    cisto = v.co2 < n.co2_zavrit and not v.vetrat and pm_cisto
 
     # --- 5. komfort a chlazení --------------------------------------
     noc = _je_noc(v.hodina, n, v.spanek, v.resi_klid)
@@ -635,7 +607,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                     f"noc: čekám na prohřátí, {t_in:.1f} z {vratit:.1f} °C",
                     False)
 
-        if v.co2 > prah_noc or pm_spatne or kvalita_spatna or v.vetrat:
+        if v.co2 > prah_noc or pm_spatne or v.vetrat:
             if krize and t_in > n.nocni_min - n.krize_pod_mez:
                 p.noc_mez = n.nocni_min - n.krize_pod_mez
                 p.noc_krize = True
@@ -687,8 +659,6 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         p.rezim = "pulz"
         p.den_mez = max(n.nocni_min + 1, t_in - n.denni_pokles)
         duvod = f"CO2 {v.co2:.0f}"
-        if kvalita_spatna:
-            duvod = f"kvalita {v.kvalita}"
         if pm_spatne:
             duvod = f"PM2.5 {v.pm25:.0f}" + ("" if v.pm_platny else " (bez ventilátoru)")
         dolni = 3 if v.narazove else 30

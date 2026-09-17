@@ -356,10 +356,10 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     # do grafu pohybů patří jen to, co se opravdu hýbe
     okna = [(f"binary_sensor.napohodu_{m}_okno", f"Okno {m}")
             for m in mistnosti if m in s_okny]
-    zal = []
-    for m in mistnosti:
-        for i, z in enumerate(zaluzie.get(m, []) or []):
-            zal.append((z, f"Žaluzie {m}" + (f" {i + 1}" if i else "")))
+    # Pojmenovaná poloha, ne entita cover — ta v grafu ukáže jen
+    # otevřeno, protože žaluzie jsou skoro pořád otevřené.
+    zal = [(f"sensor.napohodu_{m}_zaluzie", f"Žaluzie {m}")
+           for m in mistnosti if zaluzie.get(m)]
     klidy = [(f"binary_sensor.napohodu_{m}_klid", f"Klid {m}")
              for m in mistnosti if m in s_klidem]
     c += _graf("Okna, žaluzie a klid", 24, okna + zal + klidy, existuje)

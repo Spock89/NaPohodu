@@ -450,6 +450,8 @@ def test_po_zapomenuti_se_stav_posle_znovu(monkeypatch):
     bez(v.stineni({"cover.o2": "zastíněno"}, 1000, 15))
     p.clear()
     pozdeji = 1000 + 16 * 60
+    # první rozejití se bere za dojezd, ruční zásah až to další
+    v.zkontroluj_polohu("cover.o2", 5.0, pozdeji)
     for _ in range(2):
         v.zkontroluj_polohu("cover.o2", 3.0, pozdeji)   # někdo přestavil
     bez(v.stineni({"cover.o2": "zastíněno"}, pozdeji, 15))
@@ -491,3 +493,34 @@ def test_navrat_do_polohy_zrusi_pocitadlo():
     v.zkontroluj_polohu("cover.o2", 5.0, POZDE)
     assert v.zkontroluj_polohu("cover.o2", 3.0, POZDE) is None
     assert "cover.o2" in v.stav.posledni_stineni
+
+
+def test_dojezd_po_sekvenci_se_vezme_za_spravny(monkeypatch):
+    """Sekvence končící stopem skončí pokaždé o kus jinde. První
+    rozejití je dojezd, ne ruční zásah — jinak by se stav nastavoval
+    dokola znovu."""
+    p = _naparuj_stineni(monkeypatch)
+    h, v = vyk(po_startu=False)
+    bez(v.stineni({"cover.o2": "škvírka"}, 1000, 15))
+    assert v.stav.stineni_poloha["cover.o2"] == 5.0
+
+    # pohon dojel na 2.9 a tam zůstal (po odkladu kontroly)
+    v.zkontroluj_polohu("cover.o2", 2.9, 1400)
+    assert v.stav.stineni_poloha["cover.o2"] == 2.9
+    assert v.stav.posledni_stineni["cover.o2"] == "škvírka"
+
+    # a už se s tím nehýbe
+    p.clear()
+    for cas in range(1500, 2000, 100):
+        v.zkontroluj_polohu("cover.o2", 2.9, cas)
+    bez(v.stineni({"cover.o2": "škvírka"}, 5000, 15))
+    assert p == []
+
+
+def test_rucni_zasah_se_pozna_i_po_ustaleni(monkeypatch):
+    p = _naparuj_stineni(monkeypatch)
+    h, v = vyk(po_startu=False)
+    bez(v.stineni({"cover.o2": "zastíněno"}, 1000, 15))
+    v.zkontroluj_polohu("cover.o2", 5.4, 1400)       # ustálení v toleranci
+    assert v.zkontroluj_polohu("cover.o2", 40.0, 1500) is None
+    assert v.zkontroluj_polohu("cover.o2", 40.0, 1600) == "zastíněno"

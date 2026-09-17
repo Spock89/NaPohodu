@@ -70,17 +70,6 @@ def test_rozdelane_vetrani_pokracuje_pod_800():
     assert r2.akce is Akce.OTEVRIT
 
 
-def test_kvalita_ma_mrtvou_zonu():
-    for kv, ocek in [("poor", Akce.OTEVRIT), ("very_poor", Akce.OTEVRIT),
-                     ("moderate", Akce.NIC), ("fair", Akce.NIC)]:
-        r, _ = krok(stary(co2=750, kvalita=kv, cil=25.5, t_out=10))
-        assert r.akce is ocek, f"{kv} -> {r.akce} ({r.duvod})"
-
-
-def test_kvalita_s_mezerou_i_podtrzitkem():
-    a, _ = krok(stary(co2=750, kvalita="very_poor", cil=25.5, t_out=10))
-    b, _ = krok(stary(co2=750, kvalita="Very Poor", cil=25.5, t_out=10))
-    assert a.akce is b.akce is Akce.OTEVRIT
 
 
 def test_prach_bez_ventilatoru_ma_vyssi_prah():
@@ -201,16 +190,6 @@ def test_teplota_se_nijak_neupravuje():
 
 # ---------------------------------------------------------------- odolnost
 
-def test_chybejici_kvalita_neblokuje():
-    r, _ = krok(stary(co2=500, kvalita=None, cil=25.5), otevreno=True,
-                cas_povelu_s=0)
-    assert r.akce is Akce.ZAVRIT
-
-
-def test_neznama_kvalita_neblokuje():
-    r, _ = krok(stary(co2=500, kvalita="unknown", cil=25.5), otevreno=True,
-                cas_povelu_s=0)
-    assert r.akce is Akce.ZAVRIT
 
 
 def test_nulova_vlhkost_nespadne():

@@ -228,7 +228,6 @@
             "pm25": "PM2.5",
             "pm10": "PM10",
             "pm_platny": "Kdy platí údaj o prachu",
-            "kvalita": "Slovní kvalita vzduchu",
             "climate": "Topení (jen topí)",
             "odchylka": "Moje odchylka pro tuto místnost",
             "noc_min": "Minimum na noc",
@@ -274,7 +273,6 @@
             "znacka_okno": "Značka pro otevřené okno",
             "znacka_mimo_sezonu": "Značka mimo sezónu",
             "pauza_po_pulzu_min": "Pauza po dojezdu větrání",
-            "kvalita_cisto": "Za vyvětráno brát kvalitu od",
             "vetrat": "Ruční žádost o vyvětrání",
             "rucni_klid_min": "Po ručním zásahu nechat být",
             "ochota_vetrat": "Ochota větrat"
@@ -286,7 +284,6 @@
             "pm25": "Prachové částice. Skok nahoru spustí nárazové větrání, typicky při smažení.",
             "pm10": "Hrubší prach. Nechej prázdné, pokud ho čidlo neměří.",
             "pm_platny": "Prachové čidlo potřebuje proudící vzduch. Když má ventilátor, vyber jeho spínač — při stojícím ventilátoru se naměřeným hodnotám nevěří. Nemáš-li ventilátor, nech prázdné.",
-            "kvalita": "Čidlo, které místo čísla hlásí slova good, fair, moderate, poor. Poor a horší spustí větrání, fair a lepší ho ukončí, moderate je mrtvá zóna.",
             "climate": "Hlavice místnosti — virtuální z Better Thermostatu i skutečná. Integrace jim posílá cílovou teplotu a režim, když je zapnutý přepínač Ovládat topení.",
             "odchylka": "Cílová teplota se počítá pro celý byt. Tady ji pro tuto místnost posuneš. Plus znamená tepleji. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "noc_min": "Pod tuto teplotu se v noci nevětrá. V ložnici nižší, v obývacím pokoji vyšší. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
@@ -333,7 +330,6 @@
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
             "znacka_mimo_sezonu": "Teplota mimo topnou sezónu. Neposílá se vypnuto, ale nízká hodnota, ze které je vidět, že spojení funguje a proč se netopí.",
             "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu větrání, i když vzduch ještě není vyvětraný. Když se nedaří vyvětrat, každá další pauza je dvojnásobná, nejvýš hodinová — typicky když tahle místnost větrá za jinou, jejíž vzduch svým oknem skoro neovlivní.",
-            "kvalita_cisto": "Slovní kvalita vzduchu, od které se místnost bere za vyvětranou. Výchozí fair znamená, že stupeň moderate drží okno otevřené, i kdyby bylo CO2 na čtyřech stovkách. Když ti čidlo hlásí moderate pořád, zvol moderate.",
             "zdroj_klidu": "Kdy má místnost vyžadovat klid. Platí to i pro okna: „žádný\" znamená, že se v ní větrá v noci stejně jako přes den a spánek v sousední místnosti oblasti ji neomezí.",
             "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
@@ -391,7 +387,6 @@
             "pm25": "PM2.5",
             "pm10": "PM10",
             "pm_platny": "Kdy platí údaj o prachu",
-            "kvalita": "Slovní kvalita vzduchu",
             "climate": "Topení (jen topí)",
             "odchylka": "Moje odchylka pro tuto místnost",
             "noc_min": "Minimum na noc",
@@ -448,7 +443,6 @@
             "znacka_okno": "Značka pro otevřené okno",
             "znacka_mimo_sezonu": "Značka mimo sezónu",
             "pauza_po_pulzu_min": "Pauza po dojezdu větrání",
-            "kvalita_cisto": "Za vyvětráno brát kvalitu od",
             "vetrat": "Ruční žádost o vyvětrání",
             "rucni_klid_min": "Po ručním zásahu nechat být",
             "ochota_vetrat": "Ochota větrat"
@@ -460,7 +454,6 @@
             "pm25": "Prachové částice. Skok nahoru spustí nárazové větrání, typicky při smažení.",
             "pm10": "Hrubší prach. Nechej prázdné, pokud ho čidlo neměří.",
             "pm_platny": "Prachové čidlo potřebuje proudící vzduch. Když má ventilátor, vyber jeho spínač — při stojícím ventilátoru se naměřeným hodnotám nevěří. Nemáš-li ventilátor, nech prázdné.",
-            "kvalita": "Čidlo, které místo čísla hlásí slova good, fair, moderate, poor. Poor a horší spustí větrání, fair a lepší ho ukončí, moderate je mrtvá zóna.",
             "climate": "Hlavice místnosti — virtuální z Better Thermostatu i skutečná. Integrace jim posílá cílovou teplotu a režim, když je zapnutý přepínač Ovládat topení.",
             "odchylka": "Cílová teplota se počítá pro celý byt. Tady ji pro tuto místnost posuneš. Plus znamená tepleji. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "noc_min": "Pod tuto teplotu se v noci nevětrá. V ložnici nižší, v obývacím pokoji vyšší. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
@@ -518,7 +511,6 @@
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
             "znacka_mimo_sezonu": "Teplota mimo topnou sezónu. Neposílá se vypnuto, ale nízká hodnota, ze které je vidět, že spojení funguje a proč se netopí.",
             "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu větrání, i když vzduch ještě není vyvětraný. Když se nedaří vyvětrat, každá další pauza je dvojnásobná, nejvýš hodinová — typicky když tahle místnost větrá za jinou, jejíž vzduch svým oknem skoro neovlivní.",
-            "kvalita_cisto": "Slovní kvalita vzduchu, od které se místnost bere za vyvětranou. Výchozí fair znamená, že stupeň moderate drží okno otevřené, i kdyby bylo CO2 na čtyřech stovkách. Když ti čidlo hlásí moderate pořád, zvol moderate.",
             "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak."
@@ -746,14 +738,6 @@
         "vypnout": "Vypnout"
       }
     },
-    "kvalita_cisto": {
-      "options": {
-        "poor": "poor — skoro cokoli",
-        "moderate": "moderate",
-        "fair": "fair (výchozí)",
-        "good": "good — jen to nejlepší"
-      }
-    },
     "ochota_vetrat": {
       "options": {
         "ochotna": "Tady větrání nevadí — vyvětrám i za sousedy",
@@ -788,6 +772,9 @@
       },
       "vitr": {
         "name": "Vítr v nárazech"
+      },
+      "stineni": {
+        "name": "Žaluzie"
       }
     },
     "binary_sensor": {

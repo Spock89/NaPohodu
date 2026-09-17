@@ -41,6 +41,9 @@ class StavVykonu:
     # se pozná ruční přestavení
     stineni_poloha: dict[str, float] = field(default_factory=dict)
     rozejiti: dict[str, int] = field(default_factory=dict)
+    # poloha se hned po sekvenci ještě ustaluje, takže první změřená
+    # hodnota je prozatímní a jednou se opraví podle skutečnosti
+    poloha_predbezna: set = field(default_factory=set)
     stineni_cas_s: float = -1e9
     prvni_beh: bool = True
     chyby: list[str] = field(default_factory=list)
@@ -91,6 +94,21 @@ class Vykonavac:
 
         if abs(poloha - ocekavana) <= self.TOLERANCE_POLOHY:
             self.stav.rozejiti.pop(zaluzie, None)
+            self.stav.poloha_predbezna.discard(zaluzie)
+            return None
+
+        # První rozejití po povelu není ruční zásah, ale dojezd. Poloha
+        # naměřená hned po sekvenci je prozatímní — pohon ještě jede,
+        # a u sekvencí končících příkazem stop skončí pokaždé o kus jinde.
+        # Skutečnou polohu si tedy jednou opravíme místo zapomínání,
+        # jinak by se stav dokola nastavoval znovu.
+        if zaluzie in self.stav.poloha_predbezna:
+            self.stav.poloha_predbezna.discard(zaluzie)
+            self.stav.stineni_poloha[zaluzie] = poloha
+            self.stav.rozejiti.pop(zaluzie, None)
+            _LOGGER.debug("NaPohodu: %s se ustálila na %.1f %% "
+                          "(čekal jsem %.1f), beru to za správné",
+                          zaluzie, poloha, ocekavana)
             return None
 
         kolikrat = self.stav.rozejiti.get(zaluzie, 0) + 1
@@ -120,6 +138,7 @@ class Vykonavac:
         self.stav.posledni_stineni.clear()
         self.stav.stineni_poloha.clear()
         self.stav.rozejiti.clear()
+        self.stav.poloha_predbezna.clear()
         self.stav.stineni_cas_s = -1e9
         self.stav.prvni_beh = False    # tlačítko chce pohyb, ne mlčení
         self.stav.chyby.clear()
@@ -275,6 +294,7 @@ class Vykonavac:
                 poloha = vysledek.get("poloha_po")
                 if poloha is not None:
                     self.stav.stineni_poloha[z] = float(poloha)
+                    self.stav.poloha_predbezna.add(z)
                 hotovo.append(nazev)
                 _LOGGER.info("NaPohodu: žaluzie %s -> %s", z, nazev)
             else:

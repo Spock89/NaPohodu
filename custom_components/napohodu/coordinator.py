@@ -32,9 +32,9 @@ from .const import (
     CONF_KLIMA_DLOUHA_H, CONF_KLIMA_ENTITA, CONF_KLIMA_POKOJE,
     CONF_KLIMA_SUSIT_OD, CONF_KLIMA_TOPIT_OD, CONF_KLIMA_UMI,
     CONF_KLIMA_UTLUM_CHLAZENI, CONF_KLIMA_UTLUM_TOPENI,
-    CONF_KLIMA_V_POKOJI, CONF_KOMFORT_ODSTUP, CONF_KONTAKT_M, CONF_KVALITA,
-    CONF_KVALITA_CISTO, CONF_MAX_STARI, CONF_MIN_DRZENI, CONF_MISTNOSTI,
-    CONF_NARAZ, CONF_NARAZOVE, CONF_NARAZOVE_ODSTUP, CONF_NARAZOVE_STROP,
+    CONF_KLIMA_V_POKOJI, CONF_KOMFORT_ODSTUP, CONF_KONTAKT_M,
+    CONF_MAX_STARI, CONF_MIN_DRZENI, CONF_MISTNOSTI, CONF_NARAZ,
+    CONF_NARAZOVE, CONF_NARAZOVE_ODSTUP, CONF_NARAZOVE_STROP,
     CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD,
     CONF_OCHOTA, CONF_ODCHYLKA, CONF_ODTAH, CONF_ODVZDUSNENI_H,
     CONF_ODVZDUSNENI_T, CONF_OKNA, CONF_PAUZA_PO_PULZU, CONF_PLOCHA,
@@ -558,7 +558,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
         # sdílený vzduch: rozhoduje nejhorší hodnota v okruhu
         for o in okruhy:
-            co2, pm25, pm10, kvalita, pm_platny, spanek = [], [], [], None, None, False
+            co2, pm25, pm10, pm_platny, spanek = [], [], [], None, False
             for mp in o["cleni"]:
                 md = podklady[mp.subentry_id]["d"]
                 co2 += list(md.get(CONF_CO2) or [])
@@ -567,13 +567,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 spanek = spanek or bool(self._zapnuto(md.get(CONF_SPANEK)))
                 if md.get(CONF_PM_PLATNY) and pm_platny is None:
                     pm_platny = self._zapnuto(md.get(CONF_PM_PLATNY))
-                if md.get(CONF_KVALITA) and kvalita is None:
-                    st = self._stav(md.get(CONF_KVALITA))
-                    kvalita = st.state if st else None
             o["co2"] = self._max(co2, 450.0)
             o["pm25"] = self._max(pm25, 0.0)
             o["pm10"] = self._max(pm10, 0.0)
-            o["kvalita"] = kvalita
             o["pm_platny"] = True if pm_platny is None else pm_platny
             o["spanek"] = spanek
             # Klidová je oblast až tehdy, když klid vyžadují všechny
@@ -708,7 +704,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             z = VysledekZony(nazev=o["nazev"],
                              mistnosti=[x.title for x in o["cleni"]])
             z.atributy = {
-                "co2": o["co2"], "pm25": o["pm25"], "kvalita": o["kvalita"],
+                "co2": o["co2"], "pm25": o["pm25"],
                 "spi_se": o["spanek"], "klid": o["klid"],
                 "zastupce": uprava.zastupce, "vetra_i_za": uprava.za_koho,
                 "mistnosti": z.mistnosti,
@@ -822,6 +818,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         except Exception as e:  # pragma: no cover
             _LOGGER.warning("NaPohodu: klimatizace %s selhala: %s", entita, e)
 
+    @staticmethod
+    def _diagnostika(okna, otevreno, v, pamet, nast) -> list[str]:
+        """Co brání větrání. U místnosti bez okna nemá o čem mluvit."""
+        if not okna:
+            return ["okno tady neovládáme"]
+        if otevreno:
+            return ["větrá se"]
+        return core.duvody(v, pamet, nast) or ["nic nebrání"]
+
     async def _mistnost_krok(self, p, u, okruh, uprava, t_out, rh_out, dest,
                              doma, vitr_blokuje, je_noc, hodina, cas_s,
                              noc_od, noc_do, slunce_el):
@@ -845,7 +850,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             co2=max(okruh["co2"], uprava.prevzate_co2,
                     self.narazove_co2 if self.narazove_bezi else 0.0),
             pm25=okruh["pm25"], pm10=okruh["pm10"],
-            pm_platny=okruh["pm_platny"], kvalita=okruh["kvalita"],
+            pm_platny=okruh["pm_platny"],
             pm25_venku=self._cislo(g.get(CONF_PM25_VENKU)),
             pm10_venku=self._cislo(g.get(CONF_PM10_VENKU)),
             t_in=self._min(d.get(CONF_TEPLOTY), 21.0),
@@ -874,8 +879,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             co2_zavrit=okruh["prahy"][CONF_CO2_ZAVRIT],
             co2_noc=okruh["prahy"][CONF_CO2_NOC],
             co2_noc_krize=okruh["prahy"][CONF_CO2_NOC_KRIZE],
-            kvalita_cisto=core.KVALITA_STUPNE.index(
-                d.get(CONF_KVALITA_CISTO, "fair")),
             dest_prah=prah_deste,
             projezd_s=float(d.get(CONF_PROJEZD_M, 120)),
             min_drzeni_s=self.hodnota(
@@ -1024,12 +1027,17 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "zastupce": uprava.zastupce,
             "okna": okna,
             "kontakt_hlasi": rucne if kontakty else None,
-            "co_dal": core.ocekavani(v, pamet, nast),
-            "co_bylo": core.posledni(pamet, cas_s),
+            # Místnost bez ovládaného okna se vzduchu účastní, ale
+            # o oknech jí nemá kdo nic říkat — hlášky o mezích poklesu
+            # a o tom, co chybí k vyvětrání, by jen mátly.
+            "co_dal": (core.ocekavani(v, pamet, nast) if okna
+                       else ["tato místnost okno neovládá, "
+                             "vzduch za ni řeší oblast"]),
+            "co_bylo": (core.posledni(pamet, cas_s) if okna
+                        else ["tato místnost okno neovládá"]),
             "vetrani_za_sebou": pamet.pulzy_za_sebou,
             "prach_zvenci": cas_s < pamet.pm_venku_horsi_do_s,
-            "duvody": (["větrá se"] if skutecne
-                       else core.duvody(v, pamet, nast) or ["nic nebrání"]),
+            "duvody": self._diagnostika(okna, skutecne, v, pamet, nast),
             "nocni_klid": f"{self._cas(noc_od)} – {self._cas(noc_do)}",
             "rano_neotvirat_od": self._cas(noc_do),
             "je_noc": je_noc,

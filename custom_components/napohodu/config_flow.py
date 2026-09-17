@@ -415,36 +415,6 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_PM25): _ent(["sensor"], True),
         vol.Optional(c.CONF_PM10): _ent(["sensor"], True),
         vol.Optional(c.CONF_PM_PLATNY): _ent(["binary_sensor", "switch"]),
-        vol.Optional(c.CONF_KVALITA): _ent(["sensor"]),
-        vol.Optional(c.CONF_CLIMATE): _ent(["climate"], True),
-        vol.Optional(c.CONF_CLIMATE_CHLAZENI): _ent(["climate"], True),
-        vol.Optional(c.CONF_CLIMATE_OBOJI): _ent(["climate"], True),
-        vol.Optional(c.CONF_TOPIT_PRI_OKNU, default="nechat"): _volba(
-            c.PRI_OKNU, "topit_pri_oknu"),
-        vol.Optional(c.CONF_SEZONU_RIDI_HLAVICE, default=True):
-            selector.BooleanSelector(),
-        vol.Optional(c.CONF_ZNACKA_OKNO, default=5.5): _cislo(4, 12, 0.1),
-        vol.Optional(c.CONF_ZNACKA_MIMO, default=7.7): _cislo(4, 15, 0.1),
-        vol.Optional(c.CONF_TOPIT_MIMO_SEZONU, default=False):
-            selector.BooleanSelector(),
-        vol.Optional(c.CONF_ODVZDUSNENI_H, default=24): _cislo(0, 96, 1, "h"),
-        vol.Optional(c.CONF_ODVZDUSNENI_T, default=28.0): _cislo(22, 32),
-        vol.Optional(c.CONF_ODCHYLKA, default=0.0): _cislo(-3, 3),
-        vol.Optional(c.CONF_NOC_MIN, default=18.0): _cislo(14, 24),
-        vol.Optional(c.CONF_UTLUM, default=16.0): _cislo(5, 20),
-        vol.Optional(c.CONF_KOMFORT_ODSTUP, default=4.0): _cislo(1, 15, 0.5),
-        vol.Optional(c.CONF_PRIORITA, default=5.0): _cislo(0, 10, 1, ""),
-        vol.Optional(c.CONF_VENTILATOR): _ent(["fan", "switch"], True),
-        vol.Optional(c.CONF_CISTICKA): _ent(["fan", "switch", "humidifier"], True),
-        vol.Optional(c.CONF_RH_VNITRNI): _ent(["sensor"], trida=["humidity"]),
-        vol.Optional(c.CONF_ODTAH): _ent(["fan", "switch"], True),
-        vol.Optional(c.CONF_RH_MAX, default=60.0): _cislo(40, 80, 1, "%"),
-        vol.Optional(c.CONF_ZVLHCOVAC): _ent(
-            ["humidifier", "switch", "fan", "input_boolean"], True),
-        vol.Optional(c.CONF_RH_MIN, default=38.0): _cislo(20, 55, 1, "%"),
-        vol.Optional(c.CONF_VENTILATOR_SMER, default="ven"): _volba(
-            c.SMERY_VENTILACE, "ventilator_smer"
-        ),
 
         # --- okna místnosti ---
         vol.Optional(c.CONF_OKNA): _ent(["cover"], True),
@@ -460,19 +430,6 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
             ["input_boolean", "switch", "binary_sensor"], True),
         vol.Optional(c.CONF_VETRAT): _ent(
             ["input_boolean", "switch", "binary_sensor"], True),
-        vol.Optional(c.CONF_KVALITA_CISTO, default="fair"): _volba(
-            c.STUPNE_KVALITY, "kvalita_cisto"),
-        vol.Optional(c.CONF_CO2_OTEVRIT, default=800): _cislo(500, 2000, 25, "ppm"),
-        vol.Optional(c.CONF_CO2_ZAVRIT, default=700): _cislo(400, 1500, 25, "ppm"),
-        vol.Optional(c.CONF_CO2_NOC, default=1000): _cislo(600, 2000, 25, "ppm"),
-        vol.Optional(c.CONF_CO2_NOC_KRIZE, default=1250): _cislo(800, 2500, 25, "ppm"),
-        vol.Optional(c.CONF_DEST_PRAH, default=0.3): _cislo(0, 20, 0.1, "mm/h"),
-        vol.Optional(c.CONF_I_KDYZ_NIKDO, default=False):
-            selector.BooleanSelector(),
-        vol.Optional(c.CONF_OCHOTA, default="normalne"): _volba(
-            c.OCHOTA_VETRAT, "ochota_vetrat"),
-        vol.Optional(c.CONF_T_VENKU_M): _ent(["sensor"], trida=["temperature"]),
-        vol.Optional(c.CONF_RH_VENKU_M): _ent(["sensor"], trida=["humidity"]),
 
         # --- stínění patří k místnosti, protože slunce svítí do pokoje ---
         vol.Optional(c.CONF_ZALUZIE): _ent(["cover"], True),

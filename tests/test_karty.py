@@ -170,10 +170,13 @@ def test_klid_se_neukazuje_kde_se_neresi():
 
 
 def test_graf_pohybu_obsahuje_okna_zaluzie_i_klid():
+    """Do grafu patří pojmenovaná poloha, ne entita cover — ta ukáže
+    jen otevřeno, protože žaluzie jsou skoro pořád otevřené."""
     s = dashboard(["obyvak"], [], vzdy,
                   zaluzie={"obyvak": ["cover.o1", "cover.o2"]})
     assert "Okna, žaluzie a klid" in s
-    assert "cover.o1" in s and "cover.o2" in s
+    assert "sensor.napohodu_obyvak_zaluzie" in s
+    assert "cover.o1" not in s
     assert "binary_sensor.napohodu_obyvak_klid" in s
 
 

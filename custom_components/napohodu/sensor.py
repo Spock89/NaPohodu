@@ -26,7 +26,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             pridat([StavKlimy(k, pod)], config_subentry_id=pod.subentry_id)
         elif pod.subentry_type == PODENTITA_MISTNOST:
             pridat([StavMistnosti(k, pod), CilMistnosti(k, pod),
-                    SlunceMistnosti(k, pod)],
+                    SlunceMistnosti(k, pod), StineniMistnosti(k, pod)],
                    config_subentry_id=pod.subentry_id)
     pridat([Prumer(k, entry, "prumer_tyden", "tyden"),
             Prumer(k, entry, "prumer_tri_dny", "tri_dny"),
@@ -211,3 +211,37 @@ class Vitr(CoordinatorEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict:
         return self.coordinator.vitr_stav
+
+
+class StineniMistnosti(NaPohoduEntity, SensorEntity):
+    """Pojmenovaná poloha žaluzií.
+
+    Graf s entitou cover ukáže jen otevřeno a zavřeno, protože žaluzie
+    jsou skoro pořád otevřené — mění se jen úhel lamel. Tady je vidět,
+    do kterého pojmenovaného stavu jsme je poslali.
+    """
+
+    _attr_icon = "mdi:blinds-horizontal"
+
+    def __init__(self, k, pod):
+        super().__init__(k, pod, "stineni")
+
+    @property
+    def native_value(self) -> str | None:
+        m = self.mistnost
+        if m is None:
+            return None
+        stavy = m.atributy.get("stineni_stav") or {}
+        if not stavy:
+            return "neznámo"
+        jmena = sorted(set(stavy.values()))
+        return ", ".join(jmena)[:255]
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        m = self.mistnost
+        if not m:
+            return {}
+        return {k: v for k, v in m.atributy.items()
+                if k in ("stineni_stav", "zaluzie_poloha", "role_stineni",
+                         "prestaveno_rukou")}
