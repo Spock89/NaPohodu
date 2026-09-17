@@ -48,6 +48,7 @@ ATRIBUTY_STAVU = [
     ("rucni_zasah", "Sáhl jsi na okno", None),
     ("kontakt_hlasi", "Kontakt hlásí otevřeno", None),
     ("prach_zvenci", "Prach se tahá zvenčí", None),
+    ("dnes", "Souhrn dne", None),
     ("co_bylo", "Poslední rozhodnutí", None),
     ("co_dal", "Co změnu spustí", None),
     ("duvody", "Diagnostika", None),
@@ -251,6 +252,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
                             "   blokuje okna")
         polozky += _atribut("sensor.napohodu_vitr_v_narazech", "prahy",
                             "   prahy")
+        polozky += _atribut("sensor.napohodu_vitr_v_narazech", "pricina",
+                            "   příčina blokace")
     if existuje("binary_sensor.napohodu_topna_sezona"):
         polozky.append("      - type: divider")
         polozky += _radek("binary_sensor.napohodu_topna_sezona",

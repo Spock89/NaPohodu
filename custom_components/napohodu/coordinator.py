@@ -1284,8 +1284,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 z, self._poloha_krytu(z), cas_s, jede)
             if byval:
                 prestaveno.append(f"{z}: bylo {byval}")
+        m.atributy["prestaveno_rukou"] = prestaveno or None
         if prestaveno:
-            m.atributy["prestaveno_rukou"] = prestaveno
             self._uloziste_stineni.async_delay_save(self._uloz_stineni, 10)
 
         # Role se počítá vždycky, i když se žaluzie neovládají — jinak
@@ -1320,6 +1320,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if not zaluzie_mistnosti:
             m.atributy["stineni"] = "žaluzie nenastavené"
             m.atributy["role_stineni"] = None
+            m.atributy["zadana_poloha"] = {}
         elif self.hodnoty.get((p.subentry_id, "ovladat_stineni"), 0.0) <= 0:
             m.atributy["stineni"] = "neovládám, přepínač je vypnutý"
 

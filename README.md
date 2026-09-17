@@ -55,13 +55,13 @@ a přebije ten počítaný.
 
 ### Větrání podle vzduchu i teploty
 
-CO2, prach a slovní kvalita vzduchu, každé s mrtvou zónou, aby okno
+CO2 a prach, obojí s mrtvou zónou, aby okno
 neposkakovalo. Jakmile větrání začne, pokračuje až pod dolní práh —
 mrtvá zóna brání zahájení, ne dokončení.
 
 Délka větrání se řídí **skutečným ochlazením místnosti**, ne stopkami.
-Časovač je jen pojistka. Posuvník *vzduch proti teplu* říká, o kolik smí
-teplota klesnout.
+Časovač je jen pojistka. Zadává se rovnou, o kolik stupňů smí teplota
+klesnout — zvlášť ve dne a zvlášť v noci, protože v noci se snese víc.
 
 Rosný bod z Magnusova vzorce zkracuje větrání, když hrozí kondenzace.
 Teplota se bere tak, jak ji čidlo hlásí — žádné dopočítávání, které by
@@ -209,6 +209,8 @@ věci. Volba **Při otevřeném okně** ale dovolí útlum nebo vypnuto zapnout
 
 Totéž platí o sezóně. Better Thermostat si podle venkovní teploty
 určuje sám, kdy topit, a jeho hranice nemusí souhlasit s tou naší.
+Sezóna se dá nastavit na tři způsoby: podle třídenního průměru
+venkovní teploty, topit celoročně, nebo netopit vůbec.
 Ve výchozím nastavení proto integrace mimo sezónu do topení nemluví
 vůbec, takže se na přechodu nehádají. Vypnutím volby **Sezónu si řídí
 hlavice sama** převezme rozhodování integrace.
@@ -223,10 +225,10 @@ zvolenou dobu vysokou teplotu, aby ventil zůstal plně otevřený a rozvod
 se odvzdušnil sám. Přebíjí i otevřené okno, protože je to jednorázová
 věc. Nula hodin znamená neodvzdušňovat.
 
-### Zvlhčovač, čistička, odtah
+### Pomocná zařízení
 
-Kromě oken a topení umí integrace ovládat i pomocná zařízení, každé
-podle toho, co skutečně řeší.
+Kromě oken a topení umí integrace ovládat i pomocníky, každého podle
+toho, co skutečně řeší.
 
 **Čistička** řeší prach, ne CO2. V zimě a v noci je lepší než otevřít
 okno, protože nechladí a nehučí.
@@ -236,6 +238,12 @@ uvnitř, kdy by okno situaci zhoršilo.
 
 **Zvlhčovač** řeší opačný problém. V zimě vysychá vzduch pod třicet
 procent, což už vysušuje sliznice.
+
+**Ventilátor** může být cokoli — odtah, rekuperace, ventilátor v okně.
+Vyjmenovat všechny možnosti nejde, takže se u něj zaškrtává, co má
+řešit: výměnu vzduchu, prach, vlhkost, chlazení venkovním vzduchem,
+nebo trvalý provoz. Zapne se, když platí aspoň jeden zaškrtnutý úkol
+a okno je zavřené — s otevřeným oknem by se s ním přetahoval.
 
 Povel jde vždy jen při změně. Opakované zapínání už zapnuté čističky nic
 nezlepší.
@@ -263,7 +271,10 @@ upozorňuje pořád, se přestane číst.
 ### Karta na dashboard
 
 Nastavení → NaPohodu → Nastavit → **Karta na dashboard** vypíše hotový
-YAML poskládaný z entit, které opravdu existují. Zkopíruješ a vložíš.
+YAML poskládaný z entit, které opravdu existují. Na výběr je jedna karta,
+kterou vložíš jako Manuální kartu, nebo celá stránka rozdělená do sekcí,
+které se dají na dashboardu chytat a přesouvat.
+
 Po přidání místnosti si přijdeš pro novou verzi.
 
 ### Diagnostika

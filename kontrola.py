@@ -153,6 +153,59 @@ for p in d.glob("*.py"):
                     f"{p.name}:{u.lineno}: {f.name} importuje {jm} "
                     f"až za běhu, patří to nahoru")
 
+# 1i) atribut, na který se karta odkazuje, ale entita ho nevystavuje.
+# Projde všemi ostatními kontrolami a v kartě zůstane prázdná pomlčka.
+karty_text = (d / "karty.py").read_text()
+senzor_text = (d / "sensor.py").read_text()
+ko_text2 = (d / "coordinator.py").read_text()
+
+# co která entita propouští (filtr "if k in (...)"; None = všechno)
+filtry = {}
+for tr in ast.walk(ast.parse(senzor_text)):
+    if not isinstance(tr, ast.ClassDef):
+        continue
+    for f in tr.body:
+        if getattr(f, "name", "") != "extra_state_attributes":
+            continue
+        propousti = None
+        for u in ast.walk(f):
+            if isinstance(u, ast.Compare) and any(
+                    isinstance(o, ast.In) for o in u.ops):
+                for srov in u.comparators:
+                    if isinstance(srov, (ast.Tuple, ast.List, ast.Set)):
+                        propousti = {x.value for x in srov.elts
+                                     if isinstance(x, ast.Constant)}
+        filtry[tr.name] = propousti
+
+KONCOVKY = {"slunce_na_oknech": "SlunceMistnosti",
+            "_zaluzie": "StineniMistnosti",
+            "_stav": "StavMistnosti",
+            "sdileny_vzduch": "StavOblasti"}
+
+# Jméno entity se v kartě skládá do proměnné, takže se sleduje, co
+# do ní naposledy přišlo. Bez toho kontrola nic nenajde.
+promenne = {}
+for radek in karty_text.splitlines():
+    m = re.match(r'\s*(\w+) = f"sensor\.napohodu_\{[^}]+\}(\w+)"', radek)
+    if m:
+        promenne[m.group(1)] = m.group(2)
+    m = re.search(r'_atribut\(\s*([\w"./{}]+)', radek)
+    if not m:
+        continue
+    vyraz = m.group(1)
+    koncovka = promenne.get(vyraz, vyraz)
+    trida = next((jm for k, jm in KONCOVKY.items() if k in koncovka), None)
+    at = re.search(r'_atribut\([^,]+,\s*"(\w+)"', radek)
+    if trida is None or at is None:
+        continue
+    atribut = at.group(1)
+    propousti = filtry.get(trida)
+    if propousti is not None and atribut not in propousti:
+        chyby.append(f"karty.py: {trida} nevystavuje atribut "
+                     f"{atribut!r}, v kartě zůstane prázdný")
+    if f'"{atribut}"' not in ko_text2 and f'"{atribut}"' not in senzor_text:
+        chyby.append(f"karty.py: atribut {atribut!r} nikdo nenastavuje")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

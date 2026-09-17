@@ -116,7 +116,9 @@ class SlunceMistnosti(NaPohoduEntity, SensorEntity):
         if not m:
             return {}
         return {k: v for k, v in m.atributy.items()
-                if k in ("stineni", "stineni_stav")}
+                if k in ("role_stineni", "zadana_poloha", "stineni_stav",
+                         "zaluzie_poloha", "prestaveno_rukou",
+                         "stineni")}
 
 
 class Prumer(CoordinatorEntity, SensorEntity):
@@ -245,5 +247,6 @@ class StineniMistnosti(NaPohoduEntity, SensorEntity):
         if not m:
             return {}
         return {k: v for k, v in m.atributy.items()
-                if k in ("stineni_stav", "zadana_poloha", "zaluzie_poloha",
-                         "role_stineni", "prestaveno_rukou")}
+                if k in ("role_stineni", "zadana_poloha", "stineni_stav",
+                         "zaluzie_poloha", "prestaveno_rukou",
+                         "stineni")}
