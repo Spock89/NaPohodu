@@ -398,18 +398,27 @@ def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
 def cile_zaluzii(role: str | None, mapa: dict) -> dict[str, str]:
     """Ke každé žaluzii najde její stav, který danou roli plní.
 
-    Mapa je uložená u místnosti ve tvaru {"cover.o1|zastinit": "zastíněno"}.
+    Mapa je uložená jako {"cover.o1": {"zastinit": "zastíněno"}}. Dřív
+    se ukládala plocho pod klíčem "cover.o1|zastinit" — entity_id
+    v názvu klíče se ale dá snadno poškodit, tak se starý tvar jen
+    přečte a dál se nepoužívá.
+
     Žaluzie, která pro tu roli nemá nic přiřazené, se prostě nehne.
     """
     if not role:
         return {}
     cile = {}
-    for klic, nazev in (mapa or {}).items():
-        if not nazev or "|" not in klic:
+    for klic, hodnota in (mapa or {}).items():
+        if isinstance(hodnota, dict):
+            nazev = hodnota.get(role)
+            if nazev:
+                cile[klic] = nazev
             continue
-        zaluzie, r = klic.rsplit("|", 1)
-        if r == role:
-            cile[zaluzie] = nazev
+        # starší plochý tvar
+        if hodnota and "|" in klic:
+            zaluzie, r = klic.rsplit("|", 1)
+            if r == role:
+                cile[zaluzie] = hodnota
     return cile
 
 

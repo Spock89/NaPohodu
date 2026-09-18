@@ -323,6 +323,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         polozky += _atribut(eid, "stineni_stav", "   nastavený stav")
         polozky += _atribut(eid, "zaluzie_poloha", "   skutečná poloha")
         polozky += _atribut(eid, "prestaveno_rukou", "   přestaveno rukou")
+        polozky += _atribut(eid, "zaluzie_chybi", "   chybějící entita")
     if polozky:
         c.append(SEKCE)
         c += _hlavicka("Slunce a stínění", "mdi:blinds-horizontal", "subtitle")

@@ -557,3 +557,33 @@ def test_rano_se_neroztahuje_dokud_se_spi():
              soukromi_plati=True, po_zapadu=False)
     assert role_stineni(**z, klid=True) is None
     assert role_stineni(**z, klid=False) == "vychozi"
+
+
+# ------------------------------------------- tvar mapy stínění
+
+def test_novy_tvar_mapy():
+    """Entity_id v názvu klíče se dá poškodit, proto vnořený tvar."""
+    mapa = {"cover.o1": {"zastinit": "zastíněno", "soukromi": "dolů"},
+            "cover.o2": {"zastinit": "zataženo"}}
+    assert cile_zaluzii("zastinit", mapa) == {
+        "cover.o1": "zastíněno", "cover.o2": "zataženo"}
+    assert cile_zaluzii("soukromi", mapa) == {"cover.o1": "dolů"}
+    assert cile_zaluzii("odstinit", mapa) == {}
+
+
+def test_stary_plochy_tvar_se_precte():
+    """Kdo má uložený starý tvar, nesmí o přiřazení přijít."""
+    mapa = {"cover.o1|zastinit": "zastíněno",
+            "cover.o2|zastinit": "zataženo"}
+    assert cile_zaluzii("zastinit", mapa) == {
+        "cover.o1": "zastíněno", "cover.o2": "zataženo"}
+
+
+def test_oba_tvary_naraz():
+    mapa = {"cover.o1": {"zastinit": "a"}, "cover.o2|zastinit": "b"}
+    assert cile_zaluzii("zastinit", mapa) == {"cover.o1": "a", "cover.o2": "b"}
+
+
+def test_prazdne_hodnoty_se_ignoruji():
+    mapa = {"cover.o1": {"zastinit": "", "soukromi": None}}
+    assert cile_zaluzii("zastinit", mapa) == {}

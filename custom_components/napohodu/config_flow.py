@@ -661,26 +661,44 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
             return await self._dal()
 
         if user_input is not None:
-            self._data[c.CONF_STINENI_MAPA] = {
-                k: v for k, v in user_input.items() if v}
+            # Klíč pole je pořadí žaluzie, ne její entity_id — do názvů
+            # polí patří co nejmíň a entity_id se v nich dá poškodit.
+            mapa: dict[str, dict] = {}
+            for klic, hodnota in user_input.items():
+                if not hodnota or "|" not in klic:
+                    continue
+                poradi, role = klic.split("|", 1)
+                try:
+                    z = zaluzie[int(poradi)]
+                except (ValueError, IndexError):
+                    continue
+                mapa.setdefault(z, {})[role] = hodnota
+            self._data[c.CONF_STINENI_MAPA] = mapa
             return await self._dal()
 
         from .services import nacti_stavy
 
+        ulozene = self._data.get(c.CONF_STINENI_MAPA) or {}
+        predvyplnit: dict[str, str] = {}
         pole = {}
-        for z in zaluzie:
+        for i, z in enumerate(zaluzie):
             jmena = sorted(nacti_stavy(self.hass, z))
             for role, popis in (("zastinit", "zastínit"),
                                 ("odstinit", "odclonit"),
                                 ("soukromi", "soukromí po setmění"),
                                 ("pryc", "nikdo doma"),
                                 ("vychozi", "jinak")):
-                pole[vol.Optional(f"{z}|{role}")] = _stav_vyber(jmena)
+                pole[vol.Optional(f"{i}|{role}")] = _stav_vyber(jmena)
+                drive = ulozene.get(z)
+                if isinstance(drive, dict) and drive.get(role):
+                    predvyplnit[f"{i}|{role}"] = drive[role]
+                elif ulozene.get(f"{z}|{role}"):
+                    predvyplnit[f"{i}|{role}"] = ulozene[f"{z}|{role}"]
 
         return self.async_show_form(
             step_id="stineni",
             data_schema=self.add_suggested_values_to_schema(
-                vol.Schema(pole), self._data.get(c.CONF_STINENI_MAPA, {})
+                vol.Schema(pole), predvyplnit
             ),
             description_placeholders={"zaluzie": ", ".join(zaluzie)},
         )
