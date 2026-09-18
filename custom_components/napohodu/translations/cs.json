@@ -237,7 +237,7 @@
             "noc_min": "Minimum na noc",
             "utlum": "Útlum při otevřeném okně",
             "komfort_odstup": "Trvale otevřeno, dokud je venku nejvýš o tolik chladněji",
-            "ventilator": "Nucená ventilace",
+            "ventilator": "Ventilátor",
             "ventilator_smer": "Směr ventilace",
             "cisticka": "Čistička vzduchu",
             "rh_vnitrni": "Čidlo vlhkosti",
@@ -276,7 +276,10 @@
             "ochota_vetrat": "Ochota větrat",
             "ventilator_ukoly": "K čemu ventilátor je",
             "denni_pokles": "Ve dne smí klesnout o",
-            "nocni_pokles": "V noci smí klesnout o"
+            "nocni_pokles": "V noci smí klesnout o",
+            "ventilator2": "Druhý ventilátor",
+            "ventilator2_smer": "Směr druhého ventilátoru",
+            "ventilator2_ukoly": "K čemu je druhý ventilátor"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -331,7 +334,10 @@
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "ventilator_ukoly": "Zaškrtni, co má ventilátor řešit. Odtah v koupelně bude mít vlhkost, rekuperace vzduch, ventilátor v okně chlazení venkovním vzduchem. Zapne se, když platí aspoň jeden zaškrtnutý úkol a okno je zavřené.",
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
-            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých."
+            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
+            "ventilator2": "Druhý ventilátor s vlastním úkolem. Odtah v koupelně a rekuperace v pokoji spolu nemají nic společného, takže se nastavují každý zvlášť. Do jednoho pole jde vybrat víc zařízení, pokud mají dělat totéž.",
+            "ventilator2_smer": "Kterým směrem ventilátor tlačí vzduch. Slouží k záznamu a pro tvoje automatizace.",
+            "ventilator2_ukoly": "Zaškrtni, co má ventilátor řešit. Odtah v koupelně bude mít vlhkost, rekuperace vzduch, ventilátor v okně chlazení venkovním vzduchem. Zapne se, když platí aspoň jeden zaškrtnutý úkol a okno je zavřené."
           },
           "submit": "Další"
         },
@@ -390,7 +396,7 @@
             "noc_min": "Minimum na noc",
             "utlum": "Útlum při otevřeném okně",
             "komfort_odstup": "Trvale otevřeno, dokud je venku nejvýš o tolik chladněji",
-            "ventilator": "Nucená ventilace",
+            "ventilator": "Ventilátor",
             "ventilator_smer": "Směr ventilace",
             "zdroj_obsazenosti": "Obsazenost podle",
             "zdroj_klidu": "Klid podle",
@@ -440,7 +446,10 @@
             "ochota_vetrat": "Ochota větrat",
             "ventilator_ukoly": "K čemu ventilátor je",
             "denni_pokles": "Ve dne smí klesnout o",
-            "nocni_pokles": "V noci smí klesnout o"
+            "nocni_pokles": "V noci smí klesnout o",
+            "ventilator2": "Druhý ventilátor",
+            "ventilator2_smer": "Směr druhého ventilátoru",
+            "ventilator2_ukoly": "K čemu je druhý ventilátor"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -505,7 +514,10 @@
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "ventilator_ukoly": "Zaškrtni, co má ventilátor řešit. Odtah v koupelně bude mít vlhkost, rekuperace vzduch, ventilátor v okně chlazení venkovním vzduchem. Zapne se, když platí aspoň jeden zaškrtnutý úkol a okno je zavřené.",
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
-            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých."
+            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
+            "ventilator2": "Druhý ventilátor s vlastním úkolem. Odtah v koupelně a rekuperace v pokoji spolu nemají nic společného, takže se nastavují každý zvlášť. Do jednoho pole jde vybrat víc zařízení, pokud mají dělat totéž.",
+            "ventilator2_smer": "Kterým směrem ventilátor tlačí vzduch. Slouží k záznamu a pro tvoje automatizace.",
+            "ventilator2_ukoly": "Zaškrtni, co má ventilátor řešit. Odtah v koupelně bude mít vlhkost, rekuperace vzduch, ventilátor v okně chlazení venkovním vzduchem. Zapne se, když platí aspoň jeden zaškrtnutý úkol a okno je zavřené."
           },
           "submit": "Další"
         },

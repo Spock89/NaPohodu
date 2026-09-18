@@ -47,7 +47,8 @@ from .const import (
     CONF_SPANEK, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
     CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
     CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
-    CONF_T_VENKU_M, CONF_UTLUM, CONF_VENTILATOR, CONF_VENTILATOR_SMER,
+    CONF_T_VENKU_M, CONF_UTLUM, CONF_VENTILATOR, CONF_VENTILATOR2,
+    CONF_VENTILATOR2_SMER, CONF_VENTILATOR2_UKOLY, CONF_VENTILATOR_SMER,
     CONF_VENTILATOR_UKOLY, CONF_VETRAT, CONF_VITR, CONF_VITR_KLID,
     CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE,
     CONF_ZARENI, CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI,
@@ -1238,22 +1239,29 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # k čemu přesně je, záleží na tom, co za ventilátor to je: odtah
         # vlhkosti, výměna vzduchu, chlazení průvanem. Vyjmenovat všechny
         # možnosti nejde, tak se úkoly vybírají.
-        ventilator = d.get(CONF_VENTILATOR) or []
-        if ventilator:
-            ukoly = list(d.get(CONF_VENTILATOR_UKOLY) or ["vzduch"])
-            duvody = self._ukoly_ventilatoru(ukoly, d, m, rh_in, okruh)
-            zapnout = None
-            if duvody and not m.okno_otevreno:
-                zapnout = True
-            elif not duvody or m.okno_otevreno:
-                zapnout = False
-            m.atributy["ventilator"] = await vyk.zarizeni(
-                ventilator, zapnout, "ventilátor")
-            m.atributy["ventilator_proc"] = duvody or None
-            m.atributy["ventilator_smer"] = d.get(
-                CONF_VENTILATOR_SMER, "ven")
-        m.atributy["ventilator_bezi"] = self._stav_pomocnika(
-            d.get(CONF_VENTILATOR), vyk.stav.zarizeni.get("ventilátor"))
+        # Ventilátorů může být víc a každý k něčemu jinému — odtah
+        # v koupelně a rekuperace v pokoji spolu nemají nic společného.
+        for cislo, (klic_e, klic_s, klic_u, jmeno) in enumerate((
+                (CONF_VENTILATOR, CONF_VENTILATOR_SMER,
+                 CONF_VENTILATOR_UKOLY, "ventilátor"),
+                (CONF_VENTILATOR2, CONF_VENTILATOR2_SMER,
+                 CONF_VENTILATOR2_UKOLY, "ventilátor 2")), 1):
+            entity = d.get(klic_e) or []
+            pripona = "" if cislo == 1 else "2"
+            if entity:
+                ukoly = list(d.get(klic_u) or ["vzduch"])
+                duvody = self._ukoly_ventilatoru(ukoly, d, m, rh_in, okruh)
+                zapnout = None
+                if duvody and not m.okno_otevreno:
+                    zapnout = True
+                elif not duvody or m.okno_otevreno:
+                    zapnout = False
+                m.atributy[f"ventilator{pripona}"] = await vyk.zarizeni(
+                    entity, zapnout, jmeno)
+                m.atributy[f"ventilator{pripona}_proc"] = duvody or None
+                m.atributy[f"ventilator{pripona}_smer"] = d.get(klic_s, "ven")
+            m.atributy[f"ventilator{pripona}_bezi"] = self._stav_pomocnika(
+                entity, vyk.stav.zarizeni.get(jmeno))
 
     async def _stineni_krok(self, p, d, u, m, doma, slunce_el, cas_s):
         """Rozhodne o žaluziích místnosti. Slunce svítí do pokoje, ne do oblasti."""

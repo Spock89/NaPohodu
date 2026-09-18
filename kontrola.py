@@ -206,6 +206,27 @@ for radek in karty_text.splitlines():
     if f'"{atribut}"' not in ko_text2 and f'"{atribut}"' not in senzor_text:
         chyby.append(f"karty.py: atribut {atribut!r} nikdo nenastavuje")
 
+# 1k) posuvník a pole ve formuláři musí mít stejný rozsah. Jinak se
+# hodnota zadaná ve formuláři do posuvníku nevejde a ty dva pak ukazují
+# každý něco jiného.
+n_text = (d / "number.py").read_text()
+cf_text = (d / "config_flow.py").read_text()
+posuvniky_rozsah = {
+    m[0]: (float(m[1]), float(m[2]))
+    for m in re.findall(r"Posuvnik\((CONF_\w+),\s*([\d.]+),\s*([\d.]+)",
+                        n_text)}
+pole_rozsah = {
+    m[0]: (float(m[1]), float(m[2]))
+    for m in re.findall(
+        r"vol\.Optional\(c\.(CONF_\w+)[^\n]*?_cislo\(\s*(-?[\d.]+),"
+        r"\s*([\d.]+)", cf_text)}
+for klic, rozsah in sorted(posuvniky_rozsah.items()):
+    ve_form = pole_rozsah.get(klic)
+    if ve_form and ve_form != rozsah:
+        chyby.append(
+            f"{klic}: posuvník {rozsah[0]}–{rozsah[1]}, formulář "
+            f"{ve_form[0]}–{ve_form[1]} — hodnoty se rozejdou")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

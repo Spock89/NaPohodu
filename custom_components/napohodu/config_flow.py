@@ -432,11 +432,11 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_CO2_ZAVRIT, default=650): _cislo(400, 1500, 25, "ppm"),
         vol.Optional(c.CONF_CO2_NOC, default=1000): _cislo(600, 2000, 25, "ppm"),
         vol.Optional(c.CONF_CO2_NOC_KRIZE, default=1250): _cislo(800, 2500, 25, "ppm"),
-        vol.Optional(c.CONF_NOC_MIN, default=18.0): _cislo(10, 24, 0.5),
+        vol.Optional(c.CONF_NOC_MIN, default=18.0): _cislo(14, 24, 0.5),
         vol.Optional(c.CONF_DENNI_POKLES, default=1.5): _cislo(0.5, 6, 0.5),
         vol.Optional(c.CONF_NOCNI_POKLES, default=3.0): _cislo(0.5, 8, 0.5),
         vol.Optional(c.CONF_ODCHYLKA, default=0.0): _cislo(-5, 5, 0.5),
-        vol.Optional(c.CONF_KOMFORT_ODSTUP, default=4.0): _cislo(0, 10, 0.5),
+        vol.Optional(c.CONF_KOMFORT_ODSTUP, default=4.0): _cislo(1, 15, 0.5),
         vol.Optional(c.CONF_DEST_PRAH, default=0.3): _cislo(0, 20, 0.1, "mm/h"),
         vol.Optional(c.CONF_I_KDYZ_NIKDO, default=False):
             selector.BooleanSelector(),
@@ -470,6 +470,15 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_VENTILATOR_SMER, default="ven"): _volba(
             c.SMERY_VENTILACE, "ventilator_smer"),
         vol.Optional(c.CONF_VENTILATOR_UKOLY, default=["vzduch"]):
+            selector.SelectSelector(selector.SelectSelectorConfig(
+                options=c.UKOLY_VENTILATORU, multiple=True,
+                translation_key="ventilator_ukoly",
+                mode=selector.SelectSelectorMode.LIST)),
+        vol.Optional(c.CONF_VENTILATOR2): _ent(
+            ["fan", "switch", "input_boolean"], True),
+        vol.Optional(c.CONF_VENTILATOR2_SMER, default="ven"): _volba(
+            c.SMERY_VENTILACE, "ventilator_smer"),
+        vol.Optional(c.CONF_VENTILATOR2_UKOLY, default=["vlhkost"]):
             selector.SelectSelector(selector.SelectSelectorConfig(
                 options=c.UKOLY_VENTILATORU, multiple=True,
                 translation_key="ventilator_ukoly",
