@@ -47,14 +47,13 @@ from .const import (
     CONF_SPANEK, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
     CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
     CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
-    CONF_T_VENKU_M, CONF_UTLUM, CONF_VENTILATOR, CONF_VENTILATOR2,
-    CONF_VENTILATOR2_SMER, CONF_VENTILATOR2_UKOLY, CONF_VENTILATOR_SMER,
-    CONF_VENTILATOR_UKOLY, CONF_VETRAT, CONF_VITR, CONF_VITR_KLID,
-    CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE,
-    CONF_ZARENI, CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI,
-    CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY,
-    CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
-    PODENTITA_MISTNOST, PODENTITA_ZONA,
+    CONF_T_VENKU_M, CONF_UTLUM, CONF_VENTILATOR, CONF_VENTILATORY,
+    CONF_VENTILATOR_SMER, CONF_VENTILATOR_UKOLY, CONF_VETRAT, CONF_VITR,
+    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE,
+    CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
+    CONF_ZDROJ_OBSAZENOSTI, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO,
+    CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S,
+    PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -1235,33 +1234,41 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             d.get(CONF_ZVLHCOVAC), vyk.stav.zarizeni.get("zvlhčovač"))
 
         # Ventilátor umí vyměnit vzduch tam, kde okno nemůže — v mrazu,
-        # při větru, v noci nebo v místnosti bez ovládaného okna. Jenže
-        # k čemu přesně je, záleží na tom, co za ventilátor to je: odtah
-        # vlhkosti, výměna vzduchu, chlazení průvanem. Vyjmenovat všechny
-        # možnosti nejde, tak se úkoly vybírají.
-        # Ventilátorů může být víc a každý k něčemu jinému — odtah
-        # v koupelně a rekuperace v pokoji spolu nemají nic společného.
-        for cislo, (klic_e, klic_s, klic_u, jmeno) in enumerate((
-                (CONF_VENTILATOR, CONF_VENTILATOR_SMER,
-                 CONF_VENTILATOR_UKOLY, "ventilátor"),
-                (CONF_VENTILATOR2, CONF_VENTILATOR2_SMER,
-                 CONF_VENTILATOR2_UKOLY, "ventilátor 2")), 1):
-            entity = d.get(klic_e) or []
-            pripona = "" if cislo == 1 else "2"
-            if entity:
-                ukoly = list(d.get(klic_u) or ["vzduch"])
-                duvody = self._ukoly_ventilatoru(ukoly, d, m, rh_in, okruh)
-                zapnout = None
-                if duvody and not m.okno_otevreno:
-                    zapnout = True
-                elif not duvody or m.okno_otevreno:
-                    zapnout = False
-                m.atributy[f"ventilator{pripona}"] = await vyk.zarizeni(
-                    entity, zapnout, jmeno)
-                m.atributy[f"ventilator{pripona}_proc"] = duvody or None
-                m.atributy[f"ventilator{pripona}_smer"] = d.get(klic_s, "ven")
-            m.atributy[f"ventilator{pripona}_bezi"] = self._stav_pomocnika(
+        # při větru, v noci nebo v místnosti bez ovládaného okna. K čemu
+        # přesně je, záleží na tom, co za ventilátor to je, a bývá jich
+        # víc s různými úkoly. Proto seznam, ne pevná pole.
+        seznam = list(d.get(CONF_VENTILATORY) or [])
+        if not seznam and d.get(CONF_VENTILATOR):
+            # starší nastavení mělo jeden ventilátor přímo v poli
+            seznam = [{CONF_VENTILATOR: d[CONF_VENTILATOR],
+                       CONF_VENTILATOR_SMER: d.get(CONF_VENTILATOR_SMER,
+                                                   "ven"),
+                       CONF_VENTILATOR_UKOLY: d.get(CONF_VENTILATOR_UKOLY)
+                       or ["vzduch"]}]
+
+        bezi, proc = {}, {}
+        for cislo, v in enumerate(seznam, 1):
+            entity = v.get(CONF_VENTILATOR) or []
+            if not entity:
+                continue
+            jmeno = f"ventilátor {cislo}"
+            duvody = self._ukoly_ventilatoru(
+                list(v.get(CONF_VENTILATOR_UKOLY) or ["vzduch"]),
+                d, m, rh_in, okruh)
+            zapnout = None
+            if duvody and not m.okno_otevreno:
+                zapnout = True
+            elif not duvody or m.okno_otevreno:
+                zapnout = False
+            await vyk.zarizeni(entity, zapnout, jmeno)
+            popis = ", ".join(entity)
+            bezi[popis] = self._stav_pomocnika(
                 entity, vyk.stav.zarizeni.get(jmeno))
+            if duvody:
+                proc[popis] = ", ".join(duvody)
+
+        m.atributy["ventilatory"] = bezi or "nenastaveno"
+        m.atributy["ventilatory_proc"] = proc or None
 
     async def _stineni_krok(self, p, d, u, m, doma, slunce_el, cas_s):
         """Rozhodne o žaluziích místnosti. Slunce svítí do pokoje, ne do oblasti."""

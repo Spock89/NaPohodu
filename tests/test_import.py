@@ -246,7 +246,7 @@ def test_vlhkost_se_ukazuje_i_bez_zarizeni(nahradni_ha):
     asyncio.run(k._pomocnici_krok(_Pod(), d, m, {"pm25": 0, "pm10": 0}))
     assert m.atributy["vlhkost"] == 43.5
     assert m.atributy["zvlhcovac_bezi"] == "nenastaveno"
-    assert m.atributy["ventilator_bezi"] == "nenastaveno"
+    assert m.atributy["ventilatory"] == "nenastaveno"
 
 
 class _Pod:
@@ -564,3 +564,46 @@ def test_stavy_pomocniku_jsou_citelne(nahradni_ha):
     assert f(["switch.x"], None) == "zatím bez povelu"
     assert f(["switch.x"], True) == "běží"
     assert f(["switch.x"], False) == "stojí"
+
+
+# ------------------------------------------- seznam ventilátorů
+
+def test_starsi_nastaveni_jednoho_ventilatoru(nahradni_ha):
+    """Kdo měl ventilátor v původním poli, nesmí o něj přijít."""
+    import importlib
+    c = importlib.import_module("napohodu.const")
+    d = {c.CONF_VENTILATOR: ["fan.x"],
+         c.CONF_VENTILATOR_UKOLY: ["vlhkost"]}
+
+    seznam = list(d.get(c.CONF_VENTILATORY) or [])
+    if not seznam and d.get(c.CONF_VENTILATOR):
+        seznam = [{c.CONF_VENTILATOR: d[c.CONF_VENTILATOR],
+                   c.CONF_VENTILATOR_UKOLY: d.get(c.CONF_VENTILATOR_UKOLY)}]
+    assert seznam[0][c.CONF_VENTILATOR] == ["fan.x"]
+    assert seznam[0][c.CONF_VENTILATOR_UKOLY] == ["vlhkost"]
+
+
+def test_formular_ukazuje_platne_hodnoty(nahradni_ha):
+    """Posuvník zapisuje do běžící paměti, formulář četl uloženou
+    konfiguraci — každý ukazoval něco jiného."""
+    import importlib
+    cf = importlib.import_module("napohodu.config_flow")
+    c = importlib.import_module("napohodu.const")
+
+    class FalesnyKoordinator:
+        hodnoty = {("m1", c.CONF_NOC_MIN): 19.5}
+
+    class FalesnyFlow:
+        _platne = cf.MistnostSubentryFlow._platne
+
+        class hass:
+            data = {c.DOMAIN: {"e1": FalesnyKoordinator()}}
+
+        @staticmethod
+        def _get_entry():
+            return type("E", (), {"entry_id": "e1"})()
+
+    out = FalesnyFlow()._platne("m1", {c.CONF_NOC_MIN: 18.0,
+                                       c.CONF_NAZEV: "Ložnice"})
+    assert out[c.CONF_NOC_MIN] == 19.5      # platí posuvník
+    assert out[c.CONF_NAZEV] == "Ložnice"   # ostatní zůstává

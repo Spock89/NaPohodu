@@ -465,24 +465,6 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_RH_VNITRNI): _ent(["sensor"], trida=["humidity"]),
         vol.Optional(c.CONF_RH_MIN, default=38.0): _cislo(20, 55, 1, "%"),
         vol.Optional(c.CONF_RH_MAX, default=60.0): _cislo(40, 80, 1, "%"),
-        vol.Optional(c.CONF_VENTILATOR): _ent(
-            ["fan", "switch", "input_boolean"], True),
-        vol.Optional(c.CONF_VENTILATOR_SMER, default="ven"): _volba(
-            c.SMERY_VENTILACE, "ventilator_smer"),
-        vol.Optional(c.CONF_VENTILATOR_UKOLY, default=["vzduch"]):
-            selector.SelectSelector(selector.SelectSelectorConfig(
-                options=c.UKOLY_VENTILATORU, multiple=True,
-                translation_key="ventilator_ukoly",
-                mode=selector.SelectSelectorMode.LIST)),
-        vol.Optional(c.CONF_VENTILATOR2): _ent(
-            ["fan", "switch", "input_boolean"], True),
-        vol.Optional(c.CONF_VENTILATOR2_SMER, default="ven"): _volba(
-            c.SMERY_VENTILACE, "ventilator_smer"),
-        vol.Optional(c.CONF_VENTILATOR2_UKOLY, default=["vlhkost"]):
-            selector.SelectSelector(selector.SelectSelectorConfig(
-                options=c.UKOLY_VENTILATORU, multiple=True,
-                translation_key="ventilator_ukoly",
-                mode=selector.SelectSelectorMode.LIST)),
 
         # --- okna ---
         vol.Optional(c.CONF_OKNA): _ent(["cover"], True),
@@ -575,6 +557,26 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         self._data: dict[str, Any] = {}
         self._uprava = False        # rozlišuje přidání od úpravy
 
+    def _platne(self, pod_id: str, ulozene: dict) -> dict:
+        """Hodnoty, které právě platí — ne ty naposledy uložené.
+
+        Posuvník na dashboardu zapisuje do běžící paměti, formulář čte
+        uloženou konfiguraci. Bez tohohle by každý ukazoval něco jiného
+        a nebylo by poznat, co platí.
+        """
+        from .number import MISTNOST
+
+        try:
+            k = self.hass.data[c.DOMAIN][self._get_entry().entry_id]
+        except Exception:  # pragma: no cover - při zakládání ještě není
+            return ulozene
+        aktualni = dict(ulozene)
+        for posuvnik in MISTNOST:
+            hodnota = k.hodnoty.get((pod_id, posuvnik.klic))
+            if hodnota is not None:
+                aktualni[posuvnik.klic] = hodnota
+        return aktualni
+
     def _stavy(self) -> list[str]:
         """Jména stavů uložených u kterékoli žaluzie, pro nabídku."""
         try:
@@ -599,6 +601,52 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
             data_schema=self.add_suggested_values_to_schema(
                 _schema_mistnost(self._stavy()), user_input or {}),
             errors=chyby)
+
+    async def async_step_ventilator(self, user_input=None) -> SubentryFlowResult:
+        """Přidávání ventilátorů po jednom.
+
+        Pevná pole pro dva ventilátory byla špatný nápad: kdo nemá
+        žádný, kouká na šest nepoužitých polí, a kdo má tři, nemá kam
+        ho dát. Tady se přidává, dokud uživatel neřekne dost.
+        """
+        seznam = list(self._data.get(c.CONF_VENTILATORY) or [])
+
+        if user_input is not None:
+            entity = user_input.get(c.CONF_VENTILATOR) or []
+            if entity:
+                seznam.append({
+                    c.CONF_VENTILATOR: entity,
+                    c.CONF_VENTILATOR_SMER: user_input.get(
+                        c.CONF_VENTILATOR_SMER, "ven"),
+                    c.CONF_VENTILATOR_UKOLY: user_input.get(
+                        c.CONF_VENTILATOR_UKOLY) or ["vzduch"],
+                })
+                self._data[c.CONF_VENTILATORY] = seznam
+            if entity and user_input.get(c.CONF_DALSI):
+                return await self.async_step_ventilator()
+            return await self.async_step_stineni()
+
+        popis = ", ".join(
+            f"{i + 1}. {', '.join(v.get(c.CONF_VENTILATOR, []))}"
+            for i, v in enumerate(seznam)) or "zatím žádný"
+
+        return self.async_show_form(
+            step_id="ventilator",
+            data_schema=vol.Schema({
+                vol.Optional(c.CONF_VENTILATOR): _ent(
+                    ["fan", "switch", "input_boolean"], True),
+                vol.Optional(c.CONF_VENTILATOR_SMER, default="ven"): _volba(
+                    c.SMERY_VENTILACE, "ventilator_smer"),
+                vol.Optional(c.CONF_VENTILATOR_UKOLY, default=["vzduch"]):
+                    selector.SelectSelector(selector.SelectSelectorConfig(
+                        options=c.UKOLY_VENTILATORU, multiple=True,
+                        translation_key="ventilator_ukoly",
+                        mode=selector.SelectSelectorMode.LIST)),
+                vol.Optional(c.CONF_DALSI, default=False):
+                    selector.BooleanSelector(),
+            }),
+            description_placeholders={"seznam": popis},
+        )
 
     async def async_step_stineni(self, user_input=None) -> SubentryFlowResult:
         """Ke každé žaluzii se přiřadí, který její stav plní kterou roli.
@@ -666,13 +714,15 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
 
     async def async_step_reconfigure(self, user_input=None) -> SubentryFlowResult:
         self._uprava = True
+        pod = self._get_reconfigure_subentry()
         chyby = {}
         if user_input is not None:
             chyby = _zkontroluj_prahy(user_input)
             if not chyby:
                 self._data.update(user_input)
-                # žaluzie mohly přibýt, projde se i krok se stavy
-                return await self.async_step_stineni()
+                self._data.pop(c.CONF_VENTILATORY, None)
+                # ventilátory i žaluzie se projdou znovu
+                return await self.async_step_ventilator()
         self._data = dict(self._get_reconfigure_subentry().data)
         return self.async_show_form(
             step_id="reconfigure",
@@ -680,7 +730,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
                 _schema_mistnost(self._stavy())
                 .extend(SCHEMA_PRITOMNOST.schema)
                 .extend(SCHEMA_INDICIE.schema),
-                {**self._data, **(user_input or {})},
+                {**self._platne(pod.subentry_id, self._data),
+                 **(user_input or {})},
             ),
             errors=chyby,
         )

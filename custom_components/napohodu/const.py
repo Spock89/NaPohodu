@@ -77,11 +77,11 @@ CONF_VENTILATOR = "ventilator"
 CONF_VENTILATOR_SMER = "ventilator_smer"
 SMERY_VENTILACE = ["ven", "dovnitr", "oboji"]
 CONF_VENTILATOR_UKOLY = "ventilator_ukoly"
-# druhý ventilátor s vlastním úkolem: odtah v koupelně a rekuperace
-# v pokoji spolu nemají nic společného
-CONF_VENTILATOR2 = "ventilator2"
-CONF_VENTILATOR2_SMER = "ventilator2_smer"
-CONF_VENTILATOR2_UKOLY = "ventilator2_ukoly"
+# Ventilátorů může být kolik chceš, každý s vlastním úkolem. Ukládají
+# se jako seznam, ne jako pevně daná pole — odtah v koupelně a
+# rekuperace v pokoji spolu nemají nic společného.
+CONF_VENTILATORY = "ventilatory"
+CONF_DALSI = "pridat_dalsi"
 # k čemu ventilátor je. Vyjmenovat všechno nejde, tak ať se dá vybrat.
 UKOLY_VENTILATORU = ["vzduch", "prach", "vlhkost", "chlazeni", "vzdy"]
 
