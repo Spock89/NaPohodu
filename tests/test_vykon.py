@@ -528,3 +528,32 @@ def test_rucni_zasah_se_pozna_i_po_ustaleni(monkeypatch):
     v.zkontroluj_polohu("cover.o2", 5.4, 1400)       # ustálení v toleranci
     assert v.zkontroluj_polohu("cover.o2", 40.0, 1500) is None
     assert v.zkontroluj_polohu("cover.o2", 40.0, 1600) == "zastíněno"
+
+
+def test_rano_se_soukromi_roztahne():
+    """Zatáhnout umí soukromí, roztáhnout ale nikdo — ložnice by
+    zůstala zatažená celý den."""
+    from vykon import REZIM_JEN_PRYC, SOUKROMI_POHYB
+    z = dict(zisk=0, prah=150, horko=False, zima=False, doma=True,
+             rezim=REZIM_JEN_PRYC, soukromi_kdy=SOUKROMI_POHYB)
+    assert role_stineni(**z, po_zapadu=False, soukromi_plati=True) == "vychozi"
+    assert role_stineni(**z, po_zapadu=False, soukromi_plati=False) is None
+
+
+def test_v_noci_se_soukromi_neruší():
+    from vykon import REZIM_JEN_PRYC, SOUKROMI_POHYB
+    z = dict(zisk=0, prah=150, horko=False, zima=False, doma=True,
+             rezim=REZIM_JEN_PRYC, soukromi_kdy=SOUKROMI_POHYB)
+    assert role_stineni(**z, po_zapadu=True, pohyb=False,
+                        soukromi_plati=True) is None
+
+
+def test_rano_se_neroztahuje_dokud_se_spi():
+    """Slunce vzejde dřív, než člověk vstane. Rozsvítit mu do očí je
+    horší než zatažená ložnice."""
+    from vykon import REZIM_JEN_PRYC, SOUKROMI_POHYB
+    z = dict(zisk=0, prah=150, horko=False, zima=False, doma=True,
+             rezim=REZIM_JEN_PRYC, soukromi_kdy=SOUKROMI_POHYB,
+             soukromi_plati=True, po_zapadu=False)
+    assert role_stineni(**z, klid=True) is None
+    assert role_stineni(**z, klid=False) == "vychozi"

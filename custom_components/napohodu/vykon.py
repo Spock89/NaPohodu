@@ -327,12 +327,18 @@ def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
                  doma: bool, rezim: str = REZIM_VZDY,
                  po_zapadu: bool = False, pohyb: bool = False,
                  soukromi_kdy: str = SOUKROMI_NIKDY,
-                 v_pokoji: bool = False) -> str | None:
+                 v_pokoji: bool = False,
+                 soukromi_plati: bool = False,
+                 klid: bool = False) -> str | None:
     """Který pojmenovaný stav má platit.
 
     Prázdný návrat znamená nechat být, a to je u žaluzií správná výchozí
     odpověď. Automatika, která přestavuje to, co si člověk před chvílí
     nastavil ručně, je horší než žádná.
+
+    Po setmění se řídí jen soukromím, jinak se poloha nechává. Ráno
+    se naopak to, co soukromí zatáhlo, musí zase roztáhnout — ale až
+    když se v místnosti přestane spát.
 
     Režim „jen v prázdné místnosti" je kompromis pro pokoje, kterými se
     prochází. Kuchyň se zaclonit má, i když jsi doma, ale ne když v ní
@@ -352,6 +358,17 @@ def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
         if soukromi_kdy == SOUKROMI_HNED or (
                 soukromi_kdy == SOUKROMI_POHYB and pohyb):
             return "soukromi"
+
+    # Ráno se to, co soukromí zatáhlo, musí zase roztáhnout — i tam,
+    # kde si žaluzie jinak řídíme sami. Bez toho by ložnice zůstala
+    # zatažená celý den, protože zatáhnout umí soukromí, ale roztáhnout
+    # už nikdo.
+    #
+    # Dokud se ale v místnosti spí, nic se neroztahuje. Slunce vzejde
+    # dřív, než člověk vstane, a rozsvítit mu do očí je horší než
+    # zatažená ložnice.
+    if not po_zapadu and soukromi_plati and not klid:
+        return "vychozi"
 
     if rezim == REZIM_JEN_PRYC:
         return None

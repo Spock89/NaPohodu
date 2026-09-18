@@ -1281,6 +1281,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if zaluzie_mistnosti:
             t_max = m.atributy.get("teplota_max")
             t_min = m.atributy.get("teplota_min")
+            mapa = d.get(CONF_STINENI_MAPA) or {}
+
+            # Je právě zatažené kvůli soukromí? Podle toho se ráno pozná,
+            # že se má roztáhnout.
+            soukromi_cile = vy.cile_zaluzii("soukromi", mapa)
+            soukromi_plati = bool(soukromi_cile) and all(
+                vyk_m.stav.posledni_stineni.get(z) == nazev
+                for z, nazev in soukromi_cile.items())
+
             role = vy.role_stineni(
                 m.slunce, 150.0,
                 t_max is not None and t_max > m.cil - float(
@@ -1293,8 +1302,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 or bool(pr.indicie_aktivni(u["sig"], u["nast"])),
                 soukromi_kdy=d.get(CONF_SOUKROMI_KDY, "nikdy"),
                 v_pokoji=bool(u["sig"].cidlo)
-                or bool(pr.indicie_aktivni(u["sig"], u["nast"])))
-            cile = vy.cile_zaluzii(role, d.get(CONF_STINENI_MAPA) or {})
+                or bool(pr.indicie_aktivni(u["sig"], u["nast"])),
+                soukromi_plati=soukromi_plati, klid=m.klid)
+            cile = vy.cile_zaluzii(role, mapa)
             stin = await vyk_m.stineni(
                 cile, cas_s, float(d.get(CONF_KLID_STINENI_MIN, 15)))
             m.atributy["stineni"] = stin

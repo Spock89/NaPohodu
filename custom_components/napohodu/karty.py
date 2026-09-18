@@ -54,6 +54,27 @@ ATRIBUTY_STAVU = [
 ]
 
 
+# Hranice sekce. V jedné kartě se značky zahodí, na stránce se podle
+# nich vytvoří samostatné sekce, které jdou chytat a přesouvat.
+SEKCE = "#--SEKCE--"
+
+# Pořadí sekcí na stránce. Karty se staví v tom pořadí, v jakém je
+# pohodlné je poskládat v kódu, ale na stránce mají být jinak — tohle
+# je ta druhá věc a mění se přesunutím jednoho řádku.
+PORADI_SEKCI = [
+    "Cílová teplota",
+    "#pokoj",                 # každá místnost se svými budíky
+    "Ladění",
+    "Otevřít nad CO2",
+    "Obsazenost a klid",
+    "Sdílený vzduch",
+    "Základ výpočtu",
+    "Slunce a stínění",
+    "Co smí ovládat",
+    "Grafy",
+]
+
+
 def _radek(eid: str, nazev: str, odsazeni: str = "      ") -> list[str]:
     return [f"{odsazeni}- entity: {eid}", f'{odsazeni}  name: "{nazev}"']
 
@@ -129,67 +150,49 @@ def _jako_pohled(radky: list[str]) -> list[str]:
     return out + radky
 
 
+def _klic_sekce(sekce: list[str]) -> tuple:
+    """Kam sekce v pořadí patří. Neznámé skončí na konci."""
+    prvni = next((r for r in sekce if r.strip().startswith("- type:")), "")
+    if "horizontal-stack" in prvni:
+        znacka = "#pokoj"          # budíky místnosti a její údaje
+    else:
+        text = "\n".join(sekce)
+        znacka = next((z for z in PORADI_SEKCI
+                       if z != "#pokoj" and f": {z}" in text), None)
+    try:
+        return (PORADI_SEKCI.index(znacka), 0)
+    except ValueError:
+        return (len(PORADI_SEKCI), 0)
+
+
+def _serad(sekce: list[list[str]]) -> list[list[str]]:
+    """Setřídí sekce podle PORADI_SEKCI, uvnitř zachová vzájemné pořadí."""
+    return [s for _, s in sorted(
+        ((_klic_sekce(s), s) for s in sekce),
+        key=lambda x: x[0])]
+
+
 def _do_sekci(radky: list[str]) -> list[str]:
-    """Celá stránka: menší celky, aby se daly přeskládat.
+    """Rozdělí karty na sekce podle značek v proudu.
 
-    Sekce se na stránce dají chytat a přesouvat, takže má smysl dělit
-    jemně — nová sekce začíná u každého nadpisu a u každé místnosti.
-    Home Assistant je pak sám rozloží do sloupců podle šířky obrazovky.
+    Dřív se hranice hádaly z nadpisů a velikosti bloků a lámalo se to
+    při každé změně. Teď je pořadí i seskupení dané tím, kam generátor
+    značku postaví — rozložení se pak mění přesunutím jednoho bloku.
     """
-    STROP = 6          # víc karet v jedné sekci už dělá dlouhý sloupec
-
-    # rozdělit na karty
-    karty, jedna = [], []
+    sekce, drzim = [], []
     for r in radky:
-        if r.startswith("  - type:") and jedna:
-            karty.append(jedna)
-            jedna = []
-        jedna.append(r)
-    if jedna:
-        karty.append(jedna)
-
-    # seskupit: nová sekce u nadpisu i u budíků nové místnosti
-    sekce, drzim, pocet, po_grafu = [], [], 0, False
-    for k in karty:
-        zacatek = any(("type: heading" in r or "type: horizontal-stack" in r
-                       or "type: history-graph" in r) for r in k[:1])
-        # po grafu začíná nová sekce, jinak by se k němu přilepilo
-        # to, co následuje
-        if (zacatek or po_grafu or pocet >= STROP) and drzim:
-            sekce.append(drzim)
-            drzim, pocet = [], 0
-        drzim.extend(k)
-        pocet += 1
-        po_grafu = any("type: history-graph" in r for r in k[:1])
-    if drzim:
+        if r == SEKCE:
+            if any(x.strip() for x in drzim):
+                sekce.append(drzim)
+            drzim = []
+            continue
+        drzim.append(r)
+    if any(x.strip() for x in drzim):
         sekce.append(drzim)
-
-    # grafy patří k sobě, ať je nemusí člověk hledat po stránce
-    grafy, ostatni = [], []
-    for s2 in sekce:
-        (grafy if "type: history-graph" in "".join(s2) else ostatni).append(s2)
-    if grafy:
-        spojene = ["  - type: heading", "    heading: Grafy",
-                   "    heading_style: title", "    icon: mdi:chart-line", ""]
-        for g in grafy:
-            spojene.extend(g)
-        sekce = ostatni + [spojene]
-
-    # Sekce, která obsahuje jen nadpis a budíky, patří k následující —
-    # jinak by ručička visela zvlášť od údajů té místnosti.
-    slozene = []
-    for s2 in sekce:
-        posledni_jen_nadpis = (
-            slozene and not any("type: entities" in r
-                                for r in slozene[-1]))
-        if posledni_jen_nadpis:
-            slozene[-1].extend(s2)
-        else:
-            slozene.append(s2)
 
     out = ["type: sections", "max_columns: 4", "title: NaPohodu",
            "path: napohodu", "icon: mdi:home-heart", "sections:"]
-    for s2 in slozene:
+    for s2 in _serad(sekce):
         out += ["  - type: grid", "    cards:"]
         out += ["    " + r if r.strip() else r for r in s2]
     return out
@@ -258,13 +261,14 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         polozky += _radek("binary_sensor.napohodu_topna_sezona",
                           "Topná sezóna")
     if polozky:
+        c.append(SEKCE)
         c += _hlavicka("Základ výpočtu", "mdi:calendar-week", "subtitle")
         c += _karta("", "", polozky)
         c.append("")
 
     # --- okna ---
-    c += _hlavicka("Okna a proč", "mdi:window-open-variant")
     for m in mistnosti:
+        c.append(SEKCE)
         stav = f"sensor.napohodu_{m}_stav"
         if not existuje(stav):
             continue
@@ -300,6 +304,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         polozky += _atribut(eid, "vetra_i_za", "   větráme i za")
         polozky += _atribut(eid, "klid", "   je klid")
     if polozky:
+        c.append(SEKCE)
         c += _hlavicka("Sdílený vzduch", "mdi:home-group", "subtitle")
         c += _karta("", "", polozky)
         c.append("")
@@ -319,6 +324,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         polozky += _atribut(eid, "zaluzie_poloha", "   skutečná poloha")
         polozky += _atribut(eid, "prestaveno_rukou", "   přestaveno rukou")
     if polozky:
+        c.append(SEKCE)
         c += _hlavicka("Slunce a stínění", "mdi:blinds-horizontal", "subtitle")
         c += _karta("", "", polozky)
         c.append("")
@@ -339,13 +345,17 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         if pridano:
             polozky.append("      - type: divider")
     if polozky:
+        c.append(SEKCE)
         c += _hlavicka("Obsazenost a klid", "mdi:account-check", "subtitle")
         c += _karta("", "", polozky[:-1])
         c.append("")
 
     # --- ladění ---
+    c.append(SEKCE)
     c += _hlavicka("Ladění", "mdi:tune")
-    for klic, nadpis in POSUVNIKY:
+    for i, (klic, nadpis) in enumerate(POSUVNIKY):
+        if klic == "otevrit_nad_co2":
+            c.append(SEKCE)      # prahy CO2 do vlastní sekce
         polozky = []
         for m in mistnosti:
             eid = f"number.napohodu_{m}_{klic}"
@@ -365,8 +375,23 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             if existuje(eid):
                 polozky += _radek(eid, f"{m.capitalize()} — {popis}")
         polozky.append("      - type: divider")
+    c.append(SEKCE)
+    c.append(SEKCE)
+    polozky = []
+    if existuje("button.napohodu_srovnat_vse"):
+        polozky += _radek("button.napohodu_srovnat_vse", "Všechno naráz")
+        polozky.append("      - type: divider")
+    for klic, popis in (("srovnat_okno", "okna"), ("srovnat_zaluzie", "žaluzie")):
+        for m in mistnosti:
+            eid = f"button.napohodu_{m}_{klic}"
+            if existuje(eid):
+                polozky += _radek(eid, f"{m.capitalize()} — {popis}")
+    c += _karta("", "", polozky, nazev="Srovnat do žádané polohy")
+
     c += _karta("", "", polozky[:-1], nazev="Co smí ovládat")
     c.append("")
+
+    c.append(SEKCE)
 
     # --- grafy ---
     # Do jednoho grafu se nevejde všechno čitelně. Cíle jsou skoro
@@ -378,6 +403,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     teploty += [(cidla[m], m.capitalize()) for m in mistnosti if cidla.get(m)]
     if venku:
         teploty.append((venku, "Venku"))
+    c += _hlavicka("Grafy", "mdi:chart-line")
     c += _graf("Teploty", 48, teploty, existuje)
 
     # CO2 je hodnota, podle které se větrá nejčastěji — bez grafu se
@@ -405,17 +431,6 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
              for m in mistnosti if m in s_klidem]
     c += _graf("Okna, žaluzie a klid", 24, okna + zal + klidy, existuje)
 
-    polozky = []
-    if existuje("button.napohodu_srovnat_vse"):
-        polozky += _radek("button.napohodu_srovnat_vse", "Všechno naráz")
-        polozky.append("      - type: divider")
-    for klic, popis in (("srovnat_okno", "okna"), ("srovnat_zaluzie", "žaluzie")):
-        for m in mistnosti:
-            eid = f"button.napohodu_{m}_{klic}"
-            if existuje(eid):
-                polozky += _radek(eid, f"{m.capitalize()} — {popis}")
-    c += _karta("", "", polozky, nazev="Srovnat do žádané polohy")
-
     karty = [x for x in c if x is not None]
 
     if podoba == "stranka":
@@ -438,7 +453,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
                  "# Na počítači se karty seřadí do sloupců, na telefonu",
                  "# pod sebe.",
                  ""]
-        return "\n".join(hlava + _jako_pohled(karty)) + "\n"
+        return "\n".join(hlava + _jako_pohled(
+            [r for r in karty if r != SEKCE])) + "\n"
 
     hlava = ["# Vygenerováno integrací NaPohodu.",
              "#",
@@ -446,6 +462,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
              "# Smaž obsah a vlož tenhle text.",
              "# Po přidání místnosti si přijď pro novou verzi.",
              ""]
+    karty = [r for r in karty if r != SEKCE]
     return "\n".join(hlava + ["type: vertical-stack", "cards:"] + karty) + "\n"
 
 

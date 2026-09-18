@@ -208,13 +208,29 @@ def test_karty_jsou_na_jedne_urovni():
 
 def test_nadpis_zustane_u_svych_karet():
     """Rozseknout nadpis od karet, které k němu patří, by zamotalo."""
-    s = dashboard(["kuchyne"], [], vzdy)
-    radky = s.splitlines()
-    for i, r in enumerate(radky):
-        if "type: heading" in r:
-            zbytek = radky[i + 1:i + 8]
-            assert any("type: entities" in x or "type: heading" in x
-                       or "type: gauge" in x for x in zbytek)
+    import yaml
+    d = yaml.safe_load(dashboard(["kuchyne"], [], vzdy, podoba="stranka"))
+    for sek in d["sections"]:
+        typy = [k["type"] for k in sek["cards"]]
+        if typy and typy[0] == "heading":
+            assert len(typy) > 1, "nadpis zůstal sám v sekci"
+
+
+def test_poradi_sekci_odpovida_nastavenemu():
+    """Pořadí na stránce se ladí ručně, generátor ho musí dodržet."""
+    import yaml
+    from karty import PORADI_SEKCI
+    d = yaml.safe_load(dashboard(
+        ["kuchyne", "obyvak"], ["o"], vzdy,
+        cidla={"kuchyne": "sensor.a", "obyvak": "sensor.b"},
+        podoba="stranka"))
+    prvni = [sek["cards"][0].get("heading") or sek["cards"][0].get("title")
+             or sek["cards"][0]["type"] for sek in d["sections"]]
+    assert prvni[0] == "Cílová teplota"
+    assert prvni[1] == "horizontal-stack"       # místnosti hned za tím
+    assert prvni[-1] == "Grafy"                 # grafy nakonec
+    assert "Ladění" in prvni
+    assert len(PORADI_SEKCI) >= 8
 
 
 def test_grafy_maji_vlastni_sekci():
