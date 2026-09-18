@@ -607,3 +607,33 @@ def test_formular_ukazuje_platne_hodnoty(nahradni_ha):
                                        c.CONF_NAZEV: "Ložnice"})
     assert out[c.CONF_NOC_MIN] == 19.5      # platí posuvník
     assert out[c.CONF_NAZEV] == "Ložnice"   # ostatní zůstává
+
+
+# ------------------------------------------- ventilátory podle úkolu
+
+def test_kazdy_ventilator_ma_svuj_ukol(nahradni_ha):
+    """Dva ventilátory v místnosti dělají skoro vždycky něco jiného."""
+    import importlib
+    c = importlib.import_module("napohodu.const")
+    assert c.VENTILATORY_UKOLY[c.CONF_VENT_VLHKOST] == "vlhkost"
+    assert c.VENTILATORY_UKOLY[c.CONF_VENT_CHLAZENI] == "chlazeni"
+    assert len(c.VENTILATORY_UKOLY) == 5
+
+
+def test_starsi_nastaveni_se_rozdeli(nahradni_ha):
+    """Kdo měl jedno pole se zaškrtnutými úkoly, nesmí o ventilátor
+    přijít — rozdělí se do skupin podle nich."""
+    import importlib
+    c = importlib.import_module("napohodu.const")
+    d = {c.CONF_VENTILATOR: ["fan.x"],
+         c.CONF_VENTILATOR_UKOLY: ["vlhkost", "prach"]}
+
+    skupiny = {klic: list(d.get(klic) or []) for klic in c.VENTILATORY_UKOLY}
+    if not any(skupiny.values()) and d.get(c.CONF_VENTILATOR):
+        for klic, ukol in c.VENTILATORY_UKOLY.items():
+            if ukol in (d.get(c.CONF_VENTILATOR_UKOLY) or ["vzduch"]):
+                skupiny[klic] = list(d[c.CONF_VENTILATOR])
+
+    assert skupiny[c.CONF_VENT_VLHKOST] == ["fan.x"]
+    assert skupiny[c.CONF_VENT_PRACH] == ["fan.x"]
+    assert skupiny[c.CONF_VENT_VZDUCH] == []

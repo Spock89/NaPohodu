@@ -587,3 +587,41 @@ def test_oba_tvary_naraz():
 def test_prazdne_hodnoty_se_ignoruji():
     mapa = {"cover.o1": {"zastinit": "", "soukromi": None}}
     assert cile_zaluzii("zastinit", mapa) == {}
+
+
+# ------------------------------------------- hystereze slunečního prahu
+
+def test_pri_chladnu_se_odcloni_bez_ohledu_na_slunce():
+    """Světlo je příjemné a každé teplo zvenčí je zadarmo. Zavírat kvůli
+    tomu, že slunce zrovna nesvítí dost, by byl nesmysl."""
+    r = None
+    prubeh = []
+    for zisk in (0, 100, 160, 300, 100, 0):
+        r = role_stineni(zisk, 150, horko=False, zima=True, doma=True,
+                         rezim=REZIM_VZDY, role_drive=r)
+        prubeh.append(r)
+    assert prubeh == ["odstinit"] * 6
+
+
+def test_zastineni_ma_hysterezi():
+    """Zastínit má smysl jen když slunce hřeje, a hranice nesmí kmitat
+    s každým mráčkem."""
+    r = None
+    prubeh = []
+    for zisk in (0, 140, 160, 140, 100, 80, 0):
+        r = role_stineni(zisk, 150, horko=True, zima=False, doma=True,
+                         rezim=REZIM_VZDY, role_drive=r)
+        prubeh.append(r)
+    assert prubeh == ["vychozi", "vychozi", "zastinit", "zastinit",
+                      "zastinit", "vychozi", "vychozi"]
+
+
+def test_horko_bez_slunce_nestini():
+    """V mrákotě není co zastiňovat, i když je v pokoji teplo."""
+    assert role_stineni(20, 150, horko=True, zima=False, doma=True,
+                        rezim=REZIM_VZDY) == "vychozi"
+
+
+def test_vlazno_znamena_vychozi():
+    assert role_stineni(300, 150, horko=False, zima=False, doma=True,
+                        rezim=REZIM_VZDY) == "vychozi"

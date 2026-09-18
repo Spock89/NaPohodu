@@ -273,7 +273,12 @@
             "rucni_klid_min": "Po ručním zásahu nechat být",
             "ochota_vetrat": "Ochota větrat",
             "denni_pokles": "Ve dne smí klesnout o",
-            "nocni_pokles": "V noci smí klesnout o"
+            "nocni_pokles": "V noci smí klesnout o",
+            "ventilator_vzduch": "Ventilátor na vzduch",
+            "ventilator_prach": "Ventilátor na prach",
+            "ventilator_vlhkost": "Ventilátor na vlhkost",
+            "ventilator_chlazeni": "Ventilátor na chlazení",
+            "ventilator_vzdy": "Ventilátor v trvalém provozu"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -325,7 +330,12 @@
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
-            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých."
+            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
+            "ventilator_vzduch": "Zapne se, když je dusno a okno je zavřené. Typicky rekuperace nebo přívod vzduchu.",
+            "ventilator_prach": "Zapne se při vysokém prachu. Bere se PM2.5 nad 35.",
+            "ventilator_vlhkost": "Zapne se nad nastavenou horní vlhkostí. Typicky odtah v koupelně nebo kuchyni.",
+            "ventilator_chlazeni": "Zapne se, když je v pokoji nad cílem a venku chladněji. Typicky ventilátor v okně.",
+            "ventilator_vzdy": "Běží pořád, dokud je okno zavřené. Pro trvalé provětrávání, kde se nic nevyhodnocuje."
           },
           "submit": "Další"
         },
@@ -431,7 +441,12 @@
             "rucni_klid_min": "Po ručním zásahu nechat být",
             "ochota_vetrat": "Ochota větrat",
             "denni_pokles": "Ve dne smí klesnout o",
-            "nocni_pokles": "V noci smí klesnout o"
+            "nocni_pokles": "V noci smí klesnout o",
+            "ventilator_vzduch": "Ventilátor na vzduch",
+            "ventilator_prach": "Ventilátor na prach",
+            "ventilator_vlhkost": "Ventilátor na vlhkost",
+            "ventilator_chlazeni": "Ventilátor na chlazení",
+            "ventilator_vzdy": "Ventilátor v trvalém provozu"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -493,30 +508,18 @@
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
-            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých."
+            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
+            "ventilator_vzduch": "Zapne se, když je dusno a okno je zavřené. Typicky rekuperace nebo přívod vzduchu.",
+            "ventilator_prach": "Zapne se při vysokém prachu. Bere se PM2.5 nad 35.",
+            "ventilator_vlhkost": "Zapne se nad nastavenou horní vlhkostí. Typicky odtah v koupelně nebo kuchyni.",
+            "ventilator_chlazeni": "Zapne se, když je v pokoji nad cílem a venku chladněji. Typicky ventilátor v okně.",
+            "ventilator_vzdy": "Běží pořád, dokud je okno zavřené. Pro trvalé provětrávání, kde se nic nevyhodnocuje."
           },
           "submit": "Další"
         },
         "stineni": {
           "title": "Stavy žaluzií",
           "description": "Ke každé žaluzii vyber, který její uložený stav plní kterou roli. Nabízejí se jen stavy, které ta konkrétní žaluzie má — dvě žaluzie v jednom pokoji je můžou mít pojmenované jinak.\n\n**zastínit** — svítí slunce a je horko\n**odclonit** — svítí slunce a je chladno, pustí se dovnitř\n**soukromí po setmění** — aby nebylo vidět dovnitř\n**nikdo doma** — když je byt prázdný\n**jinak** — výchozí stav, když nic z toho neplatí\n\nCo necháš prázdné, se v té situaci nehne. Výchozí stav se vyplatí vyplnit, jinak žaluzie většinu dne žádnou žádanou polohu nemají.\n\nŽaluzie: {zaluzie}",
-          "submit": "Další"
-        },
-        "ventilator": {
-          "title": "Ventilátory",
-          "description": "Ventilátor umí vyměnit vzduch bez otevřeného okna — v mrazu, při větru, v noci nebo tam, kde okno neovládáme.\n\nVyber entitu a zaškrtni, co má řešit. Do jednoho pole dej zařízení, která mají dělat totéž; ventilátor s jiným úkolem přidej jako další.\n\nPrázdné pole krok ukončí.\n\nZatím přidáno: {seznam}",
-          "data": {
-            "ventilator": "Ventilátor",
-            "ventilator_smer": "Směr",
-            "ventilator_ukoly": "K čemu je",
-            "pridat_dalsi": "Přidat další ventilátor"
-          },
-          "data_description": {
-            "ventilator": "Entita ventilátoru, spínače nebo pomocníka.",
-            "ventilator_smer": "Kterým směrem tlačí vzduch. Slouží k záznamu.",
-            "ventilator_ukoly": "Zapne se, když platí aspoň jeden zaškrtnutý úkol a okno je zavřené.",
-            "pridat_dalsi": "Po uložení se krok zobrazí znovu pro další ventilátor."
-          },
           "submit": "Další"
         }
       },
@@ -687,13 +690,6 @@
         "oboji": "Obojí"
       }
     },
-    "ventilator_smer": {
-      "options": {
-        "ven": "Odsává ven",
-        "dovnitr": "Přivádí dovnitř",
-        "oboji": "Obojí"
-      }
-    },
     "stineni_rezim": {
       "options": {
         "vzdy": "Vždy",
@@ -741,15 +737,6 @@
         "ochotna": "Tady větrání nevadí — vyvětrám i za sousedy",
         "normalne": "Normálně",
         "nerada": "Tady je větrání nepříjemné — ať vyvětrá soused"
-      }
-    },
-    "ventilator_ukoly": {
-      "options": {
-        "vzduch": "Výměna vzduchu (dusno)",
-        "prach": "Prach",
-        "vlhkost": "Odtah vlhkosti",
-        "chlazeni": "Chlazení venkovním vzduchem",
-        "vzdy": "Trvalý provoz"
       }
     },
     "sezona_rezim": {

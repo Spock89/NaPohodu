@@ -466,6 +466,18 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_RH_MIN, default=38.0): _cislo(20, 55, 1, "%"),
         vol.Optional(c.CONF_RH_MAX, default=60.0): _cislo(40, 80, 1, "%"),
 
+        # --- ventilátory podle toho, k čemu jsou ---
+        vol.Optional(c.CONF_VENT_VZDUCH): _ent(
+            ["fan", "switch", "input_boolean"], True),
+        vol.Optional(c.CONF_VENT_PRACH): _ent(
+            ["fan", "switch", "input_boolean"], True),
+        vol.Optional(c.CONF_VENT_VLHKOST): _ent(
+            ["fan", "switch", "input_boolean"], True),
+        vol.Optional(c.CONF_VENT_CHLAZENI): _ent(
+            ["fan", "switch", "input_boolean"], True),
+        vol.Optional(c.CONF_VENT_VZDY): _ent(
+            ["fan", "switch", "input_boolean"], True),
+
         # --- okna ---
         vol.Optional(c.CONF_OKNA): _ent(["cover"], True),
         vol.Optional(c.CONF_PROJEZD_M, default=120): _cislo(10, 600, 10, "s"),
@@ -602,52 +614,6 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
                 _schema_mistnost(self._stavy()), user_input or {}),
             errors=chyby)
 
-    async def async_step_ventilator(self, user_input=None) -> SubentryFlowResult:
-        """Přidávání ventilátorů po jednom.
-
-        Pevná pole pro dva ventilátory byla špatný nápad: kdo nemá
-        žádný, kouká na šest nepoužitých polí, a kdo má tři, nemá kam
-        ho dát. Tady se přidává, dokud uživatel neřekne dost.
-        """
-        seznam = list(self._data.get(c.CONF_VENTILATORY) or [])
-
-        if user_input is not None:
-            entity = user_input.get(c.CONF_VENTILATOR) or []
-            if entity:
-                seznam.append({
-                    c.CONF_VENTILATOR: entity,
-                    c.CONF_VENTILATOR_SMER: user_input.get(
-                        c.CONF_VENTILATOR_SMER, "ven"),
-                    c.CONF_VENTILATOR_UKOLY: user_input.get(
-                        c.CONF_VENTILATOR_UKOLY) or ["vzduch"],
-                })
-                self._data[c.CONF_VENTILATORY] = seznam
-            if entity and user_input.get(c.CONF_DALSI):
-                return await self.async_step_ventilator()
-            return await self.async_step_stineni()
-
-        popis = ", ".join(
-            f"{i + 1}. {', '.join(v.get(c.CONF_VENTILATOR, []))}"
-            for i, v in enumerate(seznam)) or "zatím žádný"
-
-        return self.async_show_form(
-            step_id="ventilator",
-            data_schema=vol.Schema({
-                vol.Optional(c.CONF_VENTILATOR): _ent(
-                    ["fan", "switch", "input_boolean"], True),
-                vol.Optional(c.CONF_VENTILATOR_SMER, default="ven"): _volba(
-                    c.SMERY_VENTILACE, "ventilator_smer"),
-                vol.Optional(c.CONF_VENTILATOR_UKOLY, default=["vzduch"]):
-                    selector.SelectSelector(selector.SelectSelectorConfig(
-                        options=c.UKOLY_VENTILATORU, multiple=True,
-                        translation_key="ventilator_ukoly",
-                        mode=selector.SelectSelectorMode.LIST)),
-                vol.Optional(c.CONF_DALSI, default=False):
-                    selector.BooleanSelector(),
-            }),
-            description_placeholders={"seznam": popis},
-        )
-
     async def async_step_stineni(self, user_input=None) -> SubentryFlowResult:
         """Ke každé žaluzii se přiřadí, který její stav plní kterou roli.
 
@@ -738,9 +704,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
             chyby = _zkontroluj_prahy(user_input)
             if not chyby:
                 self._data.update(user_input)
-                self._data.pop(c.CONF_VENTILATORY, None)
-                # ventilátory i žaluzie se projdou znovu
-                return await self.async_step_ventilator()
+                # žaluzie mohly přibýt, projde se i krok se stavy
+                return await self.async_step_stineni()
         self._data = dict(self._get_reconfigure_subentry().data)
         return self.async_show_form(
             step_id="reconfigure",

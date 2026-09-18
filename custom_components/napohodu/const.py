@@ -73,7 +73,23 @@ CONF_RH_VNITRNI = "rh_vnitrni"
 CONF_RH_MAX = "rh_max"
 CONF_ZVLHCOVAC = "zvlhcovac"
 CONF_RH_MIN = "rh_min"
-CONF_VENTILATOR = "ventilator"
+# Ventilátor se zadává podle toho, k čemu je — ne jako seznam entit
+# se společnými úkoly. Dva ventilátory v jedné místnosti dělají skoro
+# vždycky něco jiného a za jiných podmínek.
+CONF_VENT_VZDUCH = "ventilator_vzduch"
+CONF_VENT_PRACH = "ventilator_prach"
+CONF_VENT_VLHKOST = "ventilator_vlhkost"
+CONF_VENT_CHLAZENI = "ventilator_chlazeni"
+CONF_VENT_VZDY = "ventilator_vzdy"
+VENTILATORY_UKOLY = {
+    CONF_VENT_VZDUCH: "vzduch",
+    CONF_VENT_PRACH: "prach",
+    CONF_VENT_VLHKOST: "vlhkost",
+    CONF_VENT_CHLAZENI: "chlazeni",
+    CONF_VENT_VZDY: "vzdy",
+}
+
+CONF_VENTILATOR = "ventilator"     # starší tvar, jen se přečte
 CONF_VENTILATOR_SMER = "ventilator_smer"
 SMERY_VENTILACE = ["ven", "dovnitr", "oboji"]
 CONF_VENTILATOR_UKOLY = "ventilator_ukoly"

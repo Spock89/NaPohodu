@@ -41,6 +41,7 @@ class StavVykonu:
     # se pozná ruční přestavení
     stineni_poloha: dict[str, float] = field(default_factory=dict)
     rozejiti: dict[str, int] = field(default_factory=dict)
+    posledni_role: str | None = None
     # poloha se hned po sekvenci ještě ustaluje, takže první změřená
     # hodnota je prozatímní a jednou se opraví podle skutečnosti
     poloha_predbezna: set = field(default_factory=set)
@@ -322,6 +323,10 @@ SOUKROMI_POHYB = "pri_pohybu"     # až když do místnosti někdo přijde
 
 ROLE = ("zastinit", "odstinit", "soukromi", "pryc", "vychozi")
 
+# Slunce kolísá kolem prahu a role by se s ním překlápěla. Když už se
+# kvůli slunci hýbe, drží se, dokud zisk nespadne výrazně niž.
+SLUNCE_DRZI = 0.6
+
 
 def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
                  doma: bool, rezim: str = REZIM_VZDY,
@@ -329,7 +334,8 @@ def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
                  soukromi_kdy: str = SOUKROMI_NIKDY,
                  v_pokoji: bool = False,
                  soukromi_plati: bool = False,
-                 klid: bool = False) -> str | None:
+                 klid: bool = False,
+                 role_drive: str | None = None) -> str | None:
     """Který pojmenovaný stav má platit.
 
     Prázdný návrat znamená nechat být, a to je u žaluzií správná výchozí
@@ -376,11 +382,20 @@ def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
         # někdo tu je, takže si žaluzie nastaví sám
         return None
 
-    if zisk >= prah:
-        if horko:
-            return "zastinit"
-        if zima:
-            return "odstinit"
+    # Sluneční zisk rozhoduje jen o zastínění. Zaclonit má smysl
+    # tehdy, když slunce doopravdy hřeje — jinak by se stínilo
+    # v mrákotě. Hysterezi ta hranice má, aby se role nepřeklápěla
+    # s každým mráčkem.
+    drzi = role_drive == "zastinit"
+    hranice = prah * SLUNCE_DRZI if drzi else prah
+    if horko and zisk >= hranice:
+        return "zastinit"
+
+    # Odclonit se naopak vyplatí vždycky, když je chladno. Světlo je
+    # příjemné a každé teplo zvenčí je zadarmo, takže zavírat kvůli
+    # tomu, že slunce zrovna nesvítí dost, by byl nesmysl.
+    if zima:
+        return "odstinit"
 
     # Po setmění se do žaluzií nemluví. Výchozí stav je denní věc —
     # kdyby platil i v noci, roztáhl by to, co soukromí zatáhlo, a po

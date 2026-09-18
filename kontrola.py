@@ -84,16 +84,26 @@ for p in d.glob("*.py"):
             opakovane = set()
             for u in ast.walk(f):
                 cil = getattr(u, "target", None)
-                if isinstance(u, (ast.For, ast.AsyncFor, ast.comprehension)) \
-                        and isinstance(cil, ast.Name):
+                if not isinstance(u, (ast.For, ast.AsyncFor,
+                                      ast.comprehension)):
+                    continue
+                # cíl cyklu může být i rozbalení do několika jmen
+                if isinstance(cil, ast.Name):
                     opakovane.add(cil.id)
-                # rozbalení do několika jmen naráz
+                elif isinstance(cil, (ast.Tuple, ast.List)):
+                    opakovane.update(x.id for x in cil.elts
+                                     if isinstance(x, ast.Name))
+            # Rozbalení do několika jmen naráz se taky počítá za
+            # přiřazení. Musí to být vlastní smyčka: ta předchozí
+            # přeskakuje vše, co není cyklus.
+            for u in ast.walk(f):
                 if isinstance(u, ast.Assign):
                     for t2 in u.targets:
                         if isinstance(t2, (ast.Tuple, ast.List)):
                             opakovane.update(
                                 x.id for x in t2.elts
                                 if isinstance(x, ast.Name))
+
             prvni = {}
             for u in ast.walk(f):
                 if isinstance(u, ast.Assign):

@@ -47,13 +47,13 @@ from .const import (
     CONF_SPANEK, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
     CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
     CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
-    CONF_T_VENKU_M, CONF_UTLUM, CONF_VENTILATOR, CONF_VENTILATORY,
-    CONF_VENTILATOR_SMER, CONF_VENTILATOR_UKOLY, CONF_VETRAT, CONF_VITR,
-    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE,
-    CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
-    CONF_ZDROJ_OBSAZENOSTI, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO,
-    CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S,
-    PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA,
+    CONF_T_VENKU_M, CONF_UTLUM, CONF_VENTILATOR, CONF_VENTILATOR_UKOLY,
+    CONF_VETRAT, CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH,
+    CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
+    CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZNACKA_MIMO,
+    CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC,
+    DOMAIN, INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST,
+    PODENTITA_ZONA, VENTILATORY_UKOLY,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -1234,36 +1234,34 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             d.get(CONF_ZVLHCOVAC), vyk.stav.zarizeni.get("zvlhčovač"))
 
         # Ventilátor umí vyměnit vzduch tam, kde okno nemůže — v mrazu,
-        # při větru, v noci nebo v místnosti bez ovládaného okna. K čemu
-        # přesně je, záleží na tom, co za ventilátor to je, a bývá jich
-        # víc s různými úkoly. Proto seznam, ne pevná pole.
-        seznam = list(d.get(CONF_VENTILATORY) or [])
-        if not seznam and d.get(CONF_VENTILATOR):
-            # starší nastavení mělo jeden ventilátor přímo v poli
-            seznam = [{CONF_VENTILATOR: d[CONF_VENTILATOR],
-                       CONF_VENTILATOR_SMER: d.get(CONF_VENTILATOR_SMER,
-                                                   "ven"),
-                       CONF_VENTILATOR_UKOLY: d.get(CONF_VENTILATOR_UKOLY)
-                       or ["vzduch"]}]
+        # při větru, v noci nebo v místnosti bez ovládaného okna.
+        # Zadává se podle toho, k čemu je: dva ventilátory v jedné
+        # místnosti dělají skoro vždycky něco jiného a za jiných
+        # podmínek, takže společné úkoly nedávaly smysl.
+        skupiny = {klic: list(d.get(klic) or [])
+                   for klic in VENTILATORY_UKOLY}
+
+        # starší nastavení mělo jedno pole se zaškrtnutými úkoly
+        if not any(skupiny.values()) and d.get(CONF_VENTILATOR):
+            for klic, ukol in VENTILATORY_UKOLY.items():
+                if ukol in (d.get(CONF_VENTILATOR_UKOLY) or ["vzduch"]):
+                    skupiny[klic] = list(d[CONF_VENTILATOR])
 
         bezi, proc = {}, {}
-        for cislo, v in enumerate(seznam, 1):
-            entity = v.get(CONF_VENTILATOR) or []
+        for klic, entity in skupiny.items():
             if not entity:
                 continue
-            jmeno = f"ventilátor {cislo}"
-            duvody = self._ukoly_ventilatoru(
-                list(v.get(CONF_VENTILATOR_UKOLY) or ["vzduch"]),
-                d, m, rh_in, okruh)
+            ukol = VENTILATORY_UKOLY[klic]
+            duvody = self._ukoly_ventilatoru([ukol], d, m, rh_in, okruh)
             zapnout = None
             if duvody and not m.okno_otevreno:
                 zapnout = True
             elif not duvody or m.okno_otevreno:
                 zapnout = False
-            await vyk.zarizeni(entity, zapnout, jmeno)
+            await vyk.zarizeni(entity, zapnout, ukol)
             popis = ", ".join(entity)
             bezi[popis] = self._stav_pomocnika(
-                entity, vyk.stav.zarizeni.get(jmeno))
+                entity, vyk.stav.zarizeni.get(ukol))
             if duvody:
                 proc[popis] = ", ".join(duvody)
 
@@ -1318,11 +1316,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 soukromi_kdy=d.get(CONF_SOUKROMI_KDY, "nikdy"),
                 v_pokoji=bool(u["sig"].cidlo)
                 or bool(pr.indicie_aktivni(u["sig"], u["nast"])),
-                soukromi_plati=soukromi_plati, klid=m.klid)
+                soukromi_plati=soukromi_plati, klid=m.klid,
+                role_drive=vyk_m.stav.posledni_role)
             cile = vy.cile_zaluzii(role, mapa)
             stin = await vyk_m.stineni(
                 cile, cas_s, float(d.get(CONF_KLID_STINENI_MIN, 15)))
             m.atributy["stineni"] = stin
+            vyk_m.stav.posledni_role = role
             m.atributy["role_stineni"] = role
             if stin:
                 self._uloziste_stineni.async_delay_save(self._uloz_stineni, 10)
