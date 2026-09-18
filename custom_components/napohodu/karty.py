@@ -40,7 +40,6 @@ ATRIBUTY_STAVU = [
     ("ventilator_bezi", "Ventilátor", None),
     ("ventilator_proc", "Ventilátor proč", None),
     ("cisticka_bezi", "Čistička", None),
-    ("odtah_bezi", "Odtah", None),
     ("vlhkost", "Vlhkost v pokoji", " %"),
     ("narazove_vetrani", "Nárazové větrání běží", None),
     ("pauza_po_pulzu_min", "Pauza po větrání", " min"),

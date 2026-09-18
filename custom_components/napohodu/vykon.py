@@ -365,6 +365,13 @@ def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
         if zima:
             return "odstinit"
 
+    # Po setmění se do žaluzií nemluví. Výchozí stav je denní věc —
+    # kdyby platil i v noci, roztáhl by to, co soukromí zatáhlo, a po
+    # dalším pohybu by se to zatáhlo znovu. Zůstane tedy poslední
+    # nastavený stav.
+    if po_zapadu:
+        return None
+
     # Když nic zvláštního neplatí, žaluzie mají mít stejně kam patřit.
     # Bez toho by po srovnání zůstala poloha neznámá, dokud nevysvitne
     # slunce. Když výchozí stav není přiřazený, nic se nestane.

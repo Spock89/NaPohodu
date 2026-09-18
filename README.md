@@ -233,13 +233,11 @@ toho, co skutečně řeší.
 **Čistička** řeší prach, ne CO2. V zimě a v noci je lepší než otevřít
 okno, protože nechladí a nehučí.
 
-**Odtah** řeší vlhkost. Pomůže i tehdy, když je venku vlhčeji než
-uvnitř, kdy by okno situaci zhoršilo.
-
 **Zvlhčovač** řeší opačný problém. V zimě vysychá vzduch pod třicet
 procent, což už vysušuje sliznice.
 
-**Ventilátor** může být cokoli — odtah, rekuperace, ventilátor v okně.
+**Ventilátor** může být cokoli — odtah vlhkosti, rekuperace, ventilátor
+v okně.
 Vyjmenovat všechny možnosti nejde, takže se u něj zaškrtává, co má
 řešit: výměnu vzduchu, prach, vlhkost, chlazení venkovním vzduchem,
 nebo trvalý provoz. Zapne se, když platí aspoň jeden zaškrtnutý úkol

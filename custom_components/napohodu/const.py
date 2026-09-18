@@ -52,11 +52,8 @@ CONF_ZDROJ_KLIDU = "zdroj_klidu"
 CONF_DOBEH = "dobeh_min"
 CONF_MAX_STARI = "max_stari_h"
 CONF_CLIMATE = "climate"                 # radiátory, jen topí
-CONF_CLIMATE_CHLAZENI = "climate_chlazeni"   # jen chladí
-CONF_CLIMATE_OBOJI = "climate_oboji"         # tepelné čerpadlo, topí i chladí
 
 # --- řízení topení v místnosti ---
-CONF_TOPIT_UTLUM = "topit_utlum"           # při otevřeném okně
 CONF_TOPIT_PRI_OKNU = "topit_pri_oknu"
 CONF_SEZONU_RIDI_HLAVICE = "sezonu_ridi_hlavice"
 PRI_OKNU = ["nechat", "znacka", "utlum", "vypnout"]
@@ -69,11 +66,9 @@ CONF_ODCHYLKA = "odchylka"
 CONF_NOC_MIN = "noc_min"
 CONF_STINENI_PRYC = "stineni_pryc"
 CONF_KOMFORT_ODSTUP = "komfort_odstup"
-CONF_PRIORITA = "priorita_vzduchu"
 
 # nucená ventilace (ventilátor, rekuperace)
 CONF_CISTICKA = "cisticka"
-CONF_ODTAH = "odtah"
 CONF_RH_VNITRNI = "rh_vnitrni"
 CONF_RH_MAX = "rh_max"
 CONF_ZVLHCOVAC = "zvlhcovac"
@@ -142,8 +137,6 @@ CONF_TIMEOUT = "timeout_polohy_s"
 CONF_NAZEV_STAVU = "nazev_stavu"
 CONF_STAVY_TEXT = "stavy_text"
 CONF_KARTA_YAML = "karta_yaml"
-CONF_PODOBA = "podoba"
-PODOBY = ["karta", "stranka"]
 
 # --- sdílená klimatizace ---
 CONF_KLIMA_ENTITA = "klima_entita"
@@ -163,7 +156,7 @@ UMI_KLIMA = ["chlazeni", "topeni", "oboji"]
 CONF_ZPRAVY = "zpravy_kam"
 CONF_ZPRAVY_DRUHY = "zpravy_druhy"
 CONF_SOUHRN_CAS = "souhrn_cas"
-DRUHY_ZPRAV = ["vitr", "dest", "nouzove", "vetrani", "zavirani",
+DRUHY_ZPRAV = ["vitr", "dest", "nouzove", "vetrani", "zavirani", "obnova",
                "chyba", "souhrn"]
 
 INTERVAL_S = 60

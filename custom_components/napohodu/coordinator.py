@@ -36,25 +36,24 @@ from .const import (
     CONF_MAX_STARI, CONF_MIN_DRZENI, CONF_MISTNOSTI, CONF_NARAZ,
     CONF_NARAZOVE, CONF_NARAZOVE_ODSTUP, CONF_NARAZOVE_STROP,
     CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOCNI_POKLES, CONF_NOC_DO,
-    CONF_NOC_MIN, CONF_NOC_OD, CONF_OCHOTA, CONF_ODCHYLKA, CONF_ODTAH,
+    CONF_NOC_MIN, CONF_NOC_OD, CONF_OCHOTA, CONF_ODCHYLKA,
     CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA, CONF_PAUZA_PO_PULZU,
     CONF_PLOCHA, CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU,
-    CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRIORITA, CONF_PRITOMNOST,
-    CONF_PROJEZD_M, CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU,
-    CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_RUCNI_KLID,
-    CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SEZONA_REZIM,
-    CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG, CONF_SOUHRN_CAS,
-    CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_MAPA,
-    CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
-    CONF_TEPLOTY, CONF_TOPIT_PRI_OKNU, CONF_TOPIT_UTLUM, CONF_T_PRUMER,
-    CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM,
-    CONF_VENTILATOR, CONF_VENTILATOR_SMER, CONF_VENTILATOR_UKOLY,
-    CONF_VETRAT, CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH,
-    CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
-    CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZNACKA_MIMO,
-    CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC,
-    DOMAIN, INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST,
-    PODENTITA_ZONA,
+    CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRITOMNOST, CONF_PROJEZD_M,
+    CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M,
+    CONF_RH_VNITRNI, CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE,
+    CONF_SEZONA_PRAH, CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE,
+    CONF_SMOG, CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI,
+    CONF_SPANEK, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
+    CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
+    CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
+    CONF_T_VENKU_M, CONF_UTLUM, CONF_VENTILATOR, CONF_VENTILATOR_SMER,
+    CONF_VENTILATOR_UKOLY, CONF_VETRAT, CONF_VITR, CONF_VITR_KLID,
+    CONF_VITR_PRAH, CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE,
+    CONF_ZARENI, CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI,
+    CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY,
+    CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
+    PODENTITA_MISTNOST, PODENTITA_ZONA,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -954,15 +953,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # Dřív to byl posuvník nula až deset, u kterého nebylo poznat,
         # co dělá. Teď se rovnou zadává, o kolik stupňů smí teplota
         # při větrání klesnout.
-        vychozi = core.z_priority(
-            self.hodnota(p.subentry_id, CONF_PRIORITA,
-                         float(d.get(CONF_PRIORITA, 5.0))))
         den_pokles = self.hodnota(p.subentry_id, CONF_DENNI_POKLES,
-                                  float(d.get(CONF_DENNI_POKLES,
-                                              vychozi[0])))
+                                  float(d.get(CONF_DENNI_POKLES, 1.5)))
         noc_pokles = self.hodnota(p.subentry_id, CONF_NOCNI_POKLES,
-                                  float(d.get(CONF_NOCNI_POKLES,
-                                              vychozi[1])))
+                                  float(d.get(CONF_NOCNI_POKLES, 3.0)))
         nast = replace(nast, denni_pokles=den_pokles, nocni_pokles=noc_pokles)
 
         vyk = self.vykonavaci.setdefault(
@@ -1052,6 +1046,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 await self._posli(g, "dest", m.nazev, cas_s, dest=dest)
             elif r.kod == "noc_krize":
                 await self._posli(g, "nouzove", m.nazev, cas_s, co2=v.co2)
+            elif r.kod == "obnova":
+                await self._posli(
+                    g, "obnova", m.nazev, cas_s,
+                    co="otevřít" if r.akce is core.Akce.OTEVRIT
+                    else "zavřít")
             elif r.akce is core.Akce.OTEVRIT:
                 await self._posli(g, "vetrani", m.nazev, cas_s,
                                   duvod=r.duvod)
@@ -1147,8 +1146,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
         povel = vy.cil_topeni(
             m.cil, m.okno_otevreno,
-            self.hodnota(p.subentry_id, CONF_UTLUM, float(
-                d.get(CONF_UTLUM, d.get(CONF_TOPIT_UTLUM, 16.0)))),
+            self.hodnota(p.subentry_id, CONF_UTLUM,
+                         float(d.get(CONF_UTLUM, 16.0))),
             self.topna_sezona,
             False,
             odvzdusneni, float(d.get(CONF_ODVZDUSNENI_T, 28.0)),
@@ -1219,18 +1218,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         rh_in = self._cislo(d.get(CONF_RH_VNITRNI))
         m.atributy["vlhkost"] = (
             rh_in if rh_in is not None else "čidlo nenastaveno")
-
-        odtah = d.get(CONF_ODTAH) or []
-        if odtah and rh_in is not None:
-            rh_max = float(d.get(CONF_RH_MAX, 60.0))
-            zapnout = None
-            if rh_in > rh_max:
-                zapnout = True
-            elif rh_in < rh_max - 5:
-                zapnout = False
-            m.atributy["odtah"] = await vyk.zarizeni(odtah, zapnout, "odtah")
-        m.atributy["odtah_bezi"] = self._stav_pomocnika(
-            d.get(CONF_ODTAH), vyk.stav.zarizeni.get("odtah"))
 
         # zvlhčovač: v zimě vysychají sliznice, v paneláku běžně pod 30 %
         zvlhcovac = d.get(CONF_ZVLHCOVAC) or []

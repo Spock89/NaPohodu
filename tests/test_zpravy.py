@@ -98,3 +98,18 @@ def test_souhrn_shrne_den():
 def test_neznamy_druh_nespadne():
     h = Hlasic(DRUHY)
     assert h.zprava("cosi", "Kuchyně", 1000) is None
+
+
+def test_obnova_povelu_je_vlastni_druh():
+    """Chodí co půl hodiny, takže se musí dát vypnout zvlášť od
+    skutečných změn."""
+    h = Hlasic(("vetrani", "zavirani"))
+    assert h.zprava("obnova", "Kuchyně", 1000, co="otevřít") is None
+
+    h2 = Hlasic(("obnova",))
+    t = h2.zprava("obnova", "Kuchyně", 1000, co="otevřít")
+    assert t and "znovu" in t and "otevřít" in t
+
+
+def test_obnova_neni_ve_vychozim_vyberu():
+    assert "obnova" not in VYCHOZI

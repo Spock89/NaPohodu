@@ -254,6 +254,34 @@ for jazyk in ("cs", "en"):
     for k in sorted(vse - set(rec.get("data", {}))):
         chyby.append(f"{jazyk}/reconfigure: chybí {k}")
 
+# 1j) pole, které v překladu je, ale ve formuláři chybí. Celý blok
+# polí se dá omylem smazat a nikde to nezaskřípe — v překladu zůstane.
+for jazyk in ("cs", "en"):
+    t2 = json.loads((d / "translations" / f"{jazyk}.json").read_text())
+    kroky = {
+        "zaklad": t2["config_subentries"]["mistnost"]["step"]["zaklad"],
+        "zona": t2["config_subentries"]["zona"]["step"]["user"],
+        "klima": t2["config_subentries"]["klima"]["step"]["user"],
+        "user": t2["config"]["step"]["user"],
+    }
+    schemata = {
+        "zaklad": ("def _schema_mistnost", "SCHEMA_PRITOMNOST"),
+        "zona": ("def _schema_zona", "class ZonaSubentryFlow"),
+        "klima": ("def _schema_klima", "class KlimaSubentryFlow"),
+        "user": ("SCHEMA_GLOBAL", "class NaPohoduConfigFlow"),
+    }
+    cf2 = (d / "config_flow.py").read_text()
+    for jm, (od, do) in schemata.items():
+        blok = cf2[cf2.index(od):cf2.index(do)]
+        ve_schematu = {hodnoty[m] for m in
+                       re.findall(r"vol\.\w+\(c\.(CONF_\w+)", blok)
+                       if m in hodnoty}
+        for klic in sorted(set(kroky[jm].get("data", {})) - ve_schematu):
+            chyby.append(
+                f"{jazyk}/{jm}: {klic!r} je v překladu, ale ve formuláři "
+                f"chybí — nesmazal se omylem?")
+
+
     # 4) klíče výběrů musí být bez diakritiky
     def projdi(x, cesta=""):
         if isinstance(x, dict):

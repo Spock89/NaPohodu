@@ -213,7 +213,7 @@ def test_nesmyslna_hodnota_da_nahradu(nahradni_ha):
 
 # ------------------------------------- atributy nezávislé na vybavení
 
-def test_vlhkost_se_ukazuje_i_bez_odtahu(nahradni_ha):
+def test_vlhkost_se_ukazuje_i_bez_zarizeni(nahradni_ha):
     """Hodnotu, kterou známe, má být vidět — i když není čím odsávat."""
     import asyncio
     import importlib
@@ -245,7 +245,8 @@ def test_vlhkost_se_ukazuje_i_bez_odtahu(nahradni_ha):
     d = {c.CONF_RH_VNITRNI: "sensor.vlhkost"}      # žádný odtah, žádný zvlhčovač
     asyncio.run(k._pomocnici_krok(_Pod(), d, m, {"pm25": 0, "pm10": 0}))
     assert m.atributy["vlhkost"] == 43.5
-    assert m.atributy["odtah_bezi"] == "nenastaveno"
+    assert m.atributy["zvlhcovac_bezi"] == "nenastaveno"
+    assert m.atributy["ventilator_bezi"] == "nenastaveno"
 
 
 class _Pod:

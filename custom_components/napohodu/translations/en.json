@@ -240,10 +240,8 @@
             "ventilator": "Nucená ventilace",
             "ventilator_smer": "Směr ventilace",
             "cisticka": "Čistička vzduchu",
-            "odtah": "Odtahový ventilátor",
             "rh_vnitrni": "Čidlo vlhkosti",
             "rh_max": "Odtah zapnout nad",
-            "priorita_vzduchu": "Vzduch proti teplu",
             "azimut": "Azimut oken",
             "klid_stineni_min": "Nejčastěji hýbat jednou za",
             "stineni_rezim": "Kdy smí automatika hýbat žaluziemi",
@@ -295,10 +293,8 @@
             "ventilator": "Ventilátor, který umí vyměnit vzduch bez otevřeného okna — v mrazu, při větru, v noci nebo v místnosti, kde okno neovládáme. Zapne se, když je dusno a okno zavřené; s otevřeným oknem neběží, to by se přetahovali.",
             "ventilator_smer": "Kterým směrem ventilátor tlačí vzduch. Slouží k záznamu a pro tvoje automatizace.",
             "cisticka": "Čistička vzduchu. Umí prach, ne CO2. V zimě a v noci je lepší než otevřít okno.",
-            "odtah": "Ventilátor na odtah, typicky kvůli vlhkosti. Pomůže i tehdy, když je venku vlhčeji než uvnitř.",
             "rh_vnitrni": "Čidlo vlhkosti v místnosti. Bez něj se odtah neřídí.",
             "rh_max": "Nad touto vlhkostí se zapne odtah. V koupelně obvykle 65 %, jinde 60 %.",
-            "priorita_vzduchu": "Nula znamená držet teplo za každou cenu, deset vyvětrat za každou cenu. Pětka je vyvážená. Ovládá, o kolik smí teplota při větrání klesnout — ve dne i v noci.",
             "azimut": "Kam okna směřují. 0 sever, 90 východ, 180 jih, 270 západ. Podle toho se pozná, kdy do místnosti svítí.",
             "klid_stineni_min": "Minimální odstup mezi pohyby žaluzií, aby se lamely nehoupaly při každém mráčku.",
             "stineni_rezim": "Když si žaluzie v této místnosti nastavuješ ručně, vyber „jen když nikdo není doma“. Automatika je pak nechá být, dokud jsi doma. Zatažení po setmění platí i tak.",
@@ -408,10 +404,8 @@
             "prah_vykonu": "Odběr nad",
             "indicie_dobeh_min": "Doběh",
             "cisticka": "Čistička vzduchu",
-            "odtah": "Odtahový ventilátor",
             "rh_vnitrni": "Čidlo vlhkosti",
             "rh_max": "Odtah zapnout nad",
-            "priorita_vzduchu": "Vzduch proti teplu",
             "azimut": "Azimut oken",
             "klid_stineni_min": "Nejčastěji hýbat jednou za",
             "stineni_rezim": "Kdy smí automatika hýbat žaluziemi",
@@ -474,10 +468,8 @@
             "prah_vykonu": "Nad tímto odběrem to není jen pohotovostní režim. U televize obvykle 15 až 30 W.",
             "indicie_dobeh_min": "Jak dlouho po vypnutí ještě platí. Kdo právě zhasl, ještě neodešel.",
             "cisticka": "Čistička vzduchu. Umí prach, ne CO2. V zimě a v noci je lepší než otevřít okno.",
-            "odtah": "Ventilátor na odtah, typicky kvůli vlhkosti. Pomůže i tehdy, když je venku vlhčeji než uvnitř.",
             "rh_vnitrni": "Čidlo vlhkosti v místnosti. Bez něj se odtah neřídí.",
             "rh_max": "Nad touto vlhkostí se zapne odtah. V koupelně obvykle 65 %, jinde 60 %.",
-            "priorita_vzduchu": "Nula znamená držet teplo za každou cenu, deset vyvětrat za každou cenu. Pětka je vyvážená. Ovládá, o kolik smí teplota při větrání klesnout — ve dne i v noci.",
             "azimut": "Kam okna směřují. 0 sever, 90 východ, 180 jih, 270 západ. Podle toho se pozná, kdy do místnosti svítí.",
             "klid_stineni_min": "Minimální odstup mezi pohyby žaluzií, aby se lamely nehoupaly při každém mráčku.",
             "stineni_rezim": "Když si žaluzie v této místnosti nastavuješ ručně, vyber „jen když nikdo není doma“. Automatika je pak nechá být, dokud jsi doma. Zatažení po setmění platí i tak.",
@@ -720,7 +712,8 @@
         "vetrani": "Otevření okna",
         "zavirani": "Zavření okna",
         "chyba": "Chyba pohonu",
-        "souhrn": "Denní souhrn"
+        "souhrn": "Denní souhrn",
+        "obnova": "Opakovaný povel (chodí pravidelně)"
       }
     },
     "klima_umi": {
@@ -828,9 +821,6 @@
       },
       "co2_zavrit": {
         "name": "Zavřít pod CO2"
-      },
-      "priorita_vzduchu": {
-        "name": "Vzduch proti teplu"
       },
       "co2_noc": {
         "name": "V noci otevřít nad CO2"

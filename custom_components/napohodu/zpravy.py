@@ -21,10 +21,12 @@ KLID_S = {
     "chyba": 60 * 60,
     "vetrani": 20 * 60,
     "zavirani": 20 * 60,
+    "obnova": 20 * 60,
     "souhrn": 20 * 3600,
 }
 
-DRUHY = ("vitr", "dest", "nouzove", "vetrani", "zavirani", "chyba", "souhrn")
+DRUHY = ("vitr", "dest", "nouzove", "vetrani", "zavirani", "obnova",
+         "chyba", "souhrn")
 VYCHOZI = ("vitr", "dest", "chyba", "souhrn")
 
 
@@ -99,6 +101,12 @@ def _zavirani(m, u):
     return f"{m}: zavírám, {u.get('duvod', '')}."
 
 
+def _obnova(m, u):
+    """Opakovaný povel. Chodí pravidelně, proto vlastní volba."""
+    return (f"{m}: posílám znovu {u.get('co', 'povel')} — pohon možná "
+            f"předchozí zahodil.")
+
+
 def _souhrn(m, u):
     d = u.get("dnes", {})
     return (f"{m} za dnešek: {d.get('pohyby', 0)}x pohyb okna, "
@@ -114,5 +122,6 @@ SKLADBA = {
     "chyba": _chyba,
     "vetrani": _vetrani,
     "zavirani": _zavirani,
+    "obnova": _obnova,
     "souhrn": _souhrn,
 }
