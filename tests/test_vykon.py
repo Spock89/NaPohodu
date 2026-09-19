@@ -102,22 +102,11 @@ def test_vybere_odstineni_kdyz_je_zima():
     assert role_stineni(400, 150, False, True, True) == "odstinit"
 
 
-def test_bez_slunce_plati_vychozi():
-    assert role_stineni(50, 150, True, False, True) == "vychozi"
-
 
 def test_nikdo_doma_prebiji():
     assert role_stineni(400, 150, True, False, False) == "pryc"
 
 
-def test_vlazno_znamena_vychozi_stav():
-    """Ani horko, ani zima — platí výchozí stav. Když ho nemáš
-    přiřazený, nic se nestane."""
-    assert role_stineni(400, 150, False, False, True) == "vychozi"
-
-
-
-# ---------------------------------------------------- víc žaluzií na zónu
 
 def _naparuj_stineni(monkeypatch, selhavajici=()):
     """Podstrčí vykonavači falešné provádění stavů."""
@@ -225,13 +214,6 @@ def test_rezim_nikdy_nesaha_ani_kdyz_odejdeme():
     assert st(rezim=REZIM_NIKDY, doma=True, horko=True) is None
 
 
-def test_kuchyne_se_stini_i_kdyz_jsme_doma():
-    """Kuchyň: roztaženo pořád, kromě horka od slunce."""
-    assert st(rezim=REZIM_VZDY, horko=True) == "zastinit"
-    # bez horka a zimy platí výchozí stav, ne prázdno — žaluzie mají
-    # mít vždycky kam patřit
-    assert st(rezim=REZIM_VZDY) == "vychozi"
-
 
 def test_soukromi_po_zapadu_hned():
     """Obývák: po setmění zatáhnout, ať není vidět dovnitř."""
@@ -246,10 +228,6 @@ def test_soukromi_az_pri_pohybu():
     assert st(**a, pohyb=False) is None
     assert st(**a, pohyb=True) == "soukromi"
 
-
-def test_soukromi_neplati_pres_den():
-    assert st(po_zapadu=False, soukromi_kdy=SOUKROMI_HNED,
-              pohyb=True) == "vychozi"
 
 
 def test_soukromi_prebiji_rezim_jen_pryc():
@@ -530,36 +508,8 @@ def test_rucni_zasah_se_pozna_i_po_ustaleni(monkeypatch):
     assert v.zkontroluj_polohu("cover.o2", 40.0, 1600) == "zastíněno"
 
 
-def test_rano_se_soukromi_roztahne():
-    """Zatáhnout umí soukromí, roztáhnout ale nikdo — ložnice by
-    zůstala zatažená celý den."""
-    from vykon import REZIM_JEN_PRYC, SOUKROMI_POHYB
-    z = dict(zisk=0, prah=150, horko=False, zima=False, doma=True,
-             rezim=REZIM_JEN_PRYC, soukromi_kdy=SOUKROMI_POHYB)
-    assert role_stineni(**z, po_zapadu=False, soukromi_plati=True) == "vychozi"
-    assert role_stineni(**z, po_zapadu=False, soukromi_plati=False) is None
 
 
-def test_v_noci_se_soukromi_neruší():
-    from vykon import REZIM_JEN_PRYC, SOUKROMI_POHYB
-    z = dict(zisk=0, prah=150, horko=False, zima=False, doma=True,
-             rezim=REZIM_JEN_PRYC, soukromi_kdy=SOUKROMI_POHYB)
-    assert role_stineni(**z, po_zapadu=True, pohyb=False,
-                        soukromi_plati=True) is None
-
-
-def test_rano_se_neroztahuje_dokud_se_spi():
-    """Slunce vzejde dřív, než člověk vstane. Rozsvítit mu do očí je
-    horší než zatažená ložnice."""
-    from vykon import REZIM_JEN_PRYC, SOUKROMI_POHYB
-    z = dict(zisk=0, prah=150, horko=False, zima=False, doma=True,
-             rezim=REZIM_JEN_PRYC, soukromi_kdy=SOUKROMI_POHYB,
-             soukromi_plati=True, po_zapadu=False)
-    assert role_stineni(**z, klid=True) is None
-    assert role_stineni(**z, klid=False) == "vychozi"
-
-
-# ------------------------------------------- tvar mapy stínění
 
 def test_novy_tvar_mapy():
     """Entity_id v názvu klíče se dá poškodit, proto vnořený tvar."""
@@ -612,16 +562,40 @@ def test_zastineni_ma_hysterezi():
         r = role_stineni(zisk, 150, horko=True, zima=False, doma=True,
                          rezim=REZIM_VZDY, role_drive=r)
         prubeh.append(r)
-    assert prubeh == ["vychozi", "vychozi", "zastinit", "zastinit",
-                      "zastinit", "vychozi", "vychozi"]
+    assert prubeh == [None, None, "zastinit", "zastinit",
+                      "zastinit", None, None]
 
 
 def test_horko_bez_slunce_nestini():
     """V mrákotě není co zastiňovat, i když je v pokoji teplo."""
     assert role_stineni(20, 150, horko=True, zima=False, doma=True,
-                        rezim=REZIM_VZDY) == "vychozi"
+                        rezim=REZIM_VZDY) is None
 
 
-def test_vlazno_znamena_vychozi():
-    assert role_stineni(300, 150, horko=False, zima=False, doma=True,
-                        rezim=REZIM_VZDY) == "vychozi"
+
+
+# --------------------------------- vracení do výchozího stavu
+
+def test_bez_duvodu_se_zaluzie_nehybe():
+    """Samovolné vracení dělalo nesmysly — žaluzie jezdila i v noci."""
+    from vykon import REZIM_VZDY, SOUKROMI_POHYB
+    z = dict(zisk=0, prah=150, horko=False, zima=False, doma=True,
+             rezim=REZIM_VZDY, soukromi_kdy=SOUKROMI_POHYB)
+    assert role_stineni(**z, po_zapadu=True, pohyb=False) is None
+    assert role_stineni(**z, po_zapadu=False) is None
+
+
+def test_vychozi_az_pri_vybranem_duvodu():
+    from vykon import REZIM_VZDY
+    z = dict(zisk=0, prah=150, horko=False, zima=False, doma=True,
+             rezim=REZIM_VZDY, po_zapadu=False)
+    assert role_stineni(**z, vratit=True) == "vychozi"
+    assert role_stineni(**z, vratit=False) is None
+
+
+def test_soukromi_prebiji_vraceni():
+    """V noci při pohybu je soukromí důležitější."""
+    from vykon import REZIM_VZDY, SOUKROMI_HNED
+    assert role_stineni(0, 150, False, False, True, rezim=REZIM_VZDY,
+                        po_zapadu=True, soukromi_kdy=SOUKROMI_HNED,
+                        vratit=True) == "soukromi"

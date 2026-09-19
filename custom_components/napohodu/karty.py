@@ -37,8 +37,6 @@ ATRIBUTY_STAVU = [
     ("topeni_hlavice", "Topení — hlásí hlavice", None),
     ("odvzdusneni", "Odvzdušnění", None),
     ("zvlhcovac_bezi", "Zvlhčovač", None),
-    ("ventilatory", "Ventilátory", None),
-    ("ventilatory_proc", "Ventilátory proč", None),
     ("cisticka_bezi", "Čistička", None),
     ("vlhkost", "Vlhkost v pokoji", " %"),
     ("narazove_vetrani", "Nárazové větrání běží", None),
@@ -367,6 +365,21 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             c.append("")
 
     # --- ovládání a tlačítka ---
+    c.append(SEKCE)
+
+    polozky = []
+    if existuje("button.napohodu_srovnat_vse"):
+        polozky += _radek("button.napohodu_srovnat_vse", "Všechno naráz")
+        polozky.append("      - type: divider")
+    for klic, popis in (("srovnat_okno", "okna"),
+                        ("srovnat_zaluzie", "žaluzie")):
+        for m in mistnosti:
+            eid = f"button.napohodu_{m}_{klic}"
+            if existuje(eid):
+                polozky += _radek(eid, f"{m.capitalize()} — {popis}")
+    c += _karta("", "", polozky, nazev="Srovnat do žádané polohy")
+    c.append("")
+
     polozky = []
     for klic, popis in (("ovladat_okno", "okna"),
                         ("ovladat_stineni", "žaluzie"),
@@ -376,19 +389,6 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             if existuje(eid):
                 polozky += _radek(eid, f"{m.capitalize()} — {popis}")
         polozky.append("      - type: divider")
-    c.append(SEKCE)
-    c.append(SEKCE)
-    polozky = []
-    if existuje("button.napohodu_srovnat_vse"):
-        polozky += _radek("button.napohodu_srovnat_vse", "Všechno naráz")
-        polozky.append("      - type: divider")
-    for klic, popis in (("srovnat_okno", "okna"), ("srovnat_zaluzie", "žaluzie")):
-        for m in mistnosti:
-            eid = f"button.napohodu_{m}_{klic}"
-            if existuje(eid):
-                polozky += _radek(eid, f"{m.capitalize()} — {popis}")
-    c += _karta("", "", polozky, nazev="Srovnat do žádané polohy")
-
     c += _karta("", "", polozky[:-1], nazev="Co smí ovládat")
     c.append("")
 

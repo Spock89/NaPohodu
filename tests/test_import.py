@@ -235,7 +235,6 @@ def test_vlhkost_se_ukazuje_i_bez_zarizeni(nahradni_ha):
         _pomocnici_krok = ko.NaPohoduCoordinator._pomocnici_krok
         _stav_pomocnika = staticmethod(
             ko.NaPohoduCoordinator._stav_pomocnika)
-        _ukoly_ventilatoru = ko.NaPohoduCoordinator._ukoly_ventilatoru
         vykonavaci: dict = {}
         hass = None
 
@@ -246,7 +245,6 @@ def test_vlhkost_se_ukazuje_i_bez_zarizeni(nahradni_ha):
     asyncio.run(k._pomocnici_krok(_Pod(), d, m, {"pm25": 0, "pm10": 0}))
     assert m.atributy["vlhkost"] == 43.5
     assert m.atributy["zvlhcovac_bezi"] == "nenastaveno"
-    assert m.atributy["ventilatory"] == "nenastaveno"
 
 
 class _Pod:
@@ -469,56 +467,6 @@ def test_diagnostika_bez_okna(nahradni_ha):
 
 # ------------------------------------------- úkoly ventilátoru
 
-def _ukoly(ukoly, rh=None, pm=0, t_max=None, venku=None, cil=22.0,
-           dusno=False):
-    import importlib
-    ko = importlib.import_module("napohodu.coordinator")
-
-    class Mistnost:
-        atributy = {"potreba_vzduchu": dusno, "teplota_max": t_max,
-                    "venku": venku}
-
-    class Falesny:
-        _ukoly_ventilatoru = ko.NaPohoduCoordinator._ukoly_ventilatoru
-
-    m = Mistnost()
-    m.cil = cil
-    return Falesny()._ukoly_ventilatoru(ukoly, {}, m, rh, {"pm25": pm})
-
-
-def test_ventilator_na_vlhkost(nahradni_ha):
-    """Odtah v koupelně řeší vlhkost, nic jiného."""
-    assert _ukoly(["vlhkost"], rh=75) == ["vlhkost 75 %"]
-    assert _ukoly(["vlhkost"], rh=45) == []
-    assert _ukoly(["vlhkost"], rh=45, dusno=True) == []
-
-
-def test_ventilator_na_vzduch(nahradni_ha):
-    assert _ukoly(["vzduch"], dusno=True) == ["dusno"]
-    assert _ukoly(["vzduch"], dusno=False) == []
-
-
-def test_ventilator_na_chlazeni(nahradni_ha):
-    """Venku musí být chladněji, jinak by průvan situaci zhoršil."""
-    assert _ukoly(["chlazeni"], t_max=26.0, venku=18.0, cil=22.0)
-    assert _ukoly(["chlazeni"], t_max=26.0, venku=28.0, cil=22.0) == []
-    assert _ukoly(["chlazeni"], t_max=21.0, venku=15.0, cil=22.0) == []
-
-
-def test_ventilator_vic_ukolu_naraz(nahradni_ha):
-    d = _ukoly(["vzduch", "vlhkost", "prach"], rh=75, pm=60, dusno=True)
-    assert len(d) == 3
-
-
-def test_ventilator_trvaly_provoz(nahradni_ha):
-    assert _ukoly(["vzdy"]) == ["trvalý provoz"]
-
-
-def test_ventilator_bez_ukolu_nebezi(nahradni_ha):
-    assert _ukoly([], rh=90, pm=99, dusno=True) == []
-
-
-# ------------------------------------------- režim topné sezóny
 
 def _sezona(rezim, tri_dny=None):
     import importlib
@@ -568,20 +516,6 @@ def test_stavy_pomocniku_jsou_citelne(nahradni_ha):
 
 # ------------------------------------------- seznam ventilátorů
 
-def test_starsi_nastaveni_jednoho_ventilatoru(nahradni_ha):
-    """Kdo měl ventilátor v původním poli, nesmí o něj přijít."""
-    import importlib
-    c = importlib.import_module("napohodu.const")
-    d = {c.CONF_VENTILATOR: ["fan.x"],
-         c.CONF_VENTILATOR_UKOLY: ["vlhkost"]}
-
-    seznam = list(d.get(c.CONF_VENTILATORY) or [])
-    if not seznam and d.get(c.CONF_VENTILATOR):
-        seznam = [{c.CONF_VENTILATOR: d[c.CONF_VENTILATOR],
-                   c.CONF_VENTILATOR_UKOLY: d.get(c.CONF_VENTILATOR_UKOLY)}]
-    assert seznam[0][c.CONF_VENTILATOR] == ["fan.x"]
-    assert seznam[0][c.CONF_VENTILATOR_UKOLY] == ["vlhkost"]
-
 
 def test_formular_ukazuje_platne_hodnoty(nahradni_ha):
     """Posuvník zapisuje do běžící paměti, formulář četl uloženou
@@ -611,29 +545,4 @@ def test_formular_ukazuje_platne_hodnoty(nahradni_ha):
 
 # ------------------------------------------- ventilátory podle úkolu
 
-def test_kazdy_ventilator_ma_svuj_ukol(nahradni_ha):
-    """Dva ventilátory v místnosti dělají skoro vždycky něco jiného."""
-    import importlib
-    c = importlib.import_module("napohodu.const")
-    assert c.VENTILATORY_UKOLY[c.CONF_VENT_VLHKOST] == "vlhkost"
-    assert c.VENTILATORY_UKOLY[c.CONF_VENT_CHLAZENI] == "chlazeni"
-    assert len(c.VENTILATORY_UKOLY) == 5
 
-
-def test_starsi_nastaveni_se_rozdeli(nahradni_ha):
-    """Kdo měl jedno pole se zaškrtnutými úkoly, nesmí o ventilátor
-    přijít — rozdělí se do skupin podle nich."""
-    import importlib
-    c = importlib.import_module("napohodu.const")
-    d = {c.CONF_VENTILATOR: ["fan.x"],
-         c.CONF_VENTILATOR_UKOLY: ["vlhkost", "prach"]}
-
-    skupiny = {klic: list(d.get(klic) or []) for klic in c.VENTILATORY_UKOLY}
-    if not any(skupiny.values()) and d.get(c.CONF_VENTILATOR):
-        for klic, ukol in c.VENTILATORY_UKOLY.items():
-            if ukol in (d.get(c.CONF_VENTILATOR_UKOLY) or ["vzduch"]):
-                skupiny[klic] = list(d[c.CONF_VENTILATOR])
-
-    assert skupiny[c.CONF_VENT_VLHKOST] == ["fan.x"]
-    assert skupiny[c.CONF_VENT_PRACH] == ["fan.x"]
-    assert skupiny[c.CONF_VENT_VZDUCH] == []

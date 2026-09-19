@@ -149,6 +149,11 @@ U každé místnosti se nastaví, **kdy vůbec smí automatika sahat**: vždy,
 jen když nikdo není doma, nebo nikdy. A zvlášť zatahování po setmění kvůli
 soukromí, buď hned nebo až když někdo do místnosti přijde.
 
+Do výchozího stavu se žaluzie sama od sebe nevrací. V nastavení se
+vybere, při kterých událostech k tomu má dojít — konec klidu, rozednění,
+odchod nebo příchod. Bez toho zůstane tam, kam ji naposledy poslalo
+slunce, soukromí nebo ruka.
+
 ### Sdílená klimatizace
 
 Vnitřní jednotka v jedné místnosti patří té místnosti a řídí se sama.
@@ -235,13 +240,6 @@ okno, protože nechladí a nehučí.
 
 **Zvlhčovač** řeší opačný problém. V zimě vysychá vzduch pod třicet
 procent, což už vysušuje sliznice.
-
-**Ventilátor** může být cokoli — odtah vlhkosti, rekuperace, ventilátor
-v okně.
-Vyjmenovat všechny možnosti nejde, takže se u něj zaškrtává, co má
-řešit: výměnu vzduchu, prach, vlhkost, chlazení venkovním vzduchem,
-nebo trvalý provoz. Zapne se, když platí aspoň jeden zaškrtnutý úkol
-a okno je zavřené — s otevřeným oknem by se s ním přetahoval.
 
 Povel jde vždy jen při změně. Opakované zapínání už zapnuté čističky nic
 nezlepší.

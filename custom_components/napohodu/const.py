@@ -73,33 +73,10 @@ CONF_RH_VNITRNI = "rh_vnitrni"
 CONF_RH_MAX = "rh_max"
 CONF_ZVLHCOVAC = "zvlhcovac"
 CONF_RH_MIN = "rh_min"
-# Ventilátor se zadává podle toho, k čemu je — ne jako seznam entit
-# se společnými úkoly. Dva ventilátory v jedné místnosti dělají skoro
-# vždycky něco jiného a za jiných podmínek.
-CONF_VENT_VZDUCH = "ventilator_vzduch"
-CONF_VENT_PRACH = "ventilator_prach"
-CONF_VENT_VLHKOST = "ventilator_vlhkost"
-CONF_VENT_CHLAZENI = "ventilator_chlazeni"
-CONF_VENT_VZDY = "ventilator_vzdy"
-VENTILATORY_UKOLY = {
-    CONF_VENT_VZDUCH: "vzduch",
-    CONF_VENT_PRACH: "prach",
-    CONF_VENT_VLHKOST: "vlhkost",
-    CONF_VENT_CHLAZENI: "chlazeni",
-    CONF_VENT_VZDY: "vzdy",
-}
-
-CONF_VENTILATOR = "ventilator"     # starší tvar, jen se přečte
-CONF_VENTILATOR_SMER = "ventilator_smer"
-SMERY_VENTILACE = ["ven", "dovnitr", "oboji"]
-CONF_VENTILATOR_UKOLY = "ventilator_ukoly"
 # Ventilátorů může být kolik chceš, každý s vlastním úkolem. Ukládají
 # se jako seznam, ne jako pevně daná pole — odtah v koupelně a
 # rekuperace v pokoji spolu nemají nic společného.
-CONF_VENTILATORY = "ventilatory"
-CONF_DALSI = "pridat_dalsi"
 # k čemu ventilátor je. Vyjmenovat všechno nejde, tak ať se dá vybrat.
-UKOLY_VENTILATORU = ["vzduch", "prach", "vlhkost", "chlazeni", "vzdy"]
 
 # indicie obsazenosti
 CONF_INDICIE_STAV = "indicie_stav"      # entity, kde "on"/"playing" = obsazeno
@@ -142,6 +119,10 @@ CONF_RH_VENKU_M = "rh_venku_mistni"
 
 CONF_STINENI_REZIM = "stineni_rezim"
 CONF_SOUKROMI_KDY = "soukromi_kdy"
+# Kdy vrátit žaluzii do výchozího stavu. Prázdné znamená nikdy —
+# samovolné vracení dělalo nesmysly.
+CONF_VYCHOZI_KDY = "vychozi_kdy"
+SPOUSTECE_VYCHOZIHO = ["konec_klidu", "rozednilo", "odchod", "prichod"]
 REZIMY_STINENI = ["vzdy", "prazdna", "jen_pryc", "nikdy"]
 SOUKROMI_KDY = ["nikdy", "hned", "pri_pohybu"]
 

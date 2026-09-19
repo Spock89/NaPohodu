@@ -40,20 +40,19 @@ from .const import (
     CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA, CONF_PAUZA_PO_PULZU,
     CONF_PLOCHA, CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU,
     CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRITOMNOST, CONF_PROJEZD_M,
-    CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M,
-    CONF_RH_VNITRNI, CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE,
-    CONF_SEZONA_PRAH, CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE,
-    CONF_SMOG, CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI,
-    CONF_SPANEK, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
-    CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
-    CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
-    CONF_T_VENKU_M, CONF_UTLUM, CONF_VENTILATOR, CONF_VENTILATOR_UKOLY,
-    CONF_VETRAT, CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH,
+    CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI,
+    CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH,
+    CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG,
+    CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
+    CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC,
+    CONF_STINENI_REZIM, CONF_TEPLOTY, CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER,
+    CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT,
+    CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYCHOZI_KDY,
     CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
     CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZNACKA_MIMO,
     CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC,
     DOMAIN, INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST,
-    PODENTITA_ZONA, VENTILATORY_UKOLY,
+    PODENTITA_ZONA,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -841,31 +840,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         except Exception as e:  # pragma: no cover
             _LOGGER.warning("NaPohodu: klimatizace %s selhala: %s", entita, e)
 
-    def _ukoly_ventilatoru(self, ukoly: list, d: dict, m, rh_in, okruh
-                           ) -> list[str]:
-        """Které z vybraných úkolů právě platí.
-
-        Prázdný seznam znamená, že ventilátor běžet nemá. Úkol „vždy"
-        je pro trvalé provětrávání, kde se nic nevyhodnocuje.
-        """
-        duvody = []
-        if "vzdy" in ukoly:
-            duvody.append("trvalý provoz")
-        if "vzduch" in ukoly and m.atributy.get("potreba_vzduchu"):
-            duvody.append("dusno")
-        if "prach" in ukoly and (okruh["pm25"] or 0) > 35:
-            duvody.append("prach")
-        if ("vlhkost" in ukoly and rh_in is not None
-                and rh_in > float(d.get(CONF_RH_MAX, 60.0))):
-            duvody.append(f"vlhkost {rh_in:.0f} %")
-        if "chlazeni" in ukoly:
-            t_max = m.atributy.get("teplota_max")
-            venku = m.atributy.get("venku")
-            if (t_max is not None and venku is not None
-                    and t_max > m.cil + 0.5 and venku < t_max - 1):
-                duvody.append("chlazení venkovním vzduchem")
-        return duvody
-
     @staticmethod
     def _bez_okna(okruh) -> list[str]:
         """Co říct místnosti, která okno neovládá."""
@@ -1233,41 +1207,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         m.atributy["zvlhcovac_bezi"] = self._stav_pomocnika(
             d.get(CONF_ZVLHCOVAC), vyk.stav.zarizeni.get("zvlhčovač"))
 
-        # Ventilátor umí vyměnit vzduch tam, kde okno nemůže — v mrazu,
-        # při větru, v noci nebo v místnosti bez ovládaného okna.
-        # Zadává se podle toho, k čemu je: dva ventilátory v jedné
-        # místnosti dělají skoro vždycky něco jiného a za jiných
-        # podmínek, takže společné úkoly nedávaly smysl.
-        skupiny = {klic: list(d.get(klic) or [])
-                   for klic in VENTILATORY_UKOLY}
-
-        # starší nastavení mělo jedno pole se zaškrtnutými úkoly
-        if not any(skupiny.values()) and d.get(CONF_VENTILATOR):
-            for klic, ukol in VENTILATORY_UKOLY.items():
-                if ukol in (d.get(CONF_VENTILATOR_UKOLY) or ["vzduch"]):
-                    skupiny[klic] = list(d[CONF_VENTILATOR])
-
-        bezi, proc = {}, {}
-        for klic, entity in skupiny.items():
-            if not entity:
-                continue
-            ukol = VENTILATORY_UKOLY[klic]
-            duvody = self._ukoly_ventilatoru([ukol], d, m, rh_in, okruh)
-            zapnout = None
-            if duvody and not m.okno_otevreno:
-                zapnout = True
-            elif not duvody or m.okno_otevreno:
-                zapnout = False
-            await vyk.zarizeni(entity, zapnout, ukol)
-            popis = ", ".join(entity)
-            bezi[popis] = self._stav_pomocnika(
-                entity, vyk.stav.zarizeni.get(ukol))
-            if duvody:
-                proc[popis] = ", ".join(duvody)
-
-        m.atributy["ventilatory"] = bezi or "nenastaveno"
-        m.atributy["ventilatory_proc"] = proc or None
-
     async def _stineni_krok(self, p, d, u, m, doma, slunce_el, cas_s):
         """Rozhodne o žaluziích místnosti. Slunce svítí do pokoje, ne do oblasti."""
         vyk_m = self.vykonavaci.setdefault(
@@ -1296,12 +1235,23 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             t_min = m.atributy.get("teplota_min")
             mapa = d.get(CONF_STINENI_MAPA) or {}
 
-            # Je právě zatažené kvůli soukromí? Podle toho se ráno pozná,
-            # že se má roztáhnout.
-            soukromi_cile = vy.cile_zaluzii("soukromi", mapa)
-            soukromi_plati = bool(soukromi_cile) and all(
-                vyk_m.stav.posledni_stineni.get(z) == nazev
-                for z, nazev in soukromi_cile.items())
+            # Spouštěče výchozího stavu: zajímá nás okamžik změny,
+            # ne trvající stav — jinak by se povel posílal pořád.
+            st = vyk_m.stav
+            chtene = set(d.get(CONF_VYCHOZI_KDY) or [])
+            vratit = bool(chtene) and any((
+                "konec_klidu" in chtene
+                and st.drive_klid is True and not m.klid,
+                "rozednilo" in chtene
+                and st.drive_noc is True and slunce_el >= 0,
+                "odchod" in chtene
+                and st.drive_doma is True and not doma,
+                "prichod" in chtene
+                and st.drive_doma is False and doma,
+            ))
+            st.drive_klid, st.drive_doma = m.klid, doma
+            st.drive_noc = slunce_el < 0
+            m.atributy["vraceni_vychoziho"] = sorted(chtene) or None
 
             role = vy.role_stineni(
                 m.slunce, 150.0,
@@ -1316,8 +1266,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 soukromi_kdy=d.get(CONF_SOUKROMI_KDY, "nikdy"),
                 v_pokoji=bool(u["sig"].cidlo)
                 or bool(pr.indicie_aktivni(u["sig"], u["nast"])),
-                soukromi_plati=soukromi_plati, klid=m.klid,
-                role_drive=vyk_m.stav.posledni_role)
+                klid=m.klid, role_drive=st.posledni_role, vratit=vratit)
             cile = vy.cile_zaluzii(role, mapa)
             stin = await vyk_m.stineni(
                 cile, cas_s, float(d.get(CONF_KLID_STINENI_MIN, 15)))

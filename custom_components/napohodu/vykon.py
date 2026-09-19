@@ -42,6 +42,10 @@ class StavVykonu:
     stineni_poloha: dict[str, float] = field(default_factory=dict)
     rozejiti: dict[str, int] = field(default_factory=dict)
     posledni_role: str | None = None
+    # předchozí stavy, ze kterých se poznají spouštěče výchozího stavu
+    drive_klid: bool | None = None
+    drive_noc: bool | None = None
+    drive_doma: bool | None = None
     # poloha se hned po sekvenci ještě ustaluje, takže první změřená
     # hodnota je prozatímní a jednou se opraví podle skutečnosti
     poloha_predbezna: set = field(default_factory=set)
@@ -333,9 +337,9 @@ def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
                  po_zapadu: bool = False, pohyb: bool = False,
                  soukromi_kdy: str = SOUKROMI_NIKDY,
                  v_pokoji: bool = False,
-                 soukromi_plati: bool = False,
                  klid: bool = False,
-                 role_drive: str | None = None) -> str | None:
+                 role_drive: str | None = None,
+                 vratit: bool = False) -> str | None:
     """Který pojmenovaný stav má platit.
 
     Prázdný návrat znamená nechat být, a to je u žaluzií správná výchozí
@@ -365,15 +369,10 @@ def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
                 soukromi_kdy == SOUKROMI_POHYB and pohyb):
             return "soukromi"
 
-    # Ráno se to, co soukromí zatáhlo, musí zase roztáhnout — i tam,
-    # kde si žaluzie jinak řídíme sami. Bez toho by ložnice zůstala
-    # zatažená celý den, protože zatáhnout umí soukromí, ale roztáhnout
-    # už nikdo.
-    #
-    # Dokud se ale v místnosti spí, nic se neroztahuje. Slunce vzejde
-    # dřív, než člověk vstane, a rozsvítit mu do očí je horší než
-    # zatažená ložnice.
-    if not po_zapadu and soukromi_plati and not klid:
+    # Výchozí stav se nastavuje jen tehdy, když k tomu nastal důvod,
+    # který si uživatel vybral — konec klidu, rozednění, odchod z bytu.
+    # Samovolné vracení dělalo nesmysly.
+    if vratit:
         return "vychozi"
 
     if rezim == REZIM_JEN_PRYC:
@@ -397,17 +396,10 @@ def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
     if zima:
         return "odstinit"
 
-    # Po setmění se do žaluzií nemluví. Výchozí stav je denní věc —
-    # kdyby platil i v noci, roztáhl by to, co soukromí zatáhlo, a po
-    # dalším pohybu by se to zatáhlo znovu. Zůstane tedy poslední
-    # nastavený stav.
-    if po_zapadu:
-        return None
-
-    # Když nic zvláštního neplatí, žaluzie mají mít stejně kam patřit.
-    # Bez toho by po srovnání zůstala poloha neznámá, dokud nevysvitne
-    # slunce. Když výchozí stav není přiřazený, nic se nestane.
-    return "vychozi"
+    # Nic z toho neplatí: žaluzie se nechává, jak je. Vracet ji někam
+    # jen proto, že zrovna není důvod ji hýbat, znamená jezdit sem
+    # a tam bez užitku.
+    return None
 
 
 def cile_zaluzii(role: str | None, mapa: dict) -> dict[str, str]:

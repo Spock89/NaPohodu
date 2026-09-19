@@ -466,17 +466,6 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_RH_MIN, default=38.0): _cislo(20, 55, 1, "%"),
         vol.Optional(c.CONF_RH_MAX, default=60.0): _cislo(40, 80, 1, "%"),
 
-        # --- ventilátory podle toho, k čemu jsou ---
-        vol.Optional(c.CONF_VENT_VZDUCH): _ent(
-            ["fan", "switch", "input_boolean"], True),
-        vol.Optional(c.CONF_VENT_PRACH): _ent(
-            ["fan", "switch", "input_boolean"], True),
-        vol.Optional(c.CONF_VENT_VLHKOST): _ent(
-            ["fan", "switch", "input_boolean"], True),
-        vol.Optional(c.CONF_VENT_CHLAZENI): _ent(
-            ["fan", "switch", "input_boolean"], True),
-        vol.Optional(c.CONF_VENT_VZDY): _ent(
-            ["fan", "switch", "input_boolean"], True),
 
         # --- okna ---
         vol.Optional(c.CONF_OKNA): _ent(["cover"], True),
@@ -499,6 +488,11 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_STINENI_REZIM, default="vzdy"): _volba(
             c.REZIMY_STINENI, "stineni_rezim"
         ),
+        vol.Optional(c.CONF_VYCHOZI_KDY, default=[]):
+            selector.SelectSelector(selector.SelectSelectorConfig(
+                options=c.SPOUSTECE_VYCHOZIHO, multiple=True,
+                translation_key="vychozi_kdy",
+                mode=selector.SelectSelectorMode.LIST)),
         vol.Optional(c.CONF_SOUKROMI_KDY, default="nikdy"): _volba(
             c.SOUKROMI_KDY, "soukromi_kdy"
         ),
