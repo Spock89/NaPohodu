@@ -44,15 +44,15 @@ from .const import (
     CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH,
     CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG,
     CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
-    CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC,
-    CONF_STINENI_REZIM, CONF_TEPLOTY, CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER,
-    CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT,
-    CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYCHOZI_KDY,
-    CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
-    CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZNACKA_MIMO,
-    CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC,
-    DOMAIN, INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST,
-    PODENTITA_ZONA,
+    CONF_STINENI_CHOVANI, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
+    CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
+    CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
+    CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT, CONF_VITR, CONF_VITR_KLID,
+    CONF_VITR_PRAH, CONF_VYCHOZI_KDY, CONF_VYNUCENO_M, CONF_ZALUZIE,
+    CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
+    CONF_ZDROJ_OBSAZENOSTI, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO,
+    CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S,
+    PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -1230,49 +1230,63 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # Role se počítá vždycky, i když se žaluzie neovládají — jinak
         # by karta neměla co ukázat a graf by hlásil neznámo. Povel se
         # posílá až dole, podle přepínače.
+        #
+        # Každá žaluzie se rozhoduje sama: dvě okna v jednom pokoji míří
+        # jinam a člověk je často chce řídit každé jinak.
         if zaluzie_mistnosti:
             t_max = m.atributy.get("teplota_max")
             t_min = m.atributy.get("teplota_min")
             mapa = d.get(CONF_STINENI_MAPA) or {}
-
-            # Zaškrtnuté podmínky musí platit všechny naráz. Povel se
-            # pošle v okamžiku, kdy se to stane — ne pořád dokola,
-            # dokud to platí.
+            chovani = d.get(CONF_STINENI_CHOVANI) or {}
             st = vyk_m.stav
-            chtene = set(d.get(CONF_VYCHOZI_KDY) or [])
-            podminky = []
-            if "konec_klidu" in chtene:
-                podminky.append(not m.klid)
-            if "rozednilo" in chtene:
-                podminky.append(slunce_el >= 0)
+            pohyb = bool(u["sig"].cidlo) or bool(
+                pr.indicie_aktivni(u["sig"], u["nast"]))
 
-            splneno = bool(podminky) and all(podminky)
-            vratit = splneno and st.drive_splneno is False
-            st.drive_splneno = splneno
-            m.atributy["vraceni_vychoziho"] = sorted(chtene) or None
+            cile, role_vse, duvody, co_dal = {}, {}, {}, {}
+            for z in zaluzie_mistnosti:
+                vlastni = chovani.get(z) or {}
 
-            role = vy.role_stineni(
-                m.slunce, 150.0,
-                t_max is not None and t_max > m.cil - float(
-                    d.get(CONF_STINENI_PREDSTIH, 1.0)),
-                t_min is not None and t_min < m.cil - 0.5,
-                doma,
-                rezim=d.get(CONF_STINENI_REZIM, "vzdy"),
-                po_zapadu=slunce_el < 0,
-                pohyb=bool(u["sig"].cidlo)
-                or bool(pr.indicie_aktivni(u["sig"], u["nast"])),
-                soukromi_kdy=d.get(CONF_SOUKROMI_KDY, "nikdy"),
-                v_pokoji=bool(u["sig"].cidlo)
-                or bool(pr.indicie_aktivni(u["sig"], u["nast"])),
-                klid=m.klid, role_drive=st.posledni_role, vratit=vratit)
-            cile = vy.cile_zaluzii(role, mapa)
-            stin = await vyk_m.stineni(
-                cile, cas_s, float(d.get(CONF_KLID_STINENI_MIN, 15)))
-            m.atributy["stineni"] = stin
-            vyk_m.stav.posledni_role = role
-            m.atributy["role_stineni"] = role
-            if stin:
-                self._uloziste_stineni.async_delay_save(self._uloz_stineni, 10)
+                def nastav(klic, vychozi):
+                    return vlastni.get(klic, d.get(klic, vychozi))
+
+                zisk = m.slunce
+
+                chtene = list(nastav(CONF_VYCHOZI_KDY, []) or [])
+                podminky = []
+                if "konec_klidu" in chtene:
+                    podminky.append(not m.klid)
+                if "rozednilo" in chtene:
+                    podminky.append(slunce_el >= 0)
+                splneno = bool(podminky) and all(podminky)
+                vratit = splneno and st.drive_splneno.get(z) is False
+                st.drive_splneno[z] = splneno
+
+                horko = t_max is not None and t_max > m.cil - float(
+                    d.get(CONF_STINENI_PREDSTIH, 1.0))
+                zima = t_min is not None and t_min < m.cil - 0.5
+                rezim = nastav(CONF_STINENI_REZIM, "vzdy")
+                soukromi = nastav(CONF_SOUKROMI_KDY, "nikdy")
+
+                role = vy.role_stineni(
+                    zisk, 150.0, horko, zima, doma,
+                    rezim=rezim, po_zapadu=slunce_el < 0, pohyb=pohyb,
+                    soukromi_kdy=soukromi, v_pokoji=pohyb, klid=m.klid,
+                    role_drive=st.posledni_role.get(z), vratit=vratit)
+
+                st.posledni_role[z] = role
+                role_vse[z] = role
+                cile.update(vy.cile_zaluzii(role, {z: mapa.get(z, {})}))
+                duvody[z] = vy.duvody_stineni(
+                    role, zisk, 150.0, horko, zima, doma, slunce_el < 0,
+                    m.klid, rezim, soukromi)
+                co_dal[z] = vy.ocekavani_stineni(
+                    role, zisk, 150.0, slunce_el < 0, m.klid, horko, zima,
+                    soukromi, chtene)
+
+            m.atributy["role_stineni"] = role_vse
+            m.atributy["stineni_duvody"] = duvody
+            m.atributy["stineni_co_dal"] = co_dal
+
         # Pojmenovaný stav známe jen tam, kam jsme sami poslali povel.
         # Skutečná poloha se dá přečíst vždycky, a právě ta člověka
         # zajímá, když je paměť prázdná.
@@ -1282,6 +1296,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             m.atributy["zadana_poloha"] = {}
         elif self.hodnoty.get((p.subentry_id, "ovladat_stineni"), 0.0) <= 0:
             m.atributy["stineni"] = "neovládám, přepínač je vypnutý"
+        else:
+            stin = await vyk_m.stineni(
+                cile, cas_s, float(d.get(CONF_KLID_STINENI_MIN, 15)))
+            m.atributy["stineni"] = stin
+            if stin:
+                self._uloziste_stineni.async_delay_save(self._uloz_stineni, 10)
 
         m.atributy["stineni_stav"] = dict(vyk_m.stav.posledni_stineni)
         m.atributy["zaluzie_poloha"] = {

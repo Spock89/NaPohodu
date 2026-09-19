@@ -624,7 +624,21 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
             # Klíč pole je pořadí žaluzie, ne její entity_id — do názvů
             # polí patří co nejmíň a entity_id se v nich dá poškodit.
             mapa: dict[str, dict] = {}
+            chovani: dict[str, dict] = {}
             for klic, hodnota in user_input.items():
+                if "#" in klic:
+                    poradi, co = klic.split("#", 1)
+                    try:
+                        z = zaluzie[int(poradi)]
+                    except (ValueError, IndexError):
+                        continue
+                    if co == "rezim" and hodnota != "jako_mistnost":
+                        chovani.setdefault(z, {})[c.CONF_STINENI_REZIM] = hodnota
+                    elif co == "soukromi" and hodnota != "jako_mistnost":
+                        chovani.setdefault(z, {})[c.CONF_SOUKROMI_KDY] = hodnota
+                    elif co == "vychozi" and hodnota:
+                        chovani.setdefault(z, {})[c.CONF_VYCHOZI_KDY] = hodnota
+                    continue
                 if not hodnota or "|" not in klic:
                     continue
                 poradi, role = klic.split("|", 1)
@@ -634,6 +648,7 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
                     continue
                 mapa.setdefault(z, {})[role] = hodnota
             self._data[c.CONF_STINENI_MAPA] = mapa
+            self._data[c.CONF_STINENI_CHOVANI] = chovani
             return await self._dal()
 
         from .services import nacti_stavy
@@ -654,6 +669,24 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
                     predvyplnit[f"{i}|{role}"] = drive[role]
                 elif ulozene.get(f"{z}|{role}"):
                     predvyplnit[f"{i}|{role}"] = ulozene[f"{z}|{role}"]
+
+            # chování té které žaluzie; prázdné znamená „jako místnost"
+            vlastni = chovani.get(z) or {}
+            pole[vol.Optional(f"{i}#rezim")] = _volba(
+                ["jako_mistnost"] + c.REZIMY_STINENI, "stineni_rezim_z")
+            pole[vol.Optional(f"{i}#soukromi")] = _volba(
+                ["jako_mistnost"] + c.SOUKROMI_KDY, "soukromi_kdy_z")
+            pole[vol.Optional(f"{i}#vychozi")] = selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=c.SPOUSTECE_VYCHOZIHO, multiple=True,
+                    translation_key="vychozi_kdy",
+                    mode=selector.SelectSelectorMode.LIST))
+            predvyplnit[f"{i}#rezim"] = vlastni.get(
+                c.CONF_STINENI_REZIM, "jako_mistnost")
+            predvyplnit[f"{i}#soukromi"] = vlastni.get(
+                c.CONF_SOUKROMI_KDY, "jako_mistnost")
+            if vlastni.get(c.CONF_VYCHOZI_KDY) is not None:
+                predvyplnit[f"{i}#vychozi"] = vlastni[c.CONF_VYCHOZI_KDY]
 
         return self.async_show_form(
             step_id="stineni",

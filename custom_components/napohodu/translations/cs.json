@@ -503,7 +503,7 @@
         },
         "stineni": {
           "title": "Stavy žaluzií",
-          "description": "Ke každé žaluzii vyber, který její uložený stav plní kterou roli. Nabízejí se jen stavy, které ta konkrétní žaluzie má — dvě žaluzie v jednom pokoji je můžou mít pojmenované jinak.\n\n**zastínit** — svítí slunce a je horko\n**odclonit** — svítí slunce a je chladno, pustí se dovnitř\n**soukromí po setmění** — aby nebylo vidět dovnitř\n**nikdo doma** — když je byt prázdný\n**jinak** — výchozí stav, když nic z toho neplatí\n\nCo necháš prázdné, se v té situaci nehne. Výchozí stav se vyplatí vyplnit, jinak žaluzie většinu dne žádnou žádanou polohu nemají.\n\nŽaluzie: {zaluzie}",
+          "description": "Ke každé žaluzii vyber, který její uložený stav plní kterou roli, a jak se má chovat. Nabízejí se jen stavy, které ta konkrétní žaluzie má.\n\n**zastínit** — svítí slunce a je horko\n**odclonit** — svítí slunce a je chladno, pustí se dovnitř\n**soukromí po setmění** — aby nebylo vidět dovnitř\n**nikdo doma** — když je byt prázdný\n**jinak** — výchozí stav\n\nChování se dá nastavit každé žaluzii zvlášť; „jako celá místnost\" znamená, že platí nastavení z předchozího kroku.\n\nŽaluzie: {zaluzie}",
           "submit": "Další"
         }
       },
@@ -734,6 +734,23 @@
       "options": {
         "konec_klidu": "Když skončí klid (konec spánku)",
         "rozednilo": "Když se rozední"
+      }
+    },
+    "stineni_rezim_z": {
+      "options": {
+        "jako_mistnost": "Jako celá místnost",
+        "vzdy": "Vždy",
+        "prazdna": "Doma jen když v pokoji nikdo není",
+        "jen_pryc": "Jen když nikdo není doma",
+        "nikdy": "Nikdy, řídím ji sám"
+      }
+    },
+    "soukromi_kdy_z": {
+      "options": {
+        "jako_mistnost": "Jako celá místnost",
+        "nikdy": "Nikdy",
+        "hned": "Hned po setmění",
+        "pri_pohybu": "Až při pohybu"
       }
     }
   },

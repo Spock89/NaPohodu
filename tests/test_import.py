@@ -546,3 +546,29 @@ def test_formular_ukazuje_platne_hodnoty(nahradni_ha):
 # ------------------------------------------- ventilátory podle úkolu
 
 
+
+
+# ------------------------------------------- chování per žaluzie
+
+def test_vlastni_chovani_prebiji_mistnost(nahradni_ha):
+    """Dvě okna v pokoji míří jinam a člověk je chce řídit každé jinak."""
+    import importlib
+    c = importlib.import_module("napohodu.const")
+
+    d = {c.CONF_STINENI_REZIM: "vzdy", c.CONF_SOUKROMI_KDY: "nikdy"}
+    chovani = {"cover.o2": {c.CONF_STINENI_REZIM: "jen_pryc"}}
+
+    def nastav(z, klic, vychozi):
+        return (chovani.get(z) or {}).get(klic, d.get(klic, vychozi))
+
+    assert nastav("cover.o1", c.CONF_STINENI_REZIM, "vzdy") == "vzdy"
+    assert nastav("cover.o2", c.CONF_STINENI_REZIM, "vzdy") == "jen_pryc"
+    # co není přenastavené, bere se z místnosti
+    assert nastav("cover.o2", c.CONF_SOUKROMI_KDY, "nikdy") == "nikdy"
+
+
+def test_chovani_klice(nahradni_ha):
+    import importlib
+    c = importlib.import_module("napohodu.const")
+    assert c.CONF_STINENI_REZIM in c.CHOVANI_KLICE
+    assert c.CONF_VYCHOZI_KDY in c.CHOVANI_KLICE

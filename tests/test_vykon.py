@@ -677,3 +677,40 @@ def test_po_probuzeni_uz_ano():
     assert role_stineni(400, 150, horko=False, zima=True, doma=True,
                         rezim=REZIM_PRAZDNA, po_zapadu=False,
                         klid=False) == "odstinit"
+
+
+# ------------------------------------------- diagnostika stínění
+
+def test_diagnostika_rekne_proc():
+    from vykon import duvody_stineni, REZIM_VZDY, SOUKROMI_POHYB
+    z = dict(zisk=400, prah=150, horko=True, zima=False, doma=True,
+             po_zapadu=False, klid=False, rezim=REZIM_VZDY,
+             soukromi_kdy=SOUKROMI_POHYB)
+    assert "horko" in " ".join(duvody_stineni("zastinit", **z))
+    z["doma"] = False
+    assert duvody_stineni("pryc", **z) == ["nikdo doma"]
+
+
+def test_diagnostika_v_noci_a_ve_spanku():
+    from vykon import duvody_stineni, REZIM_VZDY, SOUKROMI_POHYB
+    z = dict(zisk=0, prah=150, horko=False, zima=True, doma=True,
+             rezim=REZIM_VZDY, soukromi_kdy=SOUKROMI_POHYB)
+    assert "tma" in " ".join(duvody_stineni(None, po_zapadu=True,
+                                            klid=False, **z))
+    assert "klid" in " ".join(duvody_stineni(None, po_zapadu=False,
+                                             klid=True, **z))
+
+
+def test_ocekavani_uvadi_obe_podminky_cesky():
+    from vykon import ocekavani_stineni, SOUKROMI_POHYB
+    t = " ".join(ocekavani_stineni(
+        "soukromi", 0, 150, True, False, False, False, SOUKROMI_POHYB,
+        ["konec_klidu", "rozednilo"]))
+    assert "konec klidu a zároveň rozednění" in t
+
+
+def test_ocekavani_pri_zastineni_rekne_mez():
+    from vykon import ocekavani_stineni, SOUKROMI_NIKDY
+    t = " ".join(ocekavani_stineni("zastinit", 400, 150, False, False,
+                                   True, False, SOUKROMI_NIKDY, []))
+    assert "90" in t and "400" in t

@@ -41,12 +41,14 @@ class StavVykonu:
     # se pozná ruční přestavení
     stineni_poloha: dict[str, float] = field(default_factory=dict)
     rozejiti: dict[str, int] = field(default_factory=dict)
-    posledni_role: str | None = None
+    # role a splněné podmínky se drží pro každou žaluzii zvlášť —
+    # dvě okna v pokoji můžou mít různé nastavení a tím i různý průběh
+    posledni_role: dict = field(default_factory=dict)
     # Platily minule všechny zaškrtnuté podmínky návratu do výchozího
     # stavu? Podle toho se pozná okamžik, kdy se má poslat povel.
     # Nevyplněno znamená, že jsme ještě nic neviděli — po startu se
     # nic neposílá, jen se zapamatuje, jak to zrovna je.
-    drive_splneno: bool | None = None
+    drive_splneno: dict = field(default_factory=dict)
     # poloha se hned po sekvenci ještě ustaluje, takže první změřená
     # hodnota je prozatímní a jednou se opraví podle skutečnosti
     poloha_predbezna: set = field(default_factory=set)
@@ -501,3 +503,69 @@ def cil_topeni(cil: float, okno_otevreno: bool, utlum: float,
                            "otevřené okno, řeší hlavice")
 
     return PovelTopeni(None if sezonu_ridi_hlavice else "heat", cil, "topím")
+
+
+def duvody_stineni(role: str | None, zisk: float, prah: float,
+                   horko: bool, zima: bool, doma: bool, po_zapadu: bool,
+                   klid: bool, rezim: str, soukromi_kdy: str) -> list[str]:
+    """Proč je žaluzie tam, kde je. Stejný smysl jako diagnostika oken."""
+    if not doma:
+        return ["nikdo doma"]
+    if rezim == REZIM_NIKDY:
+        return ["žaluzie si řídíš sám"]
+
+    seznam = []
+    if role == "soukromi":
+        seznam.append("po setmění, aby nebylo vidět dovnitř")
+    elif role == "zastinit":
+        seznam.append(f"slunce hřeje ({zisk:.0f} z {prah:.0f} W) a je horko")
+    elif role == "odstinit":
+        seznam.append("je chladno, slunce se hodí dovnitř")
+    elif role == "vychozi":
+        seznam.append("nastal důvod vrátit se do výchozího stavu")
+    else:
+        if po_zapadu:
+            seznam.append("je tma, kvůli slunci se nehýbe")
+        elif klid:
+            seznam.append("je tu klid, nehýbeme")
+        elif rezim == REZIM_JEN_PRYC:
+            seznam.append("doma si je řídíš sám")
+        else:
+            seznam.append("není důvod hýbat")
+    return seznam
+
+
+SPOUSTEC_CESKY = {"konec_klidu": "konec klidu", "rozednilo": "rozednění"}
+
+
+def ocekavani_stineni(role: str | None, zisk: float, prah: float,
+                      po_zapadu: bool, klid: bool, horko: bool,
+                      zima: bool, soukromi_kdy: str,
+                      vraceni: list | None) -> list[str]:
+    """Co příští pohyb žaluzie spustí."""
+    vraceni = [SPOUSTEC_CESKY.get(x, x) for x in (vraceni or [])]
+    seznam = []
+    if po_zapadu:
+        if soukromi_kdy == SOUKROMI_POHYB and role != "soukromi":
+            seznam.append("zatáhnu, až tě čidlo uvidí")
+        if vraceni:
+            seznam.append("ráno vrátím do výchozího stavu, až nastane "
+                          + " a zároveň ".join(vraceni))
+        if not seznam:
+            seznam.append("do rána se nic dít nebude")
+        return seznam
+
+    if klid:
+        seznam.append("dokud je tu klid, nehýbu")
+    if role == "zastinit":
+        seznam.append(f"odstíním, až zisk klesne pod {prah * SLUNCE_DRZI:.0f} W"
+                      f" (teď {zisk:.0f})")
+    elif horko:
+        seznam.append(f"zastíním, až zisk překročí {prah:.0f} W "
+                      f"(teď {zisk:.0f})")
+    elif zima:
+        seznam.append("držím odstíněno, dokud je chladno")
+    if vraceni and role != "vychozi":
+        seznam.append("vrátím do výchozího, až nastane "
+                      + " a zároveň ".join(vraceni))
+    return seznam or ["čekám na změnu počasí nebo teploty"]
