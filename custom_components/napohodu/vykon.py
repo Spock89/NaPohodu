@@ -382,6 +382,19 @@ def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
         # někdo tu je, takže si žaluzie nastaví sám
         return None
 
+    # Po setmění se kvůli slunci nehýbe, protože žádné není. Bez téhle
+    # podmínky by pravidlo „je chladno, pusť slunce dovnitř" odstínilo
+    # ložnici uprostřed noci a soukromí by ji po prvním pohybu zatáhlo
+    # zpátky.
+    if po_zapadu:
+        return None
+
+    # Kde se spí, se nehýbe ani přes den. Spící člověk nepotřebuje
+    # světlo a čidlo ho často nevidí, takže by se žaluzie rozjela
+    # právě ve chvíli, kdy nemá.
+    if klid:
+        return None
+
     # Sluneční zisk rozhoduje jen o zastínění. Zaclonit má smysl
     # tehdy, když slunce doopravdy hřeje — jinak by se stínilo
     # v mrákotě. Hysterezi ta hranice má, aby se role nepřeklápěla

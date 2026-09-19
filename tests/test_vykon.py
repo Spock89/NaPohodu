@@ -642,3 +642,38 @@ def test_nic_nezaskrtnuto_nic_nedela():
     st = {"drive": None}
     for _ in range(3):
         assert _vratit(set(), klid=False, den=True, st=st) is False
+
+
+# ------------------------- v noci a ve spánku se žaluzií nehýbe
+
+def test_v_noci_se_neodstinuje():
+    """Pravidlo „je chladno, pusť slunce dovnitř" v noci nedává smysl —
+    žádné slunce tam není a ložnice by se odstínila uprostřed noci."""
+    from vykon import REZIM_PRAZDNA, SOUKROMI_POHYB
+    z = dict(zisk=0, prah=150, horko=False, zima=True, doma=True,
+             rezim=REZIM_PRAZDNA, soukromi_kdy=SOUKROMI_POHYB)
+    assert role_stineni(**z, po_zapadu=True, pohyb=False,
+                        v_pokoji=False, klid=True) is None
+
+
+def test_v_noci_soukromi_dal_plati():
+    from vykon import REZIM_PRAZDNA, SOUKROMI_POHYB
+    z = dict(zisk=0, prah=150, horko=False, zima=True, doma=True,
+             rezim=REZIM_PRAZDNA, soukromi_kdy=SOUKROMI_POHYB)
+    assert role_stineni(**z, po_zapadu=True, pohyb=True,
+                        v_pokoji=True, klid=True) == "soukromi"
+
+
+def test_ve_spanku_se_nehybe_ani_pres_den():
+    """Spící člověk nepotřebuje světlo a čidlo ho často nevidí."""
+    from vykon import REZIM_PRAZDNA
+    assert role_stineni(400, 150, horko=False, zima=True, doma=True,
+                        rezim=REZIM_PRAZDNA, po_zapadu=False,
+                        klid=True) is None
+
+
+def test_po_probuzeni_uz_ano():
+    from vykon import REZIM_PRAZDNA
+    assert role_stineni(400, 150, horko=False, zima=True, doma=True,
+                        rezim=REZIM_PRAZDNA, po_zapadu=False,
+                        klid=False) == "odstinit"
