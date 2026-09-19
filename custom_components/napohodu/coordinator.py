@@ -1235,22 +1235,20 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             t_min = m.atributy.get("teplota_min")
             mapa = d.get(CONF_STINENI_MAPA) or {}
 
-            # Spouštěče výchozího stavu: zajímá nás okamžik změny,
-            # ne trvající stav — jinak by se povel posílal pořád.
+            # Zaškrtnuté podmínky musí platit všechny naráz. Povel se
+            # pošle v okamžiku, kdy se to stane — ne pořád dokola,
+            # dokud to platí.
             st = vyk_m.stav
             chtene = set(d.get(CONF_VYCHOZI_KDY) or [])
-            vratit = bool(chtene) and any((
-                "konec_klidu" in chtene
-                and st.drive_klid is True and not m.klid,
-                "rozednilo" in chtene
-                and st.drive_noc is True and slunce_el >= 0,
-                "odchod" in chtene
-                and st.drive_doma is True and not doma,
-                "prichod" in chtene
-                and st.drive_doma is False and doma,
-            ))
-            st.drive_klid, st.drive_doma = m.klid, doma
-            st.drive_noc = slunce_el < 0
+            podminky = []
+            if "konec_klidu" in chtene:
+                podminky.append(not m.klid)
+            if "rozednilo" in chtene:
+                podminky.append(slunce_el >= 0)
+
+            splneno = bool(podminky) and all(podminky)
+            vratit = splneno and st.drive_splneno is False
+            st.drive_splneno = splneno
             m.atributy["vraceni_vychoziho"] = sorted(chtene) or None
 
             role = vy.role_stineni(

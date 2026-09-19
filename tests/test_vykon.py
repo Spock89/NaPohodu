@@ -599,3 +599,46 @@ def test_soukromi_prebiji_vraceni():
     assert role_stineni(0, 150, False, False, True, rezim=REZIM_VZDY,
                         po_zapadu=True, soukromi_kdy=SOUKROMI_HNED,
                         vratit=True) == "soukromi"
+
+
+# ------------------------- podmínky návratu do výchozího stavu
+
+def _vratit(chtene, klid, den, st):
+    """Stejný výpočet, jaký dělá koordinátor."""
+    podminky = []
+    if "konec_klidu" in chtene:
+        podminky.append(not klid)
+    if "rozednilo" in chtene:
+        podminky.append(den)
+    splneno = bool(podminky) and all(podminky)
+    out = splneno and st.get("drive") is False
+    st["drive"] = splneno
+    return out
+
+
+def test_obe_podminky_naraz():
+    """V ložnici až po rozednění, ale ne dřív, než se přestane spát."""
+    st = {"drive": None}
+    obe = {"konec_klidu", "rozednilo"}
+    assert _vratit(obe, klid=True, den=False, st=st) is False     # noc
+    assert _vratit(obe, klid=True, den=True, st=st) is False      # spí dál
+    assert _vratit(obe, klid=False, den=True, st=st) is True      # vstal
+    assert _vratit(obe, klid=False, den=True, st=st) is False     # už jen jednou
+
+
+def test_jedna_podminka_staci_sama():
+    st = {"drive": None}
+    _vratit({"rozednilo"}, klid=True, den=False, st=st)
+    assert _vratit({"rozednilo"}, klid=True, den=True, st=st) is True
+
+
+def test_po_restartu_se_nic_neposila():
+    """Podmínka už platí, ale to není důvod hýbat žaluzií."""
+    st = {"drive": None}
+    assert _vratit({"konec_klidu"}, klid=False, den=True, st=st) is False
+
+
+def test_nic_nezaskrtnuto_nic_nedela():
+    st = {"drive": None}
+    for _ in range(3):
+        assert _vratit(set(), klid=False, den=True, st=st) is False

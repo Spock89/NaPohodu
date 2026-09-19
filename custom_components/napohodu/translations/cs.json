@@ -327,7 +327,7 @@
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
             "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
-            "vychozi_kdy": "Žaluzie se sama od sebe nikam nevrací. Tady vybereš, při kterých událostech se má nastavit výchozí stav z kroku Stavy žaluzií. Nic nezaškrtnuto znamená, že zůstane tam, kam ji naposledy poslalo slunce, soukromí nebo ruka."
+            "vychozi_kdy": "Žaluzie se sama od sebe nikam nevrací. Tady vybereš, kdy se má nastavit výchozí stav z kroku Stavy žaluzií.\n\nZaškrtneš-li obě, provede se to až při splnění obou zároveň — v ložnici tedy po rozednění, ale ne dřív, než se přestane spát. Nic nezaškrtnuto znamená, že žaluzie zůstane tam, kam ji naposledy poslalo slunce, soukromí nebo ruka."
           },
           "submit": "Další"
         },
@@ -497,7 +497,7 @@
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
             "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
-            "vychozi_kdy": "Žaluzie se sama od sebe nikam nevrací. Tady vybereš, při kterých událostech se má nastavit výchozí stav z kroku Stavy žaluzií. Nic nezaškrtnuto znamená, že zůstane tam, kam ji naposledy poslalo slunce, soukromí nebo ruka."
+            "vychozi_kdy": "Žaluzie se sama od sebe nikam nevrací. Tady vybereš, kdy se má nastavit výchozí stav z kroku Stavy žaluzií.\n\nZaškrtneš-li obě, provede se to až při splnění obou zároveň — v ložnici tedy po rozednění, ale ne dřív, než se přestane spát. Nic nezaškrtnuto znamená, že žaluzie zůstane tam, kam ji naposledy poslalo slunce, soukromí nebo ruka."
           },
           "submit": "Další"
         },
@@ -733,9 +733,7 @@
     "vychozi_kdy": {
       "options": {
         "konec_klidu": "Když skončí klid (konec spánku)",
-        "rozednilo": "Když se rozední",
-        "odchod": "Když všichni odejdou",
-        "prichod": "Když se někdo vrátí"
+        "rozednilo": "Když se rozední"
       }
     }
   },

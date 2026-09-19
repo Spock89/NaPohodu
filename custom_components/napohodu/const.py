@@ -122,7 +122,7 @@ CONF_SOUKROMI_KDY = "soukromi_kdy"
 # Kdy vrátit žaluzii do výchozího stavu. Prázdné znamená nikdy —
 # samovolné vracení dělalo nesmysly.
 CONF_VYCHOZI_KDY = "vychozi_kdy"
-SPOUSTECE_VYCHOZIHO = ["konec_klidu", "rozednilo", "odchod", "prichod"]
+SPOUSTECE_VYCHOZIHO = ["konec_klidu", "rozednilo"]
 REZIMY_STINENI = ["vzdy", "prazdna", "jen_pryc", "nikdy"]
 SOUKROMI_KDY = ["nikdy", "hned", "pri_pohybu"]
 

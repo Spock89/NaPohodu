@@ -42,10 +42,11 @@ class StavVykonu:
     stineni_poloha: dict[str, float] = field(default_factory=dict)
     rozejiti: dict[str, int] = field(default_factory=dict)
     posledni_role: str | None = None
-    # předchozí stavy, ze kterých se poznají spouštěče výchozího stavu
-    drive_klid: bool | None = None
-    drive_noc: bool | None = None
-    drive_doma: bool | None = None
+    # Platily minule všechny zaškrtnuté podmínky návratu do výchozího
+    # stavu? Podle toho se pozná okamžik, kdy se má poslat povel.
+    # Nevyplněno znamená, že jsme ještě nic neviděli — po startu se
+    # nic neposílá, jen se zapamatuje, jak to zrovna je.
+    drive_splneno: bool | None = None
     # poloha se hned po sekvenci ještě ustaluje, takže první změřená
     # hodnota je prozatímní a jednou se opraví podle skutečnosti
     poloha_predbezna: set = field(default_factory=set)
