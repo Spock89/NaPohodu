@@ -572,3 +572,54 @@ def test_chovani_klice(nahradni_ha):
     c = importlib.import_module("napohodu.const")
     assert c.CONF_STINENI_REZIM in c.CHOVANI_KLICE
     assert c.CONF_VYCHOZI_KDY in c.CHOVANI_KLICE
+
+
+def test_popisky_poli_zaluzii_jsou_citelne(nahradni_ha):
+    """Home Assistant umí přeložit jen názvy známé předem. Tyhle vznikají
+    podle toho, jaké žaluzie v místnosti jsou, takže text musí dávat
+    smysl sám o sobě."""
+    import importlib
+    cf = importlib.import_module("napohodu.config_flow")
+
+    class Stav:
+        attributes = {"friendly_name": "Žaluzie kuchyně"}
+
+    class Hass:
+        class states:
+            @staticmethod
+            def get(eid):
+                return Stav()
+
+    f = cf.MistnostSubentryFlow.__new__(cf.MistnostSubentryFlow)
+    f.hass = Hass()
+    klice = cf.MistnostSubentryFlow._klice_stineni(f, ["cover.k", "cover.o"])
+
+    assert "1. Žaluzie kuchyně — stav pro zastínění" in klice
+    assert all("#" not in k and "|" not in k for k in klice)
+    # každá žaluzie má pět rolí a tři volby chování
+    assert len(klice) == 16
+    # stav a chování se nepletou
+    assert "1. Žaluzie kuchyně — stav pro soukromí" in klice
+    assert "1. Žaluzie kuchyně — kdy zatáhnout kvůli soukromí" in klice
+
+
+def test_popisky_jdou_precist_zpatky(nahradni_ha):
+    """Podle popisku se pozná, ke které žaluzii a nastavení patří."""
+    import importlib
+    cf = importlib.import_module("napohodu.config_flow")
+    c = importlib.import_module("napohodu.const")
+
+    class Hass:
+        class states:
+            @staticmethod
+            def get(eid):
+                return None
+
+    f = cf.MistnostSubentryFlow.__new__(cf.MistnostSubentryFlow)
+    f.hass = Hass()
+    klice = cf.MistnostSubentryFlow._klice_stineni(f, ["cover.k"])
+
+    z, druh, co = klice["1. cover.k — kdy smí automatika hýbat"]
+    assert (z, druh, co) == ("cover.k", "chovani", "rezim")
+    z, druh, co = klice["1. cover.k — výchozí stav"]
+    assert (z, druh, co) == ("cover.k", "role", "vychozi")

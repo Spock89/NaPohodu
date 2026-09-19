@@ -613,6 +613,37 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
                 _schema_mistnost(self._stavy()), user_input or {}),
             errors=chyby)
 
+    def _jmeno_zaluzie(self, eid: str, poradi: int) -> str:
+        """Čitelné jméno žaluzie pro popisky polí."""
+        st = self.hass.states.get(eid)
+        jmeno = (st.attributes.get("friendly_name") if st else None) or eid
+        return f"{poradi + 1}. {jmeno}"
+
+    def _klice_stineni(self, zaluzie: list[str]) -> dict[str, tuple]:
+        """Popisky polí a co za nimi je.
+
+        Klíč pole je zároveň jeho popiskem — Home Assistant umí přeložit
+        jen názvy známé předem, a tyhle vznikají podle toho, jaké
+        žaluzie v místnosti jsou. Text proto musí dávat smysl sám o sobě.
+        """
+        ROLE = (("zastinit", "stav pro zastínění"),
+                ("odstinit", "stav pro odclonění"),
+                ("soukromi", "stav pro soukromí"),
+                ("pryc", "stav při prázdném bytě"),
+                ("vychozi", "výchozí stav"))
+        CHOVANI = (("rezim", "kdy smí automatika hýbat"),
+                   ("soukromi_kdy", "kdy zatáhnout kvůli soukromí"),
+                   ("vychozi_kdy", "kdy vrátit do výchozího stavu"))
+
+        klice = {}
+        for i, z in enumerate(zaluzie):
+            jmeno = self._jmeno_zaluzie(z, i)
+            for role, popis in ROLE:
+                klice[f"{jmeno} — {popis}"] = (z, "role", role)
+            for co, popis in CHOVANI:
+                klice[f"{jmeno} — {popis}"] = (z, "chovani", co)
+        return klice
+
     async def async_step_stineni(self, user_input=None) -> SubentryFlowResult:
         """Ke každé žaluzii se přiřadí, který její stav plní kterou roli.
 
@@ -630,28 +661,20 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
             # polí patří co nejmíň a entity_id se v nich dá poškodit.
             mapa: dict[str, dict] = {}
             chovani: dict[str, dict] = {}
-            for klic, hodnota in user_input.items():
-                if "#" in klic:
-                    poradi, co = klic.split("#", 1)
-                    try:
-                        z = zaluzie[int(poradi)]
-                    except (ValueError, IndexError):
-                        continue
-                    if co == "rezim" and hodnota != "jako_mistnost":
-                        chovani.setdefault(z, {})[c.CONF_STINENI_REZIM] = hodnota
-                    elif co == "soukromi" and hodnota != "jako_mistnost":
-                        chovani.setdefault(z, {})[c.CONF_SOUKROMI_KDY] = hodnota
-                    elif co == "vychozi" and hodnota:
-                        chovani.setdefault(z, {})[c.CONF_VYCHOZI_KDY] = hodnota
+            klice = self._klice_stineni(zaluzie)
+            for popisek, hodnota in user_input.items():
+                if popisek not in klice:
                     continue
-                if not hodnota or "|" not in klic:
-                    continue
-                poradi, role = klic.split("|", 1)
-                try:
-                    z = zaluzie[int(poradi)]
-                except (ValueError, IndexError):
-                    continue
-                mapa.setdefault(z, {})[role] = hodnota
+                z, druh, co = klice[popisek]
+                if druh == "role":
+                    if hodnota:
+                        mapa.setdefault(z, {})[co] = hodnota
+                elif co == "rezim" and hodnota != "jako_mistnost":
+                    chovani.setdefault(z, {})[c.CONF_STINENI_REZIM] = hodnota
+                elif co == "soukromi_kdy" and hodnota != "jako_mistnost":
+                    chovani.setdefault(z, {})[c.CONF_SOUKROMI_KDY] = hodnota
+                elif co == "vychozi_kdy" and hodnota:
+                    chovani.setdefault(z, {})[c.CONF_VYCHOZI_KDY] = hodnota
             self._data[c.CONF_STINENI_MAPA] = mapa
             self._data[c.CONF_STINENI_CHOVANI] = chovani
             return await self._dal()
@@ -662,37 +685,36 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         chovani = self._data.get(c.CONF_STINENI_CHOVANI) or {}
         predvyplnit: dict[str, str] = {}
         pole = {}
-        for i, z in enumerate(zaluzie):
-            jmena = sorted(nacti_stavy(self.hass, z))
-            for role, popis in (("zastinit", "zastínit"),
-                                ("odstinit", "odclonit"),
-                                ("soukromi", "soukromí po setmění"),
-                                ("pryc", "nikdo doma"),
-                                ("vychozi", "jinak")):
-                pole[vol.Optional(f"{i}|{role}")] = _stav_vyber(jmena)
-                drive = ulozene.get(z)
-                if isinstance(drive, dict) and drive.get(role):
-                    predvyplnit[f"{i}|{role}"] = drive[role]
-                elif ulozene.get(f"{z}|{role}"):
-                    predvyplnit[f"{i}|{role}"] = ulozene[f"{z}|{role}"]
+        stavy_zaluzie = {z: sorted(nacti_stavy(self.hass, z))
+                         for z in zaluzie}
 
-            # chování té které žaluzie; prázdné znamená „jako místnost"
+        for popisek, (z, druh, co) in self._klice_stineni(zaluzie).items():
             vlastni = chovani.get(z) or {}
-            pole[vol.Optional(f"{i}#rezim")] = _volba(
-                ["jako_mistnost"] + c.REZIMY_STINENI, "stineni_rezim_z")
-            pole[vol.Optional(f"{i}#soukromi")] = _volba(
-                ["jako_mistnost"] + c.SOUKROMI_KDY, "soukromi_kdy_z")
-            pole[vol.Optional(f"{i}#vychozi")] = selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=c.SPOUSTECE_VYCHOZIHO, multiple=True,
-                    translation_key="vychozi_kdy",
-                    mode=selector.SelectSelectorMode.LIST))
-            predvyplnit[f"{i}#rezim"] = vlastni.get(
-                c.CONF_STINENI_REZIM, "jako_mistnost")
-            predvyplnit[f"{i}#soukromi"] = vlastni.get(
-                c.CONF_SOUKROMI_KDY, "jako_mistnost")
-            if vlastni.get(c.CONF_VYCHOZI_KDY) is not None:
-                predvyplnit[f"{i}#vychozi"] = vlastni[c.CONF_VYCHOZI_KDY]
+            if druh == "role":
+                pole[vol.Optional(popisek)] = _stav_vyber(stavy_zaluzie[z])
+                drive = ulozene.get(z)
+                if isinstance(drive, dict) and drive.get(co):
+                    predvyplnit[popisek] = drive[co]
+                elif ulozene.get(f"{z}|{co}"):
+                    predvyplnit[popisek] = ulozene[f"{z}|{co}"]
+            elif co == "rezim":
+                pole[vol.Optional(popisek)] = _volba(
+                    ["jako_mistnost"] + c.REZIMY_STINENI, "stineni_rezim_z")
+                predvyplnit[popisek] = vlastni.get(
+                    c.CONF_STINENI_REZIM, "jako_mistnost")
+            elif co == "soukromi_kdy":
+                pole[vol.Optional(popisek)] = _volba(
+                    ["jako_mistnost"] + c.SOUKROMI_KDY, "soukromi_kdy_z")
+                predvyplnit[popisek] = vlastni.get(
+                    c.CONF_SOUKROMI_KDY, "jako_mistnost")
+            else:
+                pole[vol.Optional(popisek)] = selector.SelectSelector(
+                    selector.SelectSelectorConfig(
+                        options=c.SPOUSTECE_VYCHOZIHO, multiple=True,
+                        translation_key="vychozi_kdy",
+                        mode=selector.SelectSelectorMode.LIST))
+                if vlastni.get(c.CONF_VYCHOZI_KDY) is not None:
+                    predvyplnit[popisek] = vlastni[c.CONF_VYCHOZI_KDY]
 
         return self.async_show_form(
             step_id="stineni",

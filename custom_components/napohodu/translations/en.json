@@ -503,7 +503,7 @@
         },
         "stineni": {
           "title": "Stavy žaluzií",
-          "description": "Ke každé žaluzii vyber, který její uložený stav plní kterou roli, a jak se má chovat. Nabízejí se jen stavy, které ta konkrétní žaluzie má.\n\n**zastínit** — svítí slunce a je horko\n**odclonit** — svítí slunce a je chladno, pustí se dovnitř\n**soukromí po setmění** — aby nebylo vidět dovnitř\n**nikdo doma** — když je byt prázdný\n**jinak** — výchozí stav\n\nChování se dá nastavit každé žaluzii zvlášť; „jako celá místnost\" znamená, že platí nastavení z předchozího kroku.\n\nŽaluzie: {zaluzie}",
+          "description": "Pro každou žaluzii se nastavuje, který její uložený stav plní kterou roli, a jak se má chovat. Nabízejí se jen stavy, které ta konkrétní žaluzie má.\n\n**zastínění** — svítí slunce a je horko\n**odclonění** — je chladno, slunce se hodí dovnitř\n**soukromí** — po setmění, aby nebylo vidět dovnitř\n**prázdný byt** — když nikdo není doma\n**výchozí stav** — kam se má vrátit\n\nVolby začínající „kdy\" se dají nastavit každé žaluzii zvlášť; „jako celá místnost\" znamená, že platí nastavení z předchozího kroku. Co necháš prázdné, se v té situaci nehne.",
           "submit": "Další"
         }
       },
