@@ -74,13 +74,20 @@ for p in d.glob("*.py"):
 # 1f) proměnná čtená dřív, než se přiřadí — projde syntaxí i pyflakes,
 # spadne až za běhu
 for p in d.glob("*.py"):
-    for tr in ast.walk(ast.parse(p.read_text())):
-        if not isinstance(tr, ast.ClassDef):
-            continue
-        for f in tr.body:
-            if not isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                continue
+    strom = ast.parse(p.read_text())
+    # funkce v modulu i metody ve třídách
+    funkce = [u for u in ast.walk(strom)
+              if isinstance(u, (ast.FunctionDef, ast.AsyncFunctionDef))]
+    for f in funkce:
+        if True:
+            # včetně parametrů vnořených funkcí — kontrola do nich
+            # zabíhá a jejich jména nejsou z vnějšku vidět
             parametry = {a.arg for a in f.args.args}
+            for u in ast.walk(f):
+                if isinstance(u, (ast.FunctionDef, ast.AsyncFunctionDef,
+                                  ast.Lambda)):
+                    parametry.update(a.arg for a in u.args.args)
+                    parametry.update(a.arg for a in u.args.kwonlyargs)
             opakovane = set()
             for u in ast.walk(f):
                 cil = getattr(u, "target", None)
@@ -104,12 +111,20 @@ for p in d.glob("*.py"):
                                 x.id for x in t2.elts
                                 if isinstance(x, ast.Name))
 
+            # nejdřívější přiřazení, ne první nalezené — průchod
+            # stromem nejde po řádcích
             prvni = {}
             for u in ast.walk(f):
+                # přiřazení s typovou anotací se počítá taky
+                if isinstance(u, ast.AnnAssign) and isinstance(
+                        u.target, ast.Name) and u.value is not None:
+                    prvni[u.target.id] = min(
+                        prvni.get(u.target.id, u.lineno), u.lineno)
                 if isinstance(u, ast.Assign):
                     for t2 in u.targets:
                         if isinstance(t2, ast.Name):
-                            prvni.setdefault(t2.id, u.lineno)
+                            prvni[t2.id] = min(prvni.get(t2.id, u.lineno),
+                                               u.lineno)
             for u in ast.walk(f):
                 if (isinstance(u, ast.Name) and isinstance(u.ctx, ast.Load)
                         and u.id in prvni and u.id not in parametry

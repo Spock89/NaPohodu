@@ -570,18 +570,23 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         uloženou konfiguraci. Bez tohohle by každý ukazoval něco jiného
         a nebylo by poznat, co platí.
         """
-        from .number import MISTNOST
-
+        # Celé je to jen pohodlí navíc. Když se k běžícím hodnotám
+        # nedostaneme, formulář to nesmí položit — ukáže se prostě to,
+        # co je uložené.
         try:
+            from .number import MISTNOST
+
             k = self.hass.data[c.DOMAIN][self._get_entry().entry_id]
-        except Exception:  # pragma: no cover - při zakládání ještě není
+            aktualni = dict(ulozene)
+            for posuvnik in MISTNOST:
+                hodnota = k.hodnoty.get((pod_id, posuvnik.klic))
+                if hodnota is not None:
+                    aktualni[posuvnik.klic] = hodnota
+            return aktualni
+        except Exception:  # pragma: no cover
+            _LOGGER.debug("NaPohodu: běžící hodnoty nejsou k dispozici",
+                          exc_info=True)
             return ulozene
-        aktualni = dict(ulozene)
-        for posuvnik in MISTNOST:
-            hodnota = k.hodnoty.get((pod_id, posuvnik.klic))
-            if hodnota is not None:
-                aktualni[posuvnik.klic] = hodnota
-        return aktualni
 
     def _stavy(self) -> list[str]:
         """Jména stavů uložených u kterékoli žaluzie, pro nabídku."""
@@ -654,6 +659,7 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         from .services import nacti_stavy
 
         ulozene = self._data.get(c.CONF_STINENI_MAPA) or {}
+        chovani = self._data.get(c.CONF_STINENI_CHOVANI) or {}
         predvyplnit: dict[str, str] = {}
         pole = {}
         for i, z in enumerate(zaluzie):
