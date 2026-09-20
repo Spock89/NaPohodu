@@ -242,8 +242,6 @@
             "rh_max": "Odtah zapnout nad",
             "azimut": "Azimut oken",
             "klid_stineni_min": "Nejčastěji hýbat jednou za",
-            "stineni_rezim": "Kdy smí automatika hýbat žaluziemi",
-            "soukromi_kdy": "Zatáhnout po setmění",
             "zaluzie": "Žaluzie",
             "okna": "Okna",
             "projezd_okna_s": "Doba projezdu okna",
@@ -273,8 +271,7 @@
             "rucni_klid_min": "Po ručním zásahu nechat být",
             "ochota_vetrat": "Ochota větrat",
             "denni_pokles": "Ve dne smí klesnout o",
-            "nocni_pokles": "V noci smí klesnout o",
-            "vychozi_kdy": "Kdy vrátit do výchozího stavu"
+            "nocni_pokles": "V noci smí klesnout o"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -293,8 +290,6 @@
             "rh_max": "Nad touto vlhkostí se zapne odtah. V koupelně obvykle 65 %, jinde 60 %.",
             "azimut": "Kam okna směřují. 0 sever, 90 východ, 180 jih, 270 západ. Podle toho se pozná, kdy do místnosti svítí.",
             "klid_stineni_min": "Minimální odstup mezi pohyby žaluzií, aby se lamely nehoupaly při každém mráčku.",
-            "stineni_rezim": "Když si žaluzie v této místnosti nastavuješ ručně, vyber „jen když nikdo není doma“. Automatika je pak nechá být, dokud jsi doma. Zatažení po setmění platí i tak.",
-            "soukromi_kdy": "Po západu slunce je do rozsvícené místnosti vidět. „Hned\" zatáhne při setmění, „až při pohybu\" počká, dokud někdo nepřijde. Zpátky se žaluzie roztáhne, až nastane některá z událostí zaškrtnutých výš.\n\nNoc se tady pozná z polohy slunce pod obzorem, ne z nočních hodin, které platí pro okna.",
             "zaluzie": "Žaluzie této místnosti. Můžeš vybrat víc — v dalším kroku pak každé přiřadíš, který její uložený stav plní kterou roli.",
             "okna": "Okna této místnosti. Můžeš vybrat víc, budou se ovládat společně.",
             "projezd_okna_s": "Jak dlouho pohon jede z jedné krajní polohy do druhé. Během jízdy se věří vlastnímu povelu, ne stavu entity.",
@@ -326,8 +321,7 @@
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
-            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
-            "vychozi_kdy": "Žaluzie se sama od sebe nikam nevrací. Tady vybereš, kdy se má nastavit výchozí stav z kroku Stavy žaluzií.\n\nZaškrtneš-li obě, provede se to až při splnění obou zároveň — v ložnici tedy po rozednění, ale ne dřív, než se přestane spát. Nic nezaškrtnuto znamená, že žaluzie zůstane tam, kam ji naposledy poslalo slunce, soukromí nebo ruka."
+            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých."
           },
           "submit": "Další"
         },
@@ -402,8 +396,6 @@
             "rh_max": "Odtah zapnout nad",
             "azimut": "Azimut oken",
             "klid_stineni_min": "Nejčastěji hýbat jednou za",
-            "stineni_rezim": "Kdy smí automatika hýbat žaluziemi",
-            "soukromi_kdy": "Zatáhnout po setmění",
             "zaluzie": "Žaluzie",
             "okna": "Okna",
             "projezd_okna_s": "Doba projezdu okna",
@@ -433,8 +425,7 @@
             "rucni_klid_min": "Po ručním zásahu nechat být",
             "ochota_vetrat": "Ochota větrat",
             "denni_pokles": "Ve dne smí klesnout o",
-            "nocni_pokles": "V noci smí klesnout o",
-            "vychozi_kdy": "Kdy vrátit do výchozího stavu"
+            "nocni_pokles": "V noci smí klesnout o"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -464,8 +455,6 @@
             "rh_max": "Nad touto vlhkostí se zapne odtah. V koupelně obvykle 65 %, jinde 60 %.",
             "azimut": "Kam okna směřují. 0 sever, 90 východ, 180 jih, 270 západ. Podle toho se pozná, kdy do místnosti svítí.",
             "klid_stineni_min": "Minimální odstup mezi pohyby žaluzií, aby se lamely nehoupaly při každém mráčku.",
-            "stineni_rezim": "Když si žaluzie v této místnosti nastavuješ ručně, vyber „jen když nikdo není doma“. Automatika je pak nechá být, dokud jsi doma. Zatažení po setmění platí i tak.",
-            "soukromi_kdy": "Po západu slunce je do rozsvícené místnosti vidět. „Hned\" zatáhne při setmění, „až při pohybu\" počká, dokud někdo nepřijde. Zpátky se žaluzie roztáhne, až nastane některá z událostí zaškrtnutých výš.\n\nNoc se tady pozná z polohy slunce pod obzorem, ne z nočních hodin, které platí pro okna.",
             "zaluzie": "Žaluzie této místnosti. Můžeš vybrat víc — v dalším kroku pak každé přiřadíš, který její uložený stav plní kterou roli.",
             "okna": "Okna této místnosti. Můžeš vybrat víc, budou se ovládat společně.",
             "projezd_okna_s": "Jak dlouho pohon jede z jedné krajní polohy do druhé. Během jízdy se věří vlastnímu povelu, ne stavu entity.",
@@ -496,8 +485,7 @@
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
-            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
-            "vychozi_kdy": "Žaluzie se sama od sebe nikam nevrací. Tady vybereš, kdy se má nastavit výchozí stav z kroku Stavy žaluzií.\n\nZaškrtneš-li obě, provede se to až při splnění obou zároveň — v ložnici tedy po rozednění, ale ne dřív, než se přestane spát. Nic nezaškrtnuto znamená, že žaluzie zůstane tam, kam ji naposledy poslalo slunce, soukromí nebo ruka."
+            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých."
           },
           "submit": "Další"
         },
@@ -734,23 +722,6 @@
       "options": {
         "konec_klidu": "Když skončí klid (konec spánku)",
         "rozednilo": "Když se rozední"
-      }
-    },
-    "stineni_rezim_z": {
-      "options": {
-        "jako_mistnost": "Jako celá místnost",
-        "vzdy": "Vždy",
-        "prazdna": "Doma jen když v pokoji nikdo není",
-        "jen_pryc": "Jen když nikdo není doma",
-        "nikdy": "Nikdy, řídím ji sám"
-      }
-    },
-    "soukromi_kdy_z": {
-      "options": {
-        "jako_mistnost": "Jako celá místnost",
-        "nikdy": "Nikdy",
-        "hned": "Hned po setmění",
-        "pri_pohybu": "Až při pohybu"
       }
     }
   },

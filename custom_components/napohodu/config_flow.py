@@ -419,15 +419,33 @@ def _stav_vyber(nazvy: list[str]):
 def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
     return vol.Schema(
     {
+        # --- Místnost a její čidla ---
         vol.Required(c.CONF_NAZEV): selector.TextSelector(),
         vol.Optional(c.CONF_TEPLOTY): _ent(["sensor"], True, ["temperature"]),
         vol.Optional(c.CONF_CO2): _ent(["sensor"], True),
         vol.Optional(c.CONF_PM25): _ent(["sensor"], True),
         vol.Optional(c.CONF_PM10): _ent(["sensor"], True),
         vol.Optional(c.CONF_PM_PLATNY): _ent(["binary_sensor", "switch"]),
+        vol.Optional(c.CONF_RH_VNITRNI): _ent(["sensor"], trida=["humidity"]),
+        vol.Optional(c.CONF_T_VENKU_M): _ent(["sensor"], trida=["temperature"]),
+        vol.Optional(c.CONF_RH_VENKU_M): _ent(["sensor"], trida=["humidity"]),
 
-        # --- okna místnosti ---
-        # --- prahy vzduchu a chování okna ---
+        # --- Okna: které a jak se chovají ---
+        vol.Optional(c.CONF_OKNA): _ent(["cover"], True),
+        vol.Optional(c.CONF_KONTAKT_M): _ent(["binary_sensor"], True),
+        vol.Optional(c.CONF_ZDROJ_OKENNIHO_M, default="nase_otevreni"): _volba(
+            c.ZDROJ_OKENNIHO, "zdroj_okenniho"),
+        vol.Optional(c.CONF_VYNUCENO_M): _ent(
+            ["input_boolean", "switch", "binary_sensor"], True),
+        vol.Optional(c.CONF_VETRAT): _ent(
+            ["input_boolean", "switch", "binary_sensor"], True),
+        vol.Optional(c.CONF_PROJEZD_M, default=120): _cislo(10, 600, 10, "s"),
+        vol.Optional(c.CONF_MIN_DRZENI, default=20): _cislo(1, 120, 1, "min"),
+        vol.Optional(c.CONF_PAUZA_PO_PULZU, default=15):
+            _cislo(1, 120, 1, "min"),
+        vol.Optional(c.CONF_RUCNI_KLID, default=30): _cislo(0, 240, 5, "min"),
+
+        # --- Kdy větrat ---
         vol.Optional(c.CONF_CO2_OTEVRIT, default=800): _cislo(500, 2000, 25, "ppm"),
         vol.Optional(c.CONF_CO2_ZAVRIT, default=650): _cislo(400, 1500, 25, "ppm"),
         vol.Optional(c.CONF_CO2_NOC, default=1000): _cislo(600, 2000, 25, "ppm"),
@@ -435,17 +453,15 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_NOC_MIN, default=18.0): _cislo(14, 24, 0.5),
         vol.Optional(c.CONF_DENNI_POKLES, default=1.5): _cislo(0.5, 6, 0.5),
         vol.Optional(c.CONF_NOCNI_POKLES, default=3.0): _cislo(0.5, 8, 0.5),
-        vol.Optional(c.CONF_ODCHYLKA, default=0.0): _cislo(-5, 5, 0.5),
         vol.Optional(c.CONF_KOMFORT_ODSTUP, default=4.0): _cislo(1, 15, 0.5),
         vol.Optional(c.CONF_DEST_PRAH, default=0.3): _cislo(0, 20, 0.1, "mm/h"),
         vol.Optional(c.CONF_I_KDYZ_NIKDO, default=False):
             selector.BooleanSelector(),
         vol.Optional(c.CONF_OCHOTA, default="normalne"): _volba(
             c.OCHOTA_VETRAT, "ochota_vetrat"),
-        vol.Optional(c.CONF_T_VENKU_M): _ent(["sensor"], trida=["temperature"]),
-        vol.Optional(c.CONF_RH_VENKU_M): _ent(["sensor"], trida=["humidity"]),
 
-        # --- topení ---
+        # --- Teplota a topení ---
+        vol.Optional(c.CONF_ODCHYLKA, default=0.0): _cislo(-5, 5, 0.5),
         vol.Optional(c.CONF_CLIMATE): _ent(["climate"], True),
         vol.Optional(c.CONF_TOPIT_PRI_OKNU, default="nechat"): _volba(
             c.PRI_OKNU, "topit_pri_oknu"),
@@ -457,49 +473,21 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_ODVZDUSNENI_H, default=24): _cislo(0, 96, 1, "h"),
         vol.Optional(c.CONF_ODVZDUSNENI_T, default=28.0): _cislo(22, 32),
 
-        # --- pomocná zařízení ---
-        vol.Optional(c.CONF_CISTICKA): _ent(
-            ["fan", "switch", "input_boolean"], True),
-        vol.Optional(c.CONF_ZVLHCOVAC): _ent(
-            ["humidifier", "switch", "fan", "input_boolean"], True),
-        vol.Optional(c.CONF_RH_VNITRNI): _ent(["sensor"], trida=["humidity"]),
-        vol.Optional(c.CONF_RH_MIN, default=38.0): _cislo(20, 55, 1, "%"),
-        vol.Optional(c.CONF_RH_MAX, default=60.0): _cislo(40, 80, 1, "%"),
-
-
-        # --- okna ---
-        vol.Optional(c.CONF_OKNA): _ent(["cover"], True),
-        vol.Optional(c.CONF_PROJEZD_M, default=120): _cislo(10, 600, 10, "s"),
-        vol.Optional(c.CONF_MIN_DRZENI, default=20): _cislo(1, 120, 1, "min"),
-        vol.Optional(c.CONF_PAUZA_PO_PULZU, default=15):
-            _cislo(1, 120, 1, "min"),
-        vol.Optional(c.CONF_RUCNI_KLID, default=30): _cislo(0, 240, 5, "min"),
-        vol.Optional(c.CONF_KONTAKT_M): _ent(["binary_sensor"], True),
-        vol.Optional(c.CONF_ZDROJ_OKENNIHO_M, default="nase_otevreni"): _volba(
-            c.ZDROJ_OKENNIHO, "zdroj_okenniho"),
-        vol.Optional(c.CONF_VYNUCENO_M): _ent(
-            ["input_boolean", "switch", "binary_sensor"], True),
-        vol.Optional(c.CONF_VETRAT): _ent(
-            ["input_boolean", "switch", "binary_sensor"], True),
-
-        # --- stínění patří k místnosti, protože slunce svítí do pokoje ---
+        # --- Žaluzie (chování se nastavuje u každé zvlášť v dalším kroku) ---
         vol.Optional(c.CONF_ZALUZIE): _ent(["cover"], True),
         vol.Optional(c.CONF_AZIMUT, default=180): _cislo(0, 359, 1, "°"),
-        vol.Optional(c.CONF_STINENI_REZIM, default="vzdy"): _volba(
-            c.REZIMY_STINENI, "stineni_rezim"
-        ),
-        vol.Optional(c.CONF_VYCHOZI_KDY, default=[]):
-            selector.SelectSelector(selector.SelectSelectorConfig(
-                options=c.SPOUSTECE_VYCHOZIHO, multiple=True,
-                translation_key="vychozi_kdy",
-                mode=selector.SelectSelectorMode.LIST)),
-        vol.Optional(c.CONF_SOUKROMI_KDY, default="nikdy"): _volba(
-            c.SOUKROMI_KDY, "soukromi_kdy"
-        ),
         vol.Optional(c.CONF_STINENI_PREDSTIH, default=1.0):
             _cislo(0, 5, 0.5),
         vol.Optional(c.CONF_KLID_STINENI_MIN, default=15):
             _cislo(1, 120, 1, "min"),
+
+        # --- Pomocná zařízení ---
+        vol.Optional(c.CONF_CISTICKA): _ent(
+            ["fan", "switch", "input_boolean"], True),
+        vol.Optional(c.CONF_ZVLHCOVAC): _ent(
+            ["humidifier", "switch", "fan", "input_boolean"], True),
+        vol.Optional(c.CONF_RH_MIN, default=38.0): _cislo(20, 55, 1, "%"),
+        vol.Optional(c.CONF_RH_MAX, default=60.0): _cislo(40, 80, 1, "%"),
     }
 )
 
@@ -669,9 +657,9 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
                 if druh == "role":
                     if hodnota:
                         mapa.setdefault(z, {})[co] = hodnota
-                elif co == "rezim" and hodnota != "jako_mistnost":
+                elif co == "rezim":
                     chovani.setdefault(z, {})[c.CONF_STINENI_REZIM] = hodnota
-                elif co == "soukromi_kdy" and hodnota != "jako_mistnost":
+                elif co == "soukromi_kdy":
                     chovani.setdefault(z, {})[c.CONF_SOUKROMI_KDY] = hodnota
                 elif co == "vychozi_kdy" and hodnota:
                     chovani.setdefault(z, {})[c.CONF_VYCHOZI_KDY] = hodnota
@@ -699,14 +687,14 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
                     predvyplnit[popisek] = ulozene[f"{z}|{co}"]
             elif co == "rezim":
                 pole[vol.Optional(popisek)] = _volba(
-                    ["jako_mistnost"] + c.REZIMY_STINENI, "stineni_rezim_z")
+                    c.REZIMY_STINENI, "stineni_rezim")
                 predvyplnit[popisek] = vlastni.get(
-                    c.CONF_STINENI_REZIM, "jako_mistnost")
+                    c.CONF_STINENI_REZIM, "vzdy")
             elif co == "soukromi_kdy":
                 pole[vol.Optional(popisek)] = _volba(
-                    ["jako_mistnost"] + c.SOUKROMI_KDY, "soukromi_kdy_z")
+                    c.SOUKROMI_KDY, "soukromi_kdy")
                 predvyplnit[popisek] = vlastni.get(
-                    c.CONF_SOUKROMI_KDY, "jako_mistnost")
+                    c.CONF_SOUKROMI_KDY, "nikdy")
             else:
                 pole[vol.Optional(popisek)] = selector.SelectSelector(
                     selector.SelectSelectorConfig(

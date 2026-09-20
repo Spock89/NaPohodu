@@ -623,3 +623,38 @@ def test_popisky_jdou_precist_zpatky(nahradni_ha):
     assert (z, druh, co) == ("cover.k", "chovani", "rezim")
     z, druh, co = klice["1. cover.k — výchozí stav"]
     assert (z, druh, co) == ("cover.k", "role", "vychozi")
+
+
+def test_chovani_zaluzii_neni_dvakrat(nahradni_ha):
+    """Dvojí místo pro totéž je past — chování se nastavuje jen
+    u žaluzie, ne i u místnosti."""
+    import importlib
+    import re
+    cf = importlib.import_module("napohodu.config_flow")
+
+    zdroj = __import__("pathlib").Path(cf.__file__).read_text()
+    blok = zdroj[zdroj.index("def _schema_mistnost"):
+                 zdroj.index("SCHEMA_PRITOMNOST")]
+    pole = set(re.findall(r"vol\.\w+\(c\.(CONF_\w+)", blok))
+
+    assert "CONF_STINENI_REZIM" not in pole
+    assert "CONF_SOUKROMI_KDY" not in pole
+    assert "CONF_VYCHOZI_KDY" not in pole
+    # seznam žaluzií a azimut u místnosti zůstávají
+    assert "CONF_ZALUZIE" in pole and "CONF_AZIMUT" in pole
+
+
+def test_narazove_je_videt_dokud_bezi(nahradni_ha):
+    """Spouštěcí podmínka zmizí hned, jak CO2 klesne, ale okno běží dál."""
+    import importlib
+    core = importlib.import_module("napohodu.core")
+
+    p = core.Pamet(cas_povelu_s=0)
+    core.rozhodni(core.Vstup(co2=911, t_in=21, t_out=15.5, cil=22,
+                             cas_s=100000, narazove=True), p,
+                  core.Nastaveni())
+    assert p.narazove_pulz is True
+
+    core.rozhodni(core.Vstup(co2=400, t_in=21, t_out=15.5, cil=22,
+                             cas_s=100600), p, core.Nastaveni())
+    assert p.narazove_pulz is False

@@ -134,6 +134,9 @@ class Pamet:
     # kolik pulzů po sobě skončilo, aniž by se vzduch dostal pod práh.
     # Když větrání nezabírá, nemá cenu zkoušet to pořád dokola stejně.
     pulzy_za_sebou: int = 0
+    # běží právě pulz zkrácený kvůli nárazovému větrání? Spouštěcí
+    # podmínka zmizí hned, jak CO2 klesne, ale okno běží dál.
+    narazove_pulz: bool = False
     # poslední skutečné rozhodnutí, ať jde dohledat, co se dělo
     posledni_akce: str = ""
     posledni_duvod: str = ""
@@ -631,6 +634,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         if not p.otevreno:
             return beze_zmeny(f"čisto, CO2 {v.co2:.0f}", False)
         p.den_mez = None
+        p.narazove_pulz = False
         p.pulzy_za_sebou = 0          # povedlo se, couvání se ruší
         return zavri(f"vyvětráno, CO2 {v.co2:.0f}", kod="cisto")
 
@@ -662,6 +666,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         if pm_spatne:
             duvod = f"PM2.5 {v.pm25:.0f}" + ("" if v.pm_platny else " (bez ventilátoru)")
         dolni = 3 if v.narazove else 30
+        p.narazove_pulz = zkraceno
         if zkraceno:
             duvod += f", nárazově jen {minuty:.0f} min"
         return otevri(duvod, min(max(minuty, dolni), 120) * 60, kod="pulz")

@@ -1081,7 +1081,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "nocni_klid": f"{self._cas(noc_od)} – {self._cas(noc_do)}",
             "rano_neotvirat_od": self._cas(noc_do),
             "je_noc": je_noc,
-            "narazove_vetrani": self.narazove_bezi,
+            # běží zkrácený pulz, ne jestli je zrovna splněná podmínka
+            "narazove_vetrani": pamet.narazove_pulz and skutecne,
             "narazove_mozne": self.narazove,
             "vitr": self.vitr_stav,
             "dnes": {
@@ -1247,7 +1248,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 vlastni = chovani.get(z) or {}
 
                 def nastav(klic, vychozi):
-                    return vlastni.get(klic, d.get(klic, vychozi))
+                    # chování se nastavuje jen u žaluzie, ne u místnosti
+                    return vlastni.get(klic, vychozi)
 
                 zisk = m.slunce
 
