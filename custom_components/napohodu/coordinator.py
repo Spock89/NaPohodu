@@ -172,7 +172,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
     def _uloz_pameti(self) -> dict:
         """Stav rozhodování, aby restart nezačínal od nuly."""
         out = {"_formular": {f"{a}|{b}": v
-                             for (a, b), v in self._formular.items()}}
+                             for (a, b), v in self._formular.items()},
+               # Odeslaný souhrn musí přežít znovunačtení. Uložení
+               # nastavení integraci restartuje a souhrn by přišel znovu.
+               "_souhrn_odeslan": self._souhrn_odeslan}
         for pid, pamet in self.pameti.items():
             zaznam = asdict(pamet)
             vyk = self.vykonavaci.get(pid)
@@ -185,6 +188,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     async def _nacti_pameti(self) -> None:
         ulozene = await self._uloziste_pameti.async_load() or {}
+        self._souhrn_odeslan = ulozene.pop("_souhrn_odeslan", "") or ""
         for klic, v in (ulozene.pop("_formular", None) or {}).items():
             a, _, b = klic.partition("|")
             self._formular[(a, b)] = v
@@ -711,6 +715,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if (hodina >= cas_souhrnu and self._souhrn_odeslan != dnes
                 and self.souhrn):
             self._souhrn_odeslan = dnes
+            self._posledni_snimek = None      # vynutí zápis
             for pid, sh in self.souhrn.items():
                 m = self.mistnosti.get(pid)
                 if m:

@@ -658,3 +658,24 @@ def test_narazove_je_videt_dokud_bezi(nahradni_ha):
     core.rozhodni(core.Vstup(co2=400, t_in=21, t_out=15.5, cil=22,
                              cas_s=100600), p, core.Nastaveni())
     assert p.narazove_pulz is False
+
+
+def test_odeslany_souhrn_prezije_znovunacteni(nahradni_ha):
+    """Uložení nastavení integraci restartuje. Bez tohohle by denní
+    souhrn přišel po každé úpravě znovu."""
+    import importlib
+    ko = importlib.import_module("napohodu.coordinator")
+
+    class Falesny:
+        _formular: dict = {}
+        _souhrn_odeslan = "2026-01-15"
+        pameti: dict = {}
+        vykonavaci: dict = {}
+        _uloz_pameti = ko.NaPohoduCoordinator._uloz_pameti
+
+    snimek = Falesny()._uloz_pameti()
+    assert snimek["_souhrn_odeslan"] == "2026-01-15"
+
+    # a při načtení se vezme zpátky
+    obnoveny = snimek.pop("_souhrn_odeslan", "") or ""
+    assert obnoveny == "2026-01-15"
