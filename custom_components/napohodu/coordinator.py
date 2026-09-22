@@ -1314,6 +1314,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             m.atributy["zadana_poloha"] = {}
         elif self.hodnoty.get((p.subentry_id, "ovladat_stineni"), 0.0) <= 0:
             m.atributy["stineni"] = "neovládám, přepínač je vypnutý"
+        elif cas_s - self._start_s < 600:
+            # Po startu se žaluziemi deset minut nehýbe. Entity v té době
+            # teprve naskakují a některé hlásí nesmysly — přítomnost třeba
+            # „nikdo doma", i když je někdo doma. Pohyb by byl na základě
+            # hodnot, kterým se ještě nedá věřit.
+            zbyva = int((600 - (cas_s - self._start_s)) / 60) + 1
+            m.atributy["stineni"] = (
+                f"po startu čekám, než se stavy ustálí (ještě {zbyva} min)")
         else:
             stin = await vyk_m.stineni(
                 cile, cas_s, float(d.get(CONF_KLID_STINENI_MIN, 15)))
@@ -1327,14 +1335,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     for x in duvody.get(z) or []:
                         if x not in proc:
                             proc.append(x)
-                # Po startu se nic neohlašuje: integrace teprve zjišťuje,
-                # jak věci stojí, a zpráva by byla jen šum.
-                if cas_s - self._start_s > 300:
-                    await self._posli(
-                        {**self.entry.data, **self.entry.options},
-                        "zaluzie", m.nazev, cas_s,
-                        co=stin.removeprefix("stínění: "),
-                        duvod="; ".join(proc) or "změna")
+                await self._posli(
+                    {**self.entry.data, **self.entry.options},
+                    "zaluzie", m.nazev, cas_s,
+                    co=stin.removeprefix("stínění: "),
+                    duvod="; ".join(proc) or "změna")
 
         m.atributy["stineni_stav"] = dict(vyk_m.stav.posledni_stineni)
         m.atributy["zaluzie_poloha"] = {
