@@ -261,3 +261,25 @@ def test_graf_jedne_veliciny_staci_jedna_cara():
     """Vlhkost v jediné místnosti má taky co říct."""
     s = dashboard(["loznice"], [], vzdy, rh_cidla={"loznice": "sensor.rh"})
     assert "title: Vlhkost" in s
+
+
+def test_prepinace_ovladani_hned_pod_teplotou():
+    """Co smí automatika ovládat člověk hledá první, ne na konci."""
+    import yaml
+    d = yaml.safe_load(dashboard(
+        ["kuchyne", "obyvak"], [], vzdy,
+        cidla={"kuchyne": "sensor.a", "obyvak": "sensor.b"},
+        podoba="stranka"))
+    prvni = d["sections"][0]["cards"]
+    assert prvni[0]["heading"] == "Cílová teplota"
+    assert prvni[-1]["title"] == "Co smí ovládat"
+
+
+def test_doma_podle_je_jen_jednou():
+    """Přítomnost je společná pro celý byt, ne pro každou místnost."""
+    s = dashboard(["kuchyne", "obyvak", "loznice"], [], vzdy,
+                  cidla={"kuchyne": "sensor.a"}, venku="sensor.v")
+    assert s.count("doma_podle") == 1
+    # a patří k základu výpočtu
+    zaklad = s[s.index("Základ výpočtu"):]
+    assert "doma_podle" in zaklad

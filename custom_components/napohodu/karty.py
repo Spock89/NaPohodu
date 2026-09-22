@@ -46,7 +46,6 @@ ATRIBUTY_STAVU = [
     ("kontakt_hlasi", "Kontakt hlásí otevřeno", None),
     ("prach_zvenci", "Prach se tahá zvenčí", None),
     ("dnes", "Souhrn dne", None),
-    ("doma_podle", "Doma podle", None),
     ("co_bylo", "Poslední rozhodnutí", None),
     ("co_dal", "Co změnu spustí", None),
     ("duvody", "Diagnostika", None),
@@ -69,7 +68,7 @@ PORADI_SEKCI = [
     "Sdílený vzduch",
     "Základ výpočtu",
     "Slunce a stínění",
-    "Co smí ovládat",
+    "Srovnat do žádané polohy",
     "Grafy",
 ]
 
@@ -199,7 +198,8 @@ def _do_sekci(radky: list[str]) -> list[str]:
 
 def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
               cidla: dict | None = None, zaluzie: dict | None = None,
-              venku: str | None = None, co2_cidla: dict | None = None,
+              venku: str | None = None, doma: str | None = None,
+              co2_cidla: dict | None = None,
               rh_cidla: dict | None = None, s_okny: set | None = None,
               s_klidem: set | None = None, jako_pohled: bool = False,
               podoba: str = "karta") -> str:
@@ -255,14 +255,34 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
                             "   prahy")
         polozky += _atribut("sensor.napohodu_vitr_v_narazech", "pricina",
                             "   příčina blokace")
+    if mistnosti:
+        # přítomnost je společná pro celý byt, proto sem a jen jednou
+        polozky.append("      - type: divider")
+        polozky += _atribut(f"sensor.napohodu_{mistnosti[0]}_stav",
+                            "doma_podle", "Doma podle")
     if existuje("binary_sensor.napohodu_topna_sezona"):
         polozky.append("      - type: divider")
         polozky += _radek("binary_sensor.napohodu_topna_sezona",
                           "Topná sezóna")
-    if polozky:
+    zaklad = list(polozky)
+
+    # přepínače ovládání hned pod cílovou teplotou, ať je po ruce
+    polozky = []
+    for klic, popis in (("ovladat_okno", "okna"),
+                        ("ovladat_stineni", "žaluzie"),
+                        ("ovladat_topeni", "topení")):
+        for m in mistnosti:
+            eid = f"switch.napohodu_{m}_{klic}"
+            if existuje(eid):
+                polozky += _radek(eid, f"{m.capitalize()} — {popis}")
+        polozky.append("      - type: divider")
+    c += _karta("", "", polozky[:-1], nazev="Co smí ovládat")
+    c.append("")
+
+    if zaklad:
         c.append(SEKCE)
         c += _hlavicka("Základ výpočtu", "mdi:calendar-week", "subtitle")
-        c += _karta("", "", polozky)
+        c += _karta("", "", zaklad)
         c.append("")
 
     # --- okna ---
@@ -383,17 +403,6 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     c += _karta("", "", polozky, nazev="Srovnat do žádané polohy")
     c.append("")
 
-    polozky = []
-    for klic, popis in (("ovladat_okno", "okna"),
-                        ("ovladat_stineni", "žaluzie"),
-                        ("ovladat_topeni", "topení")):
-        for m in mistnosti:
-            eid = f"switch.napohodu_{m}_{klic}"
-            if existuje(eid):
-                polozky += _radek(eid, f"{m.capitalize()} — {popis}")
-        polozky.append("      - type: divider")
-    c += _karta("", "", polozky[:-1], nazev="Co smí ovládat")
-    c.append("")
 
     c.append(SEKCE)
 

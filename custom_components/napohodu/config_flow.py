@@ -255,6 +255,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 mistnosti, oblasti,
                 lambda e: self.hass.states.get(e) is not None,
                 cidla=cidla, zaluzie=zaluzie, venku=g.get(c.CONF_T_VENKU),
+                doma=g.get(c.CONF_DOMA),
                 co2_cidla=co2_cidla, rh_cidla=rh_cidla,
                 s_okny=s_okny, s_klidem=s_klidem, podoba=podoba)
         except Exception as e:  # pragma: no cover

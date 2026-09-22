@@ -1111,7 +1111,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # běží zkrácený pulz, ne jestli je zrovna splněná podmínka
             "narazove_vetrani": pamet.narazove_pulz and skutecne,
             "narazove_mozne": self.narazove,
-            "doma_podle": self.doma_popis,
             "vitr": self.vitr_stav,
             "dnes": {
                 "pohyby": sh["pohyby"],
