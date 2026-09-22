@@ -22,11 +22,12 @@ KLID_S = {
     "vetrani": 20 * 60,
     "zavirani": 20 * 60,
     "obnova": 20 * 60,
+    "zaluzie": 5 * 60,
     "souhrn": 20 * 3600,
 }
 
 DRUHY = ("vitr", "dest", "nouzove", "vetrani", "zavirani", "obnova",
-         "chyba", "souhrn")
+         "zaluzie", "chyba", "souhrn")
 VYCHOZI = ("vitr", "dest", "chyba", "souhrn")
 
 
@@ -101,6 +102,11 @@ def _zavirani(m, u):
     return f"{m}: zavírám, {u.get('duvod', '')}."
 
 
+def _zaluzie(m, u):
+    """Kam jsme žaluzie poslali a proč."""
+    return f"{m}: žaluzie {u.get('co', '')} — {u.get('duvod', '')}."
+
+
 def _obnova(m, u):
     """Opakovaný povel. Chodí pravidelně, proto vlastní volba."""
     return (f"{m}: posílám znovu {u.get('co', 'povel')} — pohon možná "
@@ -123,5 +129,6 @@ SKLADBA = {
     "vetrani": _vetrani,
     "zavirani": _zavirani,
     "obnova": _obnova,
+    "zaluzie": _zaluzie,
     "souhrn": _souhrn,
 }

@@ -36,8 +36,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             for role, klic in (("zastinit", "zastinit"),
                                ("odstinit", "odstinit"),
                                ("soukromi", "soukromi"),
-                               ("pryc", "stineni_pryc")):
-                if any(k2.endswith(f"|{role}") and v for k2, v in mapa.items()):
+                               ("pryc", "stineni_pryc"),
+                               ("vychozi", "stineni_vychozi")):
+                # cile_zaluzii umí starý i nový tvar mapy; dřív se tu
+                # hledaly klíče „…|role", které novým tvarem zmizely,
+                # a tlačítka tiše přestala vznikat
+                if vy.cile_zaluzii(role, mapa):
                     tlacitka.append(Stineni(k, pod, klic, role))
             pridat(tlacitka, config_subentry_id=pod.subentry_id)
     pridat([SrovnatVse(k, entry)])

@@ -149,6 +149,10 @@ U každé místnosti se nastaví, **kdy vůbec smí automatika sahat**: vždy,
 jen když nikdo není doma, nebo nikdy. A zvlášť zatahování po setmění kvůli
 soukromí, buď hned nebo až když někdo do místnosti přijde.
 
+Každá žaluzie má v Home Assistantu entitu **výběru stavu**, kterou ji
+pošleš do kteréhokoli jejího uloženého stavu — z karty, automatizace
+nebo hlasem. A pro každou přiřazenou roli vznikne tlačítko.
+
 Do výchozího stavu se žaluzie sama od sebe nevrací. V nastavení se
 vybere, při kterých událostech k tomu má dojít — konec klidu, rozednění,
 odchod nebo příchod. Bez toho zůstane tam, kam ji naposledy poslalo

@@ -16,6 +16,7 @@ _LOGGER = logging.getLogger(__name__)
 
 PLATFORMY: list[Platform] = [
     Platform.BUTTON,
+    Platform.SELECT,
     Platform.SENSOR,
     Platform.BINARY_SENSOR,
     Platform.NUMBER,

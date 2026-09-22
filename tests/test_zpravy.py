@@ -113,3 +113,12 @@ def test_obnova_povelu_je_vlastni_druh():
 
 def test_obnova_neni_ve_vychozim_vyberu():
     assert "obnova" not in VYCHOZI
+
+
+def test_zprava_o_zaluziich():
+    """Volitelná, ve výchozím výběru vypnutá — pohybů je hodně."""
+    assert "zaluzie" not in VYCHOZI
+    h = Hlasic(("zaluzie",))
+    t = h.zprava("zaluzie", "Ložnice", 1000, co="soukromí",
+                 duvod="po setmění, aby nebylo vidět dovnitř")
+    assert t and "soukromí" in t and "setmění" in t

@@ -1,6 +1,6 @@
 """Testy slunečního zisku."""
 
-from slunce import Okno, dni, dopad, okna_na_slunci, zisk_mistnosti
+from slunce import Okno, dni, dopad
 
 JIH = Okno("jih", azimut=180)
 VYCHOD = Okno("východ", azimut=90)
@@ -61,20 +61,6 @@ def test_oblacnost_snizuje_zisk():
     jasno = dopad(JIH, 180, 40, jasno=1.0)
     zataz = dopad(JIH, 180, 40, jasno=0.2)
     assert zataz < jasno * 0.3
-
-
-def test_soucet_pres_okna():
-    okna = [VYCHOD, JIH, ZAPAD]
-    celkem = zisk_mistnosti(okna, 180, 50)
-    assert celkem == sum(dopad(o, 180, 50) for o in okna)
-
-
-def test_vybere_jen_osvicena_okna():
-    okna = [VYCHOD, JIH, ZAPAD, SEVER]
-    rano = okna_na_slunci(okna, 95, 25)
-    assert [o.nazev for o in rano] == ["východ"]
-    vecer = okna_na_slunci(okna, 265, 15)
-    assert [o.nazev for o in vecer] == ["západ"]
 
 
 def test_plocha_skaluje():

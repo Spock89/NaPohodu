@@ -59,7 +59,7 @@ for p in d.glob("*.py"):
 # 1e) moduly, které nikdo neimportuje — mrtvý kód mate a duplikuje logiku
 VSTUPNI = {"__init__", "const", "config_flow", "coordinator", "entity",
            "sensor", "binary_sensor", "number", "switch", "button",
-           "services", "karty"}
+           "services", "karty", "select"}
 importovane = set()
 for p in d.glob("*.py"):
     for u in ast.walk(ast.parse(p.read_text())):
@@ -251,6 +251,28 @@ for klic, rozsah in sorted(posuvniky_rozsah.items()):
         chyby.append(
             f"{klic}: posuvník {rozsah[0]}–{rozsah[1]}, formulář "
             f"{ve_form[0]}–{ve_form[1]} — hodnoty se rozejdou")
+
+# 1l) funkce, kterou nikdo mimo testy nevolá. Po odstranění nějaké
+# funkce v ní zůstávají pomocníci, o kterých už nikdo neví.
+HA_HOOKY = {"async_setup_entry", "async_unload_entry", "async_setup",
+            "async_press", "async_turn_on", "async_turn_off",
+            "async_select_option", "async_set_native_value",
+            "async_added_to_hass", "is_on", "native_value",
+            "extra_state_attributes", "options", "current_option",
+            "available", "async_get_options_flow",
+            "async_get_supported_subentry_types", "async_migrate_entry",
+            "_async_update_data", "device_info", "icon", "native_unit_of_measurement"}
+kod_vse = "\n".join(x.read_text() for x in d.glob("*.py"))
+for p in d.glob("*.py"):
+    for u in ast.walk(ast.parse(p.read_text())):
+        if not isinstance(u, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        n = u.name
+        if (n in HA_HOOKY or n.startswith("async_step_")
+                or n.startswith("__")):
+            continue
+        if len(re.findall(rf"\b{n}\b", kod_vse)) <= 1:
+            chyby.append(f"{p.name}: funkci {n} nikdo nevolá, je to mrtvý kód")
 
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}

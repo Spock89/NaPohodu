@@ -163,6 +163,6 @@ CONF_ZPRAVY = "zpravy_kam"
 CONF_ZPRAVY_DRUHY = "zpravy_druhy"
 CONF_SOUHRN_CAS = "souhrn_cas"
 DRUHY_ZPRAV = ["vitr", "dest", "nouzove", "vetrani", "zavirani", "obnova",
-               "chyba", "souhrn"]
+               "zaluzie", "chyba", "souhrn"]
 
 INTERVAL_S = 60

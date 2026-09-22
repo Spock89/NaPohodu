@@ -1,7 +1,7 @@
 
 class Platform:
     SENSOR="sensor"; BINARY_SENSOR="binary_sensor"; NUMBER="number"
-    SWITCH="switch"; BUTTON="button"
+    SWITCH="switch"; BUTTON="button"; SELECT="select"
 class EntityCategory:
     CONFIG="config"; DIAGNOSTIC="diagnostic"
 class UnitOfTemperature:

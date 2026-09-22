@@ -17,7 +17,7 @@ MODULY = [
     "const", "core", "slunce", "pritomnost", "prumery", "sousedstvi",
     "sekvence", "vykon", "entity", "coordinator", "config_flow",
     "services", "sensor", "binary_sensor", "number", "switch", "button",
-    "karty", "zpravy", "klima",
+    "karty", "zpravy", "klima", "select",
 ]
 
 
@@ -679,3 +679,26 @@ def test_odeslany_souhrn_prezije_znovunacteni(nahradni_ha):
     # a při načtení se vezme zpátky
     obnoveny = snimek.pop("_souhrn_odeslan", "") or ""
     assert obnoveny == "2026-01-15"
+
+
+
+def test_vyber_stavu_zaluzie(nahradni_ha):
+    """Žaluzii jde poslat do kteréhokoli jejího uloženého stavu."""
+    import importlib
+    sel = importlib.import_module("napohodu.select")
+
+    class Pod:
+        subentry_id = "m1"
+        title = "Ložnice"
+        subentry_type = "mistnost"
+        data = {}
+
+    class K:
+        vykonavaci = {}
+
+    e = sel.StavZaluzie.__new__(sel.StavZaluzie)
+    e._zaluzie = "cover.l"
+    e.pod_id = "m1"
+    e.coordinator = K()
+    assert e.current_option is None           # nic jsme ještě neposlali
+    assert e.extra_state_attributes == {"zaluzie": "cover.l"}

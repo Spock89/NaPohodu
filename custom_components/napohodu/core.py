@@ -201,17 +201,6 @@ def _je_noc(hodina: float, n: Nastaveni, spanek: bool,
 NOCNI_VRATIT = 1.0
 
 
-def z_priority(priorita: float) -> tuple[float, float]:
-    """Jeden posuvník místo dvou čísel.
-
-    Nula znamená držet teplo za každou cenu, deset vyvětrat za každou
-    cenu. Pětka odpovídá výchozím hodnotám, se kterými jsme to ladili.
-    Vrací povolený denní a noční pokles teploty ve stupních.
-    """
-    p = max(0.0, min(10.0, priorita))
-    return (0.5 + p * 0.25, 1.0 + p * 0.4)
-
-
 def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     """Vyjmenuje všechno, co právě brání větrání.
 

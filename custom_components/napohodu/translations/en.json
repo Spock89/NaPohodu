@@ -686,7 +686,8 @@
         "zavirani": "Zavření okna",
         "chyba": "Chyba pohonu",
         "souhrn": "Denní souhrn",
-        "obnova": "Opakovaný povel (chodí pravidelně)"
+        "obnova": "Opakovaný povel (chodí pravidelně)",
+        "zaluzie": "Pohyb žaluzií"
       }
     },
     "klima_umi": {
@@ -840,6 +841,14 @@
       },
       "stineni_pryc": {
         "name": "Nastavit jako když nikdo není doma"
+      },
+      "stineni_vychozi": {
+        "name": "Výchozí stav žaluzií"
+      }
+    },
+    "select": {
+      "stav_zaluzie": {
+        "name": "Žaluzie {cislo} — stav"
       }
     }
   }

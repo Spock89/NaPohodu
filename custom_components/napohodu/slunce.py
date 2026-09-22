@@ -60,14 +60,3 @@ def dopad(okno: Okno, azimut_slunce: float, elevace: float,
     return dni(elevace, jasno) * kosinus * okno.plocha
 
 
-def zisk_mistnosti(okna: list[Okno], azimut_slunce: float, elevace: float,
-                   jasno: float = 1.0) -> float:
-    """Součet přes všechna okna místnosti."""
-    return sum(dopad(o, azimut_slunce, elevace, jasno) for o in okna)
-
-
-def okna_na_slunci(okna: list[Okno], azimut_slunce: float, elevace: float,
-                   prah: float = 150.0, jasno: float = 1.0) -> list[Okno]:
-    """Která okna právě stojí za to stínit nebo odclonit."""
-    return [o for o in okna
-            if dopad(o, azimut_slunce, elevace, jasno) >= prah]

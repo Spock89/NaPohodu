@@ -1309,6 +1309,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             m.atributy["stineni"] = stin
             if stin:
                 self._uloziste_stineni.async_delay_save(self._uloz_stineni, 10)
+                # proč zrovna teď — z diagnostiky té které žaluzie
+                proc = "; ".join(
+                    "; ".join(duvody.get(z) or []) for z in cile) or "změna"
+                await self._posli(
+                    {**self.entry.data, **self.entry.options}, "zaluzie",
+                    m.nazev, cas_s, co=", ".join(stin), duvod=proc)
 
         m.atributy["stineni_stav"] = dict(vyk_m.stav.posledni_stineni)
         m.atributy["zaluzie_poloha"] = {

@@ -287,36 +287,6 @@ def test_vitr_prebiji_i_dest():
     assert r.akce is Akce.ZAVRIT and "větr" in r.duvod
 
 
-def test_priorita_uprostred_odpovida_vychozim():
-    from core import Nastaveni, z_priority
-    n = Nastaveni()
-    den, noc = z_priority(5)
-    assert abs(den - n.denni_pokles) < 0.3
-    assert abs(noc - n.nocni_pokles) < 0.1
-
-
-def test_priorita_je_monotonni():
-    from core import z_priority
-    hodnoty = [z_priority(p) for p in range(11)]
-    assert all(a[0] < b[0] for a, b in zip(hodnoty, hodnoty[1:]))
-    assert all(a[1] < b[1] for a, b in zip(hodnoty, hodnoty[1:]))
-
-
-def test_priorita_je_orezana():
-    from core import z_priority
-    assert z_priority(-5) == z_priority(0)
-    assert z_priority(99) == z_priority(10)
-
-
-def test_vysoka_priorita_vetra_dele():
-    from core import Nastaveni, z_priority
-    den_nizka, _ = z_priority(1)
-    den_vysoka, _ = z_priority(9)
-    a, _ = krok(stary(co2=900, t_in=22, t_out=8, cil=25.5),
-                p=Pamet(cas_povelu_s=100000 - N.min_drzeni_s - 60))
-    assert den_vysoka > den_nizka
-
-
 # ------------------------------------------------- projezd a rozejití stavu
 
 def test_po_povelu_se_veri_vlastnimu_stavu():
