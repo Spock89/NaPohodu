@@ -121,6 +121,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # klíče, které formulář v tomhle běhu přepsal
         self._prepsano: set[tuple] = set()
         self._posledni_snimek: dict | None = None
+        # kdy integrace naběhla — hned po startu se nic neohlašuje
+        self._start_s: float = dt_util.utcnow().timestamp()
         # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
         self.souhrn: dict[str, dict] = {}
         self._souhrn_den: str = ""
@@ -278,10 +280,19 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return nahrada
 
     def _zapnuto(self, eid: str | None) -> bool | None:
+        """Je entita zapnutá? Nevím znamená None, ne vypnuto.
+
+        Po startu hlásí spousta entit chvíli unknown nebo unavailable.
+        Brát to jako vypnuto znamenalo třeba „nikdo doma" hned po
+        restartu, a žaluzie se rozjely do polohy pro prázdný byt.
+        """
         st = self._stav(eid)
         if st is None:
             return None
-        return str(st.state).lower() in ("on", "true", "home", "open", "playing")
+        stav = str(st.state).lower()
+        if stav in ("unknown", "unavailable", "none", ""):
+            return None
+        return stav in ("on", "true", "home", "open", "playing")
 
     def _stari_s(self, eid: str | None) -> tuple[float, float]:
         """Jak dlouho je entita v současném stavu a kdy se naposledy ozvala."""
@@ -1309,12 +1320,21 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             m.atributy["stineni"] = stin
             if stin:
                 self._uloziste_stineni.async_delay_save(self._uloz_stineni, 10)
-                # proč zrovna teď — z diagnostiky té které žaluzie
-                proc = "; ".join(
-                    "; ".join(duvody.get(z) or []) for z in cile) or "změna"
-                await self._posli(
-                    {**self.entry.data, **self.entry.options}, "zaluzie",
-                    m.nazev, cas_s, co=", ".join(stin), duvod=proc)
+                # Proč zrovna teď — z diagnostiky těch žaluzií, které se
+                # hýbou. Stejné důvody se neopakují.
+                proc = []
+                for z in cile:
+                    for x in duvody.get(z) or []:
+                        if x not in proc:
+                            proc.append(x)
+                # Po startu se nic neohlašuje: integrace teprve zjišťuje,
+                # jak věci stojí, a zpráva by byla jen šum.
+                if cas_s - self._start_s > 300:
+                    await self._posli(
+                        {**self.entry.data, **self.entry.options},
+                        "zaluzie", m.nazev, cas_s,
+                        co=stin.removeprefix("stínění: "),
+                        duvod="; ".join(proc) or "změna")
 
         m.atributy["stineni_stav"] = dict(vyk_m.stav.posledni_stineni)
         m.atributy["zaluzie_poloha"] = {

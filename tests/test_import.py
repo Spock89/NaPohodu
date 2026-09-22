@@ -702,3 +702,31 @@ def test_vyber_stavu_zaluzie(nahradni_ha):
     e.coordinator = K()
     assert e.current_option is None           # nic jsme ještě neposlali
     assert e.extra_state_attributes == {"zaluzie": "cover.l"}
+
+
+def test_neznamy_stav_neni_vypnuto(nahradni_ha):
+    """Po startu hlásí entity chvíli unknown. Brát to jako vypnuto
+    znamenalo „nikdo doma" a žaluzie se rozjely."""
+    import importlib
+    ko = importlib.import_module("napohodu.coordinator")
+
+    class Stav:
+        def __init__(self, s):
+            self.state = s
+
+    class Falesny:
+        _zapnuto = ko.NaPohoduCoordinator._zapnuto
+
+        def __init__(self, stav):
+            self._s = stav
+
+        def _stav(self, eid):
+            return Stav(self._s) if self._s is not None else None
+
+    assert Falesny("unknown")._zapnuto("x") is None
+    assert Falesny("unavailable")._zapnuto("x") is None
+    assert Falesny(None)._zapnuto("x") is None
+    assert Falesny("on")._zapnuto("x") is True
+    assert Falesny("home")._zapnuto("x") is True
+    assert Falesny("off")._zapnuto("x") is False
+    assert Falesny("not_home")._zapnuto("x") is False
