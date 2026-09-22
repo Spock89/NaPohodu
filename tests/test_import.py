@@ -730,3 +730,7 @@ def test_neznamy_stav_neni_vypnuto(nahradni_ha):
     assert Falesny("home")._zapnuto("x") is True
     assert Falesny("off")._zapnuto("x") is False
     assert Falesny("not_home")._zapnuto("x") is False
+    # zone.home hlásí počet lidí doma
+    assert Falesny("1")._zapnuto("x") is True
+    assert Falesny("2")._zapnuto("x") is True
+    assert Falesny("0")._zapnuto("x") is False

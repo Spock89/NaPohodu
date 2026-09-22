@@ -46,6 +46,7 @@ ATRIBUTY_STAVU = [
     ("kontakt_hlasi", "Kontakt hlásí otevřeno", None),
     ("prach_zvenci", "Prach se tahá zvenčí", None),
     ("dnes", "Souhrn dne", None),
+    ("doma_podle", "Doma podle", None),
     ("co_bylo", "Poslední rozhodnutí", None),
     ("co_dal", "Co změnu spustí", None),
     ("duvody", "Diagnostika", None),

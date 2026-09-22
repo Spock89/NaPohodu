@@ -123,6 +123,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._posledni_snimek: dict | None = None
         # kdy integrace naběhla — hned po startu se nic neohlašuje
         self._start_s: float = dt_util.utcnow().timestamp()
+        self.doma_popis: str = ""
         # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
         self.souhrn: dict[str, dict] = {}
         self._souhrn_den: str = ""
@@ -292,6 +293,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         stav = str(st.state).lower()
         if stav in ("unknown", "unavailable", "none", ""):
             return None
+        # zone.home a podobné hlásí počet lidí, ne zapnuto
+        try:
+            return float(stav) > 0
+        except ValueError:
+            pass
         return stav in ("on", "true", "home", "open", "playing")
 
     def _stari_s(self, eid: str | None) -> tuple[float, float]:
@@ -502,6 +508,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._zkontroluj_jednotku(g.get(CONF_DEST),
                                   ("mm/h", "in/h"), "déšť")
         doma = self._zapnuto(g.get(CONF_DOMA))
+        zdroj_doma = g.get(CONF_DOMA)
+        st_doma = self._stav(zdroj_doma)
+        self.doma_popis = (
+            f"{zdroj_doma} = {st_doma.state}" if st_doma is not None
+            else "přítomnost nenastavena, beru jako doma")
         doma = True if doma is None else doma
 
         vitr = self._rychlost(g.get(CONF_VITR), 0.0)
@@ -1100,6 +1111,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # běží zkrácený pulz, ne jestli je zrovna splněná podmínka
             "narazove_vetrani": pamet.narazove_pulz and skutecne,
             "narazove_mozne": self.narazove,
+            "doma_podle": self.doma_popis,
             "vitr": self.vitr_stav,
             "dnes": {
                 "pohyby": sh["pohyby"],
