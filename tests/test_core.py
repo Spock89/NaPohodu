@@ -309,7 +309,7 @@ def test_diagnostika_vyjmenuje_vsechny_prekazky():
     d = duvody(v, Pamet(), N)
     assert any("vítr" in x for x in d)
     assert any("déšť" in x for x in d)
-    assert any("nikdo doma" in x for x in d)
+    assert any("nikdo není doma" in x for x in d)
 
 
 def test_diagnostika_v_noci_rekne_proc():

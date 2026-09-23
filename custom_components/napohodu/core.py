@@ -214,7 +214,7 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     if v.dest > n.dest_prah:
         seznam.append(f"déšť {v.dest:.1f}")
     if not v.doma:
-        seznam.append("nikdo doma")
+        seznam.append("nikdo není doma")
 
     tin = v.t_in
     noc = _je_noc(v.hodina, n, v.spanek, v.resi_klid)
@@ -453,7 +453,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # --- 2. nikdo doma ---------------------------------------------
     if not v.doma:
         if not p.otevreno:
-            return beze_zmeny("nikdo doma")
+            return beze_zmeny("nikdo není doma")
         p.rezim = "pulz"
         return zavri("nikdo není doma", hned=True, kod="pryc")
 

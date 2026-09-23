@@ -510,7 +510,7 @@ def duvody_stineni(role: str | None, zisk: float, prah: float,
                    klid: bool, rezim: str, soukromi_kdy: str) -> list[str]:
     """Proč je žaluzie tam, kde je. Stejný smysl jako diagnostika oken."""
     if not doma:
-        return ["nikdo doma"]
+        return ["nikdo není doma"]
     if rezim == REZIM_NIKDY:
         return ["žaluzie si řídíš sám"]
 

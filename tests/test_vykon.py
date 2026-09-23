@@ -688,7 +688,7 @@ def test_diagnostika_rekne_proc():
              soukromi_kdy=SOUKROMI_POHYB)
     assert "horko" in " ".join(duvody_stineni("zastinit", **z))
     z["doma"] = False
-    assert duvody_stineni("pryc", **z) == ["nikdo doma"]
+    assert duvody_stineni("pryc", **z) == ["nikdo není doma"]
 
 
 def test_diagnostika_v_noci_a_ve_spanku():

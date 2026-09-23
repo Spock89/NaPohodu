@@ -111,7 +111,7 @@ def rozhodni(pokoje: list[Pokoj], p: Pamet, cas_s: float,
     if not pocitane:
         return _vysledek(p, cas_s, STAV_UTLUM,
                          n.utlum_topeni if topna_sezona else n.utlum_chlazeni,
-                         "nikdo doma", [])
+                         "nikdo není doma", [])
 
     # --- volné chlazení oknem má přednost, ale jen když opravdu chladí ---
     # Okno otevřené kvůli CO2 při horku dovnitř tahá teplo, takže jednotka
