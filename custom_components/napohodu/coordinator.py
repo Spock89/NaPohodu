@@ -482,9 +482,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.pouzity["tri_dny"] = (t, zdroj)
         if t is None:
             return self.topna_sezona
-        if t < prah - hyst / 2:
+        # Sezóna začíná pod prahem a končí, až teplota vyleze nad práh
+        # o hysterezi. Dřív se pásmo rozkládalo na obě strany, takže
+        # se při prahu 13 zapínala až pod 12,5 — a to nikdo neočekává.
+        if t < prah:
             return True
-        if t > prah + hyst / 2:
+        if t > prah + hyst:
             return False
         return self.topna_sezona          # v pásmu se nemění
 
@@ -1290,9 +1293,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 vratit = splneno and st.drive_splneno.get(z) is False
                 st.drive_splneno[z] = splneno
 
-                horko = t_max is not None and t_max > m.cil - float(
-                    d.get(CONF_STINENI_PREDSTIH, 1.0))
+                # Chladno má přednost. Jedno čidlo na slunci umí ukázat
+                # víc než cíl, přestože je v pokoji o pár stupňů méně —
+                # a zastínit kvůli němu znamenalo odříznout teplo, které
+                # zrovna chybí. Navíc se tím rozjelo kmitání: po zastínění
+                # čidlo vychladlo, žaluzie se odstínila a šlo to znovu.
                 zima = t_min is not None and t_min < m.cil - 0.5
+                horko = (not zima and t_max is not None
+                         and t_max > m.cil - float(
+                             d.get(CONF_STINENI_PREDSTIH, 1.0)))
                 rezim = nastav(CONF_STINENI_REZIM, "vzdy")
                 soukromi = nastav(CONF_SOUKROMI_KDY, "nikdy")
 

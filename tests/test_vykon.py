@@ -714,3 +714,25 @@ def test_ocekavani_pri_zastineni_rekne_mez():
     t = " ".join(ocekavani_stineni("zastinit", 400, 150, False, False,
                                    True, False, SOUKROMI_NIKDY, []))
     assert "90" in t and "400" in t
+
+
+# ------------------------- chladno má přednost před jedním čidlem
+
+def test_chladno_prebiji_cidlo_na_slunci():
+    """Čidlo na slunci umí ukázat víc než cíl, přestože je v pokoji
+    o pár stupňů méně. Zastínit kvůli němu znamená odříznout teplo,
+    které zrovna chybí."""
+    cil, t_max, t_min, predstih = 22.0, 21.5, 19.0, 1.0
+    zima = t_min < cil - 0.5
+    horko = (not zima) and t_max > cil - predstih
+    assert zima is True and horko is False
+    assert role_stineni(455, 150, horko, zima, True, rezim=REZIM_VZDY,
+                        po_zapadu=False) == "odstinit"
+
+
+def test_skutecne_horko_se_zastini():
+    cil, predstih = 22.0, 1.0
+    zima = 23.0 < cil - 0.5
+    horko = (not zima) and 24.0 > cil - predstih
+    assert role_stineni(455, 150, horko, zima, True, rezim=REZIM_VZDY,
+                        po_zapadu=False) == "zastinit"

@@ -734,3 +734,19 @@ def test_neznamy_stav_neni_vypnuto(nahradni_ha):
     assert Falesny("1")._zapnuto("x") is True
     assert Falesny("2")._zapnuto("x") is True
     assert Falesny("0")._zapnuto("x") is False
+
+
+def test_sezona_zacina_pod_prahem(nahradni_ha):
+    """Hystereze patří nad práh. Dřív se rozkládala na obě strany,
+    takže se při prahu 13 zapínala až pod 12,5."""
+    def sezona(t, drive, prah=13.0, hyst=1.0):
+        if t < prah:
+            return True
+        if t > prah + hyst:
+            return False
+        return drive
+
+    assert sezona(12.9, False) is True       # zapne pod prahem
+    assert sezona(13.0, False) is False      # na prahu ještě ne
+    assert sezona(13.5, True) is True        # v pásmu drží
+    assert sezona(14.1, True) is False       # nad pásmem končí
