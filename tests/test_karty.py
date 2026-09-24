@@ -283,3 +283,19 @@ def test_doma_podle_je_jen_jednou():
     # a patří k základu výpočtu
     zaklad = s[s.index("Základ výpočtu"):]
     assert "doma_podle" in zaklad
+
+
+def test_karta_obsahuje_ovladani_zaluzii():
+    """Tlačítka rolí a výběr stavu v kartě chyběly, takže je nebylo
+    kde najít."""
+    s = dashboard(["loznice"], [], vzdy, zaluzie={"loznice": ["cover.l"]})
+    assert "Ovládání žaluzií" in s
+    assert "select.napohodu_loznice_zaluzie_1_stav" in s
+    assert "button.napohodu_loznice_zastinit" in s
+    assert "button.napohodu_loznice_vychozi_stav_zaluzii" in s
+
+
+def test_srovnani_obsahuje_i_topeni():
+    s = dashboard(["loznice"], [], vzdy)
+    assert "button.napohodu_loznice_srovnat_zaluzie" in s
+    assert "button.napohodu_loznice_srovnat_topeni" in s

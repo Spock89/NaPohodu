@@ -274,6 +274,78 @@ for p in d.glob("*.py"):
         if len(re.findall(rf"\b{n}\b", kod_vse)) <= 1:
             chyby.append(f"{p.name}: funkci {n} nikdo nevolá, je to mrtvý kód")
 
+# 1m) entity, na které se karta odkazuje, musí opravdu vznikat.
+# Identifikátor se skládá z PŘELOŽENÉHO jména, ne z klíče v kódu —
+# „srovnat_stineni" se jmenuje Srovnat žaluzie a entita končí na
+# srovnat_zaluzie. Karta si jména skládá za běhu, takže se musí
+# vygenerovat a posbírat, na co se ptá.
+import unicodedata
+
+
+def _slug(text):
+    bez = unicodedata.normalize("NFKD", text).encode("ascii", "ignore")
+    return "_".join(bez.decode().lower().split())
+
+
+try:
+    sys.path.insert(0, str(d))
+    import karty as _karty
+
+    preklady = json.loads((d / "translations" / "cs.json").read_text())
+    znama = {druh: {_slug(v.get("name", ""))
+                    for v in (preklady["entity"].get(druh) or {}).values()}
+             for druh in preklady["entity"]}
+
+    # Napodobíme čistou instalaci: existují jen entity, které se
+    # opravdu založí. Karta si pak sama vybere platné varianty a ve
+    # výsledku nesmí zůstat nic, co nevznikne.
+    def existuje(eid):
+        druh, _, zbytek = eid.partition(".")
+        if not zbytek.startswith("napohodu_") or druh not in znama:
+            return True               # cizí entita, do toho nemluvíme
+        zbytek = zbytek[len("napohodu_"):]
+        for predpona in ("pokoj_", "oblast_", ""):
+            if zbytek.startswith(predpona):
+                return zbytek[len(predpona):] in znama[druh]
+        return False
+
+    text = _karty.dashboard(
+        ["pokoj"], ["oblast"], existuje,
+        cidla={"pokoj": "sensor.cizi"}, zaluzie={"pokoj": ["cover.cizi"]})
+
+    for eid in set(re.findall(r"\b(\w+\.napohodu_[\w]+)", text)):
+        druh, _, zbytek = eid.partition(".")
+        if druh not in znama:
+            continue
+        zbytek = zbytek[len("napohodu_"):]
+        for predpona in ("pokoj_", "oblast_", ""):
+            if zbytek.startswith(predpona):
+                konec = zbytek[len(predpona):]
+                break
+        if konec and konec not in znama[druh]:
+            chyby.append(
+                f"karty.py: {eid} nikde nevzniká — "
+                f"{druh} umí {sorted(znama[druh])}")
+    # A opačně: entita, která vzniká, ale v kartě není, se prostě
+    # nikdy neukáže. Přesně tak zmizela tlačítka stínění.
+    PATRI_JINAM = {"venku_za_tyden", "venku_za_tri_dny",
+                   "okno_pro_topeni",          # mají starší variantu
+                   "ovladat_klimatizaci"}      # klima má vlastní kartu
+    vse = _karty.dashboard(
+        ["pokoj"], ["oblast"], lambda e: True,
+        cidla={"pokoj": "sensor.cizi"}, zaluzie={"pokoj": ["cover.cizi"]})
+    for druh, polozky in preklady["entity"].items():
+        for v in polozky.values():
+            jm = _slug(v.get("name", ""))
+            if not jm or jm in PATRI_JINAM or "{" in v.get("name", ""):
+                continue
+            if all(f"{druh}.napohodu_{x}{jm}" not in vse
+                   for x in ("", "pokoj_", "oblast_")):
+                chyby.append(
+                    f"karty.py: {druh} {jm} vzniká, ale v kartě není")
+except Exception as e:      # pragma: no cover
+    chyby.append(f"kontrola karty selhala: {e}")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

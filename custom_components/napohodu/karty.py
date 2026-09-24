@@ -13,8 +13,8 @@ from __future__ import annotations
 # pořadí a názvy, aby karta dávala smysl a nebyla jen výpisem
 POSUVNIKY = [
     ("odchylka_teploty", "Odchylka teploty"),
-    ("denni_pokles", "Ve dne smí klesnout o"),
-    ("nocni_pokles", "V noci smí klesnout o"),
+    ("ve_dne_smi_klesnout_o", "Ve dne smí klesnout o"),
+    ("v_noci_smi_klesnout_o", "V noci smí klesnout o"),
     ("minimum_na_noc", "Minimum na noc"),
     ("trvale_otevreno_do_rozdilu", "Trvale otevřeno do rozdílu"),
     ("utlum_pri_otevrenem_okne", "Útlum při otevřeném okně"),
@@ -236,7 +236,10 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     polozky = []
     for klic, jmeno in (("tydenni", "Venku \u2300 za týden"),
                         ("tridenni", "Venku \u2300 za tři dny")):
-        eid = f"sensor.napohodu_venkovni_teplota_{klic}_prumer"
+        eid = _prvni(existuje,
+                     f"sensor.napohodu_venkovni_teplota_{klic}_prumer",
+                     "sensor.napohodu_venku_za_"
+                     + ("tyden" if klic == "tydenni" else "tri_dny"))
         if not existuje(eid):
             continue
         if polozky:
@@ -394,14 +397,39 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     if existuje("button.napohodu_srovnat_vse"):
         polozky += _radek("button.napohodu_srovnat_vse", "Všechno naráz")
         polozky.append("      - type: divider")
+    # Identifikátor entity vzniká z přeloženého jména, ne z klíče
+    # v kódu — „srovnat_stineni" se jmenuje Srovnat žaluzie, takže
+    # entita končí na srovnat_zaluzie.
     for klic, popis in (("srovnat_okno", "okna"),
-                        ("srovnat_stineni", "žaluzie"),
+                        ("srovnat_zaluzie", "žaluzie"),
                         ("srovnat_topeni", "topení")):
         for m in mistnosti:
             eid = f"button.napohodu_{m}_{klic}"
             if existuje(eid):
                 polozky += _radek(eid, f"{m.capitalize()} — {popis}")
     c += _karta("", "", polozky, nazev="Srovnat do žádané polohy")
+    c.append("")
+
+    # ruční ovládání žaluzií: výběr stavu a tlačítka rolí
+    polozky = []
+    for m in mistnosti:
+        pred = len(polozky)
+        for i in range(1, len(zaluzie.get(m) or []) + 1):
+            eid = f"select.napohodu_{m}_zaluzie_{i}_stav"
+            if existuje(eid):
+                polozky += _radek(eid, f"{m.capitalize()} — žaluzie {i}")
+        for klic, popis in (("zastinit", "zastínit"),
+                            ("odclonit", "odclonit"),
+                            ("zatahnout_kvuli_soukromi", "soukromí"),
+                            ("nastavit_jako_kdyz_nikdo_neni_doma",
+                             "nikdo doma"),
+                            ("vychozi_stav_zaluzii", "výchozí stav")):
+            eid = f"button.napohodu_{m}_{klic}"
+            if existuje(eid):
+                polozky += _radek(eid, f"{m.capitalize()} — {popis}")
+        if len(polozky) > pred:
+            polozky.append("      - type: divider")
+    c += _karta("", "", polozky[:-1], nazev="Ovládání žaluzií")
     c.append("")
 
 
@@ -478,6 +506,19 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
              ""]
     karty = [r for r in karty if r != SEKCE]
     return "\n".join(hlava + ["type: vertical-stack", "cards:"] + karty) + "\n"
+
+
+def _prvni(existuje, *kandidati: str) -> str | None:
+    """První identifikátor, který v Home Assistantu opravdu existuje.
+
+    Identifikátor vzniká z přeloženého jména, ale po přejmenování si
+    Home Assistant drží ten původní. Starší instalace tak mají jiná
+    jména než nová a karta musí zkusit obojí.
+    """
+    for eid in kandidati:
+        if eid and existuje(eid):
+            return eid
+    return kandidati[0] if kandidati else None
 
 
 def _ok(radek: str, existuje) -> bool:
