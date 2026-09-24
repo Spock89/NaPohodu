@@ -31,7 +31,8 @@
           "pm25_venku": "Venkovní PM2.5",
           "pm10_venku": "Venkovní PM10",
           "smog_venku": "Smog venku",
-          "sezona_rezim": "Topná sezóna"
+          "sezona_rezim": "Topná sezóna",
+          "topeni_obnova_min": "Opakovat povel hlavicím po"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -61,7 +62,8 @@
           "pm25_venku": "Prach venku. Podle něj se pozná, jestli má větrání kvůli prachu vůbec smysl — když je venku horší, otevřením se to nezlepší a jen by se větralo dokola. Bez tohohle čidla se řídí jen příznakem smogu.",
           "pm10_venku": "Totéž pro větší částice. Nepovinné.",
           "smog_venku": "Přepínač nebo čidlo, které říká, že venkovní vzduch nestojí za nadechnutí. Zapnutý znamená, že se kvůli prachu neotevírá — větráním by se to jen zhoršilo.",
-          "sezona_rezim": "Podle průměru se sezóna pozná z venkovní teploty za tři dny. Vždy znamená topit celoročně, nikdy vůbec — hodí se, když sezónu určuješ sám jinde."
+          "sezona_rezim": "Podle průměru se sezóna pozná z venkovní teploty za tři dny. Vždy znamená topit celoročně, nikdy vůbec — hodí se, když sezónu určuješ sám jinde.",
+          "topeni_obnova_min": "Zigbee hlavice povel občas ztratí a integrace se to nedozví. Po téhle době se poslední hodnota pošle znovu, i když se nic nezměnilo. Nula znamená posílat jen při změně."
         },
         "title": "NaPohodu"
       }
@@ -111,7 +113,8 @@
           "pm25_venku": "Venkovní PM2.5",
           "pm10_venku": "Venkovní PM10",
           "smog_venku": "Smog venku",
-          "sezona_rezim": "Topná sezóna"
+          "sezona_rezim": "Topná sezóna",
+          "topeni_obnova_min": "Opakovat povel hlavicím po"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -141,7 +144,8 @@
           "pm25_venku": "Prach venku. Podle něj se pozná, jestli má větrání kvůli prachu vůbec smysl — když je venku horší, otevřením se to nezlepší a jen by se větralo dokola. Bez tohohle čidla se řídí jen příznakem smogu.",
           "pm10_venku": "Totéž pro větší částice. Nepovinné.",
           "smog_venku": "Přepínač nebo čidlo, které říká, že venkovní vzduch nestojí za nadechnutí. Zapnutý znamená, že se kvůli prachu neotevírá — větráním by se to jen zhoršilo.",
-          "sezona_rezim": "Podle průměru se sezóna pozná z venkovní teploty za tři dny. Vždy znamená topit celoročně, nikdy vůbec — hodí se, když sezónu určuješ sám jinde."
+          "sezona_rezim": "Podle průměru se sezóna pozná z venkovní teploty za tři dny. Vždy znamená topit celoročně, nikdy vůbec — hodí se, když sezónu určuješ sám jinde.",
+          "topeni_obnova_min": "Zigbee hlavice povel občas ztratí a integrace se to nedozví. Po téhle době se poslední hodnota pošle znovu, i když se nic nezměnilo. Nula znamená posílat jen při změně."
         }
       },
       "tester": {
@@ -844,6 +848,9 @@
       },
       "stineni_vychozi": {
         "name": "Výchozí stav žaluzií"
+      },
+      "srovnat_topeni": {
+        "name": "Srovnat topení"
       }
     },
     "select": {

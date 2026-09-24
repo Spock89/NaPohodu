@@ -736,3 +736,45 @@ def test_skutecne_horko_se_zastini():
     horko = (not zima) and 24.0 > cil - predstih
     assert role_stineni(455, 150, horko, zima, True, rezim=REZIM_VZDY,
                         po_zapadu=False) == "zastinit"
+
+
+# ------------------------- opakování povelu hlavicím
+
+def test_topeni_se_zopakuje_po_case(monkeypatch):
+    """Zigbee hlavice povel občas ztratí a nikdo se to nedozví."""
+    from vykon import PovelTopeni, TOPENI_OBNOVA_S
+    poslano = []
+
+    async def call(domena, sluzba, data, blocking=False):
+        poslano.append((sluzba, data.get("temperature")))
+
+    h, v = vyk()
+    h.services.async_call = call
+
+    bez(v.topeni(["climate.l"], PovelTopeni(cil=21.0, rezim=None), 1000))
+    assert len(poslano) == 1
+
+    # beze změny a hned: nic
+    bez(v.topeni(["climate.l"], PovelTopeni(cil=21.0, rezim=None), 1400))
+    assert len(poslano) == 1
+
+    # po době obnovy: znovu, i když se nic nezměnilo
+    bez(v.topeni(["climate.l"], PovelTopeni(cil=21.0, rezim=None),
+                 1000 + TOPENI_OBNOVA_S + 1))
+    assert len(poslano) == 2
+
+
+def test_obnova_jde_vypnout(monkeypatch):
+    from vykon import PovelTopeni
+    poslano = []
+
+    async def call(domena, sluzba, data, blocking=False):
+        poslano.append(sluzba)
+
+    h, v = vyk()
+    h.services.async_call = call
+    bez(v.topeni(["climate.l"], PovelTopeni(cil=21.0, rezim=None), 1000,
+                 obnova_s=0))
+    bez(v.topeni(["climate.l"], PovelTopeni(cil=21.0, rezim=None), 99999,
+                 obnova_s=0))
+    assert len(poslano) == 1

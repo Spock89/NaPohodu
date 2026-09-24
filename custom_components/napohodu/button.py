@@ -29,7 +29,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_MISTNOST:
             tlacitka = [Srovnat(k, pod, "srovnat_okno"),
-                        Srovnat(k, pod, "srovnat_stineni")]
+                        Srovnat(k, pod, "srovnat_stineni"),
+                        Srovnat(k, pod, "srovnat_topeni")]
             # pro každou nakonfigurovanou roli vlastní tlačítko, ať se
             # stínění dá vyvolat rukou bez psaní automatizace
             mapa = pod.data.get(CONF_STINENI_MAPA) or {}

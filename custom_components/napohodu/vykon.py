@@ -64,6 +64,12 @@ class StavVykonu:
     topeni_cil: float | None = None
     topeni_rezim: str | None = None
     topeni_cas_s: float = -1e9
+    topeni_obnoveno: bool = False
+
+
+# Zigbee hlavice povel občas ztratí a nikdo se to nedozví. Po téhle
+# době se poslední hodnota pošle znovu, i když se nic nezměnilo.
+TOPENI_OBNOVA_S = 30 * 60
 
 
 class Vykonavac:
@@ -195,7 +201,8 @@ class Vykonavac:
     # ------------------------------------------------------------ stínění
 
     async def topeni(self, entity: list[str], povel: "PovelTopeni",
-                     cas_s: float) -> str | None:
+                     cas_s: float,
+                     obnova_s: float = TOPENI_OBNOVA_S) -> str | None:
         """Nastaví hlavicím teplotu. Posílá jen při skutečné změně.
 
         Režim None znamená nesahat na režim — o zapnutí si rozhoduje
@@ -209,7 +216,10 @@ class Vykonavac:
         zmena_cile = (self.stav.topeni_cil is None
                       or abs(cil - self.stav.topeni_cil) >= TOPENI_ZMENA_MIN)
         uplynulo = cas_s - self.stav.topeni_cas_s >= TOPENI_KLID_S
-        if not zmena_rezimu and not (zmena_cile and uplynulo):
+        # obnova: hlavice mohla povel zahodit, tak ho po čase zopakujeme
+        obnova = (obnova_s > 0
+                  and cas_s - self.stav.topeni_cas_s >= obnova_s)
+        if not zmena_rezimu and not (zmena_cile and uplynulo) and not obnova:
             return None
 
         try:
@@ -229,6 +239,7 @@ class Vykonavac:
             self.stav.topeni_rezim = rezim
         self.stav.topeni_cil = cil
         self.stav.topeni_cas_s = cas_s
+        self.stav.topeni_obnoveno = obnova and not zmena_cile
         _LOGGER.info("NaPohodu: topení %s -> %.1f °C (%s)",
                      entity, cil, povel.duvod)
         return f"{cil:.1f} °C — {povel.duvod}"
@@ -333,6 +344,7 @@ ROLE = ("zastinit", "odstinit", "soukromi", "pryc", "vychozi")
 # Slunce kolísá kolem prahu a role by se s ním překlápěla. Když už se
 # kvůli slunci hýbe, drží se, dokud zisk nespadne výrazně niž.
 SLUNCE_DRZI = 0.6
+
 
 
 def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,

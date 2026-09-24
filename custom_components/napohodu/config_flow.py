@@ -69,6 +69,8 @@ SCHEMA_GLOBAL = vol.Schema(
         vol.Required(c.CONF_T_VENKU): _ent(["sensor"], trida=["temperature"]),
         vol.Optional(c.CONF_T_PRUMER): _ent(["sensor"], trida=["temperature"]),
         vol.Optional(c.CONF_T_SEZONA): _ent(["sensor"], trida=["temperature"]),
+        vol.Optional(c.CONF_TOPENI_OBNOVA, default=30):
+            _cislo(0, 240, 5, "min"),
         vol.Optional(c.CONF_SEZONA_REZIM, default="podle_prumeru"): _volba(
             c.REZIMY_SEZONY, "sezona_rezim"),
         vol.Optional(c.CONF_SEZONA_PRAH, default=15.0): _cislo(8, 22),

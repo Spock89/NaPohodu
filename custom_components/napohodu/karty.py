@@ -395,7 +395,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         polozky += _radek("button.napohodu_srovnat_vse", "Všechno naráz")
         polozky.append("      - type: divider")
     for klic, popis in (("srovnat_okno", "okna"),
-                        ("srovnat_zaluzie", "žaluzie")):
+                        ("srovnat_stineni", "žaluzie"),
+                        ("srovnat_topeni", "topení")):
         for m in mistnosti:
             eid = f"button.napohodu_{m}_{klic}"
             if existuje(eid):

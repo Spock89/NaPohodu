@@ -14,6 +14,7 @@ CONF_SEZONA_REZIM = "sezona_rezim"
 REZIMY_SEZONY = ["podle_prumeru", "vzdy", "nikdy"]
 CONF_DENNI_POKLES = "denni_pokles"
 CONF_NOCNI_POKLES = "nocni_pokles"
+CONF_TOPENI_OBNOVA = "topeni_obnova_min"
 CONF_SEZONA_PRAH = "sezona_prah"
 CONF_SEZONA_HYSTEREZE = "sezona_hystereze"
 CONF_RH_VENKU = "rh_venku"
