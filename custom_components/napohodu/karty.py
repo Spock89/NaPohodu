@@ -34,6 +34,7 @@ ATRIBUTY_STAVU = [
     ("ovladani", "Ovládání", None),
     ("topeni", "Topení — posíláme", None),
     ("topeni_rezim", "Topení — režim", None),
+    ("topeni_poslano", "Topení — poslední povel", None),
     ("topeni_hlavice", "Topení — hlásí hlavice", None),
     ("odvzdusneni", "Odvzdušnění", None),
     ("zvlhcovac_bezi", "Zvlhčovač", None),

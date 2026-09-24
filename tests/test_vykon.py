@@ -6,11 +6,23 @@ import core
 from vykon import MIN_ODSTUP_S, Vykonavac, cile_zaluzii, role_stineni
 
 
+class FalesnyStav:
+    def __init__(self, stav="heat", teplota=None):
+        self.state = stav
+        self.attributes = {"temperature": teplota}
+
+
 class FalesnyHass:
     def __init__(self):
         self.volani = []
         self.services = self
         self.data = {}
+        # co hlásí entity; výchozí je „nic nevíme"
+        self.stavy: dict = {}
+        self.states = self
+
+    def get(self, eid):
+        return self.stavy.get(eid)
 
     async def async_call(self, domena, sluzba, data, blocking=False):
         self.volani.append((domena, sluzba, data["entity_id"]))
@@ -326,19 +338,31 @@ def test_rezim_vzdy_ignoruje_pritomnost_v_pokoji():
 from vykon import ZNACKA_MIMO_SEZONU, ZNACKA_OKNO, cil_topeni
 
 
-def test_teplota_se_posila_vzdycky():
-    """Bez cílové teploty hlavice neví, na co regulovat."""
-    for kw in ({}, {"sezona": True}, {"okno_otevreno": True}):
+def test_teplota_se_posila_vzdycky_v_sezone():
+    """Bez cílové teploty hlavice neví, na co regulovat. Mimo sezónu
+    je výjimka: tam si teplotu řídí hlavice sama."""
+    for kw in ({"sezona": True}, {"sezona": True, "okno_otevreno": True}):
         p = cil_topeni(22, kw.get("okno_otevreno", False), 16,
-                       kw.get("sezona", False), False, False, 28)
+                       kw["sezona"], False, False, 28)
         assert p.cil is not None
 
 
+def test_mimo_sezonu_hlavice_si_to_resi_sama():
+    """Když si sezónu řídí hlavice, nesmíme jí přepsat ani cíl. Jinak
+    si Better Thermostat zapne topení, my mu vnutíme značkovou teplotu
+    a přetahujeme se dokola."""
+    p = cil_topeni(21.0, False, 16.0, sezona=False, topit_mimo=False,
+                   odvzdusneni=False, odvzdusneni_t=28.0,
+                   sezonu_ridi_hlavice=True)
+    assert p.rezim is None and p.cil is None
+
+
 def test_mimo_sezonu_znackova_teplota():
-    """7,7 prozradí, že spojení funguje a proč je vypnuto."""
-    p = cil_topeni(22, False, 16, False, False, False, 28)
-    assert p.cil == ZNACKA_MIMO_SEZONU
-    assert p.rezim is None          # režim si hlavice určuje sama
+    """Když sezónu řídíme my, hlavice dostane značkovou teplotu."""
+    p = cil_topeni(21.0, False, 16.0, sezona=False, topit_mimo=False,
+                   odvzdusneni=False, odvzdusneni_t=28.0,
+                   sezonu_ridi_hlavice=False)
+    assert p.rezim == "off" and p.cil == 7.7
 
 
 def test_mimo_sezonu_lze_vypnout_natvrdo():
@@ -374,11 +398,16 @@ def test_odvzdusneni_prebiji_vse():
 
 
 def test_znackove_hodnoty_jdou_zmenit():
-    p = cil_topeni(22, False, 16, False, False, False, 28, znacka_mimo=8.8)
+    """Obě značky se dají přenastavit."""
+    p = cil_topeni(21.0, False, 16.0, sezona=False, topit_mimo=False,
+                   odvzdusneni=False, odvzdusneni_t=28.0,
+                   sezonu_ridi_hlavice=False, znacka_mimo=8.8)
     assert p.cil == 8.8
+    p = cil_topeni(21.0, True, 16.0, sezona=True, topit_mimo=False,
+                   odvzdusneni=False, odvzdusneni_t=28.0,
+                   pri_oknu="znacka", znacka_okno=6.6)
+    assert p.cil == 6.6
 
-
-# --------------------------------------------- ověření polohy žaluzie
 
 def _s_polohou(v, zaluzie="cover.o2", stav="zastíněno", poloha=5.0):
     v.stav.posledni_stineni[zaluzie] = stav
@@ -778,3 +807,56 @@ def test_obnova_jde_vypnout(monkeypatch):
     bez(v.topeni(["climate.l"], PovelTopeni(cil=21.0, rezim=None), 99999,
                  obnova_s=0))
     assert len(poslano) == 1
+
+
+def test_bez_cile_se_nic_neposila(monkeypatch):
+    """Mimo sezónu s řízením hlavicí nemá integrace co poslat."""
+    from vykon import PovelTopeni
+    poslano = []
+
+    async def call(domena, sluzba, data, blocking=False):
+        poslano.append(sluzba)
+
+    h, v = vyk()
+    h.services.async_call = call
+    bez(v.topeni(["climate.l"], PovelTopeni(None, None, "řeší hlavice"), 1000))
+    assert poslano == []
+
+
+# ------------------- nepřetahovat se s hlavicí, která si vypíná sama
+
+def test_vypnutou_hlavici_neprobouzime():
+    """Better Thermostat si podle počasí sám vypíná. Zápis teploty do
+    vypnuté hlavice ji probudí, on ji zas vypne a jde to dokola."""
+    from vykon import PovelTopeni
+    h, v = vyk()
+    h.stavy["climate.l"] = FalesnyStav("off", 7.0)
+    bez(v.topeni(["climate.l"], PovelTopeni(None, 21.0, "topím"), 1000))
+    assert h.volani == []
+
+
+def test_zmenu_rezimu_posleme_i_vypnute():
+    """Když režim výslovně měníme, vypnutá hlavice nás nezastaví."""
+    from vykon import PovelTopeni
+    h, v = vyk()
+    h.stavy["climate.l"] = FalesnyStav("off", 7.0)
+    bez(v.topeni(["climate.l"], PovelTopeni("heat", 21.0, "topím"), 1000))
+    assert [x[1] for x in h.volani] == ["set_hvac_mode", "set_temperature"]
+
+
+def test_hlavice_uz_na_tom_stoji():
+    """Není co posílat, i kdyby přišla obnova povelu."""
+    from vykon import PovelTopeni, TOPENI_OBNOVA_S
+    h, v = vyk()
+    h.stavy["climate.l"] = FalesnyStav("heat", 21.0)
+    bez(v.topeni(["climate.l"], PovelTopeni(None, 21.0, "topím"),
+                 TOPENI_OBNOVA_S * 3))
+    assert h.volani == []
+
+
+def test_hlavice_odjela_jinam_srovname():
+    from vykon import PovelTopeni
+    h, v = vyk()
+    h.stavy["climate.l"] = FalesnyStav("heat", 18.0)
+    bez(v.topeni(["climate.l"], PovelTopeni(None, 21.0, "topím"), 1000))
+    assert [x[1] for x in h.volani] == ["set_temperature"]

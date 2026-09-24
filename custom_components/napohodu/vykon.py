@@ -210,11 +210,43 @@ class Vykonavac:
         na co regulovat.
         """
         rezim, cil = povel.rezim, povel.cil
-        if not entity or cil is None:
+        if not entity:
             return None
+        # Co hlavice hlásí teď. Better Thermostat si podle počasí sám
+        # vypíná a zápis teploty do vypnuté hlavice ji probudí — on ji
+        # zas vypne a my za půl hodiny zapíšeme znovu. Proto se ptáme,
+        # jak to stojí, a nesaháme na to zbytečně.
+        st = self.hass.states.get(entity[0]) if entity else None
+        hlasi_vypnuto = st is not None and str(st.state).lower() == "off"
+        hlasi_cil = None
+        if st is not None:
+            try:
+                hlasi_cil = float(st.attributes.get("temperature"))
+            except (TypeError, ValueError):
+                hlasi_cil = None
+
         zmena_rezimu = rezim is not None and rezim != self.stav.topeni_rezim
-        zmena_cile = (self.stav.topeni_cil is None
-                      or abs(cil - self.stav.topeni_cil) >= TOPENI_ZMENA_MIN)
+
+        if hlasi_vypnuto and rezim is None:
+            # vypnula se sama, do toho jí nemluvíme
+            return None
+
+        if (not zmena_rezimu and cil is not None and hlasi_cil is not None
+                and abs(hlasi_cil - cil) < TOPENI_ZMENA_MIN):
+            # už na tom stojí, není co posílat
+            self.stav.topeni_cil = cil
+            return None
+        if cil is None:
+            # Není co poslat: teplotu si řídí hlavice sama. Režim se
+            # pošle, jen když ho výslovně chceme změnit.
+            if povel.rezim is None:
+                return None
+            cil = self.stav.topeni_cil
+
+        zmena_cile = (cil is not None
+                      and (self.stav.topeni_cil is None
+                           or abs(cil - self.stav.topeni_cil)
+                           >= TOPENI_ZMENA_MIN))
         uplynulo = cas_s - self.stav.topeni_cas_s >= TOPENI_KLID_S
         # obnova: hlavice mohla povel zahodit, tak ho po čase zopakujeme
         obnova = (obnova_s > 0
@@ -500,8 +532,13 @@ def cil_topeni(cil: float, okno_otevreno: bool, utlum: float,
         return PovelTopeni("heat", odvzdusneni_t, "odvzdušnění")
 
     if not sezona and not topit_mimo:
-        rezim = None if sezonu_ridi_hlavice else "off"
-        return PovelTopeni(rezim, znacka_mimo, "mimo topnou sezónu")
+        if sezonu_ridi_hlavice:
+            # Když si sezónu řídí hlavice, nesmíme jí přepsat ani cíl.
+            # Better Thermostat si podle počasí zapne topení, my bychom
+            # mu vnutili značkovou teplotu, on ji přepočítal — a takhle
+            # se to přetahovalo dokola.
+            return PovelTopeni(None, None, "mimo sezónu, řeší hlavice")
+        return PovelTopeni("off", znacka_mimo, "mimo topnou sezónu")
 
     if okno_otevreno:
         if pri_oknu == "znacka":

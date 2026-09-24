@@ -1186,6 +1186,19 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             if povel.cil is not None else None)
         m.atributy["topeni_rezim"] = (
             povel.rezim if povel.rezim else "řídí hlavice sama")
+        # Proč se nic neposlalo. Bez tohohle člověk kouká na „řídí
+        # hlavice sama" a neví, jestli topí, nebo ne.
+        vypnuta = any(str(x).startswith("off") for x in skutecnost)
+        if poslano:
+            m.atributy["topeni_poslano"] = poslano
+        elif vypnuta and povel.rezim is None:
+            m.atributy["topeni_poslano"] = (
+                "nic — hlavice je vypnutá a rozhodla tak sama; zapnutí "
+                "jí necháváme, protože to máš tak nastavené")
+        elif povel.cil is None:
+            m.atributy["topeni_poslano"] = "nic — teplotu si řídí hlavice"
+        else:
+            m.atributy["topeni_poslano"] = "nic — hlavice už na tom stojí"
         m.atributy["topeni_hlavice"] = ", ".join(skutecnost) or None
         m.atributy["odvzdusneni"] = odvzdusneni
 
