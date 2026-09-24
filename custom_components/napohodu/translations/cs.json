@@ -851,6 +851,12 @@
       },
       "srovnat_topeni": {
         "name": "Srovnat topení"
+      },
+      "otevrit_okno": {
+        "name": "Otevřít okno"
+      },
+      "zavrit_okno": {
+        "name": "Zavřít okno"
       }
     },
     "select": {

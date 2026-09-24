@@ -750,3 +750,37 @@ def test_sezona_zacina_pod_prahem(nahradni_ha):
     assert sezona(13.0, False) is False      # na prahu ještě ne
     assert sezona(13.5, True) is True        # v pásmu drží
     assert sezona(14.1, True) is False       # nad pásmem končí
+
+
+def test_tlacitka_oken(nahradni_ha):
+    """Ruční otevření se bere jako zásah, jinak by automatika okno
+    hned vrátila zpátky."""
+    import importlib
+    b = importlib.import_module("napohodu.button")
+    core = importlib.import_module("napohodu.core")
+
+    volani = []
+
+    class Hass:
+        class services:
+            @staticmethod
+            async def async_call(domena, sluzba, data, blocking=False):
+                volani.append((domena, sluzba, tuple(data["entity_id"])))
+
+    pamet = core.Pamet()
+
+    class K:
+        pameti = {"m1": pamet}
+
+    e = b.Okno.__new__(b.Okno)
+    e._otevrit = True
+    e.pod = type("P", (), {"data": {"okna": ["cover.k"]}})()
+    e.pod_id = "m1"
+    e.hass = Hass()
+    e.coordinator = K()
+
+    import asyncio
+    asyncio.run(e.async_press())
+    assert volani == [("cover", "open_cover", ("cover.k",))]
+    assert pamet.otevreno is True
+    assert pamet.rucni_do_s > 0          # automatika chvíli nemluví

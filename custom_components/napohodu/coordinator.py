@@ -705,7 +705,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # znamenala něco jiného.
         nejnizsi_cil = min((m.cil for m in self.mistnosti.values()),
                            default=22.0)
-        odstup = float(g.get(CONF_NARAZOVE_ODSTUP, 0.0))
+        odstup = float(g.get(CONF_NARAZOVE_ODSTUP, 6.0))
         self.narazove = (bool(g.get(CONF_NARAZOVE, False))
                          and t_out < nejnizsi_cil - odstup)
         if self.narazove:

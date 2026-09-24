@@ -16,9 +16,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from . import vykon as vy
-from .const import CONF_STINENI_MAPA, DOMAIN, PODENTITA_MISTNOST
+from . import core
+from .const import (
+    CONF_OKNA, CONF_RUCNI_KLID, CONF_STINENI_MAPA, DOMAIN,
+    PODENTITA_MISTNOST,
+)
 from .services import proved_stav_stineni
 from .entity import NaPohoduEntity
 
@@ -31,6 +36,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             tlacitka = [Srovnat(k, pod, "srovnat_okno"),
                         Srovnat(k, pod, "srovnat_stineni"),
                         Srovnat(k, pod, "srovnat_topeni")]
+            if pod.data.get(CONF_OKNA):
+                tlacitka += [Okno(k, pod, "otevrit_okno", True),
+                             Okno(k, pod, "zavrit_okno", False)]
             # pro každou nakonfigurovanou roli vlastní tlačítko, ať se
             # stínění dá vyvolat rukou bez psaní automatizace
             mapa = pod.data.get(CONF_STINENI_MAPA) or {}
@@ -99,3 +107,32 @@ class Stineni(NaPohoduEntity, ButtonEntity):
         vyk = self.coordinator.vykonavaci.get(self.pod_id)
         if vyk is not None:
             vyk.stav.posledni_stineni.update(cile)
+
+
+class Okno(NaPohoduEntity, ButtonEntity):
+    """Otevře nebo zavře okno rukou.
+
+    Bere se to stejně, jako když na okno sáhneš — rozdělané větrání se
+    zruší a automatika chvíli nemluví. Jinak by okno hned vrátila tam,
+    kde bylo, a stisk tlačítka by vypadal jako porucha.
+    """
+
+    def __init__(self, k, pod, klic: str, otevrit: bool) -> None:
+        super().__init__(k, pod, klic)
+        self._otevrit = otevrit
+        self._attr_icon = ("mdi:window-open-variant" if otevrit
+                           else "mdi:window-closed-variant")
+
+    async def async_press(self) -> None:
+        okna = self.pod.data.get(CONF_OKNA) or []
+        if not okna:
+            return
+        await self.hass.services.async_call(
+            "cover", "open_cover" if self._otevrit else "close_cover",
+            {"entity_id": okna}, blocking=False)
+
+        pamet = self.coordinator.pameti.get(self.pod_id)
+        if pamet is not None:
+            klid = float(self.pod.data.get(CONF_RUCNI_KLID, 30)) * 60
+            core.rucni_zasah(pamet, core.Nastaveni(rucni_klid_s=klid),
+                             dt_util.utcnow().timestamp(), self._otevrit)

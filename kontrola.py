@@ -346,6 +346,23 @@ try:
 except Exception as e:      # pragma: no cover
     chyby.append(f"kontrola karty selhala: {e}")
 
+# 1n) výchozí hodnota ve formuláři proti té v kódu. Když se rozejdou,
+# platí pro každého něco jiného podle toho, jestli si pole někdy uložil.
+vse_kod = "\n".join(x.read_text() for x in d.glob("*.py"))
+cf_kod = (d / "config_flow.py").read_text()
+for m in re.finditer(r"vol\.Optional\(c\.(CONF_\w+),\s*default=([^)]+?)\)",
+                     cf_kod):
+    klic, ve_form = m.group(1), m.group(2).strip()
+    v_kodu = {x.strip() for x in re.findall(
+        rf"(?:d|g|data)\.get\({klic},\s*([^),]+?)\)", vse_kod)}
+    cisla = {x for x in v_kodu if re.fullmatch(r"-?[\d.]+", x)}
+    if not re.fullmatch(r"-?[\d.]+", ve_form) or not cisla:
+        continue
+    if all(abs(float(ve_form) - float(x)) > 1e-9 for x in cisla):
+        chyby.append(
+            f"{klic}: formulář má výchozí {ve_form}, kód bere "
+            f"{sorted(cisla)} — komu se pole neuložilo, platí jiná hodnota")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

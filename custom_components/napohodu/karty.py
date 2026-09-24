@@ -411,6 +411,17 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     c += _karta("", "", polozky, nazev="Srovnat do žádané polohy")
     c.append("")
 
+    # ruční ovládání oken
+    polozky = []
+    for m in mistnosti:
+        for klic, popis in (("otevrit_okno", "otevřít"),
+                            ("zavrit_okno", "zavřít")):
+            eid = f"button.napohodu_{m}_{klic}"
+            if existuje(eid):
+                polozky += _radek(eid, f"{m.capitalize()} — {popis}")
+    c += _karta("", "", polozky, nazev="Ovládání oken")
+    c.append("")
+
     # ruční ovládání žaluzií: výběr stavu a tlačítka rolí
     polozky = []
     for m in mistnosti:
