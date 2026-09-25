@@ -733,7 +733,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self._prazdno_od = None
         elif self._prazdno_od is None:
             self._prazdno_od = cas_s
-        await self._klima_krok(g, t_out, doma, cas_s)
+        await self._klima_krok(t_out, cas_s)
 
         # ---------- 6. denní souhrn ----------
         cas_souhrnu = self._hodina(g.get(CONF_SOUHRN_CAS), 21.0)
@@ -790,7 +790,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         except Exception as e:  # pragma: no cover - výpadek notifikací
             _LOGGER.warning("NaPohodu: zprávu se nepodařilo poslat: %s", e)
 
-    async def _klima_krok(self, g: dict, t_out: float, doma: bool,
+    async def _klima_krok(self, t_out: float,
                           cas_s: float) -> None:
         """Sdílená jednotka obsluhuje víc místností, tak se musí rozhodnout.
 
@@ -1331,8 +1331,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 role_vse[z] = role
                 cile.update(vy.cile_zaluzii(role, {z: mapa.get(z, {})}))
                 duvody[z] = vy.duvody_stineni(
-                    role, zisk, 150.0, horko, zima, doma, slunce_el < 0,
-                    m.klid, rezim, soukromi)
+                    role, zisk, 150.0, doma, slunce_el < 0, m.klid, rezim)
                 co_dal[z] = vy.ocekavani_stineni(
                     role, zisk, 150.0, slunce_el < 0, m.klid, horko, zima,
                     soukromi, chtene)

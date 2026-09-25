@@ -712,9 +712,8 @@ def test_po_probuzeni_uz_ano():
 
 def test_diagnostika_rekne_proc():
     from vykon import duvody_stineni, REZIM_VZDY, SOUKROMI_POHYB
-    z = dict(zisk=400, prah=150, horko=True, zima=False, doma=True,
-             po_zapadu=False, klid=False, rezim=REZIM_VZDY,
-             soukromi_kdy=SOUKROMI_POHYB)
+    z = dict(zisk=400, prah=150, doma=True, po_zapadu=False, klid=False,
+             rezim=REZIM_VZDY)
     assert "horko" in " ".join(duvody_stineni("zastinit", **z))
     z["doma"] = False
     assert duvody_stineni("pryc", **z) == ["nikdo není doma"]
@@ -722,8 +721,7 @@ def test_diagnostika_rekne_proc():
 
 def test_diagnostika_v_noci_a_ve_spanku():
     from vykon import duvody_stineni, REZIM_VZDY, SOUKROMI_POHYB
-    z = dict(zisk=0, prah=150, horko=False, zima=True, doma=True,
-             rezim=REZIM_VZDY, soukromi_kdy=SOUKROMI_POHYB)
+    z = dict(zisk=0, prah=150, doma=True, rezim=REZIM_VZDY)
     assert "tma" in " ".join(duvody_stineni(None, po_zapadu=True,
                                             klid=False, **z))
     assert "klid" in " ".join(duvody_stineni(None, po_zapadu=False,

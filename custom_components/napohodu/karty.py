@@ -89,8 +89,7 @@ def _atribut(eid: str, atribut: str, nazev: str,
     return r
 
 
-def _karta(nadpis: str, ikona: str, polozky: list[str],
-           nazev: str | None = None) -> list[str]:
+def _karta(polozky: list[str], nazev: str | None = None) -> list[str]:
     if not polozky:
         return []
     r = ["  - type: entities"]
@@ -200,7 +199,7 @@ def _do_sekci(radky: list[str]) -> list[str]:
 def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
               cidla: dict | None = None, zaluzie: dict | None = None,
               nazvy: dict | None = None,
-              venku: str | None = None, doma: str | None = None,
+              venku: str | None = None,
               co2_cidla: dict | None = None,
               rh_cidla: dict | None = None, s_okny: set | None = None,
               s_klidem: set | None = None, jako_pohled: bool = False,
@@ -238,7 +237,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         if cidla.get(m):
             polozky += _radek(cidla[m], "   teď v místnosti")
     c += _hlavicka("Cílová teplota", "mdi:target")
-    c += _karta("", "", [x for x in polozky if _ok(x, existuje)])
+    c += _karta([x for x in polozky if _ok(x, existuje)])
     c.append("")
 
     # --- základ výpočtu ---
@@ -288,13 +287,13 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             if existuje(eid):
                 polozky += _radek(eid, f"{jm(m)} — {popis}")
         polozky.append("      - type: divider")
-    c += _karta("", "", polozky[:-1], nazev="Co smí ovládat")
+    c += _karta(polozky[:-1], nazev="Co smí ovládat")
     c.append("")
 
     if zaklad:
         c.append(SEKCE)
         c += _hlavicka("Základ výpočtu", "mdi:calendar-week", "subtitle")
-        c += _karta("", "", zaklad)
+        c += _karta(zaklad)
         c.append("")
 
     # --- okna ---
@@ -318,7 +317,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             c += _budik(cidlo, jm(m), 15, 30)
             c.append("")
 
-        c += _karta("", "", polozky, nazev=jm(m))
+        c += _karta(polozky, nazev=jm(m))
         c.append("")
 
     # --- oblasti ---
@@ -342,7 +341,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     if polozky:
         c.append(SEKCE)
         c += _hlavicka("Slunce a stínění", "mdi:blinds-horizontal", "subtitle")
-        c += _karta("", "", polozky)
+        c += _karta(polozky)
         c.append("")
 
     # --- obsazenost ---
@@ -363,7 +362,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     if polozky:
         c.append(SEKCE)
         c += _hlavicka("Obsazenost a klid", "mdi:account-check", "subtitle")
-        c += _karta("", "", polozky[:-1])
+        c += _karta(polozky[:-1])
         c.append("")
 
     polozky = []
@@ -380,7 +379,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         polozky += _atribut(eid, "klid", "   je klid")
     if polozky:
         c += _hlavicka("Sdílený vzduch", "mdi:home-group", "subtitle")
-        c += _karta("", "", polozky)
+        c += _karta(polozky)
         c.append("")
 
     # --- ladění ---
@@ -394,7 +393,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             eid = f"number.napohodu_{m}_{klic}"
             if existuje(eid):
                 polozky += _radek(eid, jm(m))
-        c += _karta("", "", polozky, nazev=nadpis)
+        c += _karta(polozky, nazev=nadpis)
         if polozky:
             c.append("")
 
@@ -415,7 +414,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             eid = f"button.napohodu_{m}_{klic}"
             if existuje(eid):
                 polozky += _radek(eid, f"{jm(m)} — {popis}")
-    c += _karta("", "", polozky, nazev="Srovnat do žádané polohy")
+    c += _karta(polozky, nazev="Srovnat do žádané polohy")
     c.append("")
     c.append(SEKCE)
 
@@ -429,7 +428,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             eid = f"button.napohodu_{m}_{klic}"
             if existuje(eid):
                 polozky += _radek(eid, f"{jm(m)} — {popis}")
-    c += _karta("", "", polozky, nazev="Ovládání oken")
+    c += _karta(polozky, nazev="Ovládání oken")
     c.append("")
 
     # ruční ovládání žaluzií: výběr stavu a tlačítka rolí
@@ -451,7 +450,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
                 polozky += _radek(eid, f"{jm(m)} — {popis}")
         if len(polozky) > pred:
             polozky.append("      - type: divider")
-    c += _karta("", "", polozky[:-1], nazev="Ovládání žaluzií")
+    c += _karta(polozky[:-1], nazev="Ovládání žaluzií")
     c.append("")
 
 

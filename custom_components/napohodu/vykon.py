@@ -555,8 +555,8 @@ def cil_topeni(cil: float, okno_otevreno: bool, utlum: float,
 
 
 def duvody_stineni(role: str | None, zisk: float, prah: float,
-                   horko: bool, zima: bool, doma: bool, po_zapadu: bool,
-                   klid: bool, rezim: str, soukromi_kdy: str) -> list[str]:
+                   doma: bool, po_zapadu: bool, klid: bool,
+                   rezim: str) -> list[str]:
     """Proč je žaluzie tam, kde je. Stejný smysl jako diagnostika oken."""
     if not doma:
         return ["nikdo není doma"]

@@ -363,6 +363,25 @@ for m in re.finditer(r"vol\.Optional\(c\.(CONF_\w+),\s*default=([^)]+?)\)",
             f"{klic}: formulář má výchozí {ve_form}, kód bere "
             f"{sorted(cisla)} — komu se pole neuložilo, platí jiná hodnota")
 
+# 1p) argument, který se v těle nepoužije. Vzniká, když se funkce
+# přestaví a volání zůstane po starém — čte se pak něco, co nikdo
+# nedodává, nebo se vleče hodnota, kterou nikdo nechce.
+POVOLENE = {"self", "cls", "hass", "entry", "pridat", "user_input",
+            "call", "hodnota", "sekund", "now", "event"}
+for p in d.glob("*.py"):
+    for f in ast.walk(ast.parse(p.read_text())):
+        if not isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if f.name.startswith("async_step_") or f.name.startswith("__"):
+            continue
+        telo = ast.dump(ast.Module(body=f.body, type_ignores=[]))
+        for a in f.args.args + f.args.kwonlyargs:
+            if a.arg in POVOLENE or a.arg.startswith("_"):
+                continue
+            if f"id='{a.arg}'" not in telo:
+                chyby.append(
+                    f"{p.name}: {f.name}({a.arg}) se v těle nepoužívá")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):
@@ -437,6 +456,24 @@ for jazyk in ("cs", "en"):
             chyby.append(
                 f"{jazyk}/{jm}: {klic!r} je v překladu, ale ve formuláři "
                 f"chybí — nesmazal se omylem?")
+
+
+# 1o) číselné pole bez jednotky dostane stupně Celsia, protože to je
+# výchozí hodnota pomocníka. U počtů a časů je to nesmysl.
+# celá slova, ne části: „min" v cil_min znamená minimum, ne minuty
+NENI_TEPLOTA = {"poradi", "minut", "hodin", "procent", "pocet", "co2",
+                "cas", "krat", "dni", "azimut", "plocha", "pm25", "pm10"}
+for m in re.finditer(
+        r"vol\.\w+\(c\.(CONF_\w+)[^)]*\)\s*:\s*\n?\s*_cislo\(([^)]*)\)",
+        cf_kod):
+    klic, argumenty = m.group(1), m.group(2)
+    if '"' in argumenty or "'" in argumenty:
+        continue                       # jednotka uvedená, v pořádku
+    jmeno = hodnoty.get(klic, klic).lower()
+    if set(jmeno.split("_")) & NENI_TEPLOTA:
+        chyby.append(
+            f"{klic}: číselné pole bez jednotky dostane °C, "
+            f"ale podle jména to teplota není")
 
 
     # 4) klíče výběrů musí být bez diakritiky

@@ -42,7 +42,10 @@ def _ent(domeny: list[str], vic: bool = False, trida: list[str] | None = None):
     return selector.EntitySelector(selector.EntitySelectorConfig(**kw))
 
 
-def _cislo(min_: float, max_: float, krok: float = 0.5, jednotka: str = "°C"):
+def _cislo(min_: float, max_: float, krok: float = 0.5,
+           jednotka: str = "°C"):
+    """Číselné pole. Výchozí jednotka jsou stupně, protože jich je
+    nejvíc — u ostatních se musí uvést, jinak se u čísla objeví °C."""
     return selector.NumberSelector(
         selector.NumberSelectorConfig(
             min=min_, max=max_, step=krok,
@@ -267,7 +270,6 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 lambda e: self.hass.states.get(e) is not None,
                 cidla=cidla, zaluzie=zaluzie, nazvy=nazvy,
                 venku=g.get(c.CONF_T_VENKU),
-                doma=g.get(c.CONF_DOMA),
                 co2_cidla=co2_cidla, rh_cidla=rh_cidla,
                 s_okny=s_okny, s_klidem=s_klidem, podoba=podoba)
         except Exception as e:  # pragma: no cover
@@ -429,12 +431,12 @@ def _stav_vyber(nazvy: list[str]):
     )
 
 
-def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
+def _schema_mistnost() -> vol.Schema:
     return vol.Schema(
     {
         # --- Místnost a její čidla ---
         vol.Required(c.CONF_NAZEV): selector.TextSelector(),
-        vol.Optional(c.CONF_PORADI, default=0): _cislo(0, 99, 1),
+        vol.Optional(c.CONF_PORADI, default=0): _cislo(0, 99, 1, ""),
         vol.Optional(c.CONF_TEPLOTY): _ent(["sensor"], True, ["temperature"]),
         vol.Optional(c.CONF_CO2): _ent(["sensor"], True),
         vol.Optional(c.CONF_PM25): _ent(["sensor"], True),
@@ -612,7 +614,7 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         return self.async_show_form(
             step_id="zaklad",
             data_schema=self.add_suggested_values_to_schema(
-                _schema_mistnost(self._stavy()), user_input or {}),
+                _schema_mistnost(), user_input or {}),
             errors=chyby)
 
     def _jmeno_zaluzie(self, eid: str, poradi: int) -> str:
@@ -767,7 +769,7 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=self.add_suggested_values_to_schema(
-                _schema_mistnost(self._stavy())
+                _schema_mistnost()
                 .extend(SCHEMA_PRITOMNOST.schema)
                 .extend(SCHEMA_INDICIE.schema),
                 {**self._platne(pod.subentry_id, self._data),
