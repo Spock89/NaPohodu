@@ -226,10 +226,13 @@ class NaPohoduOptionsFlow(OptionsFlow):
         cidla, zaluzie = {}, {}
         co2_cidla, rh_cidla = {}, {}
         s_okny, s_klidem = set(), set()
+        nazvy, poradi = {}, {}
         for pod in self.config_entry.subentries.values():
             if pod.subentry_type == c.PODENTITA_MISTNOST:
                 k = klic(pod.title)
                 mistnosti.append(k)
+                nazvy[k] = pod.title
+                poradi[k] = float(pod.data.get(c.CONF_PORADI, 0) or 0)
                 teploty = pod.data.get(c.CONF_TEPLOTY) or []
                 if teploty:
                     cidla[k] = teploty[0]
@@ -249,14 +252,21 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 if zdroj == "noc" or (zdroj != "zadny" and ma_spanek):
                     s_klidem.add(k)
             elif pod.subentry_type == c.PODENTITA_ZONA:
+                nazvy[klic(pod.title)] = pod.title
                 oblasti.append(klic(pod.title))
 
         g = {**self.config_entry.data, **self.config_entry.options}
         try:
+            # Pořadí z nastavení, při stejném čísle jak místnosti vznikly.
+            # Pozice se musí zapamatovat předem: při řazení Python
+            # seznam vyprázdní a dotaz na index by spadl.
+            puvodni = {k: i for i, k in enumerate(mistnosti)}
+            mistnosti.sort(key=lambda k: (poradi.get(k, 0), puvodni[k]))
             text = karty.dashboard(
                 mistnosti, oblasti,
                 lambda e: self.hass.states.get(e) is not None,
-                cidla=cidla, zaluzie=zaluzie, venku=g.get(c.CONF_T_VENKU),
+                cidla=cidla, zaluzie=zaluzie, nazvy=nazvy,
+                venku=g.get(c.CONF_T_VENKU),
                 doma=g.get(c.CONF_DOMA),
                 co2_cidla=co2_cidla, rh_cidla=rh_cidla,
                 s_okny=s_okny, s_klidem=s_klidem, podoba=podoba)
@@ -424,6 +434,7 @@ def _schema_mistnost(stavy: list[str] | None = None) -> vol.Schema:
     {
         # --- Místnost a její čidla ---
         vol.Required(c.CONF_NAZEV): selector.TextSelector(),
+        vol.Optional(c.CONF_PORADI, default=0): _cislo(0, 99, 1),
         vol.Optional(c.CONF_TEPLOTY): _ent(["sensor"], True, ["temperature"]),
         vol.Optional(c.CONF_CO2): _ent(["sensor"], True),
         vol.Optional(c.CONF_PM25): _ent(["sensor"], True),

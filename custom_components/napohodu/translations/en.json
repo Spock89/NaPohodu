@@ -275,7 +275,8 @@
             "rucni_klid_min": "Po ručním zásahu nechat být",
             "ochota_vetrat": "Ochota větrat",
             "denni_pokles": "Ve dne smí klesnout o",
-            "nocni_pokles": "V noci smí klesnout o"
+            "nocni_pokles": "V noci smí klesnout o",
+            "poradi": "Pořadí na kartě"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -325,7 +326,8 @@
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
-            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých."
+            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
+            "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly."
           },
           "submit": "Další"
         },
@@ -429,7 +431,8 @@
             "rucni_klid_min": "Po ručním zásahu nechat být",
             "ochota_vetrat": "Ochota větrat",
             "denni_pokles": "Ve dne smí klesnout o",
-            "nocni_pokles": "V noci smí klesnout o"
+            "nocni_pokles": "V noci smí klesnout o",
+            "poradi": "Pořadí na kartě"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -489,7 +492,8 @@
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
-            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých."
+            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
+            "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly."
           },
           "submit": "Další"
         },

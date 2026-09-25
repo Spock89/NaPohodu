@@ -299,3 +299,38 @@ def test_srovnani_obsahuje_i_topeni():
     s = dashboard(["loznice"], [], vzdy)
     assert "button.napohodu_loznice_srovnat_zaluzie" in s
     assert "button.napohodu_loznice_srovnat_topeni" in s
+
+
+def test_popisky_maji_hacky():
+    """Klíč místnosti je bez diakritiky, protože z něj vznikají
+    identifikátory entit. Do popisků ale patří pravé jméno."""
+    s = dashboard(["loznice"], [], vzdy, cidla={"loznice": "sensor.t"},
+                  nazvy={"loznice": "Ložnice"})
+    assert '"Ložnice"' in s
+    assert "Loznice" not in s
+
+
+def test_bez_nazvu_se_pouzije_klic():
+    """Když jméno neznáme, klíč je lepší než nic."""
+    s = dashboard(["loznice"], [], vzdy, cidla={"loznice": "sensor.t"})
+    assert '"Loznice"' in s
+
+
+def test_rozvrzeni_sekci():
+    """Pořadí i seskupení podle ručně vyladěné předlohy."""
+    import yaml
+    d = yaml.safe_load(dashboard(
+        ["obyvak", "kuchyne"], ["o"], vzdy,
+        cidla={"obyvak": "sensor.a", "kuchyne": "sensor.b"},
+        zaluzie={"obyvak": ["cover.o1"]}, podoba="stranka"))
+    prvni = [sek["cards"][0].get("heading") or sek["cards"][0].get("title")
+             or sek["cards"][0]["type"] for sek in d["sections"]]
+    assert prvni[0] == "Cílová teplota"
+    assert prvni[-1] == "Grafy"
+    assert prvni.index("Ovládání oken") < prvni.index("Ladění")
+    assert prvni.index("Srovnat do žádané polohy") > prvni.index(
+        "Slunce a stínění")
+    # obsazenost a sdílený vzduch v jedné sekci, každé s nadpisem
+    sekce = d["sections"][prvni.index("Obsazenost a klid")]
+    nadpisy = [k.get("heading") for k in sekce["cards"] if k.get("heading")]
+    assert nadpisy == ["Obsazenost a klid", "Sdílený vzduch"]

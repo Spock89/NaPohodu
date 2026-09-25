@@ -784,3 +784,19 @@ def test_tlacitka_oken(nahradni_ha):
     assert volani == [("cover", "open_cover", ("cover.k",))]
     assert pamet.otevreno is True
     assert pamet.rucni_do_s > 0          # automatika chvíli nemluví
+
+
+def test_poradi_mistnosti_na_karte(nahradni_ha):
+    """Bez nastavení se místnosti řadí podle toho, jak vznikly."""
+    def serad(mistnosti, poradi):
+        """Stejné řazení, jaké dělá generátor karty."""
+        puvodni = {k: i for i, k in enumerate(mistnosti)}
+        return sorted(mistnosti,
+                      key=lambda k: (poradi.get(k, 0), puvodni[k]))
+
+    assert serad(["kuchyne", "obyvak", "loznice"],
+                 {"obyvak": 1, "kuchyne": 2, "loznice": 3}) == [
+        "obyvak", "kuchyne", "loznice"]
+
+    # při stejném čísle zůstane pořadí, jak místnosti vznikly
+    assert serad(["kuchyne", "obyvak"], {}) == ["kuchyne", "obyvak"]

@@ -38,6 +38,9 @@ CONF_NARAZOVE_STROP = "narazove_strop_min"
 
 # --- místnost ---
 CONF_NAZEV = "nazev"
+# Pořadí na kartě. Bez toho se místnosti řadí podle toho, jak vznikly,
+# což nikomu nic neříká.
+CONF_PORADI = "poradi"
 CONF_TEPLOTY = "teploty"
 CONF_CO2 = "co2"
 CONF_PM25 = "pm25"
