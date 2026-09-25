@@ -88,6 +88,14 @@ SCHEMA_GLOBAL = vol.Schema(
         vol.Optional(c.CONF_NARAZ): _ent(["sensor"]),
         vol.Optional(c.CONF_DEST): _ent(["sensor"]),
         vol.Optional(c.CONF_DOMA): _ent(["input_boolean", "binary_sensor", "person"]),
+        vol.Optional(c.CONF_PRYC_UTLUM, default=0.0): _cislo(0, 3, 0.5),
+        vol.Optional(c.CONF_PRYC_PO, default=2.0): _cislo(0, 12, 0.5, "h"),
+        vol.Optional(c.CONF_NOC_PREDSTIH, default=60):
+            _cislo(0, 240, 15, "min"),
+        vol.Optional(c.CONF_ZIMA_PRAH, default=7.0): _cislo(0, 15, 0.5),
+        vol.Optional(c.CONF_ZIMA_O_KOLIK, default=1.0):
+            _cislo(0, 2, 0.1),
+        vol.Optional(c.CONF_ZIMA_NAJEZD, default=2.5): _cislo(0, 8, 0.5),
         vol.Optional(c.CONF_CIL_MIN, default=20.0): _cislo(15, 24),
         vol.Optional(c.CONF_CIL_MAX, default=27.0): _cislo(22, 32),
         vol.Optional(c.CONF_NOC_OD, default="22:00:00"): selector.TimeSelector(),
@@ -482,6 +490,7 @@ def _schema_mistnost() -> vol.Schema:
         vol.Optional(c.CONF_TOPIT_PRI_OKNU, default="nechat"): _volba(
             c.PRI_OKNU, "topit_pri_oknu"),
         vol.Optional(c.CONF_UTLUM, default=16.0): _cislo(5, 20),
+        vol.Optional(c.CONF_NOC_UTLUM, default=0.0): _cislo(0, 4, 0.5),
         vol.Optional(c.CONF_SEZONU_RIDI_HLAVICE, default=True):
             selector.BooleanSelector(),
         vol.Optional(c.CONF_ZNACKA_OKNO, default=5.5): _cislo(4, 12, 0.1),

@@ -53,6 +53,20 @@ Průměry si integrace počítá sama exponenciálním průměrem, takže
 nepotřebuje statistické senzory ani historii. Vlastní čidlo můžeš zadat
 a přebije ten počítaný.
 
+**Zimní přitápění.** Adaptivní norma je psaná na letní komfort
+v přirozeně větraných budovách: čím tepleji venku, tím vyšší teplotu
+lidé doma snesou. V zimě se proto jen opře o dolní hranici a dál nic.
+
+Přitom v mrazu chladnou stěny a okna, klesá střední radiační teplota
+a člověku je při stejném vzduchu chladněji, protože do studených ploch
+vyzařuje vlastní teplo. Integrace to dorovnává: pod nastaveným prahem
+přičte k cíli podíl toho, o kolik je venku chladněji, nejvýš do stropu.
+Je to vědomé doplnění normy, ne její oprava, a dá se vypnout nulovým
+prahem.
+
+Z čeho se cíl skládá, je vidět v diagnostice — základ z křivky,
+přitápění i společný posun zvlášť.
+
 ### Větrání podle vzduchu i teploty
 
 CO2 a prach, obojí s mrtvou zónou, aby okno

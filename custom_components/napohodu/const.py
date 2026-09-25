@@ -23,6 +23,20 @@ CONF_VITR = "vitr"
 CONF_NARAZ = "naraz_vetru"
 CONF_DEST = "dest"
 CONF_DOMA = "doma"
+# Zimní přitápění. Adaptivní křivka podle EN 16798-1 je psaná na letní
+# komfort a v zimě se opře o dolní hranici. V mrazu ale chladnou stěny
+# a okna, klesá radiační teplota a při stejném vzduchu je člověku
+# chladněji — tohle je vědomé doplnění normy.
+# Útlumy topení. Nejsou to absolutní teploty, ale odečty od cíle, aby
+# zůstala zachovaná adaptivní křivka.
+CONF_NOC_UTLUM = "noc_utlum_topeni"
+CONF_NOC_PREDSTIH = "noc_utlum_predstih"
+CONF_PRYC_UTLUM = "pryc_utlum_topeni"
+CONF_PRYC_PO = "pryc_utlum_po_hodinach"
+CONF_ZIMA_PRAH = "zima_prah"
+CONF_ZIMA_O_KOLIK = "zima_o_kolik"
+CONF_ZIMA_NAJEZD = "zima_najezd"
+
 CONF_CIL_MIN = "cil_min"
 CONF_CIL_MAX = "cil_max"
 CONF_NOC_OD = "noc_od"

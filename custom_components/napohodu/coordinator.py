@@ -36,21 +36,23 @@ from .const import (
     CONF_MAX_STARI, CONF_MIN_DRZENI, CONF_MISTNOSTI, CONF_NARAZ,
     CONF_NARAZOVE, CONF_NARAZOVE_ODSTUP, CONF_NARAZOVE_STROP,
     CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOCNI_POKLES, CONF_NOC_DO,
-    CONF_NOC_MIN, CONF_NOC_OD, CONF_OCHOTA, CONF_ODCHYLKA,
-    CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA, CONF_PAUZA_PO_PULZU,
-    CONF_PLOCHA, CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU,
-    CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRITOMNOST, CONF_PROJEZD_M,
-    CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI,
-    CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH,
-    CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG,
-    CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
-    CONF_STINENI_CHOVANI, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
-    CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
-    CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA,
-    CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT, CONF_VITR,
-    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYCHOZI_KDY, CONF_VYNUCENO_M,
-    CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
-    CONF_ZDROJ_OBSAZENOSTI, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO,
+    CONF_NOC_MIN, CONF_NOC_OD, CONF_NOC_PREDSTIH, CONF_NOC_UTLUM,
+    CONF_OCHOTA, CONF_ODCHYLKA, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T,
+    CONF_OKNA, CONF_PAUZA_PO_PULZU, CONF_PLOCHA, CONF_PM10,
+    CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU, CONF_PM_PLATNY,
+    CONF_PRAH_VYKONU, CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_PRYC_PO,
+    CONF_PRYC_UTLUM, CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M,
+    CONF_RH_VNITRNI, CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE,
+    CONF_SEZONA_PRAH, CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE,
+    CONF_SMOG, CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI,
+    CONF_SPANEK, CONF_STINENI_CHOVANI, CONF_STINENI_MAPA,
+    CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
+    CONF_TEPLOTY, CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER,
+    CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT,
+    CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYCHOZI_KDY,
+    CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
+    CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD,
+    CONF_ZIMA_O_KOLIK, CONF_ZIMA_PRAH, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO,
     CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S,
     PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA,
 )
@@ -124,6 +126,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # kdy integrace naběhla — hned po startu se nic neohlašuje
         self._start_s: float = dt_util.utcnow().timestamp()
         self.doma_popis: str = ""
+        self.cil_rozpad: list[str] = []
+        self._hodina_ted: float = 12.0
+        self._noc_od: float = 22.0
+        self._noc_do: float = 6.5
         # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
         self.souhrn: dict[str, dict] = {}
         self._souhrn_den: str = ""
@@ -400,11 +406,27 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             prumer, zdroj = self._cislo(g.get(CONF_T_VENKU), 15.0), "nahrada"
         self.pouzity["tyden"] = (prumer, zdroj)
         posun = self.hodnoty.get((self.entry.entry_id, "posun"), 0.0)
-        return core.cil_adaptivni(
+        zaklad = core.cil_adaptivni(
             prumer, posun,
             float(g.get(CONF_CIL_MIN, 20.0)),
             float(g.get(CONF_CIL_MAX, 27.0)),
         )
+        # Přitápění se přičítá až po dolní hranici — jinak by ho hranice
+        # spolkla právě v mrazu, kde má smysl.
+        pritop = core.zimni_pritapeni(
+            prumer,
+            float(g.get(CONF_ZIMA_PRAH, 7.0)),
+            float(g.get(CONF_ZIMA_O_KOLIK, 1.0)),
+            float(g.get(CONF_ZIMA_NAJEZD, 2.5)))
+        self.cil_rozpad = [
+            f"základ z křivky {zaklad:.1f} °C (venku ⌀ {prumer:.1f} °C)"]
+        if pritop:
+            self.cil_rozpad.append(
+                f"zimní přitápění +{pritop:.2f} °C "
+                f"(venku ⌀ {prumer:.1f}, práh {g.get(CONF_ZIMA_PRAH, 7.0)} °C)")
+        if posun:
+            self.cil_rozpad.append(f"společný posun {posun:+.1f} °C")
+        return round(zaklad + pritop, 2)
 
     # ------------------------------------------------------------ hlavní
 
@@ -541,6 +563,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self._sezona_od = None
         noc_od = self._hodina(g.get(CONF_NOC_OD), 22.0)
         noc_do = self._hodina(g.get(CONF_NOC_DO), 6.5)
+        # ostatní kroky je potřebují a dostávají jen čas v sekundách
+        self._hodina_ted, self._noc_od, self._noc_do = hodina, noc_od, noc_do
         je_noc = ((hodina >= noc_od or hodina < noc_do) if noc_od > noc_do
                   else (noc_od <= hodina < noc_do))
 
@@ -1114,6 +1138,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # běží zkrácený pulz, ne jestli je zrovna splněná podmínka
             "narazove_vetrani": pamet.narazove_pulz and skutecne,
             "narazove_mozne": self.narazove,
+            "doma_podle": self.doma_popis,
+            # jak se dospělo k cílové teplotě, ať to není magie.
+            # Odchylka místnosti se sem nepřidává: je vidět na svém
+            # posuvníku a výsledek je v cílové teplotě.
+            "cil_rozpad": self.cil_rozpad,
             "vitr": self.vitr_stav,
             "dnes": {
                 "pohyby": sh["pohyby"],
@@ -1164,7 +1193,33 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
         vyk = self.vykonavaci.setdefault(
             p.subentry_id, vy.Vykonavac(self.hass, p.subentry_id))
+        # Útlumy se odečítají až od povelu pro hlavice, ne od cíle
+        # místnosti — jinak by se posunuly i prahy pro větrání
+        # a stínění, které s topením nemají co dělat.
         g = {**self.entry.data, **self.entry.options}
+        utlum_noc = core.nocni_utlum(
+            self._hodina_ted, self._noc_od, self._noc_do,
+            self.hodnota(p.subentry_id, CONF_NOC_UTLUM,
+                         float(d.get(CONF_NOC_UTLUM, 0.0))),
+            float(g.get(CONF_NOC_PREDSTIH, 60)),
+            spanek=bool(m.klid))
+
+        utlum_pryc = 0.0
+        pryc = float(g.get(CONF_PRYC_UTLUM, 0.0))
+        if pryc > 0 and self._prazdno_od is not None:
+            hodin = float(g.get(CONF_PRYC_PO, 2.0))
+            if cas_s - self._prazdno_od >= hodin * 3600:
+                utlum_pryc = pryc
+
+        celkem = round(utlum_noc + utlum_pryc, 2)
+        if celkem:
+            povel = replace(povel, cil=round(povel.cil - celkem, 1)
+                            if povel.cil is not None else None)
+        m.atributy["topeni_utlum"] = [
+            x for x in (f"noc -{utlum_noc:.1f} °C" if utlum_noc else "",
+                        f"nikdo doma -{utlum_pryc:.1f} °C" if utlum_pryc
+                        else "") if x] or None
+
         poslano = await vyk.topeni(
             hlavice, povel, cas_s,
             float(g.get(CONF_TOPENI_OBNOVA, 30)) * 60)

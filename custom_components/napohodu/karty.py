@@ -15,6 +15,7 @@ POSUVNIKY = [
     ("odchylka_teploty", "Odchylka teploty"),
     ("ve_dne_smi_klesnout_o", "Ve dne smí klesnout o"),
     ("v_noci_smi_klesnout_o", "V noci smí klesnout o"),
+    ("nocni_utlum_topeni", "Noční útlum topení"),
     ("minimum_na_noc", "Minimum na noc"),
     ("trvale_otevreno_do_rozdilu", "Trvale otevřeno do rozdílu"),
     ("utlum_pri_otevrenem_okne", "Útlum při otevřeném okně"),
@@ -34,6 +35,7 @@ ATRIBUTY_STAVU = [
     ("ovladani", "Ovládání", None),
     ("topeni", "Topení — posíláme", None),
     ("topeni_rezim", "Topení — režim", None),
+    ("topeni_utlum", "Topení — útlum", None),
     ("topeni_poslano", "Topení — poslední povel", None),
     ("topeni_hlavice", "Topení — hlásí hlavice", None),
     ("odvzdusneni", "Odvzdušnění", None),
@@ -271,6 +273,9 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         polozky.append("      - type: divider")
         polozky += _atribut(f"sensor.napohodu_{mistnosti[0]}_stav",
                             "doma_podle", "Doma podle")
+        polozky.append("      - type: divider")
+        polozky += _atribut(f"sensor.napohodu_{mistnosti[0]}_stav",
+                            "cil_rozpad", "Z čeho se cíl skládá")
     if existuje("binary_sensor.napohodu_topna_sezona"):
         polozky.append("      - type: divider")
         polozky += _radek("binary_sensor.napohodu_topna_sezona",

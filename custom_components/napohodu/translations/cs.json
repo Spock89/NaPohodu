@@ -32,7 +32,13 @@
           "pm10_venku": "Venkovní PM10",
           "smog_venku": "Smog venku",
           "sezona_rezim": "Topná sezóna",
-          "topeni_obnova_min": "Opakovat povel hlavicím po"
+          "topeni_obnova_min": "Opakovat povel hlavicím po",
+          "zima_prah": "Přitápět, když venkovní průměr klesne pod",
+          "pryc_utlum_topeni": "Útlum topení, když nikdo není doma",
+          "pryc_utlum_po_hodinach": "Utlumit až po",
+          "noc_utlum_predstih": "Noční útlum nabíhat",
+          "zima_o_kolik": "Přitopit o",
+          "zima_najezd": "Plné hodnoty dosáhnout po"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -63,7 +69,13 @@
           "pm10_venku": "Totéž pro větší částice. Nepovinné.",
           "smog_venku": "Přepínač nebo čidlo, které říká, že venkovní vzduch nestojí za nadechnutí. Zapnutý znamená, že se kvůli prachu neotevírá — větráním by se to jen zhoršilo.",
           "sezona_rezim": "Podle průměru se sezóna pozná z venkovní teploty za tři dny. Vždy znamená topit celoročně, nikdy vůbec — hodí se, když sezónu určuješ sám jinde.",
-          "topeni_obnova_min": "Zigbee hlavice povel občas ztratí a integrace se to nedozví. Po téhle době se poslední hodnota pošle znovu, i když se nic nezměnilo. Nula znamená posílat jen při změně."
+          "topeni_obnova_min": "Zigbee hlavice povel občas ztratí a integrace se to nedozví. Po téhle době se poslední hodnota pošle znovu, i když se nic nezměnilo. Nula znamená posílat jen při změně.",
+          "zima_prah": "Adaptivní norma je psaná na letní komfort a v zimě se jen opře o dolní hranici. V mrazu ale chladnou stěny a okna, klesá radiační teplota a při stejném vzduchu je člověku chladněji. Nula znamená vypnuto.",
+          "pryc_utlum_topeni": "O kolik ubrat, když je byt prázdný. Nula znamená netlumit. Hlubší útlum se u zdiva nevyplatí: konstrukce chladne hodiny a stejně dlouho se natápí, takže se prototopí víc, než se ušetří.",
+          "pryc_utlum_po_hodinach": "Jak dlouho musí být prázdno, než se utlumí. Za krátkou nepřítomnost se útlum nezaplatí.",
+          "noc_utlum_predstih": "Jak dlouho před začátkem noci se začne klesat. Plynulý náběh je lepší než skok, protože hlavice i zdivo reagují pomalu. Nula znamená skokem.",
+          "zima_o_kolik": "O kolik stupňů přitopit, když je venku doopravdy zima. Dál se nepřidává — hlubší mrazy na tom nic nemění.",
+          "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C."
         },
         "title": "NaPohodu"
       }
@@ -114,7 +126,13 @@
           "pm10_venku": "Venkovní PM10",
           "smog_venku": "Smog venku",
           "sezona_rezim": "Topná sezóna",
-          "topeni_obnova_min": "Opakovat povel hlavicím po"
+          "topeni_obnova_min": "Opakovat povel hlavicím po",
+          "zima_prah": "Přitápět, když venkovní průměr klesne pod",
+          "pryc_utlum_topeni": "Útlum topení, když nikdo není doma",
+          "pryc_utlum_po_hodinach": "Utlumit až po",
+          "noc_utlum_predstih": "Noční útlum nabíhat",
+          "zima_o_kolik": "Přitopit o",
+          "zima_najezd": "Plné hodnoty dosáhnout po"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -145,7 +163,13 @@
           "pm10_venku": "Totéž pro větší částice. Nepovinné.",
           "smog_venku": "Přepínač nebo čidlo, které říká, že venkovní vzduch nestojí za nadechnutí. Zapnutý znamená, že se kvůli prachu neotevírá — větráním by se to jen zhoršilo.",
           "sezona_rezim": "Podle průměru se sezóna pozná z venkovní teploty za tři dny. Vždy znamená topit celoročně, nikdy vůbec — hodí se, když sezónu určuješ sám jinde.",
-          "topeni_obnova_min": "Zigbee hlavice povel občas ztratí a integrace se to nedozví. Po téhle době se poslední hodnota pošle znovu, i když se nic nezměnilo. Nula znamená posílat jen při změně."
+          "topeni_obnova_min": "Zigbee hlavice povel občas ztratí a integrace se to nedozví. Po téhle době se poslední hodnota pošle znovu, i když se nic nezměnilo. Nula znamená posílat jen při změně.",
+          "zima_prah": "Adaptivní norma je psaná na letní komfort a v zimě se jen opře o dolní hranici. V mrazu ale chladnou stěny a okna, klesá radiační teplota a při stejném vzduchu je člověku chladněji. Nula znamená vypnuto.",
+          "pryc_utlum_topeni": "O kolik ubrat, když je byt prázdný. Nula znamená netlumit. Hlubší útlum se u zdiva nevyplatí: konstrukce chladne hodiny a stejně dlouho se natápí, takže se prototopí víc, než se ušetří.",
+          "pryc_utlum_po_hodinach": "Jak dlouho musí být prázdno, než se utlumí. Za krátkou nepřítomnost se útlum nezaplatí.",
+          "noc_utlum_predstih": "Jak dlouho před začátkem noci se začne klesat. Plynulý náběh je lepší než skok, protože hlavice i zdivo reagují pomalu. Nula znamená skokem.",
+          "zima_o_kolik": "O kolik stupňů přitopit, když je venku doopravdy zima. Dál se nepřidává — hlubší mrazy na tom nic nemění.",
+          "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C."
         }
       },
       "tester": {
@@ -276,7 +300,8 @@
             "ochota_vetrat": "Ochota větrat",
             "denni_pokles": "Ve dne smí klesnout o",
             "nocni_pokles": "V noci smí klesnout o",
-            "poradi": "Pořadí na kartě"
+            "poradi": "Pořadí na kartě",
+            "noc_utlum_topeni": "Noční útlum topení"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -327,7 +352,8 @@
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
             "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
-            "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly."
+            "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
+            "noc_utlum_topeni": "O kolik stupňů v noci ubrat topení. Netýká se větrání — to má svoje „smí klesnout o\". Chladnější ložnice před spaním usnutí pomáhá a šetří teplo v nejlepší čas. Nula znamená netlumit."
           },
           "submit": "Další"
         },
@@ -432,7 +458,8 @@
             "ochota_vetrat": "Ochota větrat",
             "denni_pokles": "Ve dne smí klesnout o",
             "nocni_pokles": "V noci smí klesnout o",
-            "poradi": "Pořadí na kartě"
+            "poradi": "Pořadí na kartě",
+            "noc_utlum_topeni": "Noční útlum topení"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -493,7 +520,8 @@
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
             "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
-            "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly."
+            "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
+            "noc_utlum_topeni": "O kolik stupňů v noci ubrat topení. Netýká se větrání — to má svoje „smí klesnout o\". Chladnější ložnice před spaním usnutí pomáhá a šetří teplo v nejlepší čas. Nula znamená netlumit."
           },
           "submit": "Další"
         },
@@ -812,6 +840,9 @@
       },
       "nocni_pokles": {
         "name": "V noci smí klesnout o"
+      },
+      "noc_utlum_topeni": {
+        "name": "Noční útlum topení"
       }
     },
     "switch": {

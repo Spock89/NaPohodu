@@ -171,10 +171,76 @@ def rosny_bod(t: float, rh: float) -> float:
     return (MAGNUS_B * g) / (MAGNUS_A - g)
 
 
+def _v_pasmu(hodina: float, od: float, do: float) -> bool:
+    """Je hodina v pásmu? Pásmo může přecházet přes půlnoc."""
+    if od == do:
+        return False
+    if od < do:
+        return od <= hodina < do
+    return hodina >= od or hodina < do
+
+
+def nocni_utlum(hodina: float, noc_od: float, noc_do: float, utlum: float,
+                predstih_min: float = 60.0, spanek: bool = False) -> float:
+    """O kolik v noci ubrat topení.
+
+    Klesá se s předstihem před začátkem noci, aby to nebyl skok —
+    hlavice i zdivo reagují pomalu a náhlá změna se stejně nestihne
+    projevit. Zapnutý spánek platí hned, bez ohledu na hodinu, a po
+    skončení noci se útlum pouští.
+    """
+    if utlum <= 0:
+        return 0.0
+    if spanek:
+        return round(utlum, 2)
+
+    if _v_pasmu(hodina, noc_od, noc_do):
+        return round(utlum, 2)
+
+    predstih_h = max(predstih_min, 0.0) / 60.0
+    if predstih_h <= 0:
+        return 0.0
+
+    zacatek = (noc_od - predstih_h) % 24.0
+    if not _v_pasmu(hodina, zacatek, noc_od):
+        return 0.0
+    od_zacatku = (hodina - zacatek) % 24.0
+    return round(utlum * od_zacatku / predstih_h, 2)
+
+
 def cil_adaptivni(prumer_venku: float, posun: float = 0.0,
-                  dolni: float = 20.0, horni: float = 27.0) -> float:
+                  dolni: float = 20.0, horni: float = 27.0,
+                  pritopit: float = 0.0) -> float:
     """Adaptivní komfortní teplota podle EN 16798-1."""
-    return round(min(max(0.33 * prumer_venku + 18.8 + posun, dolni), horni), 1)
+    zaklad = 0.33 * prumer_venku + 18.8 + posun
+    return round(min(max(zaklad, dolni) + pritopit, horni), 1)
+
+
+def zimni_pritapeni(prumer_venku: float, prah: float = 7.0,
+                    o_kolik: float = 1.0, nabeh: float = 2.5) -> float:
+    """O kolik přitopit, když je venku zima.
+
+    Adaptivní norma je psaná na letní komfort v přirozeně větraných
+    budovách: čím tepleji venku, tím vyšší teplotu lidé doma snesou.
+    V zimě se jen opře o dolní hranici a dál nic.
+
+    Přitom v mrazu chladnou stěny a okna, klesá střední radiační
+    teplota a člověku je při stejném vzduchu chladněji, protože do
+    studených ploch vyzařuje vlastní teplo.
+
+    Parametry říkají: pod prahem se začne přitápět a po náběhu se
+    dojde na plnou hodnotu, kde to zůstane. Dál už se nepřidává —
+    hlubší mrazy na tom nic nemění a v našich šířkách se stejně
+    málokdy objeví.
+
+    Práh nula znamená vypnuto.
+    """
+    if prah <= 0 or o_kolik <= 0 or prumer_venku >= prah:
+        return 0.0
+    pod = prah - prumer_venku
+    if nabeh <= 0:
+        return round(o_kolik, 2)
+    return round(min(pod / nabeh, 1.0) * o_kolik, 2)
 
 
 def _je_noc(hodina: float, n: Nastaveni, spanek: bool,

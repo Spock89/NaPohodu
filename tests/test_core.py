@@ -827,3 +827,84 @@ def test_narazove_zkraceni_je_videt_v_duvodu():
 def test_bez_narazoveho_se_duvod_nemeni():
     r, _ = krok(stary(co2=911, t_in=21, t_out=15.5, cil=22))
     assert "nárazově" not in r.duvod
+
+
+# ------------------------------------------- zimní přitápění
+
+def test_pritapeni_roste_s_mrazem():
+    """Norma je psaná na letní komfort a v zimě se opře o dolní hranici.
+    V mrazu ale chladnou stěny a je nám chladněji."""
+    from core import zimni_pritapeni
+    # výchozí: práh 7 °C, plná hodnota +1,0 °C, náběh 2,5 °C
+    assert zimni_pritapeni(10.0) == 0.0          # nad prahem nic
+    assert zimni_pritapeni(7.0) == 0.0           # na prahu ještě ne
+    assert zimni_pritapeni(6.0) == 0.4
+    assert zimni_pritapeni(5.0) == 0.8
+    assert zimni_pritapeni(4.5) == 1.0           # plná hodnota
+
+
+def test_pritapeni_dal_neroste():
+    """Hlubší mrazy na tom nic nemění a v našich šířkách jsou vzácné."""
+    from core import zimni_pritapeni
+    assert zimni_pritapeni(0.0) == 1.0
+    assert zimni_pritapeni(-10.0) == 1.0
+    assert zimni_pritapeni(-30.0) == 1.0
+
+
+def test_pritapeni_jde_vypnout():
+    from core import zimni_pritapeni
+    assert zimni_pritapeni(-20.0, prah=0) == 0.0
+
+
+def test_pritapeni_se_pricita_az_za_dolni_hranici():
+    """Jinak by ho hranice spolkla právě v mrazu, kde má smysl."""
+    from core import cil_adaptivni, zimni_pritapeni
+    bez = cil_adaptivni(-10.0, 0.0, 20.0, 27.0)
+    s_pritopenim = cil_adaptivni(-10.0, 0.0, 20.0, 27.0,
+                                 zimni_pritapeni(-10.0))
+    assert bez == 20.0
+    assert s_pritopenim == 21.0
+
+
+def test_pritapeni_neprelezne_horni_hranici():
+    from core import cil_adaptivni
+    assert cil_adaptivni(25.0, 0.0, 20.0, 27.0, 1.5) == 27.0
+
+
+# ------------------------------------------- útlumy topení
+
+def test_nocni_utlum_klesa_s_predstihem():
+    """Skok by se stejně nestihl projevit — hlavice i zdivo jsou pomalé."""
+    from core import nocni_utlum
+    u = lambda h: nocni_utlum(h, 22.0, 6.5, 1.0)
+    assert u(20.0) == 0.0          # daleko před nocí nic
+    assert u(21.0) == 0.0          # předstih je hodina
+    assert u(21.5) == 0.5          # v půlce náběhu
+    assert u(22.0) == 1.0          # začátek noci, plný útlum
+    assert u(3.0) == 1.0
+    assert u(6.5) == 0.0           # noc skončila, pouštíme
+
+
+def test_nocni_utlum_pri_spanku_hned():
+    """Zapnutý spánek je výslovný pokyn, hodina nerozhoduje."""
+    from core import nocni_utlum
+    assert nocni_utlum(14.0, 22.0, 6.5, 1.0, spanek=True) == 1.0
+
+
+def test_nocni_utlum_jde_vypnout():
+    from core import nocni_utlum
+    for h in (21.5, 23.0, 3.0):
+        assert nocni_utlum(h, 22.0, 6.5, 0.0) == 0.0
+
+
+def test_nocni_utlum_bez_predstihu_skokem():
+    from core import nocni_utlum
+    assert nocni_utlum(21.5, 22.0, 6.5, 1.0, predstih_min=0) == 0.0
+    assert nocni_utlum(22.5, 22.0, 6.5, 1.0, predstih_min=0) == 1.0
+
+
+def test_pasmo_pres_pulnoc():
+    from core import _v_pasmu
+    assert _v_pasmu(23.0, 22.0, 6.5) is True
+    assert _v_pasmu(2.0, 22.0, 6.5) is True
+    assert _v_pasmu(12.0, 22.0, 6.5) is False
