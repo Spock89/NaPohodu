@@ -38,23 +38,23 @@ from .const import (
     CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOCNI_POKLES, CONF_NOC_DO,
     CONF_NOC_MIN, CONF_NOC_OD, CONF_NOC_PREDSTIH, CONF_NOC_UTLUM,
     CONF_OCHOTA, CONF_ODCHYLKA, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T,
-    CONF_OKNA, CONF_PAUZA_PO_PULZU, CONF_PLOCHA, CONF_PM10,
-    CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU, CONF_PM_PLATNY,
-    CONF_PRAH_VYKONU, CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_PRYC_PO,
-    CONF_PRYC_UTLUM, CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M,
-    CONF_RH_VNITRNI, CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE,
-    CONF_SEZONA_PRAH, CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE,
-    CONF_SMOG, CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI,
-    CONF_SPANEK, CONF_STINENI_CHOVANI, CONF_STINENI_MAPA,
-    CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
-    CONF_TEPLOTY, CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER,
-    CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT,
-    CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYCHOZI_KDY,
-    CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
-    CONF_ZDROJ_KLIDU, CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD,
-    CONF_ZIMA_O_KOLIK, CONF_ZIMA_PRAH, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO,
-    CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S,
-    PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA,
+    CONF_OKNA, CONF_PAUZA_PO_PULZU, CONF_PM10, CONF_PM10_VENKU, CONF_PM25,
+    CONF_PM25_VENKU, CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRITOMNOST,
+    CONF_PROJEZD_M, CONF_PRYC_PO, CONF_PRYC_UTLUM, CONF_RH_MAX,
+    CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI,
+    CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH,
+    CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG,
+    CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
+    CONF_STINENI_CHOVANI, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
+    CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
+    CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA,
+    CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT, CONF_VITR,
+    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYCHOZI_KDY, CONF_VYNUCENO_M,
+    CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
+    CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD, CONF_ZIMA_O_KOLIK,
+    CONF_ZIMA_PRAH, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY,
+    CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
+    PODENTITA_MISTNOST, PODENTITA_ZONA,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -590,8 +590,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 klid=pr.klid(sig, nast_pr),
             )
             okno_m = sl.Okno(nazev=p.title,
-                             azimut=float(d.get(CONF_AZIMUT, 180)),
-                             plocha=float(d.get(CONF_PLOCHA, 1.0)))
+                             azimut=float(d.get(CONF_AZIMUT, 180)))
             m.slunce = round(sl.dopad(okno_m, slunce_az, slunce_el, jasno))
             m.atributy = {
                 "teplota_min": self._min(d.get(CONF_TEPLOTY)),
@@ -1298,11 +1297,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # zvlhčovač: v zimě vysychají sliznice, v paneláku běžně pod 30 %
         zvlhcovac = d.get(CONF_ZVLHCOVAC) or []
         if zvlhcovac and rh_in is not None:
+            # Dolní mez zapíná, horní vypíná. Pevných pět procent
+            # nad minimem bylo nastavení, které nešlo ovlivnit, a horní
+            # mez přitom v nastavení celou dobu byla — jen ji nikdo
+            # nečetl.
             rh_min = float(d.get(CONF_RH_MIN, 38.0))
+            rh_max = max(float(d.get(CONF_RH_MAX, 60.0)), rh_min + 2)
             zapnout = None
             if rh_in < rh_min:
                 zapnout = True
-            elif rh_in > rh_min + 5:
+            elif rh_in > rh_max:
                 zapnout = False
             m.atributy["zvlhcovac"] = await vyk.zarizeni(
                 zvlhcovac, zapnout, "zvlhčovač")

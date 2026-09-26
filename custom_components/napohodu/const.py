@@ -150,7 +150,6 @@ SOUKROMI_KDY = ["nikdy", "hned", "pri_pohybu"]
 
 # --- okna pro sluneční zisk ---
 CONF_AZIMUT = "azimut"
-CONF_PLOCHA = "plocha"
 
 ZDROJ_OKENNIHO = ["fyzicke", "nase_otevreni", "oboji", "nikdy"]
 

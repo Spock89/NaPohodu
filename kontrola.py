@@ -382,6 +382,28 @@ for p in d.glob("*.py"):
                 chyby.append(
                     f"{p.name}: {f.name}({a.arg}) se v těle nepoužívá")
 
+# 1r) nastavení, které jde vyplnit, ale nikdo ho nečte, a naopak.
+# Obojí je past: člověk něco nastaví a nic se nestane, nebo se chování
+# řídí hodnotou, kterou nejde změnit.
+kod_mimo_flow = "\n".join(
+    x.read_text() for x in d.glob("*.py") if x.name != "config_flow.py")
+UI_POLE = {"CONF_KARTA_YAML", "CONF_NAZEV_STAVU", "CONF_SEKVENCE",
+           "CONF_STAVY_TEXT", "CONF_TIMEOUT", "CONF_NAZEV", "CONF_DALSI",
+           "CONF_PORADI", "CONF_MISTNOSTI", "CONF_SOUSEDI",
+           "CONF_ZALUZIE", "CONF_STINENI_MAPA",
+           # ukládá krok se stavy žaluzií, ne pole ve formuláři
+           "CONF_STINENI_CHOVANI"}
+CTENO_JINAK = set(re.findall(r"(?:nej|hodnota)\(\s*(?:\w+,\s*)?(CONF_\w+)",
+                             kod_mimo_flow))
+ve_form = set(re.findall(r"vol\.\w+\(c\.(CONF_\w+)", cf_kod))
+cte = set(re.findall(r"\.get\((CONF_\w+)", kod_mimo_flow)) | CTENO_JINAK
+for k in sorted(cte - ve_form):
+    if k.endswith("_STARE") or k in UI_POLE:
+        continue
+    chyby.append(f"{k}: kód to čte, ale ve formuláři to nejde vyplnit")
+for k in sorted(ve_form - cte - UI_POLE):
+    chyby.append(f"{k}: jde to vyplnit, ale nikdo to nečte")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):
@@ -403,6 +425,7 @@ def pole(od, do):
 
 bloky = {
     "user": pole("SCHEMA_GLOBAL", "class NaPohoduConfigFlow"),
+    "nastaveni": pole("SCHEMA_GLOBAL", "class NaPohoduConfigFlow"),
     "zaklad": pole("def _schema_mistnost", "SCHEMA_PRITOMNOST"),
     "pritomnost": pole("SCHEMA_PRITOMNOST", "SCHEMA_INDICIE"),
     "indicie": pole("SCHEMA_INDICIE", "class MistnostSubentryFlow"),
@@ -413,6 +436,9 @@ for jazyk in ("cs", "en"):
     t = json.loads((d / "translations" / f"{jazyk}.json").read_text())
     mapa = {
         "user": t["config"]["step"]["user"],
+        # Tatáž pole se zobrazují dvakrát: při zakládání a v Nastavit.
+        # Když se doplní jen jedno, druhá obrazovka ukáže holé klíče.
+        "nastaveni": t["options"]["step"]["nastaveni"],
         "zaklad": t["config_subentries"]["mistnost"]["step"]["zaklad"],
         "pritomnost": t["config_subentries"]["mistnost"]["step"]["pritomnost"],
         "indicie": t["config_subentries"]["mistnost"]["step"]["indicie"],

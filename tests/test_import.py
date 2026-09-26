@@ -800,3 +800,22 @@ def test_poradi_mistnosti_na_karte(nahradni_ha):
 
     # při stejném čísle zůstane pořadí, jak místnosti vznikly
     assert serad(["kuchyne", "obyvak"], {}) == ["kuchyne", "obyvak"]
+
+
+def test_zvlhcovac_ma_obe_meze(nahradni_ha):
+    """Dolní mez zapíná, horní vypíná. Pevných pět procent nad minimem
+    byla hodnota, kterou nešlo ovlivnit."""
+    def zapnout(rh, rh_min=38.0, rh_max=60.0):
+        rh_max = max(rh_max, rh_min + 2)
+        if rh < rh_min:
+            return True
+        if rh > rh_max:
+            return False
+        return None
+
+    assert zapnout(30.0) is True
+    assert zapnout(45.0) is None          # mezi mezemi se nesahá
+    assert zapnout(65.0) is False
+    # horní mez pod dolní by přepínala pořád, proto ten odstup
+    assert zapnout(41.0, rh_min=40.0, rh_max=35.0) is None
+    assert zapnout(43.0, rh_min=40.0, rh_max=35.0) is False
