@@ -301,7 +301,9 @@
             "denni_pokles": "Ve dne smí klesnout o",
             "nocni_pokles": "V noci smí klesnout o",
             "poradi": "Pořadí na kartě",
-            "noc_utlum_topeni": "Noční útlum topení"
+            "noc_utlum_topeni": "Noční útlum topení",
+            "cisticka_od_pm": "Čističku zapnout od PM2.5",
+            "noc_zavrit_po_vyvetrani": "V noci zavřít, až je vyvětráno"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -353,7 +355,9 @@
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
             "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
-            "noc_utlum_topeni": "O kolik stupňů v noci ubrat topení. Netýká se větrání — to má svoje „smí klesnout o\". Chladnější ložnice před spaním usnutí pomáhá a šetří teplo v nejlepší čas. Nula znamená netlumit."
+            "noc_utlum_topeni": "O kolik stupňů v noci ubrat topení. Netýká se větrání — to má svoje „smí klesnout o\". Chladnější ložnice před spaním usnutí pomáhá a šetří teplo v nejlepší čas. Nula znamená netlumit.",
+            "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
+            "noc_zavrit_po_vyvetrani": "Zaškrtnuté zavře okno, jakmile CO2 spadne pod „zavřít pod\". Odškrtnuté nechá větrat dál, dokud teplota neklesne na noční mez — noční větrání pak ložnici i vychladí, ale při mírném počasí může zůstat otevřeno do rána."
           },
           "submit": "Další"
         },
@@ -459,7 +463,9 @@
             "denni_pokles": "Ve dne smí klesnout o",
             "nocni_pokles": "V noci smí klesnout o",
             "poradi": "Pořadí na kartě",
-            "noc_utlum_topeni": "Noční útlum topení"
+            "noc_utlum_topeni": "Noční útlum topení",
+            "cisticka_od_pm": "Čističku zapnout od PM2.5",
+            "noc_zavrit_po_vyvetrani": "V noci zavřít, až je vyvětráno"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -521,7 +527,9 @@
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
             "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
-            "noc_utlum_topeni": "O kolik stupňů v noci ubrat topení. Netýká se větrání — to má svoje „smí klesnout o\". Chladnější ložnice před spaním usnutí pomáhá a šetří teplo v nejlepší čas. Nula znamená netlumit."
+            "noc_utlum_topeni": "O kolik stupňů v noci ubrat topení. Netýká se větrání — to má svoje „smí klesnout o\". Chladnější ložnice před spaním usnutí pomáhá a šetří teplo v nejlepší čas. Nula znamená netlumit.",
+            "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
+            "noc_zavrit_po_vyvetrani": "Zaškrtnuté zavře okno, jakmile CO2 spadne pod „zavřít pod\". Odškrtnuté nechá větrat dál, dokud teplota neklesne na noční mez — noční větrání pak ložnici i vychladí, ale při mírném počasí může zůstat otevřeno do rána."
           },
           "submit": "Další"
         },

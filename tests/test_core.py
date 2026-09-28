@@ -156,9 +156,14 @@ def test_rano_neotevira_ale_krize_ano():
     assert b.akce is Akce.OTEVRIT
 
 
-def test_noc_zavira_na_teplotu_ne_na_cisto():
-    v = stary(co2=500, t_in=19.5, cil=25.5, hodina=2, spanek=True)
-    r, _ = krok(v, otevreno=True, cas_povelu_s=0, noc_mez=18.0)
+def test_noc_muze_vetrat_dal_pro_vychlazeni():
+    """Volitelně: noční větrání ložnici zároveň chladí na noční mez,
+    takže se nezavírá už po vyvětrání."""
+    from core import Nastaveni as N_
+    nast = N_(noc_zavrit_po_vyvetrani=False)
+    p = Pamet(otevreno=True, cas_povelu_s=0, noc_mez=18.0)
+    r = rozhodni(Vstup(co2=500, t_in=19.5, t_in_max=19.7, cil=25.5,
+                       hodina=2, spanek=True, cas_s=100000), p, nast)
     assert r.akce is Akce.NIC, r.duvod
 
 
@@ -908,3 +913,87 @@ def test_pasmo_pres_pulnoc():
     assert _v_pasmu(23.0, 22.0, 6.5) is True
     assert _v_pasmu(2.0, 22.0, 6.5) is True
     assert _v_pasmu(12.0, 22.0, 6.5) is False
+
+
+# --------------------- komfortní otevření v noci
+
+def test_komfort_v_noci_zavira_i_bez_klidu():
+    """Že je venku příjemně, není ve tři ráno důvod nechat okno
+    otevřené — tím se probudí dům, ne místnost."""
+    p = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
+              komfort_start=21.5)
+    r = rozhodni(Vstup(co2=480, t_in=21.0, t_in_max=21.2, t_out=17.0,
+                       cil=21.0, hodina=3.0, resi_klid=False,
+                       cas_s=100000), p, N)
+    assert r.akce is Akce.ZAVRIT and "noční hodiny" in r.duvod
+
+
+def test_komfort_pres_den_zustava():
+    p = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
+              komfort_start=21.5)
+    r = rozhodni(Vstup(co2=480, t_in=21.0, t_in_max=21.2, t_out=17.0,
+                       cil=21.0, hodina=14.0, resi_klid=False,
+                       cas_s=100000), p, N)
+    assert r.akce is not Akce.ZAVRIT
+
+
+def test_chlazeni_v_noci_smi():
+    """V létě se kvůli chlazení otevírá právě v noci."""
+    p = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
+              komfort_start=27.0)
+    r = rozhodni(Vstup(co2=480, t_in=26.0, t_in_max=27.5, t_out=19.0,
+                       cil=21.0, hodina=3.0, resi_klid=False,
+                       cas_s=100000), p, N)
+    assert r.akce is not Akce.ZAVRIT
+
+
+# --------------------- noční větrání má skončit, když je vyvětráno
+
+def test_v_noci_se_zavira_i_po_vyvetrani():
+    """Dřív se v noci čekalo jen na pokles teploty. Když bylo venku
+    mírně, nepřišel nikdy a okno zůstalo otevřené do rána."""
+    p = Pamet(otevreno=True, cas_povelu_s=0, noc_mez=20.0, rezim="noc")
+    r = rozhodni(Vstup(co2=480, t_in=21.0, t_in_max=21.2, t_out=12.0,
+                       cil=21.0, hodina=3.0, resi_klid=True, spanek=True,
+                       cas_s=100000), p, N)
+    assert r.akce is Akce.ZAVRIT and "vyvětráno" in r.duvod
+
+
+def test_v_noci_dusno_vetra_dal():
+    p = Pamet(otevreno=True, cas_povelu_s=0, noc_mez=20.0, rezim="noc")
+    r = rozhodni(Vstup(co2=1100, t_in=21.0, t_in_max=21.2, t_out=12.0,
+                       cil=21.0, hodina=3.0, resi_klid=True, spanek=True,
+                       cas_s=100000), p, N)
+    assert r.akce is not Akce.ZAVRIT
+
+
+def test_v_noci_pokles_teploty_zavira_dal():
+    p = Pamet(otevreno=True, cas_povelu_s=0, noc_mez=20.0, rezim="noc")
+    r = rozhodni(Vstup(co2=1100, t_in=19.8, t_in_max=20.0, t_out=12.0,
+                       cil=21.0, hodina=3.0, resi_klid=True, spanek=True,
+                       cas_s=100000), p, N)
+    assert r.akce is Akce.ZAVRIT and "kleslo" in r.duvod
+
+
+def test_rucni_zadost_v_noci_vetra_i_po_vyvetrani():
+    """Tvůj výslovný pokyn vyvětráno nepřebíjí."""
+    p = Pamet(otevreno=True, cas_povelu_s=0, noc_mez=20.0, rezim="noc")
+    r = rozhodni(Vstup(co2=450, t_in=21.0, t_in_max=21.2, t_out=12.0,
+                       cil=21.0, hodina=3.0, resi_klid=True, spanek=True,
+                       vetrat=True, cas_s=100000), p, N)
+    assert r.akce is not Akce.ZAVRIT
+
+
+def test_volba_nocniho_zavirani_ma_oba_smery():
+    """Obě chování musí být dosažitelná, ať je zřejmé, co volba dělá."""
+    from core import Nastaveni as N_
+    vstup = dict(co2=480, t_in=21.0, t_in_max=21.2, t_out=12.0, cil=21.0,
+                 hodina=3.0, resi_klid=True, spanek=True, cas_s=100000)
+
+    p1 = Pamet(otevreno=True, cas_povelu_s=0, noc_mez=20.0)
+    r1 = rozhodni(Vstup(**vstup), p1, N_(noc_zavrit_po_vyvetrani=True))
+    assert r1.akce is Akce.ZAVRIT
+
+    p2 = Pamet(otevreno=True, cas_povelu_s=0, noc_mez=20.0)
+    r2 = rozhodni(Vstup(**vstup), p2, N_(noc_zavrit_po_vyvetrani=False))
+    assert r2.akce is not Akce.ZAVRIT

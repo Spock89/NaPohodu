@@ -122,3 +122,11 @@ def test_zprava_o_zaluziich():
     t = h.zprava("zaluzie", "Ložnice", 1000, co="soukromí",
                  duvod="po setmění, aby nebylo vidět dovnitř")
     assert t and "soukromí" in t and "setmění" in t
+
+
+def test_obnova_nese_skutecny_duvod():
+    """Bez něj bylo ve zprávě jen „posílám znovu" a nebylo poznat proč."""
+    h = Hlasic(("obnova",))
+    t = h.zprava("obnova", "Kuchyně", 1000,
+                 co="otevřít — venku je příjemně, otevřeno")
+    assert t and "příjemně" in t

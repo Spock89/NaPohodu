@@ -59,6 +59,9 @@ class Nastaveni:
     nocni_pokles: float = 3.0
     nocni_rezerva: float = 1.0
     nocni_min: float = 18.0
+    # zavřít v noci hned po vyvětrání, nebo větrat dál a chladit
+    # místnost až na noční mez
+    noc_zavrit_po_vyvetrani: bool = True
     krize_pod_mez: float = 1.5
 
     noc_od: float = 22.0
@@ -495,9 +498,13 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                 and not _je_noc(v.hodina, n, v.spanek, v.resi_klid)
                 and v.cas_s - p.cas_povelu_s > n.obnova_s):
             p.cas_povelu_s = v.cas_s
+            # Skutečný důvod se veze s sebou. Bez něj se v diagnostice
+            # objevilo jen „obnova povelu" a nebylo poznat, proč je
+            # okno vlastně otevřené.
             return hotovo(Akce.OTEVRIT if chci_otevreno else Akce.ZAVRIT,
-                          "obnova povelu: " + ("otevřít" if chci_otevreno
-                                               else "zavřít"),
+                          ("obnova povelu: "
+                           + ("otevřít" if chci_otevreno else "zavřít")
+                           + f" — {duvod}"),
                           kod="obnova")
         return hotovo(Akce.NIC, duvod)
 
@@ -613,8 +620,12 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         brani = f"rosný bod {dew:.1f}"
     elif not chlazeni and v.t_out < v.cil - n.komfort_odstup:
         brani = f"venku {v.t_out:.1f} °C"
-    elif not chlazeni and noc:
-        brani = "noční klid"
+    elif not chlazeni and (noc or _v_pasmu(v.hodina, n.noc_od, n.noc_do)):
+        # Nočních hodin se to drží i tam, kde se klid neřeší. Že je
+        # venku příjemně, není ve tři ráno důvod nechat okno otevřené —
+        # tím se probudí dům, ne místnost. Chlazení je výjimka, kvůli
+        # němu se v létě otevírá právě v noci.
+        brani = "noční hodiny"
     elif t_max > v.cil and v.t_out > t_max:
         brani = "venku tepleji než uvnitř"
     elif not chlazeni and v.t_out < t_in and _pod_cilem(v, p, n, t_in):
@@ -651,6 +662,14 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             if t_in <= mez:
                 p.noc_zavreno_teplotou = True
                 return zavri(f"noc: kleslo na {t_in:.1f} °C", kod="noc_zima")
+            # Noční větrání mělo původně ložnici zároveň vychladit na
+            # noční mez, takže se čekalo jen na pokles teploty. Když je
+            # venku mírně, pokles nepřijde a okno zůstane otevřené do
+            # rána — proto se dá zavřít už po vyvětrání.
+            if (n.noc_zavrit_po_vyvetrani and v.co2 < n.co2_zavrit
+                    and not pm_spatne and not v.vetrat and not v.vynuceno):
+                return zavri(f"noc: vyvětráno, CO2 {v.co2:.0f}",
+                             kod="noc_hotovo")
             return beze_zmeny(f"noc: větrá {t_in:.1f} °C, CO2 {v.co2:.0f}", True)
 
         # Po zavření kvůli teplotě se místnost musí znovu prohřát, ne jen

@@ -82,11 +82,14 @@ CONF_ODVZDUSNENI_T = "odvzdusneni_t"
 CONF_UTLUM = "utlum"
 CONF_ODCHYLKA = "odchylka"
 CONF_NOC_MIN = "noc_min"
+CONF_NOC_ZAVRIT_VYVETRANO = "noc_zavrit_po_vyvetrani"
 CONF_STINENI_PRYC = "stineni_pryc"
 CONF_KOMFORT_ODSTUP = "komfort_odstup"
 
 # nucená ventilace (ventilátor, rekuperace)
 CONF_CISTICKA = "cisticka"
+# Od jaké úrovně prachu čistička pracuje. Dřív to bylo natvrdo v kódu.
+CONF_CISTICKA_OD = "cisticka_od_pm"
 CONF_RH_VNITRNI = "rh_vnitrni"
 CONF_RH_MAX = "rh_max"
 CONF_ZVLHCOVAC = "zvlhcovac"
