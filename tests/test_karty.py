@@ -365,3 +365,37 @@ def test_jmena_posuvniku_sedi_s_identifikatory():
     jmena = {slug(v["name"]) for v in d["entity"]["number"].values()}
     for klic, _, _ in POSUVNIKY:
         assert klic in jmena, klic
+
+
+def test_starsi_instalace_ma_posuvniky_taky():
+    """Home Assistant identifikátor entity při přejmenování nemění,
+    takže starší instalace je má pod původními jmény."""
+    import re
+    from karty import POSUVNIKY, STARSI_POSUVNIKY
+
+    stare = set(STARSI_POSUVNIKY.values())
+
+    def existuje(e):
+        if e.startswith("number.napohodu_loznice_"):
+            return e.rsplit("loznice_", 1)[1] in stare
+        return True
+
+    s = dashboard(["loznice"], [], existuje, cidla={"loznice": "sensor.t"})
+    najdene = set(re.findall(r"number\.napohodu_loznice_(\w+)", s))
+    # každý přejmenovaný posuvník se našel pod starým jménem
+    assert stare <= najdene | {x for x, _, _ in POSUVNIKY}
+
+
+def test_nova_instalace_ma_vsechny_posuvniky():
+    import re
+    from karty import POSUVNIKY
+
+    nove = {k for k, _, _ in POSUVNIKY}
+
+    def existuje(e):
+        if e.startswith("number.napohodu_loznice_"):
+            return e.rsplit("loznice_", 1)[1] in nove
+        return True
+
+    s = dashboard(["loznice"], [], existuje, cidla={"loznice": "sensor.t"})
+    assert nove <= set(re.findall(r"number\.napohodu_loznice_(\w+)", s))

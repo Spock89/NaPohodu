@@ -40,6 +40,18 @@ POSUVNIKY = [
      "Nad tímhle se otevře, i když je zima nebo se spí."),
 ]
 
+# Starší identifikátory přejmenovaných posuvníků. Home Assistant
+# identifikátor při přejmenování nemění, takže instalace, která entitu
+# založila dřív, ji má pořád pod starým jménem.
+STARSI_POSUVNIKY = {'moje_odchylka_teploty': 'odchylka_teploty',
+     'v_noci_vychladnout_nejvys_na': 'minimum_na_noc',
+     'otevreno_dokud_je_venku_chladneji_nejvys_o': 'trvale_otevreno_do_rozdilu',
+     'v_noci_topit_o_mene': 'nocni_utlum_topeni',
+     'pri_otevrenem_okne_topit_na': 'utlum_pri_otevrenem_okne',
+     've_dne_smi_klesnout_pod_cil_o': 've_dne_smi_klesnout_o',
+     'v_noci_otevrit_nad_co2': 'v_noci_otevrit_nad',
+     'nouzove_otevrit_nad_co2': 'nouzove_otevrit_nad'}
+
 ATRIBUTY_STAVU = [
     ("co2", "CO2", " ppm"),
     ("uvnitr", "Nejchladnější místo v pokoji", " °C"),
@@ -407,11 +419,15 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     c.append(SEKCE)
     c += _hlavicka("Ladění", "mdi:tune")
     for klic, nadpis, popis in POSUVNIKY:
+        # Home Assistant identifikátor entity při přejmenování nemění,
+        # takže starší instalace mají jiný než nové. Zkusí se obojí.
+        drive = STARSI_POSUVNIKY.get(klic)
         if klic == "otevrit_nad_co2":
             c.append(SEKCE)      # prahy CO2 do vlastní sekce
         polozky = []
         for m in mistnosti:
-            eid = f"number.napohodu_{m}_{klic}"
+            eid = _prvni(existuje, f"number.napohodu_{m}_{klic}",
+                         f"number.napohodu_{m}_{drive}" if drive else "")
             if existuje(eid):
                 polozky += _radek(eid, jm(m))
         c += _karta(polozky, nazev=nadpis)
