@@ -283,8 +283,11 @@ import unicodedata
 
 
 def _slug(text):
+    """Jak z názvu vznikne identifikátor: bez diakritiky, bez
+    interpunkce, mezery na podtržítka."""
     bez = unicodedata.normalize("NFKD", text).encode("ascii", "ignore")
-    return "_".join(bez.decode().lower().split())
+    ciste = re.sub(r"[^a-z0-9]+", " ", bez.decode().lower())
+    return "_".join(ciste.split())
 
 
 try:
@@ -403,6 +406,25 @@ for k in sorted(cte - ve_form):
     chyby.append(f"{k}: kód to čte, ale ve formuláři to nejde vyplnit")
 for k in sorted(ve_form - cte - UI_POLE):
     chyby.append(f"{k}: jde to vyplnit, ale nikdo to nečte")
+
+# 1s) tatáž hodnota nesmí mít jiné jméno v entitě a jiné ve formuláři.
+# Člověk pak v dashboardu hledá něco, co v nastavení najde pod jiným
+# názvem — a neví, že je to totéž.
+posuvniky_klice = set(re.findall(r"Posuvnik\((CONF_\w+)",
+                                 (d / "number.py").read_text()))
+hodnoty_konst = dict(re.findall(r'^(CONF_\w+) = "(\w+)"',
+                                (d / "const.py").read_text(), re.M))
+for k in sorted(posuvniky_klice):
+    klic = hodnoty_konst.get(k)
+    if not klic:
+        continue
+    jmeno_ent = (preklady["entity"]["number"].get(klic) or {}).get("name")
+    jmeno_form = preklady["config_subentries"]["mistnost"]["step"][
+        "zaklad"]["data"].get(klic)
+    if jmeno_ent and jmeno_form and jmeno_ent != jmeno_form:
+        chyby.append(
+            f"{klic}: entita se jmenuje „{jmeno_ent}“, formulář "
+            f"„{jmeno_form}“ — tatáž hodnota, dvě jména")
 
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}

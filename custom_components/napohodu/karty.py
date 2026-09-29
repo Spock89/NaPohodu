@@ -14,20 +14,22 @@ from __future__ import annotations
 # Pořadí, názvy a jedna řádka, co to dělá — bez ní člověk za měsíc
 # neví, co která hodnota znamená, a nastavuje naslepo.
 POSUVNIKY = [
-    ("odchylka_teploty", "Odchylka teploty",
+    ("moje_odchylka_teploty", "Moje odchylka teploty",
      "Přičte se k vypočtenému cíli. Tvoje osobní „chci tepleji“."),
     ("ve_dne_smi_klesnout_pod_cil_o", "Ve dne smí klesnout pod cíl o",
      "Přes den zavřu, až teplota klesne o tolik pod cílovou. Mez se "
      "tím drží u cíle celý rok a nemusí se v sezóně přenastavovat."),
-    ("nocni_utlum_topeni", "Noční útlum topení",
-     "O kolik v noci ubrat topení. Nabíhá před začátkem noci."),
-    ("minimum_na_noc", "Minimum na noc",
+    ("v_noci_topit_o_mene", "V noci topit o méně",
+     "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. "
+     "Klesá plynule hodinu před začátkem noci, spánek platí hned."),
+    ("v_noci_vychladnout_nejvys_na", "V noci vychladnout nejvýš na",
      "Při nočním větrání zavřu, až teplota klesne na tuhle hodnotu. "
      "Nižší číslo znamená delší větrání a méně cyklů za noc."),
-    ("trvale_otevreno_do_rozdilu", "Trvale otevřeno do rozdílu",
+    ("otevreno_dokud_je_venku_chladneji_nejvys_o", "Otevřeno dokud je venku chladněji nejvýš o",
      "Dokud je venku nejvýš o tolik chladněji než cíl, nechám otevřeno."),
-    ("utlum_pri_otevrenem_okne", "Útlum při otevřeném okně",
-     "Teplota, kterou dostanou hlavice, když je okno otevřené."),
+    ("pri_otevrenem_okne_topit_na", "Při otevřeném okně topit na",
+     "Teplota, na kterou se hlavice stáhnou, když je okno otevřené. "
+     "Je to celá teplota, ne odečet od cíle."),
     ("otevrit_nad_co2", "Otevřít nad CO2",
      "Přes den otevřu, když CO2 vyleze nad tuhle hodnotu."),
     ("zavrit_pod_co2", "Zavřít pod CO2",

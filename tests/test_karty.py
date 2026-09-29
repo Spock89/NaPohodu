@@ -339,8 +339,29 @@ def test_rozvrzeni_sekci():
 def test_posuvniky_maji_popisky():
     """Bez nich člověk za měsíc neví, co která hodnota znamená."""
     s = dashboard(["loznice"], [], vzdy, cidla={"loznice": "sensor.t"})
-    assert "Minimum na noc" in s
+    assert "V noci vychladnout nejvýš na" in s
     assert "méně cyklů za noc" in s
     # každý posuvník s položkami má svou řádku
     from karty import POSUVNIKY
     assert all(len(x) == 3 for x in POSUVNIKY)
+
+
+def test_jmena_posuvniku_sedi_s_identifikatory():
+    """Identifikátor entity vzniká z jejího jména, takže karta musí
+    obojí držet v souladu — jinak se řádek tiše nezobrazí."""
+    import json
+    import pathlib
+    import re
+    import unicodedata
+    from karty import POSUVNIKY
+
+    def slug(t):
+        bez = unicodedata.normalize("NFKD", t).encode("ascii", "ignore")
+        return "_".join(re.sub(r"[^a-z0-9]+", " ", bez.decode().lower()).split())
+
+    d = json.loads((pathlib.Path(__file__).parent.parent
+                    / "custom_components/napohodu/translations/cs.json"
+                    ).read_text())
+    jmena = {slug(v["name"]) for v in d["entity"]["number"].values()}
+    for klic, _, _ in POSUVNIKY:
+        assert klic in jmena, klic
