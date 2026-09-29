@@ -1047,7 +1047,7 @@ def test_nocni_mez_nad_cilem_se_ohlasi():
 def test_maly_denni_odstup_se_ohlasi():
     """Pod půl stupně se okno jen otevře a hned zavře."""
     from core import konflikt_mezi
-    assert "kmitat" in " ".join(konflikt_mezi(21.0, 0.2, 18.0))
+    assert "hned zavře" in " ".join(konflikt_mezi(21.0, 0.2, 18.0))
 
 
 def test_konflikt_pocita_i_nocni_rezervu():
@@ -1066,3 +1066,20 @@ def test_denni_mez_sleduje_cil():
         rozhodni(Vstup(co2=1200, t_in=cil, t_in_max=cil, t_out=cil - 8,
                        cil=cil, hodina=14.0, cas_s=100000), p, nast)
         assert p.den_mez == ceka, (cil, p.den_mez)
+
+
+def test_konflikt_pojmenuje_nastaveni_a_radi():
+    """Bez názvu nastavení a rady je z hlášky jen „konflikt“ a nikdo
+    neví, kam sáhnout."""
+    from core import konflikt_mezi
+    t = konflikt_mezi(21.0, 1.5, 21.5)[0]
+    assert "V noci vychladnout nejvýš na" in t     # jak se to jmenuje
+    assert "21.5" in t and "21.0" in t             # obě čísla
+    assert "Sniž" in t                             # co s tím
+
+    t2 = konflikt_mezi(21.0, 0.2, 18.0)[0]
+    assert "Ve dne smí klesnout pod cíl o" in t2
+    assert "Zvyš" in t2
+
+    t3 = konflikt_mezi(21.0, 1.5, 20.5)[0]
+    assert "20.0" in t3        # konkrétní hranice, pod kterou jít

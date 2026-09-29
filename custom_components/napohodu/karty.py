@@ -77,7 +77,6 @@ ATRIBUTY_STAVU = [
     ("prach_zvenci", "Prach se tahá zvenčí", None),
     ("dnes", "Souhrn dne", None),
     ("co_bylo", "Poslední rozhodnutí", None),
-    ("konflikt_mezi", "⚠ Konflikt nastavení", None),
     ("co_dal", "Co změnu spustí", None),
     ("duvody", "Diagnostika", None),
 ]
@@ -351,6 +350,16 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             c.append("")
 
         c += _karta(polozky, nazev=jm(m))
+        # Konflikt nastavení jako text, ne jako atribut — v řádku karty
+        # by se dlouhá věta ořízla a zůstalo by z ní jen „konflikt".
+        c.append("  - type: markdown")
+        c.append("    content: |-")
+        c.append(f"      {{% set x = state_attr('{stav}',"
+                 f" 'konflikt_mezi') %}}")
+        c.append("      {% if x %}⚠ **Konflikt nastavení**")
+        c.append("      {% for y in x %}")
+        c.append("      - {{ y }}")
+        c.append("      {% endfor %}{% endif %}")
         c.append("")
 
     # --- oblasti ---

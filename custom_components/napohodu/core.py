@@ -229,22 +229,28 @@ def konflikt_mezi(cil: float, denni_pod_cil: float, nocni_min: float,
     Mez nad cílem znamená, že se okno zavře hned po otevření, nebo se
     vůbec neotevře — a není to nikde vidět, protože každé nastavení
     samo o sobě vypadá rozumně.
+
+    Hlášky pojmenovávají nastavení tak, jak ho člověk vidí na
+    obrazovce, a říkají, co s tím udělat. Bez toho je z hlášky jen
+    „konflikt nastavení" a nikdo neví, kam sáhnout.
     """
     potize = []
     if denni_pod_cil < 0.5:
         potize.append(
-            f"denní mez je jen {denni_pod_cil:.1f} °C pod cílem "
-            f"{cil:.1f} °C — přes den se bude jen kmitat")
+            f"„Ve dne smí klesnout pod cíl o“ je jen {denni_pod_cil:.1f} °C: "
+            f"okno se otevře a hned zavře. Zvyš na 1 °C a víc.")
 
     if nocni_min >= cil:
         potize.append(
-            f"noční mez {nocni_min:.1f} °C je nad cílem {cil:.1f} °C — "
-            f"v noci se vůbec nevyvětrá")
+            f"„V noci vychladnout nejvýš na“ {nocni_min:.1f} °C je nad "
+            f"cílem {cil:.1f} °C: v noci se vůbec nevyvětrá. Sniž mez, "
+            f"nebo zvyš cílovou teplotu.")
     elif nocni_min + nocni_rezerva >= cil:
         potize.append(
-            f"noční mez {nocni_min:.1f} °C plus rezerva "
-            f"{nocni_rezerva:.1f} °C nedává místo pod cílem "
-            f"{cil:.1f} °C — noční větrání se nerozjede")
+            f"„V noci vychladnout nejvýš na“ {nocni_min:.1f} °C je moc "
+            f"blízko cíli {cil:.1f} °C: noční větrání potřebuje aspoň "
+            f"{nocni_rezerva:.1f} °C rezervu, takže se nerozjede. "
+            f"Sniž mez pod {cil - nocni_rezerva:.1f} °C.")
     return potize
 
 

@@ -399,3 +399,13 @@ def test_nova_instalace_ma_vsechny_posuvniky():
 
     s = dashboard(["loznice"], [], existuje, cidla={"loznice": "sensor.t"})
     assert nove <= set(re.findall(r"number\.napohodu_loznice_(\w+)", s))
+
+
+def test_konflikt_je_v_karte_celym_textem():
+    """V řádku s atributem by se dlouhá věta ořízla."""
+    s = dashboard(["loznice"], [], vzdy, cidla={"loznice": "sensor.t"})
+    assert "konflikt_mezi" in s
+    assert "Konflikt nastavení" in s
+    # a jako text, ne jako atributový řádek
+    assert "type: attribute\n    entity: sensor.napohodu_loznice_stav\n" \
+           "    attribute: konflikt_mezi" not in s
