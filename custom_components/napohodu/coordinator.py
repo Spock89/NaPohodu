@@ -1380,6 +1380,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 pr.indicie_aktivni(u["sig"], u["nast"]))
 
             cile, role_vse, duvody, co_dal = {}, {}, {}, {}
+            vraceni = {}
             for z in zaluzie_mistnosti:
                 vlastni = chovani.get(z) or {}
 
@@ -1395,6 +1396,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     podminky.append(not m.klid)
                 if "rozednilo" in chtene:
                     podminky.append(slunce_el >= 0)
+                vraceni[z] = chtene
                 splneno = bool(podminky) and all(podminky)
                 vratit = splneno and st.drive_splneno.get(z) is False
                 st.drive_splneno[z] = splneno
@@ -1426,6 +1428,23 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     role, zisk, 150.0, slunce_el < 0, m.klid, horko, zima,
                     soukromi, chtene)
 
+            # Přiřazení může ukazovat na entitu, která neexistuje —
+            # po přejmenování žaluzie nebo po poškozeném záznamu.
+            # Povel na ni nemá smysl, jen by plnil zprávy. Tohle
+            # vypadlo při přepisu na chování per žaluzie.
+            chybi = [z for z in cile if self._stav(z) is None]
+            for z in chybi:
+                cile.pop(z, None)
+            m.atributy["zaluzie_chybi"] = chybi or None
+            if chybi:
+                _LOGGER.warning(
+                    "NaPohodu: %s — přiřazení stínění ukazuje na "
+                    "neexistující %s, přenastav Stavy žaluzií",
+                    m.nazev, ", ".join(chybi))
+
+            m.atributy["stineni_mapa"] = mapa or None
+            m.atributy["vraceni_vychoziho"] = {
+                z: sorted(vraceni[z]) for z in vraceni if vraceni[z]} or None
             m.atributy["role_stineni"] = role_vse
             m.atributy["stineni_duvody"] = duvody
             m.atributy["stineni_co_dal"] = co_dal

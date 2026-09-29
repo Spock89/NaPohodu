@@ -60,9 +60,11 @@ lidé doma snesou. V zimě se proto jen opře o dolní hranici a dál nic.
 Přitom v mrazu chladnou stěny a okna, klesá střední radiační teplota
 a člověku je při stejném vzduchu chladněji, protože do studených ploch
 vyzařuje vlastní teplo. Integrace to dorovnává: pod nastaveným prahem
-přičte k cíli podíl toho, o kolik je venku chladněji, nejvýš do stropu.
-Je to vědomé doplnění normy, ne její oprava, a dá se vypnout nulovým
-prahem.
+přičte k cíli podíl toho, o kolik je venku chladněji, a po nastaveném
+náběhu se zastaví na plné hodnotě — hlubší mrazy už na tom nic nemění.
+Se výchozím prahem 7 °C a plným stupněm od 4,5 °C to odpovídá tomu, co
+se v praxi osvědčilo. Je to vědomé doplnění normy, ne její oprava, a dá
+se vypnout nulovým prahem.
 
 Z čeho se cíl skládá, je vidět v diagnostice — základ z křivky,
 přitápění i společný posun zvlášť.
@@ -142,10 +144,18 @@ ztráty a v zimě je to skoro vždycky lepší volba.
 
 ### Noční režim
 
-Jedno dlouhé provětrání místo několika krátkých. Zavírá se podle teploty,
-ne podle času. Vyšší práh CO2, aby to nebudilo, a nouzové provětrání nad
-krizovou mezí. Ráno se od zvolené hodiny už neotevírá, ale rozjeté
-větrání se nechá doběhnout.
+Jedno dlouhé provětrání místo několika krátkých. Vyšší práh CO2, aby to
+nebudilo, a nouzové provětrání nad krizovou mezí. Ráno se od zvolené
+hodiny už neotevírá, ale rozjeté větrání se nechá doběhnout.
+
+Zavírá se ze dvou důvodů: když teplota klesne na nastavenou mez, nebo
+když je vyvětráno. To druhé se dá vypnout, a pak noční větrání ložnici
+zároveň vychladí — při mírném počasí ale může zůstat otevřeno do rána.
+
+Mez je jedna a absolutní. Dřív k ní patřil ještě relativní pokles od
+stavu při otevření, který ji posouval podle toho, jak bylo zrovna teplo,
+takže nebylo poznat, kde okno zavře. Přes den se naopak mez odvozuje od
+cíle, aby sledovala sezónu bez přenastavování.
 
 Když má oblast souseda za otevřenými dveřmi, vyvětrá ji raději on.
 
@@ -206,11 +216,25 @@ hlavice sama.
 
 | situace | teplota | režim |
 |---|---|---|
-| v sezóně | cíl místnosti | nechává se hlavici |
-| mimo topnou sezónu | 7,7 °C | nechává se hlavici |
+| v sezóně | cíl místnosti minus útlumy | nechává se hlavici |
+| mimo sezónu, zapnutí řídí hlavice | neposílá se nic | nesahá se na něj |
+| mimo sezónu, řídí ji integrace | 7,7 °C | off |
 | otevřené okno, hlavice to umí | cíl místnosti | nechává se hlavici |
-| otevřené okno, hlavice to neumí | 5,5 °C | nechává se hlavici |
+| otevřené okno, hlavice to neumí | nastavená teplota | nechává se hlavici |
 | začátek sezóny | 28 °C | heat |
+
+Povel se posílá při změně cíle nad 0,3 °C, při změně režimu a pak
+jednou za nastavenou dobu znovu, protože Zigbee hlavice povel občas
+ztratí. Když hlavice hlásí vypnuto a režim neměníme, nesahá se na ni —
+Better Thermostat si podle počasí sám vypíná a zápis teploty do vypnuté
+hlavice ji zbytečně probudí.
+
+**Dva útlumy**, oba jako odečet od cíle, ne jako absolutní teplota.
+Noční se nastavuje u místnosti a klesá plynule před začátkem noci;
+zapnutý spánek platí hned. Útlum při nepřítomnosti je společný a
+uplatní se až po nastavené době prázdného bytu, protože za krátkou
+nepřítomnost se nezaplatí: zdivo chladne hodiny a stejně dlouho se
+natápí.
 
 **Teplota se posílá vždycky**, protože bez ní hlavice neví, na co
 regulovat. Mění se jen ta hodnota.
@@ -313,6 +337,41 @@ Nepočítá polohu žaluzií podle azimutu za tebe. Používá pojmenované
 polohy, které si vyladíš testerem — u pohonů, které neumí naklápět
 lamely přímo, je to jediná cesta k rozumnému výsledku.
 
+## Ruční ovládání z Home Assistantu
+
+Každá místnost má tlačítka **Otevřít okno** a **Zavřít okno**. Stisk se
+bere stejně jako sáhnutí rukou: rozdělané větrání se zruší a automatika
+chvíli nemluví, jinak by okno hned vrátila zpátky.
+
+Každá žaluzie má entitu výběru stavu, kterou ji pošleš do kteréhokoli
+jejího uloženého stavu, a pro každou přiřazenou roli vznikne tlačítko.
+Tlačítka **Srovnat** zapomenou poslední povel, takže se v dalším cyklu
+pošle znovu — zvlášť pro okna, žaluzie a topení.
+
+## Když si nastavení protiřečí
+
+Meze větrání a cílová teplota se dají nastavit tak, že se okno zavře
+hned po otevření nebo se vůbec neotevře. Každé nastavení přitom samo o
+sobě vypadá rozumně a konflikt je vidět až dohromady.
+
+Integrace to hlídá při každém cyklu a ohlásí zprávou, řádkem v kartě a
+zápisem do protokolu. Hláška pojmenuje nastavení tak, jak ho vidíš na
+obrazovce, uvede obě čísla a řekne, co s tím udělat.
+
+## Kontrola celistvosti
+
+V repozitáři je `kontrola.py`, která před každým vydáním projde kód a
+hlásí třídy chyb, na které jsme v průběhu vývoje narazili: neexistující
+konstanty, mrtvé moduly a funkce, proměnné čtené před přiřazením,
+chybějící překlady na obou obrazovkách, rozsahy posuvníků proti polím ve
+formuláři, výchozí hodnoty ve formuláři proti kódu, nastavení, které
+nejde vyplnit nebo nikdo nečte, jedno jméno pro jednu hodnotu, atributy
+vystavené bez toho, aby se nastavovaly, a entity, na které se odkazuje
+karta, ale nevznikají.
+
+Každý hlídač byl přidán po skutečné chybě a ověřen tím, že ji naschvál
+vrátíme a kontrola ji najde.
+
 ## Instalace přes HACS
 
 1. HACS → tři tečky vpravo nahoře → **Vlastní repozitáře**
@@ -359,6 +418,17 @@ jsi ho otevřel ručně nebo vynutil přepínačem.
 Naopak všechno ostatní tvoje rozhodnutí respektuje. Ruční zásah zruší
 rozdělanou akci, vynucené otevření přebije vzduch i teploty a přepínače
 ovládání vypnou automatiku úplně.
+
+## Ikona v HACS
+
+V panelu HACS se u integrace ukazuje zástupný obrázek místo ikony. Není
+to chyba tohohle repozitáře: od Home Assistantu 2026.3 si custom
+integrace nesou ikony samy v `custom_components/napohodu/brand/` a HA je
+odtud zobrazuje správně, kdežto HACS je pořád hledá na veřejném CDN,
+kam se custom integrace nedostanou. Repozitář `home-assistant/brands`
+zároveň nové custom integrace nepřijímá. Řeší to čekající úprava v
+`hacs/frontend`; do té doby jsou ikony i v kořeni repozitáře, což
+některým verzím HACS stačí.
 
 ## Licence
 

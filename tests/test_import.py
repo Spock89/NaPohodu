@@ -819,3 +819,15 @@ def test_zvlhcovac_ma_obe_meze(nahradni_ha):
     # horní mez pod dolní by přepínala pořád, proto ten odstup
     assert zapnout(41.0, rh_min=40.0, rh_max=35.0) is None
     assert zapnout(43.0, rh_min=40.0, rh_max=35.0) is False
+
+
+def test_diagnostika_zaluzii_se_nastavuje(nahradni_ha):
+    """Tři atributy vypadly při přepisu na chování per žaluzie —
+    a s nimi tiše i ochrana proti neexistující entitě."""
+    import pathlib
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    for a in ("zaluzie_chybi", "stineni_mapa", "vraceni_vychoziho"):
+        assert f'atributy["{a}"]' in ko, a
+    # a povel se na neexistující entitu neposílá
+    assert "cile.pop(z, None)" in ko

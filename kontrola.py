@@ -426,6 +426,21 @@ for k in sorted(posuvniky_klice):
             f"{klic}: entita se jmenuje „{jmeno_ent}“, formulář "
             f"„{jmeno_form}“ — tatáž hodnota, dvě jména")
 
+# 1t) atribut, který senzor vystavuje nebo karta ukazuje, se musí
+# někde nastavovat. Když vypadne z jádra, řádek v kartě zůstane prázdný
+# a s ním tiše zmizí i to, co ten atribut hlídal.
+ko_kod = (d / "coordinator.py").read_text()
+nastavene_atr = set(re.findall(r'atributy\["(\w+)"\]', ko_kod))
+nastavene_atr |= set(re.findall(r'"(\w+)":', ko_kod))
+for soubor in ("sensor.py", "binary_sensor.py"):
+    text = (d / soubor).read_text()
+    for blok in re.findall(r'if k in \(([^)]*)\)', text):
+        for jmeno in re.findall(r'"(\w+)"', blok):
+            if jmeno not in nastavene_atr:
+                chyby.append(
+                    f"{soubor}: atribut {jmeno} se vystavuje, ale nikde "
+                    f"se nenastavuje")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):
