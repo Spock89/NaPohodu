@@ -456,7 +456,7 @@ def test_diagnostika_bez_okna(nahradni_ha):
     core = importlib.import_module("napohodu.core")
 
     d = ko.NaPohoduCoordinator._diagnostika
-    v = core.Vstup(co2=681, cil=22.0, cas_s=1000)
+    v = core.Vstup(co2=681, cil=22.0, cas_s=1000, t_out=15.0)
     p = core.Pamet()
     n = core.Nastaveni()
 
@@ -831,3 +831,15 @@ def test_diagnostika_zaluzii_se_nastavuje(nahradni_ha):
         assert f'atributy["{a}"]' in ko, a
     # a povel se na neexistující entitu neposílá
     assert "cile.pop(z, None)" in ko
+
+
+def test_venkovni_teplota_se_nevymysli(nahradni_ha):
+    """Vymyšlená patnáctka se po restartu propsala do rozhodnutí —
+    okno se zavřelo „kvůli chladu venku", který nikdy nebyl."""
+    import pathlib
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    # žádná pevná náhrada venkovní teploty
+    assert 'CONF_T_VENKU), 15.0' not in ko
+    # poslední známá hodnota se pamatuje
+    assert "_t_out_posledni" in ko

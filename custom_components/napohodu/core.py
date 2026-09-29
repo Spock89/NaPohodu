@@ -90,8 +90,12 @@ class Vstup:
 
     t_in: float = 21.0          # nejchladnější místo — kondenzace, topení
     t_in_max: float | None = None   # nejteplejší místo — přehřívání, chlazení
-    t_out: float = 15.0
-    rh_out: float = 50.0
+    # Nevyplněno znamená, že venkovní teplotu neznáme — po restartu,
+    # nebo když čidlo vypadlo. Není to důvod něco dělat.
+    t_out: float | None = None
+    # Nevyplněno znamená, že venkovní vlhkost neznáme. Rosný bod se
+    # pak nepočítá, místo aby se odhadoval z vymyšleného čísla.
+    rh_out: float | None = None
     cil: float = 22.0
 
     dest: float = 0.0
@@ -313,6 +317,10 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     ukáže celý seznam.
     """
     seznam = []
+    if v.t_out is None:
+        # Bez venkovní teploty se nerozhoduje, takže ostatní důvody
+        # nemá cenu vypisovat — nic z nich teď neplatí.
+        return ["venkovní teplotu neznám, čekám na čidlo"]
     if v.vitr_blokuje:
         seznam.append("vítr")
     if v.dest > n.dest_prah:
@@ -337,7 +345,8 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
 
     if v.co2 <= prah:
         seznam.append(f"CO2 {v.co2:.0f} pod prahem {prah:.0f}")
-    if rosny_bod(v.t_out, v.rh_out) > tin - 2:
+    if (v.t_out is not None and v.rh_out is not None
+            and rosny_bod(v.t_out, v.rh_out) > tin - 2):
         seznam.append("rosný bod")
     if v.smog:
         seznam.append("smog venku")
@@ -489,7 +498,8 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # V zimě rozhoduje nejchladnější čidlo (kondenzace, topení), v horku
     # naopak nejteplejší — nechceme pouštět vedro do přehřáté místnosti.
     t_max = v.t_in_max if v.t_in_max is not None else v.t_in
-    dew = rosny_bod(v.t_out, v.rh_out)
+    dew = (rosny_bod(v.t_out, v.rh_out)
+           if v.t_out is not None and v.rh_out is not None else -99.0)
 
     def hotovo(akce: Akce, duvod: str, limit_s: float | None = None,
                kod: str = "") -> Rozhodnuti:
@@ -577,6 +587,13 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         if p.otevreno:
             return beze_zmeny("ručně otevřeno", True)
         return otevri("ručně otevřeno", None, hned=True, kod="rucni")
+
+    # Bez venkovní teploty se podle teploty nerozhoduje. Po restartu
+    # čidlo chvíli nehlásí a dřív se místo něj použila vymyšlená
+    # hodnota, na jejíž základ se zavíralo okno.
+    if v.t_out is None:
+        return beze_zmeny("venkovní teplotu neznám, čekám na čidlo",
+                          p.otevreno)
 
     # --- 4. vzduch --------------------------------------------------
     if p.pm_prumer is None:

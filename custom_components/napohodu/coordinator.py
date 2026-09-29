@@ -128,6 +128,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.doma_popis: str = ""
         self.cil_rozpad: list[str] = []
         self._konflikt_hlasen: dict = {}
+        self._t_out_posledni: float | None = None
+        self._rh_out_posledni: float | None = None
         self._hodina_ted: float = 12.0
         self._noc_od: float = 22.0
         self._noc_do: float = 6.5
@@ -404,7 +406,20 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if prumer is None:
             prumer, zdroj = self.prumery.tyden, "pocitano"
         if prumer is None:
-            prumer, zdroj = self._cislo(g.get(CONF_T_VENKU), 15.0), "nahrada"
+            # Poslední známá hodnota, ne vymyšlená patnáctka. Cíl se
+            # z ní počítá a vymyšlené číslo by ho po restartu posunulo.
+            prumer = self._cislo(g.get(CONF_T_VENKU), self._t_out_posledni)
+            zdroj = "posledni_znama"
+        dolni = float(g.get(CONF_CIL_MIN, 20.0))
+        if prumer is None:
+            # Nikdy jsme venkovní teplotu neviděli. Adaptivní cíl z ní
+            # vychází, takže bez ní platí dolní hranice — poctivější než
+            # dopočítat cokoli z vymyšleného čísla.
+            self.pouzity["tyden"] = (None, "nevime")
+            self.cil_rozpad = [
+                f"venkovní teplotu ještě neznáme, platí dolní hranice "
+                f"{dolni:.1f} °C"]
+            return dolni
         self.pouzity["tyden"] = (prumer, zdroj)
         posun = self.hodnoty.get((self.entry.entry_id, "posun"), 0.0)
         zaklad = core.cil_adaptivni(
@@ -524,11 +539,26 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         g = {**self.entry.data, **self.entry.options}
 
         # ---------- společné venku ----------
-        t_out = self._cislo(g.get(CONF_T_VENKU), 15.0)
+        # Po restartu čidlo chvíli nehlásí. Vymyslet si teplotu znamená
+        # rozhodovat podle vymyšleného čísla — okno se pak zavře „kvůli
+        # chladu venku", kterého patnáct stupňů nikdy nebylo. Bere se
+        # poslední známá hodnota, a když žádná není, nerozhoduje se
+        # podle teploty vůbec.
+        namerene = self._cislo(g.get(CONF_T_VENKU))
+        if namerene is not None:
+            self._t_out_posledni = namerene
+        t_out = namerene if namerene is not None else self._t_out_posledni
         self.prumery.aktualizuj(self._cislo(g.get(CONF_T_VENKU)),
                                 dt_util.utcnow().timestamp())
         self._uloziste.async_delay_save(self.prumery.jako_slovnik, 300)
-        rh_out = self._cislo(g.get(CONF_RH_VENKU), 50.0)
+        # Vlhkost se používá na rosný bod, takže vymyšlená padesátka
+        # umí kondenzaci buď zatajit, nebo vyrobit. Poslední známá, a
+        # když žádná není, rosný bod se prostě nepočítá.
+        namerena_rh = self._cislo(g.get(CONF_RH_VENKU))
+        if namerena_rh is not None:
+            self._rh_out_posledni = namerena_rh
+        rh_out = (namerena_rh if namerena_rh is not None
+                  else self._rh_out_posledni)
         dest = self._cislo(g.get(CONF_DEST), 0.0) or 0.0
         self._zkontroluj_jednotku(g.get(CONF_T_VENKU), ("°C",), "teplota")
         self._zkontroluj_jednotku(g.get(CONF_DEST),

@@ -17,6 +17,7 @@ def krok(v: Vstup, p: Pamet | None = None, **kw):
 
 def stary(**kw):
     """Vstup s časem, který nikdy neblokuje minimální držení stavu."""
+    kw.setdefault("t_out", 15.0)     # venku neutrálně, ať to nerozhoduje
     return Vstup(cas_s=100000, **kw)
 
 
@@ -163,7 +164,7 @@ def test_noc_muze_vetrat_dal_pro_vychlazeni():
     nast = N_(noc_zavrit_po_vyvetrani=False)
     p = Pamet(otevreno=True, cas_povelu_s=0, noc_mez=18.0)
     r = rozhodni(Vstup(co2=500, t_in=19.5, t_in_max=19.7, cil=25.5,
-                       hodina=2, spanek=True, cas_s=100000), p, nast)
+                       hodina=2, spanek=True, cas_s=100000, t_out=15.0), p, nast)
     assert r.akce is Akce.NIC, r.duvod
 
 
@@ -171,7 +172,7 @@ def test_noc_muze_vetrat_dal_pro_vychlazeni():
 
 def test_projezd_blokuje_opacny_povel():
     p = Pamet(otevreno=True, cas_povelu_s=0)
-    r = rozhodni(Vstup(co2=500, cil=25.5, cas_s=30), p, N)
+    r = rozhodni(Vstup(co2=500, cil=25.5, cas_s=30, t_out=15.0), p, N)
     assert r.akce is Akce.NIC
     # hláška má říct, co se chce a jak dlouho se ještě drží
     assert "zavřít" in r.duvod and "držím" in r.duvod
@@ -362,7 +363,7 @@ def test_kod_nouzoveho_vetrani():
 
 def test_drzeni_stavu_ma_vlastni_kod():
     p = Pamet(otevreno=True, cas_povelu_s=0)
-    r = rozhodni(Vstup(co2=500, cil=25.5, cas_s=30), p, N)
+    r = rozhodni(Vstup(co2=500, cil=25.5, cas_s=30, t_out=15.0), p, N)
     assert r.kod == "drzeni"
 
 
@@ -496,7 +497,7 @@ def test_ocekavani_pri_otevrenem_vyvetranem():
     se čeká, ne co se stalo."""
     from core import ocekavani
     p = Pamet(otevreno=True, cas_povelu_s=99000, den_mez=20.5, rezim="pulz")
-    t = ocekavani(Vstup(co2=640, t_in=22.0, cil=25.5, cas_s=100000), p, N)
+    t = ocekavani(Vstup(co2=640, t_in=22.0, cil=25.5, cas_s=100000, t_out=15.0), p, N)
     text = " | ".join(t)
     assert "20.5" in text and "vyvětráno" in text
     assert "držím stav" in text
@@ -504,7 +505,7 @@ def test_ocekavani_pri_otevrenem_vyvetranem():
 
 def test_ocekavani_pri_zavrenem_rekne_prah():
     from core import ocekavani
-    t = ocekavani(Vstup(co2=720, t_in=22.0, cil=25.5, cas_s=100000),
+    t = ocekavani(Vstup(co2=720, t_in=22.0, cil=25.5, cas_s=100000, t_out=15.0),
                   Pamet(cas_povelu_s=0), N)
     assert "800" in " ".join(t) and "720" in " ".join(t)
 
@@ -513,7 +514,7 @@ def test_ocekavani_v_noci_uvadi_i_teplotni_mez():
     from core import ocekavani
     t = " | ".join(ocekavani(
         Vstup(co2=720, t_in=19.0, cil=25.5, hodina=2, spanek=True,
-              cas_s=100000), Pamet(cas_povelu_s=0), N))
+              cas_s=100000, t_out=15.0), Pamet(cas_povelu_s=0), N))
     assert "1000" in t          # noční práh, ne denní
     assert "19.0" in t
 
@@ -524,7 +525,7 @@ def test_ocekavani_komfortu_uvadi_denni_mez():
     p = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
               komfort_start=25.0)
     t = " | ".join(ocekavani(
-        Vstup(co2=500, t_in=24.4, cil=25.0, cas_s=100000), p, N))
+        Vstup(co2=500, t_in=24.4, cil=25.0, cas_s=100000, t_out=15.0), p, N))
     assert "23.5" in t
 
 
@@ -563,7 +564,7 @@ def test_ocekavani_rekne_ze_venku_je_horsi():
     from core import ocekavani
     t = " ".join(ocekavani(
         Vstup(co2=500, pm25=9.0, pm25_venku=25.0, pm_platny=True,
-              t_in=21, cil=25.5, cas_s=100000), Pamet(cas_povelu_s=0), N))
+              t_in=21, cil=25.5, cas_s=100000, t_out=15.0), Pamet(cas_povelu_s=0), N))
     assert "nespravím" in t
 
 
@@ -626,7 +627,7 @@ def test_ocekavani_rekne_o_poznatku():
     p = Pamet(cas_povelu_s=0, pm_venku_horsi_do_s=104000)
     t = " ".join(ocekavani(
         Vstup(co2=500, pm25=40.0, pm_platny=True, t_in=21, cil=25.5,
-              cas_s=100000), p, N))
+              cas_s=100000, t_out=15.0), p, N))
     assert "tahá zvenčí" in t and "min" in t
 
 
@@ -768,13 +769,13 @@ def test_po_rucnim_zasahu_se_neotevira():
 def test_vitr_prebiji_i_rucni_zasah():
     """Ochrana bytu stojí nad vším."""
     p = Pamet(otevreno=True, cas_povelu_s=0, rucni_do_s=101000)
-    r = rozhodni(Vstup(co2=500, vitr_blokuje=True, cas_s=100000), p, N)
+    r = rozhodni(Vstup(co2=500, vitr_blokuje=True, cas_s=100000, t_out=15.0), p, N)
     assert r.akce is Akce.ZAVRIT and r.kod == "vitr"
 
 
 def test_dest_prebiji_i_rucni_zasah():
     p = Pamet(otevreno=True, cas_povelu_s=0, rucni_do_s=101000)
-    r = rozhodni(Vstup(co2=500, dest=2.0, cas_s=100000), p, N)
+    r = rozhodni(Vstup(co2=500, dest=2.0, cas_s=100000, t_out=15.0), p, N)
     assert r.akce is Akce.ZAVRIT and r.kod == "dest"
 
 
@@ -788,7 +789,7 @@ def test_po_uplynuti_klidu_automatika_pokracuje():
 def test_ocekavani_zminuje_rucni_zasah():
     from core import ocekavani
     p = Pamet(cas_povelu_s=0, rucni_do_s=101200)
-    t = " ".join(ocekavani(Vstup(co2=900, t_in=21, cil=25.5, cas_s=100000),
+    t = " ".join(ocekavani(Vstup(co2=900, t_in=21, cil=25.5, cas_s=100000, t_out=15.0),
                            p, N))
     assert "sáhl jsi na okno" in t
 
@@ -1083,3 +1084,57 @@ def test_konflikt_pojmenuje_nastaveni_a_radi():
 
     t3 = konflikt_mezi(21.0, 1.5, 20.5)[0]
     assert "20.0" in t3        # konkrétní hranice, pod kterou jít
+
+
+# --------------------- bez venkovní teploty se nerozhoduje
+
+def test_bez_venkovni_teploty_se_nic_nedeje():
+    """Po restartu čidlo chvíli nehlásí. Dřív se místo něj použila
+    vymyšlená patnáctka a na jejím základě se zavíralo okno."""
+    p = Pamet(otevreno=True, cas_povelu_s=0)
+    r = rozhodni(Vstup(co2=500, t_in=21.0, t_in_max=21.2, cil=21.0,
+                       hodina=14.0, t_out=None, cas_s=100000), p, N)
+    assert r.akce is not Akce.ZAVRIT
+    assert "neznám" in r.duvod
+
+
+def test_vitr_plati_i_bez_venkovni_teploty():
+    """Vítr poškodí pohon bez ohledu na to, kolik je venku stupňů."""
+    p = Pamet(otevreno=True, cas_povelu_s=0)
+    r = rozhodni(Vstup(co2=500, t_in=21.0, cil=21.0, vitr_blokuje=True,
+                       t_out=None, cas_s=100000), p, N)
+    assert r.akce is Akce.ZAVRIT
+
+
+def test_diagnostika_to_rekne():
+    from core import duvody
+    p = Pamet(cas_povelu_s=0)
+    t = duvody(Vstup(co2=500, t_in=21.0, cil=21.0, t_out=None,
+                     cas_s=100000), p, N)
+    assert "neznám" in " ".join(t)
+
+
+def test_rosny_bod_bez_vlhkosti_neblokuje():
+    """Vymyšlená padesátka umí kondenzaci zatajit i vyrobit."""
+    p = Pamet(cas_povelu_s=0)
+    r = rozhodni(Vstup(co2=1200, t_in=21.0, t_in_max=21.2, t_out=18.0,
+                       rh_out=None, cil=21.0, hodina=14.0,
+                       cas_s=100000), p, N)
+    assert r.akce is Akce.OTEVRIT      # rosný bod se nepočítá
+
+
+def test_rosny_bod_s_vlhkosti_se_pocita():
+    """Se známou vlhkostí se rosný bod počítá a diagnostika ho uvede.
+    CO2 ho přebíjí — dusno je horší než kondenzace."""
+    from core import duvody
+    p = Pamet(cas_povelu_s=0)
+    t = duvody(Vstup(co2=500, t_in=21.0, t_in_max=21.2, t_out=20.5,
+                     rh_out=99.0, cil=21.0, hodina=14.0,
+                     cas_s=100000), p, N)
+    assert any("rosný" in x for x in t)
+
+    # bez vlhkosti se nepočítá vůbec
+    t2 = duvody(Vstup(co2=500, t_in=21.0, t_in_max=21.2, t_out=20.5,
+                      rh_out=None, cil=21.0, hodina=14.0,
+                      cas_s=100000), p, N)
+    assert not any("rosný" in x for x in t2)

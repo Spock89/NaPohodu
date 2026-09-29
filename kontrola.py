@@ -441,6 +441,21 @@ for soubor in ("sensor.py", "binary_sensor.py"):
                     f"{soubor}: atribut {jmeno} se vystavuje, ale nikde "
                     f"se nenastavuje")
 
+# 1u) pevná náhradní hodnota za chybějící čidlo. Po restartu čidla
+# chvíli nehlásí a vymyšlené číslo se propíše do rozhodnutí — okno se
+# pak zavře „kvůli chladu venku", který nikdy nebyl.
+CIDLA = ("CONF_T_VENKU", "CONF_RH_VENKU", "CONF_T_VENKU_M",
+         "CONF_RH_VENKU_M", "CONF_TEPLOTY", "CONF_CO2", "CONF_PM25",
+         "CONF_PM10", "CONF_RH_VNITRNI")
+for p in d.glob("*.py"):
+    for i, radek in enumerate(p.read_text().splitlines(), 1):
+        for cidlo in CIDLA:
+            if re.search(rf"_cislo\(\s*\w*\.?get\({cidlo}\),\s*-?[\d.]+\)",
+                         radek):
+                chyby.append(
+                    f"{p.name}:{i}: {cidlo} má pevnou náhradní hodnotu — "
+                    f"po restartu se z ní rozhoduje")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):
