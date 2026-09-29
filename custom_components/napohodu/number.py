@@ -13,7 +13,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT, CONF_KOMFORT_ODSTUP,
                     CONF_DENNI_POKLES, CONF_NOC_MIN, CONF_NOC_UTLUM,
-                    CONF_NOCNI_POKLES,
                     CONF_ODCHYLKA, CONF_UTLUM,
                     DOMAIN,
                     PODENTITA_MISTNOST)
@@ -44,8 +43,6 @@ MISTNOST = [
              "mdi:radiator-off"),
     Posuvnik(CONF_DENNI_POKLES, 0.5, 6, 0.5, UnitOfTemperature.CELSIUS, 1.5,
              "mdi:thermometer-minus"),
-    Posuvnik(CONF_NOCNI_POKLES, 0.5, 8, 0.5, UnitOfTemperature.CELSIUS, 3.0,
-             "mdi:weather-night"),
     Posuvnik(CONF_CO2_OTEVRIT, 500, 2000, 25, "ppm", 800.0, "mdi:molecule-co2"),
     Posuvnik(CONF_CO2_ZAVRIT, 400, 1500, 25, "ppm", 700.0, "mdi:molecule-co2"),
     Posuvnik(CONF_CO2_NOC, 600, 2000, 25, "ppm", 1000.0, "mdi:weather-night"),

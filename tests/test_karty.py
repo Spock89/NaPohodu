@@ -334,3 +334,13 @@ def test_rozvrzeni_sekci():
     sekce = d["sections"][prvni.index("Obsazenost a klid")]
     nadpisy = [k.get("heading") for k in sekce["cards"] if k.get("heading")]
     assert nadpisy == ["Obsazenost a klid", "Sdílený vzduch"]
+
+
+def test_posuvniky_maji_popisky():
+    """Bez nich člověk za měsíc neví, co která hodnota znamená."""
+    s = dashboard(["loznice"], [], vzdy, cidla={"loznice": "sensor.t"})
+    assert "Minimum na noc" in s
+    assert "méně cyklů za noc" in s
+    # každý posuvník s položkami má svou řádku
+    from karty import POSUVNIKY
+    assert all(len(x) == 3 for x in POSUVNIKY)

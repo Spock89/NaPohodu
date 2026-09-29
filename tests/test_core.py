@@ -997,3 +997,35 @@ def test_volba_nocniho_zavirani_ma_oba_smery():
     p2 = Pamet(otevreno=True, cas_povelu_s=0, noc_mez=20.0)
     r2 = rozhodni(Vstup(**vstup), p2, N_(noc_zavrit_po_vyvetrani=False))
     assert r2.akce is not Akce.ZAVRIT
+
+
+def test_nocni_mez_je_jedna_a_absolutni():
+    """Relativní pokles mez posouval podle toho, jak bylo zrovna teplo,
+    takže nebylo poznat, kde okno zavře."""
+    from core import Nastaveni as N_
+    nast = N_(nocni_min=21.0)
+
+    # otevře se a mez je rovnou ta nastavená, bez ohledu na teplotu
+    p = Pamet(cas_povelu_s=0)
+    r = rozhodni(Vstup(co2=1100, t_in=23.5, t_in_max=23.7, t_out=12.0,
+                       cil=21.0, hodina=2.0, resi_klid=True, spanek=True,
+                       cas_s=100000), p, nast)
+    assert r.akce is Akce.OTEVRIT
+    assert p.noc_mez == 21.0
+
+    p2 = Pamet(cas_povelu_s=0)
+    rozhodni(Vstup(co2=1100, t_in=22.5, t_in_max=22.6, t_out=12.0,
+                   cil=21.0, hodina=2.0, resi_klid=True, spanek=True,
+                   cas_s=100000), p2, nast)
+    assert p2.noc_mez == 21.0        # táž mez, jiná výchozí teplota
+
+
+def test_nocni_rezerva_neotevira_tesne_nad_mezi():
+    """Otevřít stupeň nad mezí by znamenalo zavřít za pár minut."""
+    from core import Nastaveni as N_
+    nast = N_(nocni_min=21.0)
+    p = Pamet(cas_povelu_s=0)
+    r = rozhodni(Vstup(co2=1100, t_in=21.9, t_in_max=22.0, t_out=12.0,
+                       cil=21.0, hodina=2.0, resi_klid=True, spanek=True,
+                       cas_s=100000), p, nast)
+    assert r.akce is Akce.NIC and "jen" in r.duvod

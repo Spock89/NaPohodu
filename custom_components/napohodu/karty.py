@@ -11,18 +11,30 @@ dashboard, který sis nakreslil sám.
 from __future__ import annotations
 
 # pořadí a názvy, aby karta dávala smysl a nebyla jen výpisem
+# Pořadí, názvy a jedna řádka, co to dělá — bez ní člověk za měsíc
+# neví, co která hodnota znamená, a nastavuje naslepo.
 POSUVNIKY = [
-    ("odchylka_teploty", "Odchylka teploty"),
-    ("ve_dne_smi_klesnout_o", "Ve dne smí klesnout o"),
-    ("v_noci_smi_klesnout_o", "V noci smí klesnout o"),
-    ("nocni_utlum_topeni", "Noční útlum topení"),
-    ("minimum_na_noc", "Minimum na noc"),
-    ("trvale_otevreno_do_rozdilu", "Trvale otevřeno do rozdílu"),
-    ("utlum_pri_otevrenem_okne", "Útlum při otevřeném okně"),
-    ("otevrit_nad_co2", "Otevřít nad CO2"),
-    ("zavrit_pod_co2", "Zavřít pod CO2"),
-    ("v_noci_otevrit_nad_co2", "V noci otevřít nad"),
-    ("nouzove_otevrit_nad_co2", "Nouzově otevřít nad"),
+    ("odchylka_teploty", "Odchylka teploty",
+     "Přičte se k vypočtenému cíli. Tvoje osobní „chci tepleji“."),
+    ("ve_dne_smi_klesnout_o", "Ve dne smí klesnout o",
+     "Kolik stupňů smí větrání přes den ubrat, než okno zavře."),
+    ("nocni_utlum_topeni", "Noční útlum topení",
+     "O kolik v noci ubrat topení. Nabíhá před začátkem noci."),
+    ("minimum_na_noc", "Minimum na noc",
+     "Při nočním větrání zavřu, až teplota klesne na tuhle hodnotu. "
+     "Nižší číslo znamená delší větrání a méně cyklů za noc."),
+    ("trvale_otevreno_do_rozdilu", "Trvale otevřeno do rozdílu",
+     "Dokud je venku nejvýš o tolik chladněji než cíl, nechám otevřeno."),
+    ("utlum_pri_otevrenem_okne", "Útlum při otevřeném okně",
+     "Teplota, kterou dostanou hlavice, když je okno otevřené."),
+    ("otevrit_nad_co2", "Otevřít nad CO2",
+     "Přes den otevřu, když CO2 vyleze nad tuhle hodnotu."),
+    ("zavrit_pod_co2", "Zavřít pod CO2",
+     "Zavřu, až CO2 spadne sem. Mezera mezi prahy brání kmitání."),
+    ("v_noci_otevrit_nad_co2", "V noci otevřít nad",
+     "V noci je práh vyšší, aby se neotvíralo kvůli maličkosti."),
+    ("nouzove_otevrit_nad_co2", "Nouzově otevřít nad",
+     "Nad tímhle se otevře, i když je zima nebo se spí."),
 ]
 
 ATRIBUTY_STAVU = [
@@ -390,7 +402,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     # --- ladění ---
     c.append(SEKCE)
     c += _hlavicka("Ladění", "mdi:tune")
-    for i, (klic, nadpis) in enumerate(POSUVNIKY):
+    for klic, nadpis, popis in POSUVNIKY:
         if klic == "otevrit_nad_co2":
             c.append(SEKCE)      # prahy CO2 do vlastní sekce
         polozky = []
@@ -400,6 +412,9 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
                 polozky += _radek(eid, jm(m))
         c += _karta(polozky, nazev=nadpis)
         if polozky:
+            # jedna řádka, co ta hodnota dělá
+            c.append("  - type: markdown")
+            c.append(f"    content: \"*{popis}*\"")
             c.append("")
 
     # --- ovládání a tlačítka ---

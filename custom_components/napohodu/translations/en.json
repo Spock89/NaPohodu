@@ -262,7 +262,7 @@
             "pm_platny": "Kdy platí údaj o prachu",
             "climate": "Topení (jen topí)",
             "odchylka": "Moje odchylka pro tuto místnost",
-            "noc_min": "Minimum na noc",
+            "noc_min": "V noci nech vychladnout nejvýš na",
             "utlum": "Útlum při otevřeném okně",
             "komfort_odstup": "Trvale otevřeno, dokud je venku nejvýš o tolik chladněji",
             "cisticka": "Čistička vzduchu",
@@ -299,7 +299,6 @@
             "rucni_klid_min": "Po ručním zásahu nechat být",
             "ochota_vetrat": "Ochota větrat",
             "denni_pokles": "Ve dne smí klesnout o",
-            "nocni_pokles": "V noci smí klesnout o",
             "poradi": "Pořadí na kartě",
             "noc_utlum_topeni": "Noční útlum topení",
             "cisticka_od_pm": "Čističku zapnout od PM2.5",
@@ -314,7 +313,7 @@
             "pm_platny": "Prachové čidlo potřebuje proudící vzduch. Když má ventilátor, vyber jeho spínač — při stojícím ventilátoru se naměřeným hodnotám nevěří. Nemáš-li ventilátor, nech prázdné.",
             "climate": "Hlavice místnosti — virtuální z Better Thermostatu i skutečná. Integrace jim posílá cílovou teplotu a režim, když je zapnutý přepínač Ovládat topení.",
             "odchylka": "Cílová teplota se počítá pro celý byt. Tady ji pro tuto místnost posuneš. Plus znamená tepleji. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "noc_min": "Pod tuto teplotu se v noci nevětrá. V ložnici nižší, v obývacím pokoji vyšší. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
+            "noc_min": "Při nočním větrání se okno zavře, jakmile teplota klesne na tuhle hodnotu. Nižší číslo znamená delší větrání a méně cyklů za noc, ale chladnější ložnici.\n\nDřív tu byla ještě druhá hodnota, relativní pokles od stavu při otevření. Posouvala mez podle toho, jak bylo zrovna teplo, takže nebylo poznat, kde okno zavře.",
             "utlum": "Na kolik se stáhne topení, když je otevřené okno. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "komfort_odstup": "Jak moc smí být venku chladněji než cíl, aby šlo nechat okno trvale otevřené. Nízká hodnota znamená otevřeno jen za teplého počasí, vysoká skoro pořád. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "cisticka": "Čistička vzduchu. Umí prach, ne CO2. V zimě a v noci je lepší než otevřít okno.",
@@ -353,7 +352,6 @@
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
-            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
             "noc_utlum_topeni": "O kolik stupňů v noci ubrat topení. Netýká se větrání — to má svoje „smí klesnout o\". Chladnější ložnice před spaním usnutí pomáhá a šetří teplo v nejlepší čas. Nula znamená netlumit.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
@@ -413,7 +411,7 @@
             "pm_platny": "Kdy platí údaj o prachu",
             "climate": "Topení (jen topí)",
             "odchylka": "Moje odchylka pro tuto místnost",
-            "noc_min": "Minimum na noc",
+            "noc_min": "V noci nech vychladnout nejvýš na",
             "utlum": "Útlum při otevřeném okně",
             "komfort_odstup": "Trvale otevřeno, dokud je venku nejvýš o tolik chladněji",
             "zdroj_obsazenosti": "Obsazenost podle",
@@ -461,7 +459,6 @@
             "rucni_klid_min": "Po ručním zásahu nechat být",
             "ochota_vetrat": "Ochota větrat",
             "denni_pokles": "Ve dne smí klesnout o",
-            "nocni_pokles": "V noci smí klesnout o",
             "poradi": "Pořadí na kartě",
             "noc_utlum_topeni": "Noční útlum topení",
             "cisticka_od_pm": "Čističku zapnout od PM2.5",
@@ -476,7 +473,7 @@
             "pm_platny": "Prachové čidlo potřebuje proudící vzduch. Když má ventilátor, vyber jeho spínač — při stojícím ventilátoru se naměřeným hodnotám nevěří. Nemáš-li ventilátor, nech prázdné.",
             "climate": "Hlavice místnosti — virtuální z Better Thermostatu i skutečná. Integrace jim posílá cílovou teplotu a režim, když je zapnutý přepínač Ovládat topení.",
             "odchylka": "Cílová teplota se počítá pro celý byt. Tady ji pro tuto místnost posuneš. Plus znamená tepleji. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "noc_min": "Pod tuto teplotu se v noci nevětrá. V ložnici nižší, v obývacím pokoji vyšší. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
+            "noc_min": "Při nočním větrání se okno zavře, jakmile teplota klesne na tuhle hodnotu. Nižší číslo znamená delší větrání a méně cyklů za noc, ale chladnější ložnici.\n\nDřív tu byla ještě druhá hodnota, relativní pokles od stavu při otevření. Posouvala mez podle toho, jak bylo zrovna teplo, takže nebylo poznat, kde okno zavře.",
             "utlum": "Na kolik se stáhne topení, když je otevřené okno. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "komfort_odstup": "Jak moc smí být venku chladněji než cíl, aby šlo nechat okno trvale otevřené. Nízká hodnota znamená otevřeno jen za teplého počasí, vysoká skoro pořád. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "zdroj_obsazenosti": "Obsazená místnost se udržuje na cíli. Prázdná se nechá být.",
@@ -525,7 +522,6 @@
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "denni_pokles": "O kolik stupňů smí teplota při větrání klesnout, než se okno zavře. Málo znamená krátká větrání a teplo, hodně důkladné vyvětrání za cenu chladu.",
-            "nocni_pokles": "Totéž pro noc. Bývá větší, protože chladnější ložnice spánku prospívá a jedno dlouhé větrání je lepší než několik krátkých.",
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
             "noc_utlum_topeni": "O kolik stupňů v noci ubrat topení. Netýká se větrání — to má svoje „smí klesnout o\". Chladnější ložnice před spaním usnutí pomáhá a šetří teplo v nejlepší čas. Nula znamená netlumit.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
@@ -846,11 +842,11 @@
       "denni_pokles": {
         "name": "Ve dne smí klesnout o"
       },
-      "nocni_pokles": {
-        "name": "V noci smí klesnout o"
-      },
       "noc_utlum_topeni": {
         "name": "Noční útlum topení"
+      },
+      "minimum_na_noc": {
+        "name": "Minimum na noc"
       }
     },
     "switch": {

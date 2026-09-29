@@ -35,23 +35,22 @@ from .const import (
     CONF_KLIMA_V_POKOJI, CONF_KOMFORT_ODSTUP, CONF_KONTAKT_M,
     CONF_MAX_STARI, CONF_MIN_DRZENI, CONF_MISTNOSTI, CONF_NARAZ,
     CONF_NARAZOVE, CONF_NARAZOVE_ODSTUP, CONF_NARAZOVE_STROP,
-    CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOCNI_POKLES, CONF_NOC_DO,
-    CONF_NOC_MIN, CONF_NOC_OD, CONF_NOC_PREDSTIH, CONF_NOC_UTLUM,
-    CONF_NOC_ZAVRIT_VYVETRANO, CONF_OCHOTA, CONF_ODCHYLKA,
-    CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA, CONF_PAUZA_PO_PULZU,
-    CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU, CONF_PM_PLATNY,
-    CONF_PRAH_VYKONU, CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_PRYC_PO,
-    CONF_PRYC_UTLUM, CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU,
-    CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_RUCNI_KLID,
-    CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SEZONA_REZIM,
-    CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG, CONF_SOUHRN_CAS,
-    CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_CHOVANI,
-    CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC,
-    CONF_STINENI_REZIM, CONF_TEPLOTY, CONF_TOPENI_OBNOVA,
-    CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
-    CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT, CONF_VITR, CONF_VITR_KLID,
-    CONF_VITR_PRAH, CONF_VYCHOZI_KDY, CONF_VYNUCENO_M, CONF_ZALUZIE,
-    CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
+    CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD,
+    CONF_NOC_PREDSTIH, CONF_NOC_UTLUM, CONF_NOC_ZAVRIT_VYVETRANO,
+    CONF_OCHOTA, CONF_ODCHYLKA, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T,
+    CONF_OKNA, CONF_PAUZA_PO_PULZU, CONF_PM10, CONF_PM10_VENKU, CONF_PM25,
+    CONF_PM25_VENKU, CONF_PM_PLATNY, CONF_PRAH_VYKONU, CONF_PRITOMNOST,
+    CONF_PROJEZD_M, CONF_PRYC_PO, CONF_PRYC_UTLUM, CONF_RH_MAX,
+    CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI,
+    CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH,
+    CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG,
+    CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
+    CONF_STINENI_CHOVANI, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
+    CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
+    CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA,
+    CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT, CONF_VITR,
+    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYCHOZI_KDY, CONF_VYNUCENO_M,
+    CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
     CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD, CONF_ZIMA_O_KOLIK,
     CONF_ZIMA_PRAH, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY,
     CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
@@ -985,9 +984,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # při větrání klesnout.
         den_pokles = self.hodnota(p.subentry_id, CONF_DENNI_POKLES,
                                   float(d.get(CONF_DENNI_POKLES, 1.5)))
-        noc_pokles = self.hodnota(p.subentry_id, CONF_NOCNI_POKLES,
-                                  float(d.get(CONF_NOCNI_POKLES, 3.0)))
-        nast = replace(nast, denni_pokles=den_pokles, nocni_pokles=noc_pokles)
+        nast = replace(nast, denni_pokles=den_pokles)
 
         vyk = self.vykonavaci.setdefault(
             p.subentry_id, vy.Vykonavac(self.hass, p.subentry_id))
@@ -1065,6 +1062,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 zaklad = float(d.get(CONF_PAUZA_PO_PULZU, 15)) * 60
                 pauza = min(zaklad * 2 ** (pamet.pulzy_za_sebou - 1), 3600)
                 pamet.cas_povelu_s = cas_s + pauza - nast.min_drzeni_s
+                m.atributy["pauza_po_pulzu_min"] = round(pauza / 60)
+
+            # Totéž po nočním zavření kvůli chladu. Ložnice se prohřeje
+            # za dvacet minut a bez pauzy se okno hned otevře znovu —
+            # za noc z toho bylo dvanáct cyklů. Pauza je asymetrická,
+            # zdržuje jen otevření, ne zavření, takže se nepřestřelí.
+            if r.kod == "noc_zima":
+                pauza = float(d.get(CONF_PAUZA_PO_PULZU, 15)) * 60
+                if pauza > nast.min_drzeni_s:
+                    pamet.cas_povelu_s = cas_s + pauza - nast.min_drzeni_s
                 m.atributy["pauza_po_pulzu_min"] = round(pauza / 60)
 
             g = {**self.entry.data, **self.entry.options}

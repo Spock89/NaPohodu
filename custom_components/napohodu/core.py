@@ -56,7 +56,6 @@ class Nastaveni:
     chlazeni_min_venku: float = 12.0
 
     denni_pokles: float = 1.5
-    nocni_pokles: float = 3.0
     nocni_rezerva: float = 1.0
     nocni_min: float = 18.0
     # zavřít v noci hned po vyvětrání, nebo větrat dál a chladit
@@ -655,8 +654,11 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # Když za nás větrá soused, sami se v noci otevřeme až při krizi.
         # Lepší pomalejší výměna přes dveře než průvan nad postelí.
         prah_noc = n.co2_noc_krize if v.zastupce else n.co2_noc
-        mez = (p.noc_mez if p.noc_mez is not None
-               else max(n.nocni_min, t_in - n.nocni_pokles))
+        # Jedna mez, absolutní. Relativní pokles od stavu při otevření
+        # ji posouval podle toho, jak bylo zrovna teplo, takže nebylo
+        # poznat, kde okno zavře — a vyšší z obou hodnot stejně skoro
+        # vždycky vyhrála podlaha.
+        mez = p.noc_mez if p.noc_mez is not None else n.nocni_min
 
         if p.otevreno:
             if t_in <= mez:
@@ -693,7 +695,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                 return beze_zmeny(f"noc: ranní ruch, neotvírám (CO2 {v.co2:.0f})")
             if t_in <= n.nocni_min + n.nocni_rezerva:
                 return beze_zmeny(f"noc: dusno, ale jen {t_in:.1f} °C")
-            p.noc_mez = max(n.nocni_min, t_in - n.nocni_pokles)
+            p.noc_mez = n.nocni_min
             p.noc_start = t_in
             p.noc_krize = False
             p.noc_zavreno_teplotou = False
