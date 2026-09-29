@@ -16,8 +16,9 @@ from __future__ import annotations
 POSUVNIKY = [
     ("odchylka_teploty", "Odchylka teploty",
      "Přičte se k vypočtenému cíli. Tvoje osobní „chci tepleji“."),
-    ("ve_dne_smi_klesnout_o", "Ve dne smí klesnout o",
-     "Kolik stupňů smí větrání přes den ubrat, než okno zavře."),
+    ("ve_dne_smi_klesnout_pod_cil_o", "Ve dne smí klesnout pod cíl o",
+     "Přes den zavřu, až teplota klesne o tolik pod cílovou. Mez se "
+     "tím drží u cíle celý rok a nemusí se v sezóně přenastavovat."),
     ("nocni_utlum_topeni", "Noční útlum topení",
      "O kolik v noci ubrat topení. Nabíhá před začátkem noci."),
     ("minimum_na_noc", "Minimum na noc",
@@ -62,6 +63,7 @@ ATRIBUTY_STAVU = [
     ("prach_zvenci", "Prach se tahá zvenčí", None),
     ("dnes", "Souhrn dne", None),
     ("co_bylo", "Poslední rozhodnutí", None),
+    ("konflikt_mezi", "⚠ Konflikt nastavení", None),
     ("co_dal", "Co změnu spustí", None),
     ("duvody", "Diagnostika", None),
 ]

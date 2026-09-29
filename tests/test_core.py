@@ -467,10 +467,11 @@ def test_komfort_nezavre_hned_po_otevreni():
     assert druhy.akce is not Akce.ZAVRIT
 
 
-def test_komfort_zavre_pri_skutecnem_ochlazeni():
+def test_komfort_zavre_na_denni_mezi():
+    """Mez se odvozuje od cíle: při cíli 21 a 1,5 pod ním na 19,5."""
     p = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
-              komfort_start=25.0)
-    r = rozhodni(stary(co2=550, t_in=23.0, t_out=22.0, cil=25.0, hodina=14),
+              komfort_start=21.5)
+    r = rozhodni(stary(co2=550, t_in=19.4, t_out=18.0, cil=21.0, hodina=14),
                  p, N)
     assert r.akce is Akce.ZAVRIT
 
@@ -484,7 +485,7 @@ def test_pri_zavrenem_okne_se_poroznava_s_cilem():
 def test_konec_komfortu_zapomene_vychozi_teplotu():
     p = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
               komfort_start=25.0)
-    rozhodni(stary(co2=550, t_in=23.0, t_out=22.0, cil=25.0, hodina=14), p, N)
+    rozhodni(stary(co2=550, t_in=19.4, t_out=18.0, cil=21.0, hodina=14), p, N)
     assert p.komfort_start is None
 
 
@@ -517,7 +518,8 @@ def test_ocekavani_v_noci_uvadi_i_teplotni_mez():
     assert "19.0" in t
 
 
-def test_ocekavani_komfortu_bere_pokles_od_otevreni():
+def test_ocekavani_komfortu_uvadi_denni_mez():
+    """Mez je vždycky 1,5 pod cílem, ať je cíl kdekoli."""
     from core import ocekavani
     p = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
               komfort_start=25.0)
@@ -1029,3 +1031,38 @@ def test_nocni_rezerva_neotevira_tesne_nad_mezi():
                        cil=21.0, hodina=2.0, resi_klid=True, spanek=True,
                        cas_s=100000), p, nast)
     assert r.akce is Akce.NIC and "jen" in r.duvod
+
+
+# --------------------- konflikt mezí s cílovou teplotou
+
+def test_nocni_mez_nad_cilem_se_ohlasi():
+    """Noční mez je absolutní, takže se s cílem rozejít může.
+    Denní se od cíle odvozuje, tam ten konflikt nastat nemůže."""
+    from core import konflikt_mezi
+    assert konflikt_mezi(21.0, 1.5, 18.0) == []
+    assert "nad cílem" in " ".join(konflikt_mezi(21.0, 1.5, 22.0))
+    assert "nerozjede" in " ".join(konflikt_mezi(21.0, 1.5, 20.5))
+
+
+def test_maly_denni_odstup_se_ohlasi():
+    """Pod půl stupně se okno jen otevře a hned zavře."""
+    from core import konflikt_mezi
+    assert "kmitat" in " ".join(konflikt_mezi(21.0, 0.2, 18.0))
+
+
+def test_konflikt_pocita_i_nocni_rezervu():
+    from core import konflikt_mezi
+    assert konflikt_mezi(21.0, 1.5, 19.5, nocni_rezerva=1.0) == []
+    assert konflikt_mezi(21.0, 1.5, 19.5, nocni_rezerva=2.0) != []
+
+
+def test_denni_mez_sleduje_cil():
+    """Mez odvozená od cíle sleduje sezónu sama: v zimě zavře výš,
+    v létě níž, a nemusí se nic přenastavovat."""
+    from core import Nastaveni as N_
+    nast = N_(denni_pod_cil=1.5)
+    for cil, ceka in ((21.0, 19.5), (26.0, 24.5)):
+        p = Pamet(cas_povelu_s=0)
+        rozhodni(Vstup(co2=1200, t_in=cil, t_in_max=cil, t_out=cil - 8,
+                       cil=cil, hodina=14.0, cas_s=100000), p, nast)
+        assert p.den_mez == ceka, (cil, p.den_mez)

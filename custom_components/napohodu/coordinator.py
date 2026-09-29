@@ -26,7 +26,7 @@ from .const import (
     CONF_AZIMUT, CONF_CIL_MAX, CONF_CIL_MIN, CONF_CISTICKA,
     CONF_CISTICKA_OD, CONF_CLIMATE, CONF_CO2, CONF_CO2_NOC,
     CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT,
-    CONF_DENNI_POKLES, CONF_DEST, CONF_DEST_PRAH, CONF_DOBEH, CONF_DOMA,
+    CONF_DEN_POD_CIL, CONF_DEST, CONF_DEST_PRAH, CONF_DOBEH, CONF_DOMA,
     CONF_DVERE, CONF_INDICIE_DOBEH, CONF_INDICIE_STAV, CONF_INDICIE_VYKON,
     CONF_I_KDYZ_NIKDO, CONF_KLID_STINENI_MIN, CONF_KLIMA_CHLADIT_OD,
     CONF_KLIMA_DLOUHA, CONF_KLIMA_DLOUHA_H, CONF_KLIMA_ENTITA,
@@ -127,6 +127,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._start_s: float = dt_util.utcnow().timestamp()
         self.doma_popis: str = ""
         self.cil_rozpad: list[str] = []
+        self._konflikt_hlasen: dict = {}
         self._hodina_ted: float = 12.0
         self._noc_od: float = 22.0
         self._noc_do: float = 6.5
@@ -982,9 +983,24 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # Dřív to byl posuvník nula až deset, u kterého nebylo poznat,
         # co dělá. Teď se rovnou zadává, o kolik stupňů smí teplota
         # při větrání klesnout.
-        den_pokles = self.hodnota(p.subentry_id, CONF_DENNI_POKLES,
-                                  float(d.get(CONF_DENNI_POKLES, 1.5)))
-        nast = replace(nast, denni_pokles=den_pokles)
+        den_pod = self.hodnota(p.subentry_id, CONF_DEN_POD_CIL,
+                               float(d.get(CONF_DEN_POD_CIL, 1.5)))
+        nast = replace(nast, denni_pod_cil=den_pod)
+
+        # Každá mez sama o sobě vypadá rozumně, konflikt s cílem je
+        # vidět až dohromady. Bez tohohle by okno jen nefungovalo
+        # a nebylo by poznat proč.
+        potize = core.konflikt_mezi(m.cil, nast.denni_pod_cil,
+                                    nast.nocni_min, nast.nocni_rezerva)
+        m.atributy["konflikt_mezi"] = potize or None
+        if potize and self._konflikt_hlasen.get(p.subentry_id) != potize:
+            self._konflikt_hlasen[p.subentry_id] = potize
+            _LOGGER.warning("NaPohodu: %s — %s", m.nazev, "; ".join(potize))
+            await self._posli({**self.entry.data, **self.entry.options},
+                              "chyba", m.nazev, cas_s,
+                              text="; ".join(potize))
+        elif not potize:
+            self._konflikt_hlasen.pop(p.subentry_id, None)
 
         vyk = self.vykonavaci.setdefault(
             p.subentry_id, vy.Vykonavac(self.hass, p.subentry_id))

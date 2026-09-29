@@ -55,7 +55,11 @@ class Nastaveni:
     chlazeni_rozdil: float = 1.0
     chlazeni_min_venku: float = 12.0
 
-    denni_pokles: float = 1.5
+    # Denní mez se odvozuje od cíle, ne od stavu při otevření ani
+    # absolutně. Cíl je vidět, takže mez je předvídatelná, a zároveň
+    # sleduje sezónu: v zimě s cílem 21 zavře na 19,5, v létě s cílem
+    # 26 na 24,5, aniž by se muselo cokoli přenastavovat.
+    denni_pod_cil: float = 1.5
     nocni_rezerva: float = 1.0
     nocni_min: float = 18.0
     # zavřít v noci hned po vyvětrání, nebo větrat dál a chladit
@@ -218,6 +222,32 @@ def cil_adaptivni(prumer_venku: float, posun: float = 0.0,
     return round(min(max(zaklad, dolni) + pritopit, horni), 1)
 
 
+def konflikt_mezi(cil: float, denni_pod_cil: float, nocni_min: float,
+                  nocni_rezerva: float = 1.0) -> list[str]:
+    """Nesrovnalosti mezi mezemi větrání a cílovou teplotou.
+
+    Mez nad cílem znamená, že se okno zavře hned po otevření, nebo se
+    vůbec neotevře — a není to nikde vidět, protože každé nastavení
+    samo o sobě vypadá rozumně.
+    """
+    potize = []
+    if denni_pod_cil < 0.5:
+        potize.append(
+            f"denní mez je jen {denni_pod_cil:.1f} °C pod cílem "
+            f"{cil:.1f} °C — přes den se bude jen kmitat")
+
+    if nocni_min >= cil:
+        potize.append(
+            f"noční mez {nocni_min:.1f} °C je nad cílem {cil:.1f} °C — "
+            f"v noci se vůbec nevyvětrá")
+    elif nocni_min + nocni_rezerva >= cil:
+        potize.append(
+            f"noční mez {nocni_min:.1f} °C plus rezerva "
+            f"{nocni_rezerva:.1f} °C nedává místo pod cílem "
+            f"{cil:.1f} °C — noční větrání se nerozjede")
+    return potize
+
+
 def zimni_pritapeni(prumer_venku: float, prah: float = 7.0,
                     o_kolik: float = 1.0, nabeh: float = 2.5) -> float:
     """O kolik přitopit, když je venku zima.
@@ -330,8 +360,7 @@ def _pod_cilem(v: Vstup, p: Pamet, n: Nastaveni, t_in: float) -> bool:
     """
     if not p.otevreno or p.komfort_start is None:
         return t_in < v.cil - 0.5
-    mez = max(n.nocni_min, p.komfort_start - n.denni_pokles)
-    return t_in <= mez
+    return t_in <= v.cil - n.denni_pod_cil
 
 
 def posledni(p: Pamet, cas_s: float) -> list[str]:
@@ -373,7 +402,7 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
             seznam.append(f"zavřu při poklesu na {p.noc_mez:.1f} °C "
                           f"(teď {t_in:.1f})")
         elif p.rezim == "komfort" and p.komfort_start is not None:
-            mez = max(n.nocni_min, p.komfort_start - n.denni_pokles)
+            mez = v.cil - n.denni_pod_cil
             seznam.append(f"zavřu při poklesu na {mez:.1f} °C "
                           f"(teď {t_in:.1f})")
         elif p.den_mez is not None:
@@ -737,7 +766,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             minuty = min(minuty, n.narazove_strop_s / 60)
 
         p.rezim = "pulz"
-        p.den_mez = max(n.nocni_min + 1, t_in - n.denni_pokles)
+        p.den_mez = round(v.cil - n.denni_pod_cil, 1)
         duvod = f"CO2 {v.co2:.0f}"
         if pm_spatne:
             duvod = f"PM2.5 {v.pm25:.0f}" + ("" if v.pm_platny else " (bez ventilátoru)")
