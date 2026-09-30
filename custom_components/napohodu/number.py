@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT, CONF_KOMFORT_ODSTUP,
-                    CONF_DEN_POD_CIL, CONF_NOC_MIN, CONF_NOC_UTLUM,
+                    CONF_DEN_POD_CIL, CONF_NOC_MIN, CONF_NOC_UTLUM, CONF_TLOUSTKA,
                     CONF_ODCHYLKA, CONF_UTLUM,
                     DOMAIN,
                     PODENTITA_MISTNOST)
@@ -35,6 +35,8 @@ MISTNOST = [
              "mdi:thermometer-plus"),
     Posuvnik(CONF_NOC_UTLUM, 0, 4, 0.5, UnitOfTemperature.CELSIUS, 0.0,
              "mdi:weather-night-partly-cloudy"),
+    Posuvnik(CONF_TLOUSTKA, 0, 4, 0.5, UnitOfTemperature.CELSIUS, 1.0,
+             "mdi:sine-wave"),
     Posuvnik(CONF_NOC_MIN, 14, 24, 0.5, UnitOfTemperature.CELSIUS, 18.0,
              "mdi:weather-night"),
     Posuvnik(CONF_KOMFORT_ODSTUP, 1, 15, 0.5, UnitOfTemperature.CELSIUS, 4.0,

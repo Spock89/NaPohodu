@@ -1044,10 +1044,10 @@ def test_maly_denni_odstup_se_ohlasi():
     assert "hned zavře" in " ".join(konflikt_mezi(21.0, 0.2, 18.0))
 
 
-def test_konflikt_pocita_i_nocni_rezervu():
+def test_konflikt_pocita_i_tloustku():
     from core import konflikt_mezi
-    assert konflikt_mezi(21.0, 1.5, 19.5, nocni_rezerva=1.0) == []
-    assert konflikt_mezi(21.0, 1.5, 19.5, nocni_rezerva=2.0) != []
+    assert konflikt_mezi(21.0, 1.5, 19.5, tloustka=1.0) == []
+    assert konflikt_mezi(21.0, 1.5, 19.5, tloustka=2.0) != []
 
 
 def test_denni_mez_sleduje_cil():
@@ -1214,3 +1214,49 @@ def test_zavreni_kvuli_teplote_ma_kod():
     r = rozhodni(stary(co2=550, t_in=19.4, t_in_max=19.6, t_out=18.0,
                        cil=21.0, hodina=14), p, N)
     assert r.akce is Akce.ZAVRIT and r.kod == "teplota"
+
+
+# --------------------- obrázek hysterezní smyčky
+
+def test_pasmo_ukaze_meze_i_kde_jsme():
+    """Nastavit čtyři čísla a pak hádat, co dělají, je k ničemu."""
+    from core import pasmo_text
+    r = pasmo_text(21.0, 20.8, 1.5, 18.0, 1.0, otevreno=True)
+    t = "\n".join(r)
+    assert "cíl 21.0" in t
+    assert "19.5" in t            # denní mez = cíl - 1,5
+    assert "teď, otevřeno" in t
+    assert "zavřu při poklesu na 19.5" in t
+
+
+def test_pasmo_po_zavreni_ukaze_na_co_se_ceka():
+    from core import pasmo_text
+    t = "\n".join(pasmo_text(21.0, 20.1, 1.5, 18.0, 1.0, otevreno=False,
+                             zavrela_na=19.5))
+    assert "znovu otevřu od 20.5" in t
+    assert "čekám na 20.5" in t
+
+
+def test_pasmo_ve_spanku_ukaze_pojistku():
+    from core import pasmo_text
+    t = "\n".join(pasmo_text(22.0, 20.4, 1.5, 21.0, 1.0, otevreno=True,
+                             spanek=True, noc=True, spanek_pojistka=2.0))
+    assert "pojistka ve spánku 19.0" in t
+
+
+def test_pasmo_ma_teplotu_ve_spravnem_poradi():
+    """Značka „teď" musí sedět mezi mezemi, jinak je obrázek matoucí."""
+    from core import pasmo_text
+    r = pasmo_text(21.0, 20.8, 1.5, 18.0, 1.0, otevreno=True)
+    cisla = [float(x.split()[0]) for x in r if x[:5].strip()
+             and x.split()[0].replace(".", "").isdigit()]
+    assert cisla == sorted(cisla, reverse=True)
+
+
+def test_tloustka_rusi_hysterezi_kdyz_je_nula():
+    from core import Nastaveni as N_
+    nast = N_(tloustka=0.0)
+    p = Pamet(otevreno=False, cas_povelu_s=0, teplota_zavrela_na=19.5)
+    r = rozhodni(stary(co2=1200, t_in=19.6, t_in_max=19.8, t_out=12.0,
+                       cil=21.0, hodina=14.0), p, nast)
+    assert r.akce is Akce.OTEVRIT

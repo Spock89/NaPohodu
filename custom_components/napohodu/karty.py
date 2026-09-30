@@ -22,6 +22,10 @@ POSUVNIKY = [
     ("v_noci_topit_o_mene", "V noci topit o méně",
      "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. "
      "Klesá plynule hodinu před začátkem noci, spánek platí hned."),
+    ("tloustka_hysterezni_smycky", "Tloušťka hysterezní smyčky",
+     "O kolik se musí teplota vrátit, než se po zavření kvůli chladu "
+     "otevře znovu. Širší smyčka znamená delší cykly a větší rozkyv — "
+     "nic mezi tím neexistuje."),
     ("v_noci_vychladnout_nejvys_na", "V noci vychladnout nejvýš na",
      "Při nočním větrání zavřu, až teplota klesne na tuhle hodnotu. "
      "Nižší číslo znamená delší větrání a méně cyklů za noc."),
@@ -360,6 +364,15 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         c.append("      {% for y in x %}")
         c.append("      - {{ y }}")
         c.append("      {% endfor %}{% endif %}")
+        # stupnice teplotního větrání: kde jsou meze a kde jsme teď
+        c.append("  - type: markdown")
+        c.append("    content: |-")
+        c.append(f"      {{% set y = state_attr('{stav}',"
+                 f" 'teplotni_pasmo') %}}")
+        c.append("      {% if y %}**Teplotní pásmo větrání**")
+        c.append("      ```")
+        c.append("      {% for z in y %}{{ z }}")
+        c.append("      {% endfor %}```{% endif %}")
         c.append("")
 
     # --- oblasti ---

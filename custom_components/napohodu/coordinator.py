@@ -47,14 +47,14 @@ from .const import (
     CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
     CONF_SPANEK_POJISTKA, CONF_STINENI_CHOVANI, CONF_STINENI_MAPA,
     CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
-    CONF_TEPLOTY, CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER,
-    CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT,
-    CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYCHOZI_KDY,
-    CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
-    CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD, CONF_ZIMA_O_KOLIK,
-    CONF_ZIMA_PRAH, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY,
-    CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
-    PODENTITA_MISTNOST, PODENTITA_ZONA,
+    CONF_TEPLOTY, CONF_TLOUSTKA, CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU,
+    CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM,
+    CONF_VETRAT, CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH,
+    CONF_VYCHOZI_KDY, CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE,
+    CONF_ZARENI, CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD,
+    CONF_ZIMA_O_KOLIK, CONF_ZIMA_PRAH, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO,
+    CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S,
+    PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -997,6 +997,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 p.subentry_id, CONF_MIN_DRZENI,
                 float(d.get(CONF_MIN_DRZENI, 20))) * 60,
             spanek_pojistka=float(d.get(CONF_SPANEK_POJISTKA, 2.0)),
+            tloustka=self.hodnota(p.subentry_id, CONF_TLOUSTKA,
+                                  float(d.get(CONF_TLOUSTKA, 1.0))),
             noc_zavrit_po_vyvetrani=bool(
                 d.get(CONF_NOC_ZAVRIT_VYVETRANO, True)),
             nocni_min=self.hodnota(p.subentry_id, CONF_NOC_MIN,
@@ -1019,7 +1021,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # vidět až dohromady. Bez tohohle by okno jen nefungovalo
         # a nebylo by poznat proč.
         potize = core.konflikt_mezi(m.cil, nast.denni_pod_cil,
-                                    nast.nocni_min, nast.nocni_rezerva)
+                                    nast.nocni_min, nast.tloustka)
         m.atributy["konflikt_mezi"] = potize or None
         if potize and self._konflikt_hlasen.get(p.subentry_id) != potize:
             self._konflikt_hlasen[p.subentry_id] = potize
@@ -1205,6 +1207,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Odchylka místnosti se sem nepřidává: je vidět na svém
             # posuvníku a výsledek je v cílové teplotě.
             "cil_rozpad": self.cil_rozpad,
+            # stupnice s mezemi, ať je vidět, co nastavení dělají
+            "teplotni_pasmo": core.pasmo_text(
+                m.cil, v.t_in, nast.denni_pod_cil, nast.nocni_min,
+                nast.tloustka, skutecne, bool(m.klid),
+                core._je_noc(self._hodina_ted, nast, bool(m.klid)),
+                nast.spanek_pojistka, pamet.teplota_zavrela_na),
             "vitr": self.vitr_stav,
             "dnes": {
                 "pohyby": sh["pohyby"],

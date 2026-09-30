@@ -142,6 +142,20 @@ tahá se zvenčí, a poznatek pár hodin platí.
 Na prach se ostatně větrat nemusí. Čistička ho vyřeší bez tepelné
 ztráty a v zimě je to skoro vždycky lepší volba.
 
+### Hysterezní smyčka teplotního větrání
+
+Okno zavírá při dosažení meze a znovu otevírá až po návratu o tloušťku
+smyčky. Tloušťka je směnný kurz mezi rozkyvem a počtem cyklů: širší
+smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje.
+
+Nastavuje se u místnosti a z téhož čísla se odvozuje i to, že se okno
+neotevře těsně nad mezí. Každé zavření kvůli teplotě navíc nasadí pauzu,
+která se s dalším zdvojnásobí — když se okno pořád vrací, je to znamení,
+že se mez a tepelná odezva pokoje nesnesou.
+
+V kartě je pod každou místností stupnice s mezemi a značkou, kde je
+teplota právě teď, aby bylo z nastavení vidět, co dělá.
+
 ### Noční režim
 
 Jedno dlouhé provětrání místo několika krátkých. Vyšší práh CO2, aby to

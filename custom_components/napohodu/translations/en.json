@@ -303,7 +303,8 @@
             "cisticka_od_pm": "Čističku zapnout od PM2.5",
             "noc_zavrit_po_vyvetrani": "V noci zavřít, až je vyvětráno",
             "den_pod_cil": "Ve dne smí klesnout pod cíl o",
-            "spanek_pojistka": "Ve spánku smí spadnout pod mez o"
+            "spanek_pojistka": "Ve spánku smí spadnout pod mez o",
+            "tloustka_smycky": "Tloušťka hysterezní smyčky"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -357,7 +358,8 @@
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
             "noc_zavrit_po_vyvetrani": "Zaškrtnuté zavře okno, jakmile CO2 spadne pod „zavřít pod\". Odškrtnuté nechá větrat dál, dokud teplota neklesne na noční mez — noční větrání pak ložnici i vychladí, ale při mírném počasí může zůstat otevřeno do rána.",
             "den_pod_cil": "Přes den se okno zavře, jakmile teplota klesne o tolik pod cílovou. Mez se tím drží u cíle celý rok: v zimě při cíli 21 zavře na 19,5, v létě při cíli 26 na 24,5, aniž bys cokoli přenastavoval.\n\nDřív tu byl pokles od stavu při otevření, který mez posouval podle toho, jak bylo zrovna teplo. Absolutní mez zase nesledovala sezónu — v létě dovolila vychladit o šest stupňů.",
-            "spanek_pojistka": "Ve spánku se kvůli teplotě nevětrá ani nezavírá — okno dělá rámus a v malém pokoji se teplota vrátí za dvacet minut, takže z toho byla celá noc lítání tam a sem. Tohle je jen pojistka, aby v mrazu ložnice nevychladla donekonečna. Vyšší číslo znamená méně pohybů okna za noc.\\n\\nVe spánku navíc otevírá jen krizový práh CO2, běžné dusno se vydrží."
+            "spanek_pojistka": "Ve spánku se kvůli teplotě nevětrá ani nezavírá — okno dělá rámus a v malém pokoji se teplota vrátí za dvacet minut, takže z toho byla celá noc lítání tam a sem. Tohle je jen pojistka, aby v mrazu ložnice nevychladla donekonečna. Vyšší číslo znamená méně pohybů okna za noc.\\n\\nVe spánku navíc otevírá jen krizový práh CO2, běžné dusno se vydrží.",
+            "tloustka_smycky": "O kolik se musí teplota vrátit, než se po zavření kvůli chladu otevře znovu. Nula znamená otevřít hned, jak to jiné podmínky dovolí.\\n\\nJe to směnný kurz mezi rozkyvem a počtem cyklů: širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje. Odvozuje se z ní i to, že se okno neotevře těsně nad mezí."
           },
           "submit": "Další"
         },
@@ -465,7 +467,8 @@
             "cisticka_od_pm": "Čističku zapnout od PM2.5",
             "noc_zavrit_po_vyvetrani": "V noci zavřít, až je vyvětráno",
             "den_pod_cil": "Ve dne smí klesnout pod cíl o",
-            "spanek_pojistka": "Ve spánku smí spadnout pod mez o"
+            "spanek_pojistka": "Ve spánku smí spadnout pod mez o",
+            "tloustka_smycky": "Tloušťka hysterezní smyčky"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -529,7 +532,8 @@
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
             "noc_zavrit_po_vyvetrani": "Zaškrtnuté zavře okno, jakmile CO2 spadne pod „zavřít pod\". Odškrtnuté nechá větrat dál, dokud teplota neklesne na noční mez — noční větrání pak ložnici i vychladí, ale při mírném počasí může zůstat otevřeno do rána.",
             "den_pod_cil": "Přes den se okno zavře, jakmile teplota klesne o tolik pod cílovou. Mez se tím drží u cíle celý rok: v zimě při cíli 21 zavře na 19,5, v létě při cíli 26 na 24,5, aniž bys cokoli přenastavoval.\n\nDřív tu byl pokles od stavu při otevření, který mez posouval podle toho, jak bylo zrovna teplo. Absolutní mez zase nesledovala sezónu — v létě dovolila vychladit o šest stupňů.",
-            "spanek_pojistka": "Ve spánku se kvůli teplotě nevětrá ani nezavírá — okno dělá rámus a v malém pokoji se teplota vrátí za dvacet minut, takže z toho byla celá noc lítání tam a sem. Tohle je jen pojistka, aby v mrazu ložnice nevychladla donekonečna. Vyšší číslo znamená méně pohybů okna za noc.\\n\\nVe spánku navíc otevírá jen krizový práh CO2, běžné dusno se vydrží."
+            "spanek_pojistka": "Ve spánku se kvůli teplotě nevětrá ani nezavírá — okno dělá rámus a v malém pokoji se teplota vrátí za dvacet minut, takže z toho byla celá noc lítání tam a sem. Tohle je jen pojistka, aby v mrazu ložnice nevychladla donekonečna. Vyšší číslo znamená méně pohybů okna za noc.\\n\\nVe spánku navíc otevírá jen krizový práh CO2, běžné dusno se vydrží.",
+            "tloustka_smycky": "O kolik se musí teplota vrátit, než se po zavření kvůli chladu otevře znovu. Nula znamená otevřít hned, jak to jiné podmínky dovolí.\\n\\nJe to směnný kurz mezi rozkyvem a počtem cyklů: širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje. Odvozuje se z ní i to, že se okno neotevře těsně nad mezí."
           },
           "submit": "Další"
         },
@@ -848,6 +852,9 @@
       },
       "den_pod_cil": {
         "name": "Ve dne smí klesnout pod cíl o"
+      },
+      "tloustka_smycky": {
+        "name": "Tloušťka hysterezní smyčky"
       }
     },
     "switch": {

@@ -60,7 +60,11 @@ class Nastaveni:
     # sleduje sezónu: v zimě s cílem 21 zavře na 19,5, v létě s cílem
     # 26 na 24,5, aniž by se muselo cokoli přenastavovat.
     denni_pod_cil: float = 1.5
-    nocni_rezerva: float = 1.0
+    # Tloušťka hysterezní smyčky: o kolik se musí teplota vrátit, než
+    # se po zavření kvůli chladu otevře znovu. Z ní se odvozuje i to,
+    # že se neotevře těsně nad mezí. Širší smyčka znamená delší cykly
+    # a větší rozkyv — nic mezi tím neexistuje.
+    tloustka: float = 1.0
     # O kolik pod noční mez smí teplota ve spánku spadnout, než se
     # okno zavře. Vyšší číslo znamená méně pohybů okna za noc.
     spanek_pojistka: float = 2.0
@@ -149,6 +153,9 @@ class Pamet:
     # kolikrát po sobě se zavřelo kvůli teplotě; každé další zdvojnásobí
     # pauzu, aby okno nelítalo tam a sem
     teplotni_zavreni: int = 0
+    # při jaké teplotě se zavřelo kvůli chladu; znovu se otevře až po
+    # návratu o tloušťku smyčky
+    teplota_zavrela_na: float | None = None
     # běží právě pulz zkrácený kvůli nárazovému větrání? Spouštěcí
     # podmínka zmizí hned, jak CO2 klesne, ale okno běží dál.
     narazove_pulz: bool = False
@@ -232,7 +239,11 @@ def cil_adaptivni(prumer_venku: float, posun: float = 0.0,
 
 
 def konflikt_mezi(cil: float, denni_pod_cil: float, nocni_min: float,
-                  nocni_rezerva: float = 1.0) -> list[str]:
+                  # Tloušťka hysterezní smyčky: o kolik se musí teplota vrátit, než
+    # se po zavření kvůli chladu otevře znovu. Z ní se odvozuje i to,
+    # že se neotevře těsně nad mezí. Širší smyčka znamená delší cykly
+    # a větší rozkyv — nic mezi tím neexistuje.
+    tloustka: float = 1.0) -> list[str]:
     """Nesrovnalosti mezi mezemi větrání a cílovou teplotou.
 
     Mez nad cílem znamená, že se okno zavře hned po otevření, nebo se
@@ -254,12 +265,12 @@ def konflikt_mezi(cil: float, denni_pod_cil: float, nocni_min: float,
             f"„V noci vychladnout nejvýš na“ {nocni_min:.1f} °C je nad "
             f"cílem {cil:.1f} °C: v noci se vůbec nevyvětrá. Sniž mez, "
             f"nebo zvyš cílovou teplotu.")
-    elif nocni_min + nocni_rezerva >= cil:
+    elif nocni_min + tloustka >= cil:
         potize.append(
             f"„V noci vychladnout nejvýš na“ {nocni_min:.1f} °C je moc "
             f"blízko cíli {cil:.1f} °C: noční větrání potřebuje aspoň "
-            f"{nocni_rezerva:.1f} °C rezervu, takže se nerozjede. "
-            f"Sniž mez pod {cil - nocni_rezerva:.1f} °C.")
+            f"{tloustka:.1f} °C rezervu, takže se nerozjede. "
+            f"Sniž mez pod {cil - tloustka:.1f} °C.")
     return potize
 
 
@@ -309,7 +320,6 @@ def _je_noc(hodina: float, n: Nastaveni, spanek: bool) -> bool:
 
 
 # o kolik pod původní teplotu smí místnost zůstat, než se znovu otevře
-NOCNI_VRATIT = 1.0
 
 
 def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
@@ -338,7 +348,7 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         seznam.append("noční klid")
         if v.zastupce:
             seznam.append("větrá za nás soused")
-        if tin <= n.nocni_min + n.nocni_rezerva:
+        if tin <= n.nocni_min + n.tloustka:
             seznam.append(f"pod noční mezí {n.nocni_min:.1f} °C")
         if n.noc_do <= v.hodina < 9:
             seznam.append("ranní klid")
@@ -467,7 +477,7 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
                           f"stoupal, takže se tahá zvenčí (platí ještě "
                           f"{kolik} min)")
         if noc:
-            seznam.append(f"a jen nad {n.nocni_min + n.nocni_rezerva:.1f} °C "
+            seznam.append(f"a jen nad {n.nocni_min + n.tloustka:.1f} °C "
                           f"(teď {t_in:.1f})")
 
     return seznam
@@ -706,6 +716,8 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             # se vrátí na teplotu za dvacet minut.
             kvuli_teplote = ("uvnitř" in brani or "pod cílem" in brani
                              or "venku" in brani)
+            if kvuli_teplote:
+                p.teplota_zavrela_na = t_in
             return zavri(f"zavírám, {brani}",
                          kod="teplota" if kvuli_teplote else "")
 
@@ -746,7 +758,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # na chvíli skočit. Čidlo umístěné v okně po zavření rychle
         # vyskočí — bez téhle hystereze by se okno otevřelo za pár minut.
         if p.noc_zavreno_teplotou and p.noc_start is not None:
-            vratit = p.noc_start - NOCNI_VRATIT
+            vratit = p.noc_start - n.tloustka
             if t_in >= vratit:
                 p.noc_zavreno_teplotou = False
             elif not krize:
@@ -764,7 +776,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                 return otevri("noc: nouzové větrání", 12 * 60, kod="noc_krize")
             if rano:
                 return beze_zmeny(f"noc: ranní ruch, neotvírám (CO2 {v.co2:.0f})")
-            if t_in <= n.nocni_min + n.nocni_rezerva:
+            if t_in <= n.nocni_min + n.tloustka:
                 return beze_zmeny(f"noc: dusno, ale jen {t_in:.1f} °C")
             p.noc_mez = n.nocni_min
             p.noc_start = t_in
@@ -782,8 +794,20 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             return beze_zmeny(f"čisto, CO2 {v.co2:.0f}", False)
         p.den_mez = None
         p.narazove_pulz = False
+        p.teplota_zavrela_na = None   # vyvětráno, smyčka se ruší
         p.pulzy_za_sebou = 0          # povedlo se, couvání se ruší
         return zavri(f"vyvětráno, CO2 {v.co2:.0f}", kod="cisto")
+
+    # Po zavření kvůli teplotě se čeká na návrat o tloušťku smyčky.
+    # Bez toho se okno vrátilo, jakmile pokoj skočil o desetinu — a to
+    # v malém pokoji trvá pár minut.
+    if (p.teplota_zavrela_na is not None and not p.otevreno
+            and v.co2 <= n.co2_noc_krize):
+        vratit = p.teplota_zavrela_na + n.tloustka
+        if t_in < vratit:
+            return beze_zmeny(
+                f"čekám na prohřátí, {t_in:.1f} z {vratit:.1f} °C", False)
+        p.teplota_zavrela_na = None
 
     # --- 8. pulzní větrání -------------------------------------------
     if potreba:
@@ -819,3 +843,43 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         return otevri(duvod, min(max(minuty, dolni), 120) * 60, kod="pulz")
 
     return beze_zmeny(f"mrtvá zóna, CO2 {v.co2:.0f}")
+
+
+# ------------------------------------------------------- obrázek smyčky
+
+def pasmo_text(cil: float, t_in: float, denni_pod_cil: float,
+               nocni_min: float, tloustka: float, otevreno: bool,
+               spanek: bool = False, noc: bool = False,
+               spanek_pojistka: float = 2.0,
+               zavrela_na: float | None = None) -> list[str]:
+    """Stupnice s mezemi a tím, kde je teplota právě teď.
+
+    Nastavit čtyři čísla a pak hádat, co dělají, je k ničemu. Tohle
+    ukáže, kde se okno zavře, odkud se znovu otevře a jak daleko od
+    obojího jsme.
+    """
+    mez_zavri = (nocni_min - spanek_pojistka if spanek
+                 else nocni_min if noc else cil - denni_pod_cil)
+    popis_mezi = ("pojistka ve spánku" if spanek
+                  else "noční mez" if noc else "denní mez")
+    zaklad = zavrela_na if zavrela_na is not None else mez_zavri
+    mez_otevri = zaklad + tloustka
+
+    body = [(cil, f"cíl {cil:.1f}"),
+            (mez_otevri, f"znovu otevřu od {mez_otevri:.1f}"),
+            (mez_zavri, f"{popis_mezi} {mez_zavri:.1f} — tady zavřu")]
+    radky = []
+    for hodnota, popis in sorted(body, key=lambda x: -x[0]):
+        radky.append(f"{hodnota:5.1f} ┤ {popis}")
+
+    kde = sorted(body + [(t_in, "")], key=lambda x: -x[0]).index((t_in, ""))
+    radky.insert(kde, f"{t_in:5.1f} ●  teď, "
+                      + ("otevřeno" if otevreno else "zavřeno"))
+
+    if otevreno:
+        radky.append(f"zavřu při poklesu na {mez_zavri:.1f} °C")
+    elif t_in < mez_otevri:
+        radky.append(f"kvůli teplotě neotevřu, čekám na {mez_otevri:.1f} °C")
+    else:
+        radky.append("teplota otevření nebrání")
+    return radky
