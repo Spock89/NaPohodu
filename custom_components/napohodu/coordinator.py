@@ -45,12 +45,12 @@ from .const import (
     CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH,
     CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG,
     CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
-    CONF_STINENI_CHOVANI, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
-    CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
-    CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA,
-    CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT, CONF_VITR,
-    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYCHOZI_KDY, CONF_VYNUCENO_M,
-    CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_KLIDU,
+    CONF_SPANEK_POJISTKA, CONF_STINENI_CHOVANI, CONF_STINENI_MAPA,
+    CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
+    CONF_TEPLOTY, CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER,
+    CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT,
+    CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYCHOZI_KDY,
+    CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
     CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD, CONF_ZIMA_O_KOLIK,
     CONF_ZIMA_PRAH, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY,
     CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
@@ -618,7 +618,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 nazev=jmeno,
                 cil=round(cil_zakl + odchylka, 1),
                 obsazeno=pr.obsazeno(sig, nast_pr),
-                klid=pr.klid(sig, nast_pr),
+                klid=pr.klid(sig),
             )
             okno_m = sl.Okno(nazev=p.title,
                              azimut=float(d.get(CONF_AZIMUT, 180)))
@@ -980,9 +980,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             vetrat=any(self._zapnuto(e)
                        for e in (d.get(CONF_VETRAT) or [])),
             spanek=m.klid,
-            # a noční doba platí jen tam, kde je klid navázaný na noc
-            resi_klid=d.get(CONF_ZDROJ_KLIDU, "spanek") in (
-                "noc", "spanek_nebo_noc"),
             vynuceno=vynuceno,
             hodina=hodina, cas_s=cas_s,
             zastupce=uprava.zastupce is not None,
@@ -999,6 +996,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             min_drzeni_s=self.hodnota(
                 p.subentry_id, CONF_MIN_DRZENI,
                 float(d.get(CONF_MIN_DRZENI, 20))) * 60,
+            spanek_pojistka=float(d.get(CONF_SPANEK_POJISTKA, 2.0)),
             noc_zavrit_po_vyvetrani=bool(
                 d.get(CONF_NOC_ZAVRIT_VYVETRANO, True)),
             nocni_min=self.hodnota(p.subentry_id, CONF_NOC_MIN,
@@ -1114,11 +1112,20 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # za dvacet minut a bez pauzy se okno hned otevře znovu —
             # za noc z toho bylo dvanáct cyklů. Pauza je asymetrická,
             # zdržuje jen otevření, ne zavření, takže se nepřestřelí.
-            if r.kod == "noc_zima":
-                pauza = float(d.get(CONF_PAUZA_PO_PULZU, 15)) * 60
+            # Zavření kvůli teplotě, ve dne i v noci. Pauza se s každým
+            # dalším zavřením zdvojnásobí, protože když se okno hned
+            # vrací, je to znamení, že se teplotní mez a rychlost
+            # návratu pokoje nesnesou. Vyvětráním se počítadlo ruší.
+            if r.kod in ("noc_zima", "teplota"):
+                pamet.teplotni_zavreni += 1
+                zaklad = float(d.get(CONF_PAUZA_PO_PULZU, 15)) * 60
+                pauza = min(zaklad * 2 ** (pamet.teplotni_zavreni - 1), 3600)
                 if pauza > nast.min_drzeni_s:
                     pamet.cas_povelu_s = cas_s + pauza - nast.min_drzeni_s
-                m.atributy["pauza_po_pulzu_min"] = round(pauza / 60)
+                m.atributy["pauza_po_teplote_min"] = round(pauza / 60)
+            elif r.kod in ("cisto", "noc_hotovo"):
+                pamet.teplotni_zavreni = 0
+                m.atributy["pauza_po_teplote_min"] = None
 
             g = {**self.entry.data, **self.entry.options}
             # routuje se podle strojového kódu, ne podle českého textu
@@ -1580,15 +1587,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         except ValueError:
             obs = pr.ZdrojObsazenosti.VZDY
         try:
-            kl = pr.ZdrojKlidu(d.get(CONF_ZDROJ_KLIDU, "spanek"))
-        except ValueError:
-            kl = pr.ZdrojKlidu.SPANEK
-        try:
             st = pr.StineniPryc(d.get(CONF_STINENI_PRYC, "nic"))
         except ValueError:
             st = pr.StineniPryc.NIC
         return pr.NastaveniPritomnosti(
-            obsazenost=obs, klid=kl,
+            obsazenost=obs, 
             dobeh_s=float(d.get(CONF_DOBEH, 30)) * 60,
             max_stari_s=float(d.get(CONF_MAX_STARI, 6)) * 3600,
             stineni_pryc=st, indicie=indicie,

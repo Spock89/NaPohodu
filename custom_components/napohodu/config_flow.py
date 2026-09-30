@@ -257,10 +257,8 @@ class NaPohoduOptionsFlow(OptionsFlow):
                               or pod.data.get(c.CONF_ZALUZIE_STARE) or [])
                 if pod.data.get(c.CONF_OKNA):
                     s_okny.add(k)
-                # klid má smysl jen tam, kde ho něco spouští
-                zdroj = pod.data.get(c.CONF_ZDROJ_KLIDU, "spanek")
-                ma_spanek = bool(pod.data.get(c.CONF_SPANEK))
-                if zdroj == "noc" or (zdroj != "zadny" and ma_spanek):
+                # klid má smysl jen tam, kde je spánkový přepínač
+                if pod.data.get(c.CONF_SPANEK):
                     s_klidem.add(k)
             elif pod.subentry_type == c.PODENTITA_ZONA:
                 nazvy[klic(pod.title)] = pod.title
@@ -475,6 +473,7 @@ def _schema_mistnost() -> vol.Schema:
         vol.Optional(c.CONF_CO2_NOC, default=1000): _cislo(600, 2000, 25, "ppm"),
         vol.Optional(c.CONF_CO2_NOC_KRIZE, default=1250): _cislo(800, 2500, 25, "ppm"),
         vol.Optional(c.CONF_NOC_MIN, default=18.0): _cislo(14, 24, 0.5),
+        vol.Optional(c.CONF_SPANEK_POJISTKA, default=2.0): _cislo(0, 6, 0.5),
         vol.Optional(c.CONF_NOC_ZAVRIT_VYVETRANO, default=True):
             selector.BooleanSelector(),
         vol.Optional(c.CONF_DEN_POD_CIL, default=1.5): _cislo(0.5, 6, 0.5),
@@ -524,9 +523,6 @@ SCHEMA_PRITOMNOST = vol.Schema(
         vol.Optional(c.CONF_ZDROJ_OBSAZENOSTI, default="vzdy"): _volba(
             ["vzdy", "cidlo", "spanek", "cidlo_nebo_spanek", "nikdy"],
             "zdroj_obsazenosti",
-        ),
-        vol.Optional(c.CONF_ZDROJ_KLIDU, default="spanek"): _volba(
-            ["zadny", "spanek", "noc", "spanek_nebo_noc"], "zdroj_klidu"
         ),
         vol.Optional(c.CONF_SPANEK): _ent(["input_boolean", "binary_sensor"]),
         vol.Optional(c.CONF_PRITOMNOST): _ent(["binary_sensor"]),

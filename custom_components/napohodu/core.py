@@ -61,6 +61,9 @@ class Nastaveni:
     # 26 na 24,5, aniž by se muselo cokoli přenastavovat.
     denni_pod_cil: float = 1.5
     nocni_rezerva: float = 1.0
+    # O kolik pod noční mez smí teplota ve spánku spadnout, než se
+    # okno zavře. Vyšší číslo znamená méně pohybů okna za noc.
+    spanek_pojistka: float = 2.0
     nocni_min: float = 18.0
     # zavřít v noci hned po vyvětrání, nebo větrat dál a chladit
     # místnost až na noční mez
@@ -105,7 +108,6 @@ class Vstup:
     spanek: bool = False
     # řídí se tahle místnost nočním klidem? Kuchyň, kde se nespí ani
     # neruší, má větrat v noci stejně jako přes den
-    resi_klid: bool = True
     vetrat: bool = False
     vynuceno: bool = False
 
@@ -144,6 +146,9 @@ class Pamet:
     # kolik pulzů po sobě skončilo, aniž by se vzduch dostal pod práh.
     # Když větrání nezabírá, nemá cenu zkoušet to pořád dokola stejně.
     pulzy_za_sebou: int = 0
+    # kolikrát po sobě se zavřelo kvůli teplotě; každé další zdvojnásobí
+    # pauzu, aby okno nelítalo tam a sem
+    teplotni_zavreni: int = 0
     # běží právě pulz zkrácený kvůli nárazovému větrání? Spouštěcí
     # podmínka zmizí hned, jak CO2 klesne, ale okno běží dál.
     narazove_pulz: bool = False
@@ -285,18 +290,16 @@ def zimni_pritapeni(prumer_venku: float, prah: float = 7.0,
     return round(min(pod / nabeh, 1.0) * o_kolik, 2)
 
 
-def _je_noc(hodina: float, n: Nastaveni, spanek: bool,
-            resi_klid: bool = True) -> bool:
-    """Platí pro tuhle místnost noční pravidla?
+def _je_noc(hodina: float, n: Nastaveni, spanek: bool) -> bool:
+    """Platí noční pravidla?
 
-    Výslovný klid — zapnutý spánek — platí vždycky, i mimo noční hodiny.
-    Podmínka resi_klid se týká jen hodin: místnost, kde je klid navázaný
-    pouze na spánek, se v noci sama od sebe neuspí.
+    Zapnutý spánek platí vždycky, i mimo noční hodiny. Noční hodiny
+    platí pro každou místnost — vyšší práh CO2 a klid v bytě nejsou
+    věc jedné místnosti. Dřív se to dalo místnosti vypnout a vznikaly
+    tím tři různé „klidy", u kterých nešlo poznat, který platí.
     """
     if spanek:
         return True
-    if not resi_klid:
-        return False
     if n.noc_od > n.noc_do:          # přes půlnoc
         return hodina >= n.noc_od or hodina < n.noc_do
     return n.noc_od <= hodina < n.noc_do
@@ -329,7 +332,7 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         seznam.append("nikdo není doma")
 
     tin = v.t_in
-    noc = _je_noc(v.hodina, n, v.spanek, v.resi_klid)
+    noc = _je_noc(v.hodina, n, v.spanek)
 
     if noc:
         seznam.append("noční klid")
@@ -402,7 +405,7 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     """
     seznam = []
     t_in = v.t_in
-    noc = _je_noc(v.hodina, n, v.spanek, v.resi_klid)
+    noc = _je_noc(v.hodina, n, v.spanek)
 
     if v.cas_s < p.rucni_do_s:
         seznam.append(f"sáhl jsi na okno, čekám na nový podnět "
@@ -539,7 +542,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     def beze_zmeny(duvod: str, chci_otevreno: bool | None = None) -> Rozhodnuti:
         # obnova povelu, kdyby se stav rozešel se skutečností (ne v noci)
         if (chci_otevreno is not None
-                and not _je_noc(v.hodina, n, v.spanek, v.resi_klid)
+                and not _je_noc(v.hodina, n, v.spanek)
                 and v.cas_s - p.cas_povelu_s > n.obnova_s):
             p.cas_povelu_s = v.cas_s
             # Skutečný důvod se veze s sebou. Bez něj se v diagnostice
@@ -658,7 +661,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     cisto = v.co2 < n.co2_zavrit and not v.vetrat and pm_cisto
 
     # --- 5. komfort a chlazení --------------------------------------
-    noc = _je_noc(v.hodina, n, v.spanek, v.resi_klid)
+    noc = _je_noc(v.hodina, n, v.spanek)
     chlazeni = (t_max > v.cil + n.chlazeni_nad_cil
                 and v.t_out < t_max - n.chlazeni_rozdil
                 and v.t_out > n.chlazeni_min_venku
@@ -697,7 +700,14 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         p.rezim = "pulz"
         p.komfort_start = None
         if not potreba:
-            return zavri(f"zavírám, {brani}")
+            # Zavření kvůli teplotě se pozná podle kódu: koordinátor
+            # na něj nasadí pauzu, aby se okno hned neotevřelo znovu.
+            # Bez toho lítalo tam a sem i ve dne, protože malý pokoj
+            # se vrátí na teplotu za dvacet minut.
+            kvuli_teplote = ("uvnitř" in brani or "pod cílem" in brani
+                             or "venku" in brani)
+            return zavri(f"zavírám, {brani}",
+                         kod="teplota" if kvuli_teplote else "")
 
     # --- 6. noční režim ---------------------------------------------
     if noc:
@@ -713,7 +723,13 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         mez = p.noc_mez if p.noc_mez is not None else n.nocni_min
 
         if p.otevreno:
-            if t_in <= mez:
+            # Ve spánku se kvůli teplotě nevětrá ani nezavírá. Okno dělá
+            # při každém pohybu rámus a teplota se v malém pokoji vrací
+            # za dvacet minut, takže z toho byla celá noc lítání tam
+            # a sem. Zbývá jen pojistka hluboko pod mezí, aby se
+            # v mrazu ložnice nevychladila donekonečna.
+            pojistka = mez - n.spanek_pojistka if v.spanek else mez
+            if t_in <= pojistka:
                 p.noc_zavreno_teplotou = True
                 return zavri(f"noc: kleslo na {t_in:.1f} °C", kod="noc_zima")
             # Noční větrání mělo původně ložnici zároveň vychladit na
@@ -738,7 +754,10 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                     f"noc: čekám na prohřátí, {t_in:.1f} z {vratit:.1f} °C",
                     False)
 
-        if v.co2 > prah_noc or pm_spatne or v.vetrat:
+        # Ve spánku otvírá jen krizový práh. Běžné dusno se vydrží,
+        # protože rámus okna vzbudí spolehlivěji než CO2.
+        prah_spanek = n.co2_noc_krize if v.spanek else prah_noc
+        if v.co2 > prah_spanek or pm_spatne or v.vetrat:
             if krize and t_in > n.nocni_min - n.krize_pod_mez:
                 p.noc_mez = n.nocni_min - n.krize_pod_mez
                 p.noc_krize = True

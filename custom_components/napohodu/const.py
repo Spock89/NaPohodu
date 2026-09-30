@@ -65,7 +65,6 @@ CONF_PM_PLATNY = "pm_platny"
 CONF_SPANEK = "spanek"
 CONF_PRITOMNOST = "pritomnost"
 CONF_ZDROJ_OBSAZENOSTI = "zdroj_obsazenosti"
-CONF_ZDROJ_KLIDU = "zdroj_klidu"
 CONF_DOBEH = "dobeh_min"
 CONF_MAX_STARI = "max_stari_h"
 CONF_CLIMATE = "climate"                 # radiátory, jen topí
@@ -81,6 +80,9 @@ CONF_ODVZDUSNENI_T = "odvzdusneni_t"
 CONF_UTLUM = "utlum"
 CONF_ODCHYLKA = "odchylka"
 CONF_NOC_MIN = "noc_min"
+# O kolik pod noční mez smí teplota ve spánku spadnout, než se okno
+# zavře. Ve spánku se kvůli teplotě nevětrá, tohle je jen pojistka.
+CONF_SPANEK_POJISTKA = "spanek_pojistka"
 CONF_NOC_ZAVRIT_VYVETRANO = "noc_zavrit_po_vyvetrani"
 CONF_STINENI_PRYC = "stineni_pryc"
 CONF_KOMFORT_ODSTUP = "komfort_odstup"

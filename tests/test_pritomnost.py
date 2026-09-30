@@ -1,14 +1,13 @@
 """Testy obsazenosti, klidu a oblačnosti."""
 
-from pritomnost import (NastaveniPritomnosti, Signaly, ZdrojKlidu,
+from pritomnost import (NastaveniPritomnosti, Signaly,
                         ZdrojObsazenosti, klid, oblacnost, obsazeno)
 from slunce import dni
 
 # tvoje dvě místnosti
-OBYVAK = NastaveniPritomnosti(ZdrojObsazenosti.VZDY, ZdrojKlidu.SPANEK)
-LOZNICE = NastaveniPritomnosti(ZdrojObsazenosti.SPANEK,
-                               ZdrojKlidu.SPANEK_NEBO_NOC)
-DILNA = NastaveniPritomnosti(ZdrojObsazenosti.CIDLO, ZdrojKlidu.ZADNY)
+OBYVAK = NastaveniPritomnosti(ZdrojObsazenosti.VZDY)
+LOZNICE = NastaveniPritomnosti(ZdrojObsazenosti.SPANEK)
+DILNA = NastaveniPritomnosti(ZdrojObsazenosti.CIDLO)
 
 
 # ---------------------------------------------------------- obsazenost
@@ -45,30 +44,9 @@ def test_kombinace_cidla_a_spanku():
 
 # ---------------------------------------------------------- klid
 
-def test_klid_v_loznici_i_bez_spanku_v_noci():
-    assert klid(Signaly(spanek=False, je_noc=True), LOZNICE)
-    assert klid(Signaly(spanek=True, je_noc=False), LOZNICE)
-    assert not klid(Signaly(spanek=False, je_noc=False), LOZNICE)
 
 
-def test_klid_v_obyvaku_jen_pri_spanku():
-    """V obýváku se občas spí, ale noc sama o sobě klid nevyžaduje."""
-    assert klid(Signaly(spanek=True, je_noc=False), OBYVAK)
-    assert not klid(Signaly(spanek=False, je_noc=True), OBYVAK)
 
-
-def test_dilna_klid_neresi():
-    assert not klid(Signaly(spanek=True, je_noc=True), DILNA)
-
-
-def test_obsazenost_a_klid_jsou_nezavisle():
-    """Ložnice v noci bez spícího: neobsazená, ale klid platí."""
-    s = Signaly(spanek=False, je_noc=True)
-    assert not obsazeno(s, LOZNICE)
-    assert klid(s, LOZNICE)
-
-
-# ---------------------------------------------------------- oblačnost
 
 def test_bez_cidla_se_predpoklada_jasno():
     assert oblacnost(None, 40) == 1.0
@@ -105,7 +83,7 @@ def test_faktor_je_orezany():
 
 from pritomnost import StineniPryc, _cidlo_verohodne
 
-PIR = NastaveniPritomnosti(ZdrojObsazenosti.CIDLO, ZdrojKlidu.ZADNY)
+PIR = NastaveniPritomnosti(ZdrojObsazenosti.CIDLO)
 
 
 def test_pir_zapnuty_je_spolehlivy():
@@ -158,7 +136,6 @@ from pritomnost import Indicie, StavIndicie, indicie_aktivni
 # obývák: PIR nestačí, ale televize, světla a odběr napovídají
 OBYVAK_INDICIE = NastaveniPritomnosti(
     ZdrojObsazenosti.CIDLO,
-    ZdrojKlidu.SPANEK,
     indicie=(
         Indicie("televize", dobeh_s=5 * 60),
         Indicie("kodi", dobeh_s=15 * 60),
@@ -239,3 +216,12 @@ def test_prave_zhasla_televize_jeste_plati():
     s2 = Signaly(cidlo=False, cidlo_od_s=99999,
                  indicie={"televize": StavIndicie(aktivni=False, od_s=600)})
     assert not obsazeno(s2, OBYVAK_INDICIE)
+
+
+def test_klid_je_jen_spanek():
+    """Tři zdroje klidu vedly na to, že nikdo nevěděl, který platí.
+    Noční hodiny zůstávají zvlášť, ty platí pro celý byt."""
+    n = NastaveniPritomnosti()
+    assert klid(Signaly(spanek=True)) is True
+    assert klid(Signaly(spanek=False, je_noc=True)) is False
+    assert klid(Signaly(spanek=None)) is False

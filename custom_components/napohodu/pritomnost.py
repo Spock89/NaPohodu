@@ -26,13 +26,6 @@ class ZdrojObsazenosti(Enum):
     NIKDY = "nikdy"              # sklad, chodba — jen bezpečnost
 
 
-class ZdrojKlidu(Enum):
-    ZADNY = "zadny"
-    SPANEK = "spanek"            # jen když svítí spánkový přepínač
-    NOC = "noc"                  # podle hodiny, bez ohledu na spánek
-    SPANEK_NEBO_NOC = "spanek_nebo_noc"
-
-
 class StineniPryc(Enum):
     """Co dělat se stíněním, když nikdo není doma."""
     NIC = "nic"
@@ -64,7 +57,6 @@ class StavIndicie:
 @dataclass(frozen=True)
 class NastaveniPritomnosti:
     obsazenost: ZdrojObsazenosti = ZdrojObsazenosti.VZDY
-    klid: ZdrojKlidu = ZdrojKlidu.SPANEK
 
     # PIR nevidí nehybného člověka, proto doběh po posledním pohybu
     dobeh_s: float = 30 * 60
@@ -161,17 +153,17 @@ def obsazeno(s: Signaly, n: NastaveniPritomnosti) -> bool:
     return cidlo or spanek
 
 
-def klid(s: Signaly, n: NastaveniPritomnosti) -> bool:
-    """Má se v místnosti šetřit hlukem?"""
-    z = n.klid
-    if z is ZdrojKlidu.ZADNY:
-        return False
-    spanek = bool(s.spanek)
-    if z is ZdrojKlidu.SPANEK:
-        return spanek
-    if z is ZdrojKlidu.NOC:
-        return s.je_noc
-    return spanek or s.je_noc
+def klid(s: Signaly) -> bool:
+    """Má se v místnosti šetřit hlukem?
+
+    Jediný zdroj je spánkový přepínač místnosti. Dřív se dal klid
+    navázat i na noční hodiny nebo obojí, což vedlo na tři různé
+    „klidy", u kterých nikdo nevěděl, který právě platí.
+
+    Noční hodiny zůstávají zvlášť: platí pro celý byt a řeší, že se
+    v noci nemá dělat rámus ani otvírat kvůli příjemnému počasí.
+    """
+    return bool(s.spanek)
 
 
 # ---------------------------------------------------------------- oblačnost

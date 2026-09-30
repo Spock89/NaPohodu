@@ -843,3 +843,15 @@ def test_venkovni_teplota_se_nevymysli(nahradni_ha):
     assert 'CONF_T_VENKU), 15.0' not in ko
     # poslední známá hodnota se pamatuje
     assert "_t_out_posledni" in ko
+
+
+def test_pauza_roste_po_kazdem_teplotnim_zavreni(nahradni_ha):
+    """Když se okno hned vrací, teplotní mez a rychlost návratu pokoje
+    se nesnesou — pauza se proto zdvojnásobuje."""
+    def pauza(kolikate, zaklad_min=15):
+        return min(zaklad_min * 60 * 2 ** (kolikate - 1), 3600) / 60
+
+    assert pauza(1) == 15
+    assert pauza(2) == 30
+    assert pauza(3) == 60
+    assert pauza(9) == 60          # strop je hodina
