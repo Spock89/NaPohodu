@@ -12,6 +12,13 @@ from enum import Enum
 
 # ---------------------------------------------------------------- konstanty
 
+# Pojmenovaná čísla rozhodování. Zadrátovaná do výrazu jsou
+# k nenalezení a nikdo neví, proč tam jsou.
+RANO_RUCH_DO = 9.0       # dokud je ráno ruch, nevětrá se
+POD_CILEM_REZERVA = 0.5  # o kolik pod cílem je už chladno
+PM10_NASOBEK = 1.4       # PM10 bývá tolikrát vyšší než PM2.5
+PM_VYHLAZENI = 0.15      # jak rychle průměr prachu reaguje
+
 MAGNUS_A = 17.27
 MAGNUS_B = 237.7
 
@@ -350,7 +357,7 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
             seznam.append("větrá za nás soused")
         if tin <= n.nocni_min + n.tloustka:
             seznam.append(f"pod noční mezí {n.nocni_min:.1f} °C")
-        if n.noc_do <= v.hodina < 9:
+        if n.noc_do <= v.hodina < RANO_RUCH_DO:
             seznam.append("ranní klid")
         prah = n.co2_noc
     else:
@@ -387,7 +394,7 @@ def _pod_cilem(v: Vstup, p: Pamet, n: Nastaveni, t_in: float) -> bool:
     a u nočního režimu.
     """
     if not p.otevreno or p.komfort_start is None:
-        return t_in < v.cil - 0.5
+        return t_in < v.cil - POD_CILEM_REZERVA
     return t_in <= v.cil - n.denni_pod_cil
 
 
@@ -455,7 +462,8 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         if v.pm_platny and venku_lepsi and v.pm25 >= n.pm_prah_cisto:
             chybi.append(f"PM2.5 pod {n.pm_prah_cisto:.0f} "
                          f"(teď {v.pm25:.0f})")
-        if v.pm_platny and venku_lepsi and v.pm10 >= 30:
+        if (v.pm_platny and venku_lepsi
+                and v.pm10 >= n.pm_prah_cisto * PM10_NASOBEK):
             chybi.append(f"PM10 pod 30 (teď {v.pm10:.0f})")
 
         if chybi:
@@ -615,12 +623,16 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                and v.pm25 > p.pm_prumer + n.pm_skok
                and v.pm25 > n.pm_skok_min)
     if v.pm_platny:
-        p.pm_prumer += (v.pm25 - p.pm_prumer) * 0.15
+        p.pm_prumer += (v.pm25 - p.pm_prumer) * PM_VYHLAZENI
 
     if v.pm_platny:
-        pm_spatne = (v.pm25 > n.pm_prah or v.pm10 > 50 or pm_skok) and not v.smog
+        pm_spatne = ((v.pm25 > n.pm_prah
+                      or v.pm10 > n.pm_prah * PM10_NASOBEK or pm_skok)
+                     and not v.smog)
     else:
-        pm_spatne = (v.pm25 > n.pm_prah_bez_ventilatoru or v.pm10 > 70) and not v.smog
+        pm_spatne = ((v.pm25 > n.pm_prah_bez_ventilatoru
+                      or v.pm10 > n.pm_prah_bez_ventilatoru * PM10_NASOBEK)
+                     and not v.smog)
 
     # Venkovní prach rozhoduje, jestli má větrání vůbec smysl. Když je
     # venku horší, otevřením se to nezlepší — jen by se větralo dokola
@@ -655,7 +667,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     pm_cisto = (not pm_spatne
                 and (not v.pm_platny
                      or not pm_venku_lepsi
-                     or (v.pm25 < n.pm_prah_cisto and v.pm10 < 30)))
+                     or (v.pm25 < n.pm_prah_cisto and v.pm10 < n.pm_prah_cisto * PM10_NASOBEK)))
 
     if v.co2 > n.co2_otevrit:
         p.vetra_se = True
@@ -723,7 +735,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
 
     # --- 6. noční režim ---------------------------------------------
     if noc:
-        rano = n.noc_do <= v.hodina < 9
+        rano = n.noc_do <= v.hodina < RANO_RUCH_DO
         krize = v.co2 > n.co2_noc_krize
         # Když za nás větrá soused, sami se v noci otevřeme až při krizi.
         # Lepší pomalejší výměna přes dveře než průvan nad postelí.

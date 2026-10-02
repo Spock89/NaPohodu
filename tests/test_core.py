@@ -1313,3 +1313,28 @@ def test_ve_spanku_zavira_na_nocnim_prahu():
     r2 = rozhodni(stary(co2=1001, t_in=21.5, t_in_max=21.7, t_out=12.0,
                         cil=22.0, hodina=23.0, spanek=True), p2, nast)
     assert r2.akce is not Akce.ZAVRIT
+
+
+def test_pm10_se_odvozuje_z_pm25():
+    """Prahy PM10 byly zadrátované, takže se s nastavením PM2.5
+    nehýbaly — kdo si zvedl jeden, druhý mu zůstal."""
+    from core import PM10_NASOBEK, Nastaveni as N_
+    nast = N_(pm_prah=50.0)
+    assert nast.pm_prah * PM10_NASOBEK == 70.0
+
+    # a prach se pozná i podle PM10
+    p = Pamet(cas_povelu_s=0, pm_prumer=10.0)
+    r = rozhodni(stary(co2=500, pm25=10, pm10=80, t_in=21.0, t_in_max=21.2,
+                       t_out=18.0, cil=21.0, hodina=14.0,
+                       pm_platny=True), p, nast)
+    assert "prach" in r.duvod.lower() or r.akce is Akce.OTEVRIT
+
+
+def test_pojmenovane_konstanty_existuji():
+    """Zadrátované číslo nikdo nenajde a nikdo neví, proč tam je."""
+    from core import (PM10_NASOBEK, PM_VYHLAZENI, POD_CILEM_REZERVA,
+                      RANO_RUCH_DO)
+    assert RANO_RUCH_DO == 9.0
+    assert POD_CILEM_REZERVA == 0.5
+    assert 1.0 < PM10_NASOBEK < 2.0
+    assert 0.0 < PM_VYHLAZENI < 1.0

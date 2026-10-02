@@ -456,6 +456,35 @@ for p in d.glob("*.py"):
                     f"{p.name}:{i}: {cidlo} má pevnou náhradní hodnotu — "
                     f"po restartu se z ní rozhoduje")
 
+# 1v) číslo zadrátované do rozhodování. V jádře se má rozhodovat podle
+# nastavení nebo podle pojmenované konstanty — číslo uvnitř výrazu nikdo
+# nenajde a nikdo neví, proč tam je.
+STRUKTURA = {0, 1, 2, 24, 60, 100, 3600, 0.0, 1.0, 2.0, 100.0}
+jadro = ast.parse((d / "core.py").read_text())
+radky_jadra = (d / "core.py").read_text().splitlines()
+videne = set()
+for f in ast.walk(jadro):
+    if not isinstance(f, (ast.FunctionDef, ast.AsyncFunctionDef)):
+        continue
+    for u in ast.walk(f):
+        if not isinstance(u, (ast.Compare, ast.BinOp)):
+            continue
+        popis = ast.dump(u)
+        # zajímají jen výrazy, kde vedle čísla stojí vstup, paměť
+        # nebo nastavení — ostatní počty jsou vnitřní věc
+        if not any(x in popis for x in ("id='v'", "id='n'", "id='p'")):
+            continue
+        for c in ast.walk(u):
+            if (isinstance(c, ast.Constant)
+                    and isinstance(c.value, (int, float))
+                    and c.value not in STRUKTURA
+                    and (c.lineno, c.value) not in videne):
+                videne.add((c.lineno, c.value))
+                chyby.append(
+                    f"core.py:{c.lineno}: číslo {c.value} v rozhodování — "
+                    f"patří do nastavení nebo pojmenované konstanty: "
+                    f"{radky_jadra[c.lineno - 1].strip()[:50]}")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):
