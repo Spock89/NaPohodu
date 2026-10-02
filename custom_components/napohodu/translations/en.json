@@ -343,7 +343,7 @@
             "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24.",
             "zvlhcovac": "Zvlhčovač, spínač nebo pomocník. V zimě vysychá vzduch a klesá pod třicet procent, což už vysušuje sliznice.",
             "rh_min": "Pod touhle vlhkostí se zvlhčovač zapne. V zimě v paneláku běžně klesne pod třicet procent, což už vysušuje sliznice.",
-            "dvere": "",
+            "dvere": "Kontakt dveří mezi místnostmi oblasti. Zavřené dveře znamenají, že se vzduch nevymění a rámus okna se nepřenese — spánek v jedné místnosti pak druhé nebrání větrat.",
             "topit_pri_oknu": "Hlavici posíláme okenní senzor, takže si otevřené okno umí ošetřit sama — to je výchozí volba Nechat na hlavici. Útlum nebo vypnuto použij jen u hlavice, která okenní senzor neumí, jinak jí posíláš dvě informace o téže věci.",
             "sezonu_ridi_hlavice": "Better Thermostat si podle počasí sám určuje, kdy topit. Se zaškrtnutým polem mu integrace posílá jen cílovou teplotu a jeho rozhodnutí o zapnutí respektuje — když usoudí, že topit nemá, integrace ho nezapne.\n\nOdškrtni, když chceš, aby o topné sezóně rozhodovala integrace: v sezóně pošle režim heat, mimo ni off, a hlavici zbude kalibrace ventilu, v čem je nejlepší.",
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
@@ -359,7 +359,7 @@
             "noc_zavrit_po_vyvetrani": "Zaškrtnuté zavře okno, jakmile CO2 spadne pod „zavřít pod\". Odškrtnuté nechá větrat dál, dokud teplota neklesne na noční mez — noční větrání pak ložnici i vychladí, ale při mírném počasí může zůstat otevřeno do rána.",
             "den_pod_cil": "Přes den se okno zavře, jakmile teplota klesne o tolik pod cílovou. Mez se tím drží u cíle celý rok: v zimě při cíli 21 zavře na 19,5, v létě při cíli 26 na 24,5, aniž bys cokoli přenastavoval.\n\nDřív tu byl pokles od stavu při otevření, který mez posouval podle toho, jak bylo zrovna teplo. Absolutní mez zase nesledovala sezónu — v létě dovolila vychladit o šest stupňů.",
             "spanek_pojistka": "Ve spánku se kvůli teplotě nevětrá ani nezavírá — okno dělá rámus a v malém pokoji se teplota vrátí za dvacet minut, takže z toho byla celá noc lítání tam a sem. Tohle je jen pojistka, aby v mrazu ložnice nevychladla donekonečna. Vyšší číslo znamená méně pohybů okna za noc.\\n\\nVe spánku navíc otevírá jen krizový práh CO2, běžné dusno se vydrží.",
-            "tloustka_smycky": "O kolik se musí teplota vrátit, než se po zavření kvůli chladu otevře znovu. Nula znamená otevřít hned, jak to jiné podmínky dovolí.\\n\\nJe to směnný kurz mezi rozkyvem a počtem cyklů: širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje. Odvozuje se z ní i to, že se okno neotevře těsně nad mezí."
+            "tloustka_smycky": "O kolik se musí teplota vrátit, než se po zavření kvůli teplotě otevře znovu. Platí souměrně v obou směrech: v chladu se čeká na prohřátí, v horku na další ohřátí.\\n\\nJe to směnný kurz mezi rozkyvem a počtem cyklů — širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje. Když okno lítá, zvyš ji aspoň na rozkyv, který vidíš v grafu."
           },
           "submit": "Další"
         },
@@ -518,7 +518,7 @@
             "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24.",
             "zvlhcovac": "Zvlhčovač, spínač nebo pomocník. V zimě vysychá vzduch a klesá pod třicet procent, což už vysušuje sliznice.",
             "rh_min": "Pod touhle vlhkostí se zvlhčovač zapne. V zimě v paneláku běžně klesne pod třicet procent, což už vysušuje sliznice.",
-            "dvere": "",
+            "dvere": "Kontakt dveří mezi místnostmi oblasti. Zavřené dveře znamenají, že se vzduch nevymění a rámus okna se nepřenese — spánek v jedné místnosti pak druhé nebrání větrat.",
             "topit_pri_oknu": "Hlavici posíláme okenní senzor, takže si otevřené okno umí ošetřit sama — to je výchozí volba Nechat na hlavici. Útlum nebo vypnuto použij jen u hlavice, která okenní senzor neumí, jinak jí posíláš dvě informace o téže věci.",
             "sezonu_ridi_hlavice": "Better Thermostat si podle počasí sám určuje, kdy topit. Se zaškrtnutým polem mu integrace posílá jen cílovou teplotu a jeho rozhodnutí o zapnutí respektuje — když usoudí, že topit nemá, integrace ho nezapne.\n\nOdškrtni, když chceš, aby o topné sezóně rozhodovala integrace: v sezóně pošle režim heat, mimo ni off, a hlavici zbude kalibrace ventilu, v čem je nejlepší.",
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
@@ -533,7 +533,7 @@
             "noc_zavrit_po_vyvetrani": "Zaškrtnuté zavře okno, jakmile CO2 spadne pod „zavřít pod\". Odškrtnuté nechá větrat dál, dokud teplota neklesne na noční mez — noční větrání pak ložnici i vychladí, ale při mírném počasí může zůstat otevřeno do rána.",
             "den_pod_cil": "Přes den se okno zavře, jakmile teplota klesne o tolik pod cílovou. Mez se tím drží u cíle celý rok: v zimě při cíli 21 zavře na 19,5, v létě při cíli 26 na 24,5, aniž bys cokoli přenastavoval.\n\nDřív tu byl pokles od stavu při otevření, který mez posouval podle toho, jak bylo zrovna teplo. Absolutní mez zase nesledovala sezónu — v létě dovolila vychladit o šest stupňů.",
             "spanek_pojistka": "Ve spánku se kvůli teplotě nevětrá ani nezavírá — okno dělá rámus a v malém pokoji se teplota vrátí za dvacet minut, takže z toho byla celá noc lítání tam a sem. Tohle je jen pojistka, aby v mrazu ložnice nevychladla donekonečna. Vyšší číslo znamená méně pohybů okna za noc.\\n\\nVe spánku navíc otevírá jen krizový práh CO2, běžné dusno se vydrží.",
-            "tloustka_smycky": "O kolik se musí teplota vrátit, než se po zavření kvůli chladu otevře znovu. Nula znamená otevřít hned, jak to jiné podmínky dovolí.\\n\\nJe to směnný kurz mezi rozkyvem a počtem cyklů: širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje. Odvozuje se z ní i to, že se okno neotevře těsně nad mezí."
+            "tloustka_smycky": "O kolik se musí teplota vrátit, než se po zavření kvůli teplotě otevře znovu. Platí souměrně v obou směrech: v chladu se čeká na prohřátí, v horku na další ohřátí.\\n\\nJe to směnný kurz mezi rozkyvem a počtem cyklů — širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje. Když okno lítá, zvyš ji aspoň na rozkyv, který vidíš v grafu."
           },
           "submit": "Další"
         },

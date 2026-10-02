@@ -665,20 +665,23 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             o["pm10"] = self._max(pm10, 0.0)
             o["pm_platny"] = True if pm_platny is None else pm_platny
             o["spanek"] = spanek
-            # Klidová je oblast až tehdy, když klid vyžadují všechny
-            # místnosti, které mají okno. Jinak by spánek v obýváku
-            # zabránil kuchyni, aby vyvětrala za ložnici — přestože
-            # kuchyň sama žádný klid neřeší.
-            # Spánek je věc celé oblasti. Místnosti, které spolu dýchají,
-            # jsou ve skutečnosti jedna místnost přepažená průchodem:
-            # rámus okna v kuchyni dolehne do obýváku, kde se spí.
+            # Spánek je věc celé oblasti: místnosti, které spolu dýchají,
+            # jsou jedna místnost přepažená průchodem a rámus okna
+            # v kuchyni dolehne do obýváku, kde se spí. Dřív tu bylo
+            # „klid platí, jen když ho vyžadují všechny místnosti
+            # s oknem" a kuchyň v noci jezdila oknem, přestože vedle
+            # někdo spal.
             #
-            # Dřív tu bylo „klid platí, jen když ho vyžadují všechny
-            # místnosti s oknem", aby kuchyň mohla vyvětrat za ložnici.
-            # V praxi to znamenalo, že kuchyň v noci jezdila oknem,
-            # přestože vedle někdo spal.
-            o["klid"] = any(self.mistnosti[x.subentry_id].klid
-                            for x in o["cleni"])
+            # Zavřené dveře to ale ruší — pak se rámus nepřenáší a není
+            # důvod kvůli vedlejší místnosti nevětrat. Totéž platí pro
+            # vzduch, který se zavřenými dveřmi taky nevymění.
+            data_o = o["pod"].data if o["pod"] else {}
+            dvere_m = [self._zapnuto(e)
+                       for e in (data_o.get(CONF_DVERE) or [])]
+            o["dvere_otevrene"] = all(x is not False for x in dvere_m)
+            o["klid"] = (any(self.mistnosti[x.subentry_id].klid
+                             for x in o["cleni"])
+                         if o["dvere_otevrene"] else False)
             s_okny = [x for x in o["cleni"]
                       if podklady[x.subentry_id]["d"].get(CONF_OKNA)]
 
@@ -1219,7 +1222,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 m.cil, v.t_in, nast.denni_pod_cil, nast.nocni_min,
                 nast.tloustka, skutecne, bool(m.klid),
                 core._je_noc(self._hodina_ted, nast, bool(m.klid)),
-                nast.spanek_pojistka, pamet.teplota_zavrela_na),
+                nast.spanek_pojistka, pamet.teplota_zavrela_na,
+                m.atributy.get("teplota_max"), nast.chlazeni_nad_cil,
+                pamet.tmax_zavrela_na),
             "vitr": self.vitr_stav,
             "dnes": {
                 "pohyby": sh["pohyby"],

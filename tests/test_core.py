@@ -1225,7 +1225,7 @@ def test_pasmo_ukaze_meze_i_kde_jsme():
     t = "\n".join(r)
     assert "cíl 21.0" in t
     assert "19.5" in t            # denní mez = cíl - 1,5
-    assert "teď, otevřeno" in t
+    assert "teď otevřeno" in t
     assert "zavřu při poklesu na 19.5" in t
 
 
@@ -1234,7 +1234,8 @@ def test_pasmo_po_zavreni_ukaze_na_co_se_ceka():
     t = "\n".join(pasmo_text(21.0, 20.1, 1.5, 18.0, 1.0, otevreno=False,
                              zavrela_na=19.5))
     assert "znovu otevřu od 20.5" in t
-    assert "čekám na 20.5" in t
+    # obě hrany, ať je vidět, že smyčka je souměrná
+    assert "hřát od 20.5" in t and "chladit od" in t
 
 
 def test_pasmo_ve_spanku_ukaze_pojistku():
@@ -1338,3 +1339,47 @@ def test_pojmenovane_konstanty_existuji():
     assert POD_CILEM_REZERVA == 0.5
     assert 1.0 < PM10_NASOBEK < 2.0
     assert 0.0 < PM_VYHLAZENI < 1.0
+
+
+# --------------------- smyčka musí být souměrná
+
+def test_tloustka_plati_i_v_teplem_smeru():
+    """Dřív chránila jen chladný směr, takže v letním období lítalo
+    okno stejně jako v zimním."""
+    from core import Nastaveni as N_
+    nast = N_(tloustka=1.0)
+
+    # zavřelo se, když nejteplejší místo spadlo na 24,9
+    p = Pamet(otevreno=False, cas_povelu_s=0, tmax_zavrela_na=24.9)
+    r = rozhodni(stary(co2=500, t_in=24.8, t_in_max=25.1, t_out=19.0,
+                       rh_out=50.0, cil=24.0, hodina=14.0), p, nast)
+    assert r.akce is not Akce.OTEVRIT
+
+    p2 = Pamet(otevreno=False, cas_povelu_s=0, tmax_zavrela_na=24.9)
+    r2 = rozhodni(stary(co2=500, t_in=25.6, t_in_max=25.9, t_out=19.0,
+                        rh_out=50.0, cil=24.0, hodina=14.0), p2, nast)
+    assert r2.akce is Akce.OTEVRIT and "chlazení" in r2.duvod
+
+
+def test_stupnice_v_horku_ukaze_horni_hranu():
+    """V létě tvrdila nesmysl — že se zavře při poklesu hluboko pod
+    cíl, přestože v chlazení se zavírá hned nad cílem."""
+    from core import pasmo_text
+    t = "\n".join(pasmo_text(24.0, 25.1, 1.5, 18.0, 1.0, otevreno=True,
+                             t_max=25.4))
+    assert "chladím nad 25.0" in t
+    assert "zavřu, až klesne na 25.0" in t
+
+
+def test_stupnice_v_chladu_ukaze_dolni_hranu():
+    from core import pasmo_text
+    t = "\n".join(pasmo_text(21.0, 20.8, 1.5, 18.0, 1.0, otevreno=True,
+                             t_max=21.0))
+    assert "zavřu při poklesu na 19.5" in t
+
+
+def test_stupnice_po_letnim_zavreni():
+    from core import pasmo_text
+    t = "\n".join(pasmo_text(24.0, 24.6, 1.5, 18.0, 1.0, otevreno=False,
+                             t_max=25.1, tmax_zavrela_na=24.9))
+    assert "chladit znovu od 25.9" in t

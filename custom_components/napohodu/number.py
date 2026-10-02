@@ -35,7 +35,7 @@ MISTNOST = [
              "mdi:thermometer-plus"),
     Posuvnik(CONF_NOC_UTLUM, 0, 4, 0.5, UnitOfTemperature.CELSIUS, 0.0,
              "mdi:weather-night-partly-cloudy"),
-    Posuvnik(CONF_TLOUSTKA, 0, 4, 0.5, UnitOfTemperature.CELSIUS, 1.0,
+    Posuvnik(CONF_TLOUSTKA, 0, 7, 0.5, UnitOfTemperature.CELSIUS, 1.0,
              "mdi:sine-wave"),
     Posuvnik(CONF_NOC_MIN, 14, 24, 0.5, UnitOfTemperature.CELSIUS, 18.0,
              "mdi:weather-night"),

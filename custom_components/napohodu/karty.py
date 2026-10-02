@@ -23,9 +23,9 @@ POSUVNIKY = [
      "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. "
      "Klesá plynule hodinu před začátkem noci, spánek platí hned."),
     ("tloustka_hysterezni_smycky", "Tloušťka hysterezní smyčky",
-     "O kolik se musí teplota vrátit, než se po zavření kvůli chladu "
-     "otevře znovu. Širší smyčka znamená delší cykly a větší rozkyv — "
-     "nic mezi tím neexistuje."),
+     "O kolik se musí teplota vrátit, než se po zavření kvůli teplotě "
+     "otevře znovu — souměrně v chladu i v horku. Širší smyčka znamená "
+     "delší cykly a větší rozkyv, nic mezi tím neexistuje."),
     ("v_noci_vychladnout_nejvys_na", "V noci vychladnout nejvýš na",
      "Při nočním větrání zavřu, až teplota klesne na tuhle hodnotu. "
      "Nižší číslo znamená delší větrání a méně cyklů za noc."),

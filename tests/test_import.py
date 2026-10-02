@@ -872,3 +872,24 @@ def test_oblast_je_ze_spanku_jedna_vec(nahradni_ha):
     mistnosti = {"kuchyne": False, "obyvak": True}
     assert any(mistnosti.values()) is True       # spí se v oblasti
     assert all(mistnosti.values()) is False      # dřív to nestačilo
+
+
+def test_zavrene_dvere_rusi_spolecny_klid(nahradni_ha):
+    """Zavřené dveře znamenají, že se rámus nepřenese — spánek v jedné
+    místnosti pak druhé nebrání větrat."""
+    import pathlib
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    assert 'o["dvere_otevrene"]' in ko
+    assert 'if o["dvere_otevrene"] else False' in ko
+
+
+def test_tloustka_az_do_sedmi(nahradni_ha):
+    """Čtyři stupně nestačily, okno pořád lítalo."""
+    import pathlib
+    import re
+    cf = pathlib.Path(
+        "custom_components/napohodu/config_flow.py").read_text()
+    nb = pathlib.Path("custom_components/napohodu/number.py").read_text()
+    assert "CONF_TLOUSTKA, default=1.0): _cislo(0, 7, 0.5)" in cf
+    assert re.search(r"Posuvnik\(CONF_TLOUSTKA, 0, 7", nb)
