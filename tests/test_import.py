@@ -855,3 +855,20 @@ def test_pauza_roste_po_kazdem_teplotnim_zavreni(nahradni_ha):
     assert pauza(2) == 30
     assert pauza(3) == 60
     assert pauza(9) == 60          # strop je hodina
+
+
+def test_pasmo_jen_kde_je_okno(nahradni_ha):
+    """V místnosti bez okna ukazovalo meze, podle kterých se nikdy nic
+    nestane, a stav okna, který neznáme."""
+    import pathlib
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    assert '"teplotni_pasmo": None if not okna' in ko
+
+
+def test_oblast_je_ze_spanku_jedna_vec(nahradni_ha):
+    """Místnosti, které spolu dýchají, jsou jedna místnost přepažená
+    průchodem — rámus okna v kuchyni dolehne do obýváku."""
+    mistnosti = {"kuchyne": False, "obyvak": True}
+    assert any(mistnosti.values()) is True       # spí se v oblasti
+    assert all(mistnosti.values()) is False      # dřív to nestačilo

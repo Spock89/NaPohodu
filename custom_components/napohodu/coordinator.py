@@ -669,14 +669,19 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # místnosti, které mají okno. Jinak by spánek v obýváku
             # zabránil kuchyni, aby vyvětrala za ložnici — přestože
             # kuchyň sama žádný klid neřeší.
+            # Spánek je věc celé oblasti. Místnosti, které spolu dýchají,
+            # jsou ve skutečnosti jedna místnost přepažená průchodem:
+            # rámus okna v kuchyni dolehne do obýváku, kde se spí.
+            #
+            # Dřív tu bylo „klid platí, jen když ho vyžadují všechny
+            # místnosti s oknem", aby kuchyň mohla vyvětrat za ložnici.
+            # V praxi to znamenalo, že kuchyň v noci jezdila oknem,
+            # přestože vedle někdo spal.
+            o["klid"] = any(self.mistnosti[x.subentry_id].klid
+                            for x in o["cleni"])
             s_okny = [x for x in o["cleni"]
                       if podklady[x.subentry_id]["d"].get(CONF_OKNA)]
-            if s_okny:
-                o["klid"] = all(self.mistnosti[x.subentry_id].klid
-                                for x in s_okny)
-            else:
-                o["klid"] = any(self.mistnosti[x.subentry_id].klid
-                                for x in o["cleni"])
+
             # Drahé je větrání tam, kde se otevírá — místnost bez okna
             # k tomu nemá co říct. Bez oken se bere celá oblast.
             def pod(x):
@@ -1207,8 +1212,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Odchylka místnosti se sem nepřidává: je vidět na svém
             # posuvníku a výsledek je v cílové teplotě.
             "cil_rozpad": self.cil_rozpad,
-            # stupnice s mezemi, ať je vidět, co nastavení dělají
-            "teplotni_pasmo": core.pasmo_text(
+            # Stupnice s mezemi, ať je vidět, co nastavení dělají. Jen
+            # tam, kde okno ovládáme — jinak ukazuje meze, podle kterých
+            # se nikdy nic nestane, a stav okna, který neznáme.
+            "teplotni_pasmo": None if not okna else core.pasmo_text(
                 m.cil, v.t_in, nast.denni_pod_cil, nast.nocni_min,
                 nast.tloustka, skutecne, bool(m.klid),
                 core._je_noc(self._hodina_ted, nast, bool(m.klid)),

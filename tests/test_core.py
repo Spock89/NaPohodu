@@ -1260,3 +1260,56 @@ def test_tloustka_rusi_hysterezi_kdyz_je_nula():
     r = rozhodni(stary(co2=1200, t_in=19.6, t_in_max=19.8, t_out=12.0,
                        cil=21.0, hodina=14.0), p, nast)
     assert r.akce is Akce.OTEVRIT
+
+
+# ------------- okno otevřené před spaním se smí zavřít
+
+def test_pred_spanim_otevrene_okno_se_zavre():
+    """Ve spánku smí otevřít jen krize, ale zavírat se smělo až po
+    vyvětrání — kterého spící člověk nedosáhne, takže okno zůstalo
+    otevřené celou noc."""
+    p = Pamet(otevreno=True, cas_povelu_s=0, noc_mez=21.0, rezim="noc")
+    r = rozhodni(stary(co2=900, t_in=21.5, t_in_max=21.7, t_out=12.0,
+                       cil=22.0, hodina=23.0, spanek=True), p, N)
+    assert r.akce is Akce.ZAVRIT and "klid" in r.duvod
+
+
+def test_nad_krizi_vetra_dal():
+    p = Pamet(otevreno=True, cas_povelu_s=0, noc_mez=21.0, rezim="noc")
+    r = rozhodni(stary(co2=1400, t_in=21.5, t_in_max=21.7, t_out=12.0,
+                       cil=22.0, hodina=23.0, spanek=True), p, N)
+    assert r.akce is not Akce.ZAVRIT
+
+
+def test_ve_spanku_je_pasmo_z_nastavenych_prahu():
+    """Otevírá krizový práh, zavírá noční. Obojí si uživatel nastavuje
+    a vidí, takže je poznat, v jakém pásmu okno zůstane otevřené."""
+    assert N.co2_noc < N.co2_noc_krize      # pásmo musí být neprázdné
+
+    # mezi prahy: otevřené zůstane, zavřené se neotevře
+    co2 = (N.co2_noc + N.co2_noc_krize) / 2
+    p = Pamet(otevreno=True, cas_povelu_s=0, noc_mez=21.0, rezim="noc")
+    assert rozhodni(stary(co2=co2, t_in=21.5, t_in_max=21.7, t_out=12.0,
+                          cil=22.0, hodina=23.0, spanek=True),
+                    p, N).akce is not Akce.ZAVRIT
+
+    p2 = Pamet(otevreno=False, cas_povelu_s=0)
+    assert rozhodni(stary(co2=co2, t_in=21.5, t_in_max=21.7, t_out=12.0,
+                          cil=22.0, hodina=23.0, spanek=True),
+                    p2, N).akce is not Akce.OTEVRIT
+
+
+def test_ve_spanku_zavira_na_nocnim_prahu():
+    """Žádné skryté číslo: zavírá se pod „V noci otevřít nad CO2"."""
+    from core import Nastaveni as N_
+    nast = N_(co2_noc=1000.0, co2_noc_krize=1250.0, nocni_min=21.0)
+
+    p = Pamet(otevreno=True, cas_povelu_s=0, noc_mez=21.0, rezim="noc")
+    r = rozhodni(stary(co2=999, t_in=21.5, t_in_max=21.7, t_out=12.0,
+                       cil=22.0, hodina=23.0, spanek=True), p, nast)
+    assert r.akce is Akce.ZAVRIT
+
+    p2 = Pamet(otevreno=True, cas_povelu_s=0, noc_mez=21.0, rezim="noc")
+    r2 = rozhodni(stary(co2=1001, t_in=21.5, t_in_max=21.7, t_out=12.0,
+                        cil=22.0, hodina=23.0, spanek=True), p2, nast)
+    assert r2.akce is not Akce.ZAVRIT

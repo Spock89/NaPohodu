@@ -748,6 +748,15 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             # noční mez, takže se čekalo jen na pokles teploty. Když je
             # venku mírně, pokles nepřijde a okno zůstane otevřené do
             # rána — proto se dá zavřít už po vyvětrání.
+            # Ve spánku otevírá krizový práh a zavírá noční. Jsou to
+            # dvě hodnoty, které si uživatel nastavuje a vidí, takže je
+            # poznat, v jakém pásmu okno zůstane otevřené. Bez toho by
+            # okno otevřené před spaním zůstalo celou noc: otevřít ho
+            # smí jen krize, ale zavřít se smělo až po vyvětrání,
+            # kterého spící člověk nedosáhne.
+            if v.spanek and v.co2 < n.co2_noc:
+                return zavri(f"noc: klid, CO2 {v.co2:.0f}",
+                             kod="noc_hotovo")
             if (n.noc_zavrit_po_vyvetrani and v.co2 < n.co2_zavrit
                     and not pm_spatne and not v.vetrat and not v.vynuceno):
                 return zavri(f"noc: vyvětráno, CO2 {v.co2:.0f}",
