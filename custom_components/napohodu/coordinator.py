@@ -1192,6 +1192,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # běží zkrácený pulz, ne jestli je zrovna splněná podmínka
             "narazove_vetrani": pamet.narazove_pulz and skutecne,
             "narazove_mozne": self.narazove,
+            # pravidla pro celý byt, aby nebyla pod každou místností
+            "pevna_pravidla_bytu": core.pevna_pravidla_bytu(self._noc_do),
             "doma_podle": self.doma_popis,
             # jak se dospělo k cílové teplotě, ať to není magie.
             # Odchylka místnosti se sem nepřidává: je vidět na svém
@@ -1213,8 +1215,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "pevna_pravidla": core.pevna_pravidla(
                 bool(m.klid),
                 core._je_noc(self._hodina_ted, nast, bool(m.klid)),
-                nast.nocni_min, nast.co2_noc, nast.co2_noc_krize,
-                nast.noc_do),
+                nast.nocni_min, nast.co2_noc, nast.co2_noc_krize),
             "vitr": self.vitr_stav,
             "dnes": {
                 "pohyby": sh["pohyby"],

@@ -506,7 +506,8 @@ for u in ast.parse(jadro_text).body:
 # 1x) konstanta, podle které se rozhoduje, musí být někde vidět.
 # Nenastavitelné chování, o kterém se neví, je horší než nastavení,
 # které nikdo nepoužívá.
-VIDITELNE = jadro_text[jadro_text.index("def pevna_pravidla"):
+# obě funkce s výpisem pravidel, pro byt i pro místnost
+VIDITELNE = jadro_text[jadro_text.index("def pevna_pravidla_bytu"):
                        jadro_text.index("def _mez_chladu")]
 for jm in re.findall(r"^([A-Z][A-Z_]+) = [\d.]+", jadro_text, re.M):
     if jm in ("MAGNUS_A", "MAGNUS_B"):

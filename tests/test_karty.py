@@ -427,12 +427,19 @@ def test_jedna_karta_na_konflikt_i_pasmo():
     assert "teplotni_pasmo" in md[0]["content"]
 
 
-def test_karta_vypisuje_pevna_pravidla():
+def test_pravidla_bytu_jsou_jednou_a_v_samostatne_sekci():
+    """Pravidla pro celý byt nepatří pod každou místnost."""
     import yaml
     d = yaml.safe_load(dashboard(
-        ["loznice"], [], vzdy, cidla={"loznice": "sensor.t"},
+        ["loznice", "kuchyne"], [], vzdy,
+        cidla={"loznice": "sensor.t", "kuchyne": "sensor.k"},
         podoba="stranka"))
-    md = [k for s in d["sections"] for k in s["cards"]
-          if k["type"] == "markdown" and "pevna_pravidla" in k["content"]]
-    assert len(md) == 1
-    assert "Platí bez nastavení" in md[0]["content"]
+    bytu = [k for s in d["sections"] for k in s["cards"]
+            if "pevna_pravidla_bytu" in str(k.get("content", ""))]
+    assert len(bytu) == 1
+
+    # a je to předposlední sekce, před grafy
+    nadpisy = [s["cards"][0].get("heading") or s["cards"][0].get("title")
+               or s["cards"][0]["type"] for s in d["sections"]]
+    assert nadpisy[-2] == "Platí bez nastavení"
+    assert nadpisy[-1] == "Grafy"

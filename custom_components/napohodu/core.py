@@ -885,43 +885,44 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
 
 # ------------------------------------------------------- obrázek smyčky
 
-def pevna_pravidla(spanek: bool, noc: bool, nocni_min: float,
-                   co2_noc: float, co2_krize: float,
-                   noc_do: float = 6.5) -> list[str]:
-    """Pravidla, která platí bez nastavení.
+def pevna_pravidla_bytu(noc_do: float = 6.5) -> list[str]:
+    """Pravidla bez nastavení, která platí pro celý byt.
 
     Nenastavitelné chování se nesmí nikde neobjevit — jinak se zapomene,
-    že vůbec existuje, a není pak poznat, proč se něco děje.
+    že vůbec existuje, a není pak poznat, proč se něco děje. Tahle část
+    nezávisí na místnosti, takže patří do jedné karty, ne pod každou.
     """
-    pravidla = []
-    if spanek:
-        pravidla.append(
-            f"Ve spánku rozhoduje jen CO2: otevře nad {co2_krize:.0f}, "
-            f"zavře pod {co2_noc:.0f} ppm. Teplota okno neotvírá ani "
-            f"nezavírá.")
-        pravidla.append(
-            f"Jediná teplotní pojistka: zavřu, až klesne na "
-            f"{nocni_min - SPANEK_POJISTKA:.1f} °C, tedy "
-            f"{SPANEK_POJISTKA:.0f} °C pod noční mezí.")
-    elif noc:
-        pravidla.append(
-            f"V noci zavřu, až je vyvětráno, nebo při poklesu na "
-            f"{nocni_min:.1f} °C.")
-    pravidla.append(
+    return [
         f"Ráno mezi {noc_do:.1f} a {RANO_RUCH_DO:.0f} h neotvírám kvůli "
         f"běžnému dusnu, jen nad krizovým prahem — v tu dobu je v bytě "
-        f"ruch a vyvětrá se sám.")
-    pravidla.append(
+        f"ruch a vyvětrá se sám.",
         f"Za chladno beru, když je v pokoji o "
-        f"{POD_CILEM_REZERVA:.1f} °C méně než cíl.")
-    pravidla.append(
+        f"{POD_CILEM_REZERVA:.1f} °C méně než cíl.",
         f"Prach se vyhlazuje, aby jeden náraz nerozhodoval: každé měření "
-        f"posune průměr o {PM_VYHLAZENI * 100:.0f} %.")
-    pravidla.append(
-        f"Když větrání nezabírá, další pulz zkusím až za "
+        f"posune průměr o {PM_VYHLAZENI * 100:.0f} %.",
+        f"Když větrání nezabírá na CO2, další pulz zkusím až za "
         f"{PAUZA_PO_PULZU_S // 60:.0f} min a pauza se s každým dalším "
-        f"zdvojnásobí, nejvýš na hodinu.")
-    return pravidla
+        f"zdvojnásobí, nejvýš na hodinu. Teplotního kmitání se to "
+        f"netýká, to řeší tloušťka smyčky.",
+    ]
+
+
+def pevna_pravidla(spanek: bool, noc: bool, nocni_min: float,
+                   co2_noc: float, co2_krize: float) -> list[str]:
+    """Pravidla bez nastavení, která závisí na stavu místnosti."""
+    if spanek:
+        return [
+            f"Ve spánku rozhoduje jen CO2: otevře nad {co2_krize:.0f}, "
+            f"zavře pod {co2_noc:.0f} ppm. Teplota okno neotvírá ani "
+            f"nezavírá.",
+            f"Jediná teplotní pojistka: zavřu, až klesne na "
+            f"{nocni_min - SPANEK_POJISTKA:.1f} °C, tedy "
+            f"{SPANEK_POJISTKA:.0f} °C pod noční mezí.",
+        ]
+    if noc:
+        return [f"V noci zavřu, až je vyvětráno, nebo při poklesu na "
+                f"{nocni_min:.1f} °C."]
+    return []
 
 
 def _mez_chladu(v: "Vstup", p: "Pamet", n: "Nastaveni") -> float:

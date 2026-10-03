@@ -390,8 +390,13 @@ ložnici vychladil, protože teplota okno ve spánku nezavírá.
 neklesla.
 
 **Couvání po neúspěšném pulzu je patnáct minut** a s každým dalším se
-zdvojnásobí, nejvýš na hodinu. Týká se marného větrání za jinou
-místnost, ne teplotního kmitání — to řeší tloušťka smyčky.
+zdvojnásobí, nejvýš na hodinu. Spouští se, když větrání nezabírá na
+CO2 — typicky když jedna místnost větrá za druhou a svým oknem její
+vzduch skoro neovlivní. Teplotního kmitání se netýká, to řeší tloušťka
+smyčky.
+
+Pravidla pro celý byt jsou v kartě jednou, v samostatné sekci před
+grafy. Ta, která závisí na stavu místnosti, zůstávají u ní.
 
 ## Kontrola celistvosti
 

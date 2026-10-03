@@ -1414,19 +1414,24 @@ def test_v_noci_se_zavira_po_vyvetrani_vzdy():
 def test_pevna_pravidla_jsou_videt():
     """Nenastavitelné chování se nesmí nikde neobjevit — jinak se
     zapomene, že existuje, a není poznat, proč se něco děje."""
-    from core import pevna_pravidla
+    from core import pevna_pravidla, pevna_pravidla_bytu
+
+    # pravidla místnosti: jen to, co závisí na jejím stavu
     ve_spanku = pevna_pravidla(True, True, 21.0, 1000, 1250)
     assert any("jen CO2" in x for x in ve_spanku)
     assert any("19.0" in x for x in ve_spanku)        # pojistka
-    assert any("zdvojnásobí" in x for x in ve_spanku)
 
     v_noci = pevna_pravidla(False, True, 18.0, 1000, 1250)
     assert any("vyvětráno" in x for x in v_noci)
     assert not any("jen CO2" in x for x in v_noci)
 
-    # ve dne zbývají pravidla, která nezávisí na noci ani spánku
-    ve_dne = pevna_pravidla(False, False, 18.0, 1000, 1250)
-    assert not any("jen CO2" in x for x in ve_dne)
-    assert any("ruch" in x for x in ve_dne)           # ranní potlačení
-    assert any("chladno" in x for x in ve_dne)        # mez „pod cílem"
-    assert any("Prach" in x for x in ve_dne)          # vyhlazení
+    assert pevna_pravidla(False, False, 18.0, 1000, 1250) == []
+
+    # pravidla celého bytu: jednou, nezávisle na místnosti
+    bytu = pevna_pravidla_bytu(6.5)
+    assert any("ruch" in x for x in bytu)             # ranní potlačení
+    assert any("chladno" in x for x in bytu)          # mez „pod cílem"
+    assert any("Prach" in x for x in bytu)            # vyhlazení
+    assert any("zdvojnásobí" in x for x in bytu)      # couvání
+    # a je u něj napsané, čeho se netýká
+    assert any("tloušťka smyčky" in x for x in bytu)

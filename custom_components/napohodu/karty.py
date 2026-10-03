@@ -103,6 +103,7 @@ PORADI_SEKCI = [
     "Základ výpočtu",
     "Slunce a stínění",
     "Srovnat do žádané polohy",
+    "Platí bez nastavení",
     "Grafy",
 ]
 
@@ -522,7 +523,22 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
 
     c.append(SEKCE)
 
+    # --- pravidla bez nastavení, pro celý byt jednou ---
+    if mistnosti:
+        c.append(SEKCE)
+        c += _hlavicka("Platí bez nastavení", "mdi:gavel", "subtitle")
+        c.append("  - type: markdown")
+        c.append("    content: |-")
+        c.append(f"      {{% set r = state_attr("
+                 f"'sensor.napohodu_{mistnosti[0]}_stav',"
+                 f" 'pevna_pravidla_bytu') %}}")
+        c.append("      {% if r %}{% for z in r %}")
+        c.append("      - {{ z }}")
+        c.append("      {% endfor %}{% endif %}")
+        c.append("")
+
     # --- grafy ---
+    c.append(SEKCE)
     # Do jednoho grafu se nevejde všechno čitelně. Cíle jsou skoro
     # totožné, takže stačí jeden, a k němu skutečné teploty místností.
     hlavni = mistnosti[0] if mistnosti else None
