@@ -1205,13 +1205,20 @@ def test_pasmo_ma_teplotu_ve_spravnem_poradi():
     assert cisla == sorted(cisla, reverse=True)
 
 
-def test_tloustka_rusi_hysterezi_kdyz_je_nula():
+def test_po_zavreni_chladem_se_ve_dne_ceka_na_cil():
+    """Ve dne je hranicí cíl, tloušťka se neuplatní."""
     from core import Nastaveni as N_
-    nast = N_(tloustka=0.0)
+    nast = N_(tloustka=7.0)
+
     p = Pamet(otevreno=False, cas_povelu_s=0, zavreno_chladem=True)
-    r = rozhodni(stary(co2=1200, t_in=19.6, t_in_max=19.8, t_out=12.0,
+    r = rozhodni(stary(co2=1200, t_in=20.5, t_in_max=20.7, t_out=12.0,
                        cil=21.0, hodina=14.0), p, nast)
-    assert r.akce is Akce.OTEVRIT
+    assert r.akce is not Akce.OTEVRIT      # ještě pod cílem
+
+    p2 = Pamet(otevreno=False, cas_povelu_s=0, zavreno_chladem=True)
+    r2 = rozhodni(stary(co2=1200, t_in=21.1, t_in_max=21.3, t_out=12.0,
+                        cil=21.0, hodina=14.0), p2, nast)
+    assert r2.akce is Akce.OTEVRIT
 
 
 # ------------- okno otevřené před spaním se smí zavřít
@@ -1303,22 +1310,37 @@ def test_pod_cilem_ma_jednu_mez():
 
 # --------------------- smyčka musí být souměrná
 
-def test_tloustka_plati_i_v_teplem_smeru():
-    """Dřív chránila jen chladný směr, takže v letním období lítalo
-    okno stejně jako v zimním. Hrana je cíl + chlazení + tloušťka."""
+def test_ve_dne_je_hysterezi_odstup_ne_tloustka():
+    """Tloušťka se ve dne přičítala navíc, takže se obě pásma sčítala.
+    Teď je denní hysterezí sám odstup: zavře na cíli, otevře o odstup."""
     from core import Nastaveni as N_
-    # cíl 24, odstup 1,5, tloušťka 1,0 → chladit znovu od 26,5
-    nast = N_(tloustka=1.0)
+    nast = N_(odstup_od_cile=1.5, tloustka=7.0)   # tloušťka se nesmí sčítat
 
     p = Pamet(otevreno=False, cas_povelu_s=0, zavreno_teplem=True)
-    r = rozhodni(stary(co2=500, t_in=25.9, t_in_max=26.2, t_out=19.0,
+    r = rozhodni(stary(co2=500, t_in=25.2, t_in_max=25.4, t_out=19.0,
                        rh_out=50.0, cil=24.0, hodina=14.0), p, nast)
-    assert r.akce is not Akce.OTEVRIT
+    assert r.akce is not Akce.OTEVRIT      # ještě pod cíl + odstup
 
     p2 = Pamet(otevreno=False, cas_povelu_s=0, zavreno_teplem=True)
-    r2 = rozhodni(stary(co2=500, t_in=26.3, t_in_max=26.6, t_out=19.0,
+    r2 = rozhodni(stary(co2=500, t_in=25.4, t_in_max=25.6, t_out=19.0,
                         rh_out=50.0, cil=24.0, hodina=14.0), p2, nast)
     assert r2.akce is Akce.OTEVRIT and "chlazení" in r2.duvod
+
+
+def test_v_noci_tloustka_plati():
+    """V noci je mez absolutní, takže hystereze musí být zvlášť."""
+    from core import Nastaveni as N_
+    nast = N_(nocni_min=18.0, tloustka=7.0)
+
+    p = Pamet(cas_povelu_s=0)
+    r = rozhodni(stary(co2=1200, t_in=24.0, t_in_max=24.2, t_out=12.0,
+                       cil=22.0, hodina=2.0), p, nast)
+    assert r.akce is not Akce.OTEVRIT      # do tloušťky nad mezí ne
+
+    p2 = Pamet(cas_povelu_s=0)
+    r2 = rozhodni(stary(co2=1200, t_in=25.5, t_in_max=25.7, t_out=12.0,
+                        cil=22.0, hodina=2.0), p2, nast)
+    assert r2.akce is Akce.OTEVRIT
 
 
 def test_stupnice_v_horku_ukaze_horni_hranu():

@@ -82,10 +82,11 @@ class Nastaveni:
     # v pokoji o tolik víc nebo méně než cíl. Zavírá se na cíli, ne na
     # odstupu — jinak pokoj cíle nikdy nedosáhne.
     odstup_od_cile: float = 1.5
-    # Tloušťka hysterezní smyčky: o kolik se musí teplota vrátit, než
-    # se po zavření kvůli chladu otevře znovu. Z ní se odvozuje i to,
-    # že se neotevře těsně nad mezí. Širší smyčka znamená delší cykly
-    # a větší rozkyv — nic mezi tím neexistuje.
+    # Tloušťka noční hysterezní smyčky: o kolik se musí pokoj prohřát
+    # nad noční mez, než se v noci otevře znovu, a jak těsně nad mezí
+    # se ještě neotvírá. Ve dne se nepoužívá — tam je hysterezí sám
+    # odstup od cíle, protože se zavírá na cíli a otevírá o odstup
+    # dál. Dřív platila i ve dne a obě pásma se sčítala.
     tloustka: float = 1.0
     nocni_min: float = 18.0
     # po jaké době otevřeného okna se ověří, že větrání vůbec zabírá;
@@ -268,10 +269,11 @@ def cil_adaptivni(prumer_venku: float, posun: float = 0.0,
 
 
 def konflikt_mezi(cil: float, odstup_od_cile: float, nocni_min: float,
-                  # Tloušťka hysterezní smyčky: o kolik se musí teplota vrátit, než
-    # se po zavření kvůli chladu otevře znovu. Z ní se odvozuje i to,
-    # že se neotevře těsně nad mezí. Širší smyčka znamená delší cykly
-    # a větší rozkyv — nic mezi tím neexistuje.
+                  # Tloušťka noční hysterezní smyčky: o kolik se musí pokoj prohřát
+    # nad noční mez, než se v noci otevře znovu, a jak těsně nad mezí
+    # se ještě neotvírá. Ve dne se nepoužívá — tam je hysterezí sám
+    # odstup od cíle, protože se zavírá na cíli a otevírá o odstup
+    # dál. Dřív platila i ve dne a obě pásma se sčítala.
     tloustka: float = 1.0) -> list[str]:
     """Nesrovnalosti mezi mezemi větrání a cílovou teplotou.
 
@@ -728,7 +730,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # Po zavření kvůli dostatečnému ochlazení se čeká na návrat o
     # tloušťku smyčky, stejně jako v chladném směru.
     chlazeni_po_pauze = (not p.zavreno_teplem or p.otevreno
-                         or t_max >= v.cil + n.odstup_od_cile + n.tloustka)
+                         or t_max >= v.cil + n.odstup_od_cile)
     # Zapíná se s odstupem, aby se neotvíralo kvůli dvěma desetinám,
     # ale dojede se na cíl. Dřív se tou samou hranicí zapínalo
     # i vypínalo, takže se pokoj zastavil o odstup nad cílem.
@@ -878,9 +880,11 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # Bez toho se okno vrátilo, jakmile pokoj skočil o desetinu — a to
     # v malém pokoji trvá pár minut.
     if p.zavreno_chladem and not p.otevreno and v.co2 <= n.co2_noc_krize:
-        # Od hrany pásma, a nejvýš k cíli — nad cílem už není co
-        # dohánět, takže čekat dál by znamenalo nevětrat nikdy.
-        vratit = min(_mez_chladu(v, p, n) + n.tloustka, v.cil)
+        # Ve dne je hysterezí sám odstup od cíle: zavírá se na cíli
+        # a otevírá o odstup od něj. Tloušťka se tu dřív přičítala
+        # navíc, takže se obě pásma sčítala a nikdo to neuhlídal.
+        vratit = v.cil if not _je_noc(v.hodina, n, v.spanek) else min(
+            _mez_chladu(v, p, n) + n.tloustka, v.cil)
         if t_in < vratit:
             return beze_zmeny(
                 f"čekám na prohřátí, {t_in:.1f} z {vratit:.1f} °C", False)

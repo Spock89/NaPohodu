@@ -154,10 +154,14 @@ Nouzové větrání a ruční žádost o vyvětrání tím neprochází. V kart�
 řádek, který ukazuje, od jakých hodnot se otevřelo a jak dlouho už je
 otevřeno.
 
-### Hysterezní smyčka teplotního větrání
+### Hysterezní smyčka
 
-Okno zavírá při dosažení meze a znovu otevírá až po návratu o tloušťku
-smyčky. Tloušťka je směnný kurz mezi rozkyvem a počtem cyklů: širší
+**Ve dne** je hysterezí sám odstup od cíle: zavírá se na cíli a otevírá
+o odstup od něj. Žádná druhá se nepřidává.
+
+**V noci** je mez absolutní, takže hystereze musí být zvlášť — okno
+zavírá při dosažení noční meze a otevírá až po prohřátí o tloušťku
+noční smyčky. Tloušťka je směnný kurz mezi rozkyvem a počtem cyklů: širší
 smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje.
 
 Nastavuje se u místnosti a z téhož čísla se odvozuje i to, že se okno
