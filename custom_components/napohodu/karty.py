@@ -99,12 +99,11 @@ PORADI_SEKCI = [
     "Ovládání oken",          # s ovládáním žaluzií v jedné sekci
     "Ladění",
     "Otevřít nad CO2",
-    "Obsazenost a klid",      # se sdíleným vzduchem v jedné sekci
-    "Základ výpočtu",
-    "Slunce a stínění",
+    "Zvlhčovače",             # se srovnáním v jedné sekci
     "Srovnat do žádané polohy",
-    "Zvlhčovače",
-    "Platí bez nastavení",
+    "Obsazenost a klid",      # se sdíleným vzduchem v jedné sekci
+    "Základ výpočtu",         # s pravidly bez nastavení
+    "Slunce a stínění",
     "Grafy",
 ]
 
@@ -334,6 +333,19 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         c += _karta(zaklad)
         c.append("")
 
+    # --- pravidla bez nastavení, pro celý byt jednou ---
+    if mistnosti:
+        c += _hlavicka("Platí bez nastavení", "mdi:gavel", "subtitle")
+        c.append("  - type: markdown")
+        c.append("    content: |-")
+        c.append(f"      {{% set r = state_attr("
+                 f"'sensor.napohodu_{mistnosti[0]}_stav',"
+                 f" 'pevna_pravidla_bytu') %}}")
+        c.append("      {% if r %}{% for z in r %}")
+        c.append("      - {{ z }}")
+        c.append("      {% endfor %}{% endif %}")
+        c.append("")
+
     # --- okna ---
     for m in mistnosti:
         c.append(SEKCE)
@@ -468,22 +480,6 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     # --- ovládání a tlačítka ---
     c.append(SEKCE)
 
-    polozky = []
-    if existuje("button.napohodu_srovnat_vse"):
-        polozky += _radek("button.napohodu_srovnat_vse", "Všechno naráz")
-        polozky.append("      - type: divider")
-    # Identifikátor entity vzniká z přeloženého jména, ne z klíče
-    # v kódu — „srovnat_stineni" se jmenuje Srovnat žaluzie, takže
-    # entita končí na srovnat_zaluzie.
-    for klic, popis in (("srovnat_okno", "okna"),
-                        ("srovnat_zaluzie", "žaluzie"),
-                        ("srovnat_topeni", "topení")):
-        for m in mistnosti:
-            eid = f"button.napohodu_{m}_{klic}"
-            if existuje(eid):
-                polozky += _radek(eid, f"{jm(m)} — {popis}")
-    c += _karta(polozky, nazev="Srovnat do žádané polohy")
-    c.append("")
     c.append(SEKCE)
 
     c.append(SEKCE)
@@ -546,20 +542,27 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         c += _hlavicka("Zvlhčovače", "mdi:air-humidifier", "subtitle")
         c += _karta(polozky[:-1], nazev="Zvlhčovače")
         c.append("")
-
-    # --- pravidla bez nastavení, pro celý byt jednou ---
-    if mistnosti:
+    else:
+        # bez zvlhčovačů dostane srovnání vlastní sekci
         c.append(SEKCE)
-        c += _hlavicka("Platí bez nastavení", "mdi:gavel", "subtitle")
-        c.append("  - type: markdown")
-        c.append("    content: |-")
-        c.append(f"      {{% set r = state_attr("
-                 f"'sensor.napohodu_{mistnosti[0]}_stav',"
-                 f" 'pevna_pravidla_bytu') %}}")
-        c.append("      {% if r %}{% for z in r %}")
-        c.append("      - {{ z }}")
-        c.append("      {% endfor %}{% endif %}")
-        c.append("")
+
+    polozky = []
+    if existuje("button.napohodu_srovnat_vse"):
+        polozky += _radek("button.napohodu_srovnat_vse", "Všechno naráz")
+        polozky.append("      - type: divider")
+    # Identifikátor entity vzniká z přeloženého jména, ne z klíče
+    # v kódu — „srovnat_stineni" se jmenuje Srovnat žaluzie, takže
+    # entita končí na srovnat_zaluzie.
+    for klic, popis in (("srovnat_okno", "okna"),
+                        ("srovnat_zaluzie", "žaluzie"),
+                        ("srovnat_topeni", "topení")):
+        for m in mistnosti:
+            eid = f"button.napohodu_{m}_{klic}"
+            if existuje(eid):
+                polozky += _radek(eid, f"{jm(m)} — {popis}")
+    c += _karta(polozky, nazev="Srovnat do žádané polohy")
+    c.append("")
+
 
     # --- grafy ---
     c.append(SEKCE)

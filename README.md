@@ -379,6 +379,9 @@ jen špatně. Nejsou ale schovaná: integrace je vypisuje v kartě u každé
 místnosti pod stupnicí, protože nenastavitelné chování, o kterém se
 neví, je horší než nastavení, které nepoužíváš.
 
+**Ranní potlačení větrání zmizelo.** O ticho ráno se stará spánkový
+přepínač, ne hodiny — dokud je zapnutý, otevře jen krizový práh.
+
 **Ve spánku rozhoduje jen CO2.** Otevře krizový práh, zavře noční;
 teplota okno neotvírá ani nezavírá. Rámus okna vzbudí spolehlivěji než
 oxid uhličitý.

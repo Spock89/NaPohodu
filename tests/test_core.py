@@ -150,17 +150,6 @@ def test_noc_krize_prebiji_mez():
     assert r.akce is Akce.OTEVRIT and "nouzov" in r.duvod
 
 
-def test_rano_neotevira_ale_krize_ano():
-    """Ranní ruch potlačí běžné dusno, krize projde. Ve spánku, protože
-    po skončení nočních hodin jinak platí denní pravidla."""
-    a, _ = krok(stary(co2=1100, t_in=20.3, cil=25.5, hodina=7,
-                      spanek=True))
-    assert a.akce is Akce.NIC
-    b, _ = krok(stary(co2=1300, t_in=20.3, cil=25.5, hodina=7,
-                      spanek=True))
-    assert b.akce is Akce.OTEVRIT
-
-
 
 def test_projezd_blokuje_opacny_povel():
     p = Pamet(otevreno=True, cas_povelu_s=0)
@@ -640,14 +629,6 @@ def test_kuchyne_bez_klidu_vetra_i_kdyz_se_vedle_spi():
     assert r.akce is Akce.OTEVRIT
 
 
-def test_mistnost_s_klidem_rano_neotvira():
-    r, _ = krok(stary(co2=1111, t_in=20.6, t_out=10, cil=25.5, hodina=7,
-                      spanek=True))
-    assert r.akce is Akce.NIC
-
-
-
-
 
 def test_spanek_vedle_nezavre_kuchyni():
     """Kuchyň má klid navázaný na spánek, ale sama se v ní nespí.
@@ -656,13 +637,6 @@ def test_spanek_vedle_nezavre_kuchyni():
                       spanek=False))
     assert r.akce is Akce.OTEVRIT
 
-
-def test_kde_se_spi_nocni_rezim_plati():
-    """Ve spánku se kvůli běžnému dusnu neotvírá — rámus okna vzbudí
-    spolehlivěji než CO2."""
-    r, _ = krok(stary(co2=1073, t_in=20.6, t_out=8, cil=25.5, hodina=7,
-                      spanek=True))
-    assert r.akce is Akce.NIC and "klid" in r.duvod
 
 
 def test_klid_podle_noci_plati_v_noci_ne_rano():
@@ -1197,10 +1171,12 @@ def test_pasmo_ukaze_meze_i_kde_jsme():
     from core import pasmo_text
     r = pasmo_text(21.0, 20.8, 1.5, 18.0, 1.0, otevreno=True)
     t = "\n".join(r)
-    assert "cíl 21.0" in t
+    assert "cíl" in t
     assert "19.5" in t            # denní mez = cíl - 1,5
-    assert "teď otevřeno" in t
-    assert "zavřu při poklesu na 19.5" in t
+    assert "teď, nejchladnější čidlo, otevřeno" in t
+    assert "Zavřu při poklesu na 19.5" in t
+    # „tady zavřu" jen na hraně, která právě rozhoduje
+    assert t.count("tady zavřu") == 1
 
 
 def test_pasmo_po_zavreni_ukaze_na_co_se_ceka():
@@ -1209,7 +1185,7 @@ def test_pasmo_po_zavreni_ukaze_na_co_se_ceka():
     from core import pasmo_text
     t = "\n".join(pasmo_text(21.0, 20.1, 1.5, 18.0, 1.0, otevreno=False,
                              zavreno_chladem=True))
-    assert "znovu otevřu od 20.5" in t
+    assert "znovu otevřu odtud" in t
     assert "otevřu od 20.5" in t
 
 
@@ -1217,7 +1193,7 @@ def test_pasmo_ve_spanku_ukaze_pojistku():
     from core import pasmo_text
     t = "\n".join(pasmo_text(22.0, 20.4, 1.5, 21.0, 1.0, otevreno=True,
                              spanek=True, noc=True))
-    assert "pojistka ve spánku 19.0" in t
+    assert "pojistka ve spánku" in t and "19.0" in t
 
 
 def test_pasmo_ma_teplotu_ve_spravnem_poradi():
@@ -1308,12 +1284,21 @@ def test_pm10_se_odvozuje_z_pm25():
 
 def test_pojmenovane_konstanty_existuji():
     """Zadrátované číslo nikdo nenajde a nikdo neví, proč tam je."""
-    from core import (PM10_NASOBEK, PM_VYHLAZENI, POD_CILEM_REZERVA,
-                      RANO_RUCH_DO)
-    assert RANO_RUCH_DO == 9.0
-    assert POD_CILEM_REZERVA == 0.5
+    from core import PM10_NASOBEK, PM_VYHLAZENI
     assert 1.0 < PM10_NASOBEK < 2.0
     assert 0.0 < PM_VYHLAZENI < 1.0
+
+
+def test_pod_cilem_ma_jednu_mez():
+    """Dřív platila pevná půlstupňová při zavřeném okně a nastavená při
+    otevřeném, takže nastavení nad půl stupně se nikdy neprojevilo."""
+    from core import Nastaveni as N_, _pod_cilem
+    nast = N_(denni_pod_cil=2.0)
+    v = Vstup(co2=500, t_in=20.0, cil=21.0, t_out=15.0, cas_s=100000)
+
+    zavreno = Pamet(otevreno=False, cas_povelu_s=0)
+    assert _pod_cilem(v, nast, 20.0) is False     # 20 > 21-2
+    assert _pod_cilem(v, nast, 18.9) is True
 
 
 # --------------------- smyčka musí být souměrná
@@ -1341,22 +1326,22 @@ def test_stupnice_v_horku_ukaze_horni_hranu():
     from core import pasmo_text
     t = "\n".join(pasmo_text(24.0, 25.1, 1.5, 18.0, 1.0, otevreno=True,
                              t_max=25.4))
-    assert "chladím nad 25.0" in t
-    assert "zavřu, až klesne na 25.0" in t
+    assert "horní mez — tady zavřu" in t
+    assert "Zavřu, až klesne na 25.0" in t
 
 
 def test_stupnice_v_chladu_ukaze_dolni_hranu():
     from core import pasmo_text
     t = "\n".join(pasmo_text(21.0, 20.8, 1.5, 18.0, 1.0, otevreno=True,
                              t_max=21.0))
-    assert "zavřu při poklesu na 19.5" in t
+    assert "Zavřu při poklesu na 19.5" in t
 
 
 def test_stupnice_po_letnim_zavreni():
     from core import pasmo_text
     t = "\n".join(pasmo_text(24.0, 24.6, 1.5, 18.0, 1.0, otevreno=False,
                              t_max=25.1, zavreno_teplem=True))
-    assert "chladit znovu od 26.0" in t
+    assert "chladit znovu odtud" in t and "26.0" in t
 
 
 def test_venkovni_zavreni_nenasazuje_smycku():
@@ -1428,9 +1413,7 @@ def test_pevna_pravidla_jsou_videt():
     assert pevna_pravidla(False, False, 18.0, 1000, 1250) == []
 
     # pravidla celého bytu: jednou, nezávisle na místnosti
-    bytu = pevna_pravidla_bytu(6.5)
-    assert any("ruch" in x for x in bytu)             # ranní potlačení
-    assert any("chladno" in x for x in bytu)          # mez „pod cílem"
+    bytu = pevna_pravidla_bytu()
     assert any("Prach" in x for x in bytu)            # vyhlazení
     assert any("zdvojnásobí" in x for x in bytu)      # couvání
     # a je u něj napsané, čeho se netýká

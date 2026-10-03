@@ -352,7 +352,7 @@
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
             "noc_utlum_topeni": "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. Klesá plynule hodinu před začátkem noci, aby to nebyl skok; zapnutý spánek platí okamžitě.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "den_pod_cil": "Přes den se okno zavře, jakmile teplota klesne o tolik pod cílovou. Mez se tím drží u cíle celý rok: v zimě při cíli 21 zavře na 19,5, v létě při cíli 26 na 24,5, aniž bys cokoli přenastavoval.\n\nDřív tu byl pokles od stavu při otevření, který mez posouval podle toho, jak bylo zrovna teplo. Absolutní mez zase nesledovala sezónu — v létě dovolila vychladit o šest stupňů.",
+            "den_pod_cil": "Přes den se okno zavře, jakmile teplota klesne o tolik pod cílovou, a pod touhle mezí se už kvůli teplotě neotvírá. Mez se drží u cíle celý rok: v zimě při cíli 21 je na 19,5, v létě při cíli 26 na 24,5.\\n\\nDřív platila jen při otevřeném okně a při zavřeném se brala pevná půlstupňová, takže nastavení nad půl stupně se nikdy neprojevilo.",
             "tloustka_smycky": "O kolik se musí teplota vrátit, než se po zavření kvůli teplotě otevře znovu. Platí souměrně v obou směrech: v chladu se čeká na prohřátí, v horku na další ohřátí.\\n\\nJe to směnný kurz mezi rozkyvem a počtem cyklů — širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje. Když okno lítá, zvyš ji aspoň na rozkyv, který vidíš v grafu."
           },
           "submit": "Další"
@@ -520,7 +520,7 @@
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
             "noc_utlum_topeni": "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. Klesá plynule hodinu před začátkem noci, aby to nebyl skok; zapnutý spánek platí okamžitě.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "den_pod_cil": "Přes den se okno zavře, jakmile teplota klesne o tolik pod cílovou. Mez se tím drží u cíle celý rok: v zimě při cíli 21 zavře na 19,5, v létě při cíli 26 na 24,5, aniž bys cokoli přenastavoval.\n\nDřív tu byl pokles od stavu při otevření, který mez posouval podle toho, jak bylo zrovna teplo. Absolutní mez zase nesledovala sezónu — v létě dovolila vychladit o šest stupňů.",
+            "den_pod_cil": "Přes den se okno zavře, jakmile teplota klesne o tolik pod cílovou, a pod touhle mezí se už kvůli teplotě neotvírá. Mez se drží u cíle celý rok: v zimě při cíli 21 je na 19,5, v létě při cíli 26 na 24,5.\\n\\nDřív platila jen při otevřeném okně a při zavřeném se brala pevná půlstupňová, takže nastavení nad půl stupně se nikdy neprojevilo.",
             "tloustka_smycky": "O kolik se musí teplota vrátit, než se po zavření kvůli teplotě otevře znovu. Platí souměrně v obou směrech: v chladu se čeká na prohřátí, v horku na další ohřátí.\\n\\nJe to směnný kurz mezi rozkyvem a počtem cyklů — širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje. Když okno lítá, zvyš ji aspoň na rozkyv, který vidíš v grafu."
           },
           "submit": "Další"

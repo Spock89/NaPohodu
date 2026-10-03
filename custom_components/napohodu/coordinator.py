@@ -1187,13 +1187,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "prach_zvenci": cas_s < pamet.pm_venku_horsi_do_s,
             "duvody": self._diagnostika(okna, skutecne, v, pamet, nast),
             "nocni_klid": f"{self._cas(noc_od)} – {self._cas(noc_do)}",
-            "rano_neotvirat_od": self._cas(noc_do),
             "je_noc": je_noc,
             # běží zkrácený pulz, ne jestli je zrovna splněná podmínka
             "narazove_vetrani": pamet.narazove_pulz and skutecne,
             "narazove_mozne": self.narazove,
             # pravidla pro celý byt, aby nebyla pod každou místností
-            "pevna_pravidla_bytu": core.pevna_pravidla_bytu(self._noc_do),
+            "pevna_pravidla_bytu": core.pevna_pravidla_bytu(),
             "doma_podle": self.doma_popis,
             # jak se dospělo k cílové teplotě, ať to není magie.
             # Odchylka místnosti se sem nepřidává: je vidět na svém

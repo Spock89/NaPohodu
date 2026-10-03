@@ -328,8 +328,7 @@ def test_rozvrzeni_sekci():
     assert prvni[0] == "Cílová teplota"
     assert prvni[-1] == "Grafy"
     assert prvni.index("Ovládání oken") < prvni.index("Ladění")
-    assert prvni.index("Srovnat do žádané polohy") > prvni.index(
-        "Slunce a stínění")
+    assert prvni.index("Zvlhčovače") < prvni.index("Obsazenost a klid")
     # obsazenost a sdílený vzduch v jedné sekci, každé s nadpisem
     sekce = d["sections"][prvni.index("Obsazenost a klid")]
     nadpisy = [k.get("heading") for k in sekce["cards"] if k.get("heading")]
@@ -438,11 +437,12 @@ def test_pravidla_bytu_jsou_jednou_a_v_samostatne_sekci():
             if "pevna_pravidla_bytu" in str(k.get("content", ""))]
     assert len(bytu) == 1
 
-    # a je to předposlední sekce, před grafy
-    nadpisy = [s["cards"][0].get("heading") or s["cards"][0].get("title")
-               or s["cards"][0]["type"] for s in d["sections"]]
-    assert nadpisy[-2] == "Platí bez nastavení"
-    assert nadpisy[-1] == "Grafy"
+    # patří k základu výpočtu, ne do vlastní sekce
+    sekce = [s for s in d["sections"]
+             if any("pevna_pravidla_bytu" in str(k.get("content", ""))
+                    for k in s["cards"])][0]
+    nadpisy = [k.get("heading") for k in sekce["cards"] if k.get("heading")]
+    assert nadpisy == ["Základ výpočtu", "Platí bez nastavení"]
 
 
 def test_karta_zvlhcovacu():
