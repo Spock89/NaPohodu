@@ -1204,7 +1204,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 m.cil, v.t_in, nast.denni_pod_cil, nast.nocni_min,
                 nast.tloustka, skutecne, bool(m.klid),
                 core._je_noc(self._hodina_ted, nast, bool(m.klid)),
-                nast.spanek_pojistka,
+                core.SPANEK_POJISTKA,
                 m.atributy.get("teplota_max"), nast.chlazeni_nad_cil,
                 pamet.zavreno_chladem, pamet.zavreno_teplem),
             # Pravidla, která platí bez nastavení. Schované chování je

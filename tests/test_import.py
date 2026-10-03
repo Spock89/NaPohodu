@@ -893,3 +893,13 @@ def test_tloustka_az_do_sedmi(nahradni_ha):
     nb = pathlib.Path("custom_components/napohodu/number.py").read_text()
     assert "CONF_TLOUSTKA, default=1.0): _cislo(0, 7, 0.5)" in cf
     assert re.search(r"Posuvnik\(CONF_TLOUSTKA, 0, 7", nb)
+
+
+def test_stupnice_bere_pevnou_pojistku(nahradni_ha):
+    """Nastavení zmizelo, ale stupnice ho ještě chvíli chtěla — a
+    integrace se kvůli tomu nenačetla."""
+    import pathlib
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    assert "nast.spanek_pojistka" not in ko
+    assert "core.SPANEK_POJISTKA" in ko

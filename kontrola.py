@@ -516,6 +516,36 @@ for jm in re.findall(r"^([A-Z][A-Z_]+) = [\d.]+", jadro_text, re.M):
             f"core.py: {jm} rozhoduje, ale nikde se neukazuje — "
             f"doplň ji do pevna_pravidla()")
 
+# 1y) odkaz na nastavení nebo paměť, která v jádře neexistuje.
+# Koordinátor je sestavuje za běhu, takže překladač ani testy to
+# nenajdou — projeví se to až chybou při načtení integrace.
+def _pole_tridy(jmeno):
+    for u in ast.parse(jadro_text).body:
+        if isinstance(u, ast.ClassDef) and u.name == jmeno:
+            return {x.target.id for x in u.body
+                    if isinstance(x, ast.AnnAssign)
+                    and isinstance(x.target, ast.Name)}
+    return set()
+
+
+# jen jednoznačná jména; „v" je běžná proměnná i jinde
+TRIDY = {"nast": ("Nastaveni", _pole_tridy("Nastaveni")),
+         "pamet": ("Pamet", _pole_tridy("Pamet"))}
+for p in d.glob("*.py"):
+    if p.name == "core.py":
+        continue
+    text = p.read_text()
+    for u in ast.walk(ast.parse(text)):
+        if not (isinstance(u, ast.Attribute)
+                and isinstance(u.value, ast.Name)
+                and u.value.id in TRIDY):
+            continue
+        jmeno_tridy, pole = TRIDY[u.value.id]
+        if pole and u.attr not in pole and not u.attr.startswith("_"):
+            chyby.append(
+                f"{p.name}:{u.lineno}: {u.value.id}.{u.attr} v {jmeno_tridy}"
+                f" neexistuje — projeví se až při načtení integrace")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):
