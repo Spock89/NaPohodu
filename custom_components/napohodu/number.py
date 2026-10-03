@@ -7,12 +7,13 @@ from dataclasses import dataclass
 from homeassistant.components.number import (NumberEntity, NumberMode,
                                              RestoreNumber)
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EntityCategory, UnitOfTemperature
+from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT, CONF_KOMFORT_ODSTUP,
-                    CONF_DEN_POD_CIL, CONF_NOC_MIN, CONF_NOC_UTLUM, CONF_TLOUSTKA,
+                    CONF_DEN_POD_CIL, CONF_NOC_MIN, CONF_NOC_UTLUM, CONF_RH_MAX, CONF_RH_MIN,
+                    CONF_TLOUSTKA,
                     CONF_ODCHYLKA, CONF_UTLUM,
                     DOMAIN,
                     PODENTITA_MISTNOST)
@@ -35,6 +36,10 @@ MISTNOST = [
              "mdi:thermometer-plus"),
     Posuvnik(CONF_NOC_UTLUM, 0, 4, 0.5, UnitOfTemperature.CELSIUS, 0.0,
              "mdi:weather-night-partly-cloudy"),
+    Posuvnik(CONF_RH_MIN, 20, 55, 1, PERCENTAGE, 38.0,
+             "mdi:water-percent"),
+    Posuvnik(CONF_RH_MAX, 40, 80, 1, PERCENTAGE, 60.0,
+             "mdi:water-percent-alert"),
     Posuvnik(CONF_TLOUSTKA, 0, 7, 0.5, UnitOfTemperature.CELSIUS, 1.0,
              "mdi:sine-wave"),
     Posuvnik(CONF_NOC_MIN, 14, 24, 0.5, UnitOfTemperature.CELSIUS, 18.0,

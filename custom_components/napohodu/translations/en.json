@@ -267,7 +267,7 @@
             "komfort_odstup": "Otevřeno dokud je venku chladněji nejvýš o",
             "cisticka": "Čistička vzduchu",
             "rh_vnitrni": "Čidlo vlhkosti",
-            "rh_max": "Odtah zapnout nad",
+            "rh_max": "Vypnout zvlhčovač nad",
             "azimut": "Azimut oken",
             "klid_stineni_min": "Nejčastěji hýbat jednou za",
             "zaluzie": "Žaluzie",
@@ -289,7 +289,7 @@
             "odvzdusneni_t": "Teplota při odvzdušnění",
             "stineni_predstih": "Předstih stínění",
             "zvlhcovac": "Zvlhčovač",
-            "rh_min": "Zvlhčovat pod",
+            "rh_min": "Zvlhčovat pod vlhkostí",
             "topit_pri_oknu": "Při otevřeném okně",
             "sezonu_ridi_hlavice": "Zapnutí topení řídí hlavice",
             "znacka_okno": "Značka pro otevřené okno",
@@ -425,7 +425,7 @@
             "indicie_dobeh_min": "Doběh",
             "cisticka": "Čistička vzduchu",
             "rh_vnitrni": "Čidlo vlhkosti",
-            "rh_max": "Odtah zapnout nad",
+            "rh_max": "Vypnout zvlhčovač nad",
             "azimut": "Azimut oken",
             "klid_stineni_min": "Nejčastěji hýbat jednou za",
             "zaluzie": "Žaluzie",
@@ -447,7 +447,7 @@
             "odvzdusneni_t": "Teplota při odvzdušnění",
             "stineni_predstih": "Předstih stínění",
             "zvlhcovac": "Zvlhčovač",
-            "rh_min": "Zvlhčovat pod",
+            "rh_min": "Zvlhčovat pod vlhkostí",
             "topit_pri_oknu": "Při otevřeném okně",
             "sezonu_ridi_hlavice": "Zapnutí topení řídí hlavice",
             "znacka_okno": "Značka pro otevřené okno",
@@ -843,6 +843,12 @@
       },
       "tloustka_smycky": {
         "name": "Tloušťka hysterezní smyčky"
+      },
+      "rh_min": {
+        "name": "Zvlhčovat pod vlhkostí"
+      },
+      "rh_max": {
+        "name": "Vypnout zvlhčovač nad"
       }
     },
     "switch": {

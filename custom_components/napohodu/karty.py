@@ -103,6 +103,7 @@ PORADI_SEKCI = [
     "Základ výpočtu",
     "Slunce a stínění",
     "Srovnat do žádané polohy",
+    "Zvlhčovače",
     "Platí bez nastavení",
     "Grafy",
 ]
@@ -522,6 +523,29 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
 
 
     c.append(SEKCE)
+
+    # --- zvlhčovače: jen místnosti, které ho mají ---
+    polozky = []
+    for m in mistnosti:
+        stav = f"sensor.napohodu_{m}_stav"
+        if not existuje(stav):
+            continue
+        pred = len(polozky)
+        polozky += _atribut(stav, "zvlhcovac_bezi", jm(m))
+        polozky += _atribut(stav, "vlhkost", "   vlhkost v pokoji")
+        polozky += _atribut(stav, "zvlhcovac_proc", "   kdy zapnu a vypnu")
+        for klic, popis in (("zvlhcovat_pod_vlhkosti", "   zapnout pod"),
+                            ("vypnout_zvlhcovac_nad", "   vypnout nad")):
+            eid = f"number.napohodu_{m}_{klic}"
+            if existuje(eid):
+                polozky += _radek(eid, popis)
+        if len(polozky) > pred:
+            polozky.append("      - type: divider")
+    if polozky:
+        c.append(SEKCE)
+        c += _hlavicka("Zvlhčovače", "mdi:air-humidifier", "subtitle")
+        c += _karta(polozky[:-1], nazev="Zvlhčovače")
+        c.append("")
 
     # --- pravidla bez nastavení, pro celý byt jednou ---
     if mistnosti:

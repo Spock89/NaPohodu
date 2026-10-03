@@ -443,3 +443,20 @@ def test_pravidla_bytu_jsou_jednou_a_v_samostatne_sekci():
                or s["cards"][0]["type"] for s in d["sections"]]
     assert nadpisy[-2] == "Platí bez nastavení"
     assert nadpisy[-1] == "Grafy"
+
+
+def test_karta_zvlhcovacu():
+    """Meze se dají ladit z dashboardu, ne jen přes formulář."""
+    import yaml
+    d = yaml.safe_load(dashboard(
+        ["obyvak"], [], vzdy, cidla={"obyvak": "sensor.a"},
+        podoba="stranka"))
+    karty = [k for s in d["sections"] for k in s["cards"]
+             if k.get("title") == "Zvlhčovače"]
+    assert len(karty) == 1
+    text = str(karty[0])
+    assert "zvlhcovac_bezi" in text          # jestli běží
+    assert "vlhkost" in text                 # kolik je v pokoji
+    assert "zvlhcovac_proc" in text          # kdy zapne a vypne
+    assert "zvlhcovat_pod_vlhkosti" in text  # a obě meze
+    assert "vypnout_zvlhcovac_nad" in text

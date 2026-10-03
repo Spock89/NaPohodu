@@ -4,5 +4,7 @@ class Platform:
     SWITCH="switch"; BUTTON="button"; SELECT="select"
 class EntityCategory:
     CONFIG="config"; DIAGNOSTIC="diagnostic"
+PERCENTAGE="%"
+
 class UnitOfTemperature:
     CELSIUS="°C"

@@ -1380,8 +1380,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # nad minimem bylo nastavení, které nešlo ovlivnit, a horní
             # mez přitom v nastavení celou dobu byla — jen ji nikdo
             # nečetl.
-            rh_min = float(d.get(CONF_RH_MIN, 38.0))
-            rh_max = max(float(d.get(CONF_RH_MAX, 60.0)), rh_min + 2)
+            rh_min = self.hodnota(p.subentry_id, CONF_RH_MIN,
+                                  float(d.get(CONF_RH_MIN, 38.0)))
+            rh_max = max(self.hodnota(p.subentry_id, CONF_RH_MAX,
+                                      float(d.get(CONF_RH_MAX, 60.0))),
+                         rh_min + 2)
+            m.atributy["zvlhcovac_proc"] = (
+                f"zapnu pod {rh_min:.0f} %, vypnu nad {rh_max:.0f} %, "
+                f"teď {rh_in:.0f} %")
             zapnout = None
             if rh_in < rh_min:
                 zapnout = True
