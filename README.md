@@ -142,6 +142,18 @@ tahá se zvenčí, a poznatek pár hodin platí.
 Na prach se ostatně větrat nemusí. Čistička ho vyřeší bez tepelné
 ztráty a v zimě je to skoro vždycky lepší volba.
 
+### Kontrola účinku větrání
+
+Marně otevřené okno v zimě stojí teplo a nic za to nevrací. Po nastavené
+době, ve výchozím stavu půl hodiny, se proto ověří, že větrání vůbec
+zabírá: když se CO2 nesnížilo aspoň o padesát ppm ani teplota
+nepřiblížila k cíli o tři desetiny, okno se zavře a chvíli se to
+nezkouší. Pauza se s každým dalším marným pokusem zdvojnásobí.
+
+Nouzové větrání a ruční žádost o vyvětrání tím neprochází. V kartě je
+řádek, který ukazuje, od jakých hodnot se otevřelo a jak dlouho už je
+otevřeno.
+
 ### Hysterezní smyčka teplotního větrání
 
 Okno zavírá při dosažení meze a znovu otevírá až po návratu o tloušťku
@@ -168,8 +180,10 @@ zároveň vychladí — při mírném počasí ale může zůstat otevřeno do r
 
 Mez je jedna a absolutní. Dřív k ní patřil ještě relativní pokles od
 stavu při otevření, který ji posouval podle toho, jak bylo zrovna teplo,
-takže nebylo poznat, kde okno zavře. Přes den se naopak mez odvozuje od
-cíle, aby sledovala sezónu bez přenastavování.
+takže nebylo poznat, kde okno zavře. Přes den se mez odvozuje od cíle, aby sledovala sezónu bez
+přenastavování. **Odstup od cíle platí oběma směry**: kvůli teplotě se
+otevře, až je v pokoji o tolik víc nebo méně než cíl, a zavírá se na
+cíli — ne na odstupu, jinak by pokoj cíle nikdy nedosáhl.
 
 Když má oblast souseda za otevřenými dveřmi, vyvětrá ji raději on.
 

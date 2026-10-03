@@ -300,8 +300,9 @@
             "poradi": "Pořadí na kartě",
             "noc_utlum_topeni": "V noci topit o méně",
             "cisticka_od_pm": "Čističku zapnout od PM2.5",
-            "den_pod_cil": "Ve dne smí klesnout pod cíl o",
-            "tloustka_smycky": "Tloušťka hysterezní smyčky"
+            "den_pod_cil": "Odstup od cíle pro otevření",
+            "tloustka_smycky": "Tloušťka hysterezní smyčky",
+            "ucinek_po_minutach": "Ověřit účinek větrání po"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -352,8 +353,9 @@
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
             "noc_utlum_topeni": "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. Klesá plynule hodinu před začátkem noci, aby to nebyl skok; zapnutý spánek platí okamžitě.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "den_pod_cil": "Přes den se okno zavře, jakmile teplota klesne o tolik pod cílovou, a pod touhle mezí se už kvůli teplotě neotvírá. Mez se drží u cíle celý rok: v zimě při cíli 21 je na 19,5, v létě při cíli 26 na 24,5.\\n\\nDřív platila jen při otevřeném okně a při zavřeném se brala pevná půlstupňová, takže nastavení nad půl stupně se nikdy neprojevilo.",
-            "tloustka_smycky": "O kolik se musí teplota vrátit, než se po zavření kvůli teplotě otevře znovu. Platí souměrně v obou směrech: v chladu se čeká na prohřátí, v horku na další ohřátí.\\n\\nJe to směnný kurz mezi rozkyvem a počtem cyklů — širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje. Když okno lítá, zvyš ji aspoň na rozkyv, který vidíš v grafu."
+            "den_pod_cil": "O kolik se teplota musí od cíle odchýlit, aby se kvůli ní otevřelo — platí oběma směry. Zavírá se na cíli, ne na odstupu, takže pokoj dojede tam, kam má.\\n\\nZároveň je to tolerance pro větrání kvůli CO2: pod cíl se smí vychladit nejvýš o tolik.",
+            "tloustka_smycky": "O kolik se musí teplota vrátit, než se po zavření kvůli teplotě otevře znovu. Platí souměrně v obou směrech: v chladu se čeká na prohřátí, v horku na další ohřátí.\\n\\nJe to směnný kurz mezi rozkyvem a počtem cyklů — širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje. Když okno lítá, zvyš ji aspoň na rozkyv, který vidíš v grafu.",
+            "ucinek_po_minutach": "Po téhle době otevřeného okna se ověří, že větrání vůbec zabírá. Když se ani CO2, ani teplota neposunuly k lepšímu, okno se zavře a chvíli se to nezkouší — marně otevřené okno v zimě stojí teplo a nic za to nevrací.\\n\\nNouzové větrání a ruční žádost o vyvětrání tím neprochází. Nula kontrolu vypne."
           },
           "submit": "Další"
         },
@@ -458,8 +460,9 @@
             "poradi": "Pořadí na kartě",
             "noc_utlum_topeni": "V noci topit o méně",
             "cisticka_od_pm": "Čističku zapnout od PM2.5",
-            "den_pod_cil": "Ve dne smí klesnout pod cíl o",
-            "tloustka_smycky": "Tloušťka hysterezní smyčky"
+            "den_pod_cil": "Odstup od cíle pro otevření",
+            "tloustka_smycky": "Tloušťka hysterezní smyčky",
+            "ucinek_po_minutach": "Ověřit účinek větrání po"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -520,8 +523,9 @@
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
             "noc_utlum_topeni": "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. Klesá plynule hodinu před začátkem noci, aby to nebyl skok; zapnutý spánek platí okamžitě.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "den_pod_cil": "Přes den se okno zavře, jakmile teplota klesne o tolik pod cílovou, a pod touhle mezí se už kvůli teplotě neotvírá. Mez se drží u cíle celý rok: v zimě při cíli 21 je na 19,5, v létě při cíli 26 na 24,5.\\n\\nDřív platila jen při otevřeném okně a při zavřeném se brala pevná půlstupňová, takže nastavení nad půl stupně se nikdy neprojevilo.",
-            "tloustka_smycky": "O kolik se musí teplota vrátit, než se po zavření kvůli teplotě otevře znovu. Platí souměrně v obou směrech: v chladu se čeká na prohřátí, v horku na další ohřátí.\\n\\nJe to směnný kurz mezi rozkyvem a počtem cyklů — širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje. Když okno lítá, zvyš ji aspoň na rozkyv, který vidíš v grafu."
+            "den_pod_cil": "O kolik se teplota musí od cíle odchýlit, aby se kvůli ní otevřelo — platí oběma směry. Zavírá se na cíli, ne na odstupu, takže pokoj dojede tam, kam má.\\n\\nZároveň je to tolerance pro větrání kvůli CO2: pod cíl se smí vychladit nejvýš o tolik.",
+            "tloustka_smycky": "O kolik se musí teplota vrátit, než se po zavření kvůli teplotě otevře znovu. Platí souměrně v obou směrech: v chladu se čeká na prohřátí, v horku na další ohřátí.\\n\\nJe to směnný kurz mezi rozkyvem a počtem cyklů — širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje. Když okno lítá, zvyš ji aspoň na rozkyv, který vidíš v grafu.",
+            "ucinek_po_minutach": "Po téhle době otevřeného okna se ověří, že větrání vůbec zabírá. Když se ani CO2, ani teplota neposunuly k lepšímu, okno se zavře a chvíli se to nezkouší — marně otevřené okno v zimě stojí teplo a nic za to nevrací.\\n\\nNouzové větrání a ruční žádost o vyvětrání tím neprochází. Nula kontrolu vypne."
           },
           "submit": "Další"
         },
@@ -839,7 +843,7 @@
         "name": "V noci topit o méně"
       },
       "den_pod_cil": {
-        "name": "Ve dne smí klesnout pod cíl o"
+        "name": "Odstup od cíle pro otevření"
       },
       "tloustka_smycky": {
         "name": "Tloušťka hysterezní smyčky"

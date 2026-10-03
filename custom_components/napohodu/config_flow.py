@@ -473,6 +473,8 @@ def _schema_mistnost() -> vol.Schema:
         vol.Optional(c.CONF_NOC_MIN, default=18.0): _cislo(14, 24, 0.5),
         vol.Optional(c.CONF_TLOUSTKA, default=1.0): _cislo(0, 7, 0.5),
         vol.Optional(c.CONF_DEN_POD_CIL, default=1.5): _cislo(0.5, 6, 0.5),
+        vol.Optional(c.CONF_UCINEK_PO, default=30):
+            _cislo(0, 180, 5, "min"),
         vol.Optional(c.CONF_KOMFORT_ODSTUP, default=4.0): _cislo(1, 15, 0.5),
         vol.Optional(c.CONF_DEST_PRAH, default=0.3): _cislo(0, 20, 0.1, "mm/h"),
         vol.Optional(c.CONF_I_KDYZ_NIKDO, default=False):

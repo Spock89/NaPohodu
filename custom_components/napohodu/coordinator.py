@@ -48,9 +48,9 @@ from .const import (
     CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC,
     CONF_STINENI_REZIM, CONF_TEPLOTY, CONF_TLOUSTKA, CONF_TOPENI_OBNOVA,
     CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
-    CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT, CONF_VITR, CONF_VITR_KLID,
-    CONF_VITR_PRAH, CONF_VYCHOZI_KDY, CONF_VYNUCENO_M, CONF_ZALUZIE,
-    CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_OBSAZENOSTI,
+    CONF_T_VENKU_M, CONF_UCINEK_PO, CONF_UTLUM, CONF_VETRAT, CONF_VITR,
+    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYCHOZI_KDY, CONF_VYNUCENO_M,
+    CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_OBSAZENOSTI,
     CONF_ZIMA_NAJEZD, CONF_ZIMA_O_KOLIK, CONF_ZIMA_PRAH, CONF_ZNACKA_MIMO,
     CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC,
     DOMAIN, INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST,
@@ -1020,12 +1020,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # při větrání klesnout.
         den_pod = self.hodnota(p.subentry_id, CONF_DEN_POD_CIL,
                                float(d.get(CONF_DEN_POD_CIL, 1.5)))
-        nast = replace(nast, denni_pod_cil=den_pod)
+        nast = replace(
+            nast, odstup_od_cile=den_pod,
+            ucinek_po_s=float(d.get(CONF_UCINEK_PO, 30)) * 60)
 
         # Každá mez sama o sobě vypadá rozumně, konflikt s cílem je
         # vidět až dohromady. Bez tohohle by okno jen nefungovalo
         # a nebylo by poznat proč.
-        potize = core.konflikt_mezi(m.cil, nast.denni_pod_cil,
+        potize = core.konflikt_mezi(m.cil, nast.odstup_od_cile,
                                     nast.nocni_min, nast.tloustka)
         m.atributy["konflikt_mezi"] = potize or None
         if potize and self._konflikt_hlasen.get(p.subentry_id) != potize:
@@ -1191,6 +1193,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # běží zkrácený pulz, ne jestli je zrovna splněná podmínka
             "narazove_vetrani": pamet.narazove_pulz and skutecne,
             "narazove_mozne": self.narazove,
+            # jak dlouho je otevřeno a jestli to zabírá
+            "ucinek": (
+                f"CO2 {pamet.ucinek_co2:.0f} → {v.co2:.0f}, teplota "
+                f"{pamet.ucinek_t_in:.1f} → {v.t_in:.1f} °C za "
+                f"{int((cas_s - pamet.ucinek_od_s) / 60)} min"
+                if skutecne and pamet.ucinek_od_s else None),
             # pravidla pro celý byt, aby nebyla pod každou místností
             "pevna_pravidla_bytu": core.pevna_pravidla_bytu(),
             "doma_podle": self.doma_popis,
@@ -1202,12 +1210,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # tam, kde okno ovládáme — jinak ukazuje meze, podle kterých
             # se nikdy nic nestane, a stav okna, který neznáme.
             "teplotni_pasmo": None if not okna else core.pasmo_text(
-                m.cil, v.t_in, nast.denni_pod_cil, nast.nocni_min,
+                m.cil, v.t_in, nast.odstup_od_cile, nast.nocni_min,
                 nast.tloustka, skutecne, bool(m.klid),
                 core._je_noc(self._hodina_ted, nast, bool(m.klid)),
                 core.SPANEK_POJISTKA,
-                m.atributy.get("teplota_max"), nast.chlazeni_nad_cil,
-                pamet.zavreno_chladem, pamet.zavreno_teplem),
+                m.atributy.get("teplota_max"),
+                pamet.zavreno_chladem, pamet.zavreno_teplem,
+                pamet.chladi),
             # Pravidla, která platí bez nastavení. Schované chování je
             # horší než nastavení, které nepoužíváš — zapomene se, že
             # vůbec existuje.

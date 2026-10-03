@@ -16,9 +16,10 @@ from __future__ import annotations
 POSUVNIKY = [
     ("moje_odchylka_teploty", "Moje odchylka teploty",
      "Přičte se k vypočtenému cíli. Tvoje osobní „chci tepleji“."),
-    ("ve_dne_smi_klesnout_pod_cil_o", "Ve dne smí klesnout pod cíl o",
-     "Přes den zavřu, až teplota klesne o tolik pod cílovou. Mez se "
-     "tím drží u cíle celý rok a nemusí se v sezóně přenastavovat."),
+    ("odstup_od_cile_pro_otevreni", "Odstup od cíle pro otevření",
+     "O kolik se teplota musí od cíle odchýlit, aby se kvůli ní otevřelo "
+     "— oběma směry. Zavírá se na cíli, takže pokoj dojede tam, kam má. "
+     "Zároveň je to tolerance pro větrání kvůli CO2."),
     ("v_noci_topit_o_mene", "V noci topit o méně",
      "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. "
      "Klesá plynule hodinu před začátkem noci, spánek platí hned."),
@@ -47,12 +48,13 @@ POSUVNIKY = [
 # Starší identifikátory přejmenovaných posuvníků. Home Assistant
 # identifikátor při přejmenování nemění, takže instalace, která entitu
 # založila dřív, ji má pořád pod starým jménem.
-STARSI_POSUVNIKY = {'moje_odchylka_teploty': 'odchylka_teploty',
+STARSI_POSUVNIKY = {
+     'odstup_od_cile_pro_otevreni': 've_dne_smi_klesnout_o',
+     'moje_odchylka_teploty': 'odchylka_teploty',
      'v_noci_vychladnout_nejvys_na': 'minimum_na_noc',
      'otevreno_dokud_je_venku_chladneji_nejvys_o': 'trvale_otevreno_do_rozdilu',
      'v_noci_topit_o_mene': 'nocni_utlum_topeni',
      'pri_otevrenem_okne_topit_na': 'utlum_pri_otevrenem_okne',
-     've_dne_smi_klesnout_pod_cil_o': 've_dne_smi_klesnout_o',
      'v_noci_otevrit_nad_co2': 'v_noci_otevrit_nad',
      'nouzove_otevrit_nad_co2': 'nouzove_otevrit_nad'}
 
@@ -81,6 +83,7 @@ ATRIBUTY_STAVU = [
     ("prach_zvenci", "Prach se tahá zvenčí", None),
     ("dnes", "Souhrn dne", None),
     ("co_bylo", "Poslední rozhodnutí", None),
+    ("ucinek", "Zabírá to? (od otevření)", None),
     ("co_dal", "Co změnu spustí", None),
     ("duvody", "Diagnostika", None),
 ]
