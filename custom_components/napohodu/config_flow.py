@@ -463,8 +463,6 @@ def _schema_mistnost() -> vol.Schema:
             ["input_boolean", "switch", "binary_sensor"], True),
         vol.Optional(c.CONF_PROJEZD_M, default=120): _cislo(10, 600, 10, "s"),
         vol.Optional(c.CONF_MIN_DRZENI, default=20): _cislo(1, 120, 1, "min"),
-        vol.Optional(c.CONF_PAUZA_PO_PULZU, default=15):
-            _cislo(1, 120, 1, "min"),
         vol.Optional(c.CONF_RUCNI_KLID, default=30): _cislo(0, 240, 5, "min"),
 
         # --- Kdy větrat ---
@@ -473,10 +471,7 @@ def _schema_mistnost() -> vol.Schema:
         vol.Optional(c.CONF_CO2_NOC, default=1000): _cislo(600, 2000, 25, "ppm"),
         vol.Optional(c.CONF_CO2_NOC_KRIZE, default=1250): _cislo(800, 2500, 25, "ppm"),
         vol.Optional(c.CONF_NOC_MIN, default=18.0): _cislo(14, 24, 0.5),
-        vol.Optional(c.CONF_SPANEK_POJISTKA, default=2.0): _cislo(0, 6, 0.5),
         vol.Optional(c.CONF_TLOUSTKA, default=1.0): _cislo(0, 7, 0.5),
-        vol.Optional(c.CONF_NOC_ZAVRIT_VYVETRANO, default=True):
-            selector.BooleanSelector(),
         vol.Optional(c.CONF_DEN_POD_CIL, default=1.5): _cislo(0.5, 6, 0.5),
         vol.Optional(c.CONF_KOMFORT_ODSTUP, default=4.0): _cislo(1, 15, 0.5),
         vol.Optional(c.CONF_DEST_PRAH, default=0.3): _cislo(0, 20, 0.1, "mm/h"),

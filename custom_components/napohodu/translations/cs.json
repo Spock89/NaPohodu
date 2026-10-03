@@ -294,16 +294,13 @@
             "sezonu_ridi_hlavice": "Zapnutí topení řídí hlavice",
             "znacka_okno": "Značka pro otevřené okno",
             "znacka_mimo_sezonu": "Značka mimo sezónu",
-            "pauza_po_pulzu_min": "Pauza po dojezdu větrání",
             "vetrat": "Ruční žádost o vyvětrání",
             "rucni_klid_min": "Po ručním zásahu nechat být",
             "ochota_vetrat": "Ochota větrat",
             "poradi": "Pořadí na kartě",
             "noc_utlum_topeni": "V noci topit o méně",
             "cisticka_od_pm": "Čističku zapnout od PM2.5",
-            "noc_zavrit_po_vyvetrani": "V noci zavřít, až je vyvětráno",
             "den_pod_cil": "Ve dne smí klesnout pod cíl o",
-            "spanek_pojistka": "Ve spánku smí spadnout pod mez o",
             "tloustka_smycky": "Tloušťka hysterezní smyčky"
           },
           "data_description": {
@@ -348,7 +345,6 @@
             "sezonu_ridi_hlavice": "Better Thermostat si podle počasí sám určuje, kdy topit. Se zaškrtnutým polem mu integrace posílá jen cílovou teplotu a jeho rozhodnutí o zapnutí respektuje — když usoudí, že topit nemá, integrace ho nezapne.\n\nOdškrtni, když chceš, aby o topné sezóně rozhodovala integrace: v sezóně pošle režim heat, mimo ni off, a hlavici zbude kalibrace ventilu, v čem je nejlepší.",
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
             "znacka_mimo_sezonu": "Teplota, kterou hlavice dostane mimo topnou sezónu. Používá se jen tehdy, když sezónu neřídí hlavice sama. Zvláštní číslo místo kulatého prozradí, že povel přišel od integrace.",
-            "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu větrání, i když vzduch ještě není vyvětraný. Když se nedaří vyvětrat, každá další pauza je dvojnásobná, nejvýš hodinová — typicky když tahle místnost větrá za jinou, jejíž vzduch svým oknem skoro neovlivní.",
             "zdroj_klidu": "Kdy má místnost vyžadovat klid. Platí to i pro okna: „žádný\" znamená, že se v ní větrá v noci stejně jako přes den a spánek v sousední místnosti oblasti ji neomezí.",
             "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
@@ -356,9 +352,7 @@
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
             "noc_utlum_topeni": "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. Klesá plynule hodinu před začátkem noci, aby to nebyl skok; zapnutý spánek platí okamžitě.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "noc_zavrit_po_vyvetrani": "Zaškrtnuté zavře okno, jakmile CO2 spadne pod „zavřít pod\". Odškrtnuté nechá větrat dál, dokud teplota neklesne na noční mez — noční větrání pak ložnici i vychladí, ale při mírném počasí může zůstat otevřeno do rána.",
             "den_pod_cil": "Přes den se okno zavře, jakmile teplota klesne o tolik pod cílovou. Mez se tím drží u cíle celý rok: v zimě při cíli 21 zavře na 19,5, v létě při cíli 26 na 24,5, aniž bys cokoli přenastavoval.\n\nDřív tu byl pokles od stavu při otevření, který mez posouval podle toho, jak bylo zrovna teplo. Absolutní mez zase nesledovala sezónu — v létě dovolila vychladit o šest stupňů.",
-            "spanek_pojistka": "Ve spánku se kvůli teplotě nevětrá ani nezavírá — okno dělá rámus a v malém pokoji se teplota vrátí za dvacet minut, takže z toho byla celá noc lítání tam a sem. Tohle je jen pojistka, aby v mrazu ložnice nevychladla donekonečna. Vyšší číslo znamená méně pohybů okna za noc.\\n\\nVe spánku navíc otevírá jen krizový práh CO2, běžné dusno se vydrží.",
             "tloustka_smycky": "O kolik se musí teplota vrátit, než se po zavření kvůli teplotě otevře znovu. Platí souměrně v obou směrech: v chladu se čeká na prohřátí, v horku na další ohřátí.\\n\\nJe to směnný kurz mezi rozkyvem a počtem cyklů — širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje. Když okno lítá, zvyš ji aspoň na rozkyv, který vidíš v grafu."
           },
           "submit": "Další"
@@ -458,16 +452,13 @@
             "sezonu_ridi_hlavice": "Zapnutí topení řídí hlavice",
             "znacka_okno": "Značka pro otevřené okno",
             "znacka_mimo_sezonu": "Značka mimo sezónu",
-            "pauza_po_pulzu_min": "Pauza po dojezdu větrání",
             "vetrat": "Ruční žádost o vyvětrání",
             "rucni_klid_min": "Po ručním zásahu nechat být",
             "ochota_vetrat": "Ochota větrat",
             "poradi": "Pořadí na kartě",
             "noc_utlum_topeni": "V noci topit o méně",
             "cisticka_od_pm": "Čističku zapnout od PM2.5",
-            "noc_zavrit_po_vyvetrani": "V noci zavřít, až je vyvětráno",
             "den_pod_cil": "Ve dne smí klesnout pod cíl o",
-            "spanek_pojistka": "Ve spánku smí spadnout pod mez o",
             "tloustka_smycky": "Tloušťka hysterezní smyčky"
           },
           "data_description": {
@@ -523,16 +514,13 @@
             "sezonu_ridi_hlavice": "Better Thermostat si podle počasí sám určuje, kdy topit. Se zaškrtnutým polem mu integrace posílá jen cílovou teplotu a jeho rozhodnutí o zapnutí respektuje — když usoudí, že topit nemá, integrace ho nezapne.\n\nOdškrtni, když chceš, aby o topné sezóně rozhodovala integrace: v sezóně pošle režim heat, mimo ni off, a hlavici zbude kalibrace ventilu, v čem je nejlepší.",
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
             "znacka_mimo_sezonu": "Teplota, kterou hlavice dostane mimo topnou sezónu. Používá se jen tehdy, když sezónu neřídí hlavice sama. Zvláštní číslo místo kulatého prozradí, že povel přišel od integrace.",
-            "pauza_po_pulzu_min": "Jak dlouho zůstane okno zavřené po dojezdu větrání, i když vzduch ještě není vyvětraný. Když se nedaří vyvětrat, každá další pauza je dvojnásobná, nejvýš hodinová — typicky když tahle místnost větrá za jinou, jejíž vzduch svým oknem skoro neovlivní.",
             "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
             "noc_utlum_topeni": "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. Klesá plynule hodinu před začátkem noci, aby to nebyl skok; zapnutý spánek platí okamžitě.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "noc_zavrit_po_vyvetrani": "Zaškrtnuté zavře okno, jakmile CO2 spadne pod „zavřít pod\". Odškrtnuté nechá větrat dál, dokud teplota neklesne na noční mez — noční větrání pak ložnici i vychladí, ale při mírném počasí může zůstat otevřeno do rána.",
             "den_pod_cil": "Přes den se okno zavře, jakmile teplota klesne o tolik pod cílovou. Mez se tím drží u cíle celý rok: v zimě při cíli 21 zavře na 19,5, v létě při cíli 26 na 24,5, aniž bys cokoli přenastavoval.\n\nDřív tu byl pokles od stavu při otevření, který mez posouval podle toho, jak bylo zrovna teplo. Absolutní mez zase nesledovala sezónu — v létě dovolila vychladit o šest stupňů.",
-            "spanek_pojistka": "Ve spánku se kvůli teplotě nevětrá ani nezavírá — okno dělá rámus a v malém pokoji se teplota vrátí za dvacet minut, takže z toho byla celá noc lítání tam a sem. Tohle je jen pojistka, aby v mrazu ložnice nevychladla donekonečna. Vyšší číslo znamená méně pohybů okna za noc.\\n\\nVe spánku navíc otevírá jen krizový práh CO2, běžné dusno se vydrží.",
             "tloustka_smycky": "O kolik se musí teplota vrátit, než se po zavření kvůli teplotě otevře znovu. Platí souměrně v obou směrech: v chladu se čeká na prohřátí, v horku na další ohřátí.\\n\\nJe to směnný kurz mezi rozkyvem a počtem cyklů — širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje. Když okno lítá, zvyš ji aspoň na rozkyv, který vidíš v grafu."
           },
           "submit": "Další"

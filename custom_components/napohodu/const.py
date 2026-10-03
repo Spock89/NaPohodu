@@ -82,10 +82,8 @@ CONF_ODCHYLKA = "odchylka"
 CONF_NOC_MIN = "noc_min"
 # O kolik pod noční mez smí teplota ve spánku spadnout, než se okno
 # zavře. Ve spánku se kvůli teplotě nevětrá, tohle je jen pojistka.
-CONF_SPANEK_POJISTKA = "spanek_pojistka"
 # Tloušťka hysterezní smyčky teplotního větrání.
 CONF_TLOUSTKA = "tloustka_smycky"
-CONF_NOC_ZAVRIT_VYVETRANO = "noc_zavrit_po_vyvetrani"
 CONF_STINENI_PRYC = "stineni_pryc"
 CONF_KOMFORT_ODSTUP = "komfort_odstup"
 
@@ -127,7 +125,6 @@ CONF_STINENI_PREDSTIH = "stineni_predstih"
 CONF_OKNA = "okna"
 CONF_PROJEZD_M = "projezd_okna_s"
 CONF_MIN_DRZENI = "min_drzeni_min"
-CONF_PAUZA_PO_PULZU = "pauza_po_pulzu_min"
 CONF_RUCNI_KLID = "rucni_klid_min"
 CONF_KONTAKT_M = "kontakt_okna"
 CONF_ZDROJ_OKENNIHO_M = "zdroj_okenniho"

@@ -354,25 +354,29 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             c.append("")
 
         c += _karta(polozky, nazev=jm(m))
-        # Konflikt nastavení jako text, ne jako atribut — v řádku karty
-        # by se dlouhá věta ořízla a zůstalo by z ní jen „konflikt".
+        # Konflikt i stupnice v jedné kartě. Dvě karty znamenaly, že
+        # ta s konfliktem byla většinu času prázdný rámeček — a dlouhá
+        # věta se v řádku s atributem navíc ořízne.
         c.append("  - type: markdown")
         c.append("    content: |-")
         c.append(f"      {{% set x = state_attr('{stav}',"
                  f" 'konflikt_mezi') %}}")
-        c.append("      {% if x %}⚠ **Konflikt nastavení**")
-        c.append("      {% for y in x %}")
-        c.append("      - {{ y }}")
-        c.append("      {% endfor %}{% endif %}")
-        # stupnice teplotního větrání: kde jsou meze a kde jsme teď
-        c.append("  - type: markdown")
-        c.append("    content: |-")
         c.append(f"      {{% set y = state_attr('{stav}',"
                  f" 'teplotni_pasmo') %}}")
-        c.append("      {% if y %}**Teplotní pásmo větrání**")
+        c.append("      {% if x %}⚠ **Konflikt nastavení**")
+        c.append("      {% for z in x %}")
+        c.append("      - {{ z }}")
+        c.append("      {% endfor %}")
+        c.append("      {% endif %}{% if y %}**Teplotní pásmo větrání**")
         c.append("      ```")
         c.append("      {% for z in y %}{{ z }}")
         c.append("      {% endfor %}```{% endif %}")
+        c.append(f"      {{% set w = state_attr('{stav}',"
+                 f" 'pevna_pravidla') %}}")
+        c.append("      {% if w %}*Platí bez nastavení:*")
+        c.append("      {% for z in w %}")
+        c.append("      - {{ z }}")
+        c.append("      {% endfor %}{% endif %}")
         c.append("")
 
     # --- oblasti ---

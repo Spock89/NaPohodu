@@ -485,6 +485,37 @@ for f in ast.walk(jadro):
                     f"patří do nastavení nebo pojmenované konstanty: "
                     f"{radky_jadra[c.lineno - 1].strip()[:50]}")
 
+# 1w) položka paměti nebo nastavení, kterou nikdo nepoužívá. Zůstává
+# po odstraněné funkci a pak se v ní nikdo nevyzná.
+jadro_text = (d / "core.py").read_text()
+vse_text = "\n".join(x.read_text() for x in d.glob("*.py"))
+for u in ast.parse(jadro_text).body:
+    if not isinstance(u, ast.ClassDef) or u.name not in ("Pamet",
+                                                         "Nastaveni"):
+        continue
+    for pol in u.body:
+        if not (isinstance(pol, ast.AnnAssign)
+                and isinstance(pol.target, ast.Name)):
+            continue
+        jm = pol.target.id
+        if len(re.findall(rf"\b{jm}\b", vse_text)) <= 1:
+            chyby.append(
+                f"core.py: {u.name}.{jm} nikdo nepoužívá — zbytek po "
+                f"odstraněné funkci")
+
+# 1x) konstanta, podle které se rozhoduje, musí být někde vidět.
+# Nenastavitelné chování, o kterém se neví, je horší než nastavení,
+# které nikdo nepoužívá.
+VIDITELNE = jadro_text[jadro_text.index("def pevna_pravidla"):
+                       jadro_text.index("def _mez_chladu")]
+for jm in re.findall(r"^([A-Z][A-Z_]+) = [\d.]+", jadro_text, re.M):
+    if jm in ("MAGNUS_A", "MAGNUS_B"):
+        continue              # vzorec, ne rozhodnutí
+    if jm not in VIDITELNE:
+        chyby.append(
+            f"core.py: {jm} rozhoduje, ale nikde se neukazuje — "
+            f"doplň ji do pevna_pravidla()")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

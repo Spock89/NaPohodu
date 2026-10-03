@@ -372,6 +372,27 @@ Integrace to hlídá při každém cyklu a ohlásí zprávou, řádkem v kartě 
 zápisem do protokolu. Hláška pojmenuje nastavení tak, jak ho vidíš na
 obrazovce, uvede obě čísla a řekne, co s tím udělat.
 
+## Co platí bez nastavení
+
+Některá pravidla nemají vlastní nastavení, protože by se dala nastavit
+jen špatně. Nejsou ale schovaná: integrace je vypisuje v kartě u každé
+místnosti pod stupnicí, protože nenastavitelné chování, o kterém se
+neví, je horší než nastavení, které nepoužíváš.
+
+**Ve spánku rozhoduje jen CO2.** Otevře krizový práh, zavře noční;
+teplota okno neotvírá ani nezavírá. Rámus okna vzbudí spolehlivěji než
+oxid uhličitý.
+
+**Pojistka ve spánku jsou dva stupně pod noční mezí.** Bez ní by mráz
+ložnici vychladil, protože teplota okno ve spánku nezavírá.
+
+**V noci se zavírá po vyvětrání** i tehdy, když teplota na mez
+neklesla.
+
+**Couvání po neúspěšném pulzu je patnáct minut** a s každým dalším se
+zdvojnásobí, nejvýš na hodinu. Týká se marného větrání za jinou
+místnost, ne teplotního kmitání — to řeší tloušťka smyčky.
+
 ## Kontrola celistvosti
 
 V repozitáři je `kontrola.py`, která před každým vydáním projde kód a

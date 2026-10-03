@@ -409,3 +409,30 @@ def test_konflikt_je_v_karte_celym_textem():
     # a jako text, ne jako atributový řádek
     assert "type: attribute\n    entity: sensor.napohodu_loznice_stav\n" \
            "    attribute: konflikt_mezi" not in s
+
+
+def test_jedna_karta_na_konflikt_i_pasmo():
+    """Dvě karty znamenaly, že ta s konfliktem byla většinu času
+    prázdný rámeček."""
+    import yaml
+    d = yaml.safe_load(dashboard(
+        ["loznice"], [], vzdy, cidla={"loznice": "sensor.t"},
+        podoba="stranka"))
+    md = [k for s in d["sections"] for k in s["cards"]
+          if k["type"] == "markdown"
+          and ("konflikt_mezi" in k["content"]
+               or "teplotni_pasmo" in k["content"])]
+    assert len(md) == 1
+    assert "konflikt_mezi" in md[0]["content"]
+    assert "teplotni_pasmo" in md[0]["content"]
+
+
+def test_karta_vypisuje_pevna_pravidla():
+    import yaml
+    d = yaml.safe_load(dashboard(
+        ["loznice"], [], vzdy, cidla={"loznice": "sensor.t"},
+        podoba="stranka"))
+    md = [k for s in d["sections"] for k in s["cards"]
+          if k["type"] == "markdown" and "pevna_pravidla" in k["content"]]
+    assert len(md) == 1
+    assert "Platí bez nastavení" in md[0]["content"]
