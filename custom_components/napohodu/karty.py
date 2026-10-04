@@ -18,8 +18,9 @@ POSUVNIKY = [
      "Přičte se k vypočtenému cíli. Tvoje osobní „chci tepleji“."),
     ("odstup_od_cile_pro_otevreni", "Odstup od cíle pro otevření",
      "O kolik se teplota musí od cíle odchýlit, aby se kvůli ní otevřelo "
-     "— oběma směry. Zavírá se na cíli, takže pokoj dojede tam, kam má. "
-     "Zároveň je to tolerance pro větrání kvůli CO2."),
+     "— oběma směry. Nad cílem chladí venkovním vzduchem, pod cílem jím "
+     "ohřívá, a obojí dojede na cíl. Zároveň je to tolerance pro větrání "
+     "kvůli CO2."),
     ("v_noci_topit_o_mene", "V noci topit o méně",
      "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. "
      "Klesá plynule hodinu před začátkem noci, spánek platí hned."),

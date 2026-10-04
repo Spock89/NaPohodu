@@ -1216,7 +1216,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 core.SPANEK_POJISTKA,
                 m.atributy.get("teplota_max"),
                 pamet.zavreno_chladem, pamet.zavreno_teplem,
-                pamet.chladi),
+                pamet.chladi, pamet.ohrivam,
+                pamet.posledni_duvod or ""),
             # Pravidla, která platí bez nastavení. Schované chování je
             # horší než nastavení, které nepoužíváš — zapomene se, že
             # vůbec existuje.

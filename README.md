@@ -142,6 +142,27 @@ tahá se zvenčí, a poznatek pár hodin platí.
 Na prach se ostatně větrat nemusí. Čistička ho vyřeší bez tepelné
 ztráty a v zimě je to skoro vždycky lepší volba.
 
+### Otevřené okno bez záznamu
+
+Když integrace najde otevřené okno, o kterém nemá záznam — po restartu
+nebo když povel přišel na okno, které už otevřené bylo — přijme ho za
+vlastní a dopočítá, od čeho měřit účinek a kde zavřít. Dřív místo toho
+hlásila, že okno otevřel někdo jiný, přestože o řádek výš stál její
+vlastní povel.
+
+Mez poklesu se nasadí jen tehdy, když je teplota nad ní. Jinak by
+přijetí okna vedlo rovnou k jeho zavření.
+
+### Ohřev venkovním vzduchem
+
+Zrcadlový obraz chlazení: když je pokoj pod cílem a venku je tepleji,
+otevře se a teplo se pustí dovnitř. Dojede se na cíl, stejně jako
+u chlazení, a v diagnostice se to tak i jmenuje — dřív to splývalo
+s hláškou „venku je příjemně".
+
+V noci se kvůli teplotě otevírá jen pro chlazení. Ohřev čeká do rána,
+protože ticho je v noci cennější než pár stupňů.
+
 ### Kontrola účinku větrání
 
 Marně otevřené okno v zimě stojí teplo a nic za to nevrací. Po nastavené

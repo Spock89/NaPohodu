@@ -547,6 +547,28 @@ for p in d.glob("*.py"):
                 f"{p.name}:{u.lineno}: {u.value.id}.{u.attr} v {jmeno_tridy}"
                 f" neexistuje — projeví se až při načtení integrace")
 
+# 1z) překlad pole, které ve formuláři není. Zbyde po zrušeném
+# nastavení a plete: člověk ho hledá na obrazovce a nenajde.
+konst_hodnoty = dict(re.findall(r'^(CONF_\w+) = "(\w+)"',
+                                (d / "const.py").read_text(), re.M))
+ve_formulari = {konst_hodnoty[k]
+                for k in re.findall(r"vol\.\w+\(c\.(CONF_\w+)", cf_kod)
+                if k in konst_hodnoty}
+for jazyk2 in ("cs", "en"):
+    t3 = json.loads((d / "translations" / f"{jazyk2}.json").read_text())
+    bloky3 = {
+        "mistnost/zaklad": t3["config_subentries"]["mistnost"]["step"][
+            "zaklad"]["data"],
+        "mistnost/reconfigure": t3["config_subentries"]["mistnost"]["step"][
+            "reconfigure"]["data"],
+        "user": t3["config"]["step"]["user"]["data"],
+        "nastaveni": t3["options"]["step"]["nastaveni"]["data"],
+    }
+    for jm3, pole3 in bloky3.items():
+        for k in sorted(set(pole3) - ve_formulari):
+            chyby.append(
+                f"{jazyk2}/{jm3}: {k} má popisek, ale ve formuláři není")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

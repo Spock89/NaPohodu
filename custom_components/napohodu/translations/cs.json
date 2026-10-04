@@ -51,7 +51,7 @@
           "cil_min": "Pod tuto teplotu cíl neklesne ani v největším mrazu.",
           "cil_max": "Nad tuto teplotu cíl nevystoupá ani v největším vedru.",
           "noc_od": "Od kdy platí noční klid. Okna se pak otevírají méně a jen když je opravdu dusno.",
-          "noc_do": "Do kdy platí noční klid. Po této hodině se už neotevírá, aby nerušil ranní ruch.",
+          "noc_do": "Kdy noční pravidla končí. Do té doby platí vyšší práh CO2 a nevětrá se kvůli příjemnému počasí.\n\nSpánkový přepínač místnosti platí nezávisle na hodinách: dokud je zapnutý, rozhoduje jen CO2.",
           "vitr_prah": "Ustálená rychlost větru, nad kterou se okna zavřou a nesmí otevřít. Meteostanice hlásí aktuální rychlost a k ní nárazy, žádný průměr se nepočítá.",
           "t_prumer": "Nepovinné. Když máš vlastní statistický senzor týdenního průměru, zadej ho a bude se počítat podle něj. Bez něj si průměr integrace spočítá sama. Entita „Venkovní teplota, týdenní průměr“ pak ukazuje to, co se skutečně používá.",
           "t_sezona": "Nepovinné. Vlastní senzor třídenního průměru pro topnou sezónu. Bez něj si ho integrace počítá sama.",
@@ -145,7 +145,7 @@
           "cil_min": "Pod tuto teplotu cíl neklesne ani v největším mrazu.",
           "cil_max": "Nad tuto teplotu cíl nevystoupá ani v největším vedru.",
           "noc_od": "Od kdy platí noční klid. Okna se pak otevírají méně a jen když je opravdu dusno.",
-          "noc_do": "Do kdy platí noční klid. Po této hodině se už neotevírá, aby nerušil ranní ruch.",
+          "noc_do": "Kdy noční pravidla končí. Do té doby platí vyšší práh CO2 a nevětrá se kvůli příjemnému počasí.\n\nSpánkový přepínač místnosti platí nezávisle na hodinách: dokud je zapnutý, rozhoduje jen CO2.",
           "vitr_prah": "Ustálená rychlost větru, nad kterou se okna zavřou a nesmí otevřít. Meteostanice hlásí aktuální rychlost a k ní nárazy, žádný průměr se nepočítá.",
           "t_prumer": "Nepovinné. Když máš vlastní statistický senzor týdenního průměru, zadej ho a bude se počítat podle něj. Bez něj si průměr integrace spočítá sama. Entita „Venkovní teplota, týdenní průměr“ pak ukazuje to, co se skutečně používá.",
           "t_sezona": "Nepovinné. Vlastní senzor třídenního průměru pro topnou sezónu. Bez něj si ho integrace počítá sama.",
@@ -313,7 +313,7 @@
             "pm_platny": "Prachové čidlo potřebuje proudící vzduch. Když má ventilátor, vyber jeho spínač — při stojícím ventilátoru se naměřeným hodnotám nevěří. Nemáš-li ventilátor, nech prázdné.",
             "climate": "Hlavice místnosti — virtuální z Better Thermostatu i skutečná. Integrace jim posílá cílovou teplotu a režim, když je zapnutý přepínač Ovládat topení.",
             "odchylka": "Cílová teplota se počítá pro celý byt. Tady ji pro tuto místnost posuneš. Plus znamená tepleji. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "noc_min": "Při nočním větrání se okno zavře, jakmile teplota klesne na tuhle hodnotu. Nižší číslo znamená delší větrání a méně cyklů za noc, ale chladnější ložnici.\n\nDřív tu byla ještě druhá hodnota, relativní pokles od stavu při otevření. Posouvala mez podle toho, jak bylo zrovna teplo, takže nebylo poznat, kde okno zavře.",
+            "noc_min": "Při nočním větrání se okno zavře, jakmile teplota klesne na tuhle hodnotu. Nižší číslo znamená delší větrání a méně cyklů za noc, ale chladnější ložnici.",
             "utlum": "Teplota, na kterou se hlavice stáhnou, když je okno otevřené. Je to celá teplota, ne odečet od cíle.",
             "komfort_odstup": "Jak moc smí být venku chladněji než cíl, aby šlo nechat okno trvale otevřené. Nízká hodnota znamená otevřeno jen za teplého počasí, vysoká skoro pořád. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "cisticka": "Čistička vzduchu. Umí prach, ne CO2. V zimě a v noci je lepší než otevřít okno.",
@@ -346,14 +346,13 @@
             "sezonu_ridi_hlavice": "Better Thermostat si podle počasí sám určuje, kdy topit. Se zaškrtnutým polem mu integrace posílá jen cílovou teplotu a jeho rozhodnutí o zapnutí respektuje — když usoudí, že topit nemá, integrace ho nezapne.\n\nOdškrtni, když chceš, aby o topné sezóně rozhodovala integrace: v sezóně pošle režim heat, mimo ni off, a hlavici zbude kalibrace ventilu, v čem je nejlepší.",
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
             "znacka_mimo_sezonu": "Teplota, kterou hlavice dostane mimo topnou sezónu. Používá se jen tehdy, když sezónu neřídí hlavice sama. Zvláštní číslo místo kulatého prozradí, že povel přišel od integrace.",
-            "zdroj_klidu": "Kdy má místnost vyžadovat klid. Platí to i pro okna: „žádný\" znamená, že se v ní větrá v noci stejně jako přes den a spánek v sousední místnosti oblasti ji neomezí.",
             "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
             "noc_utlum_topeni": "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. Klesá plynule hodinu před začátkem noci, aby to nebyl skok; zapnutý spánek platí okamžitě.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "den_pod_cil": "O kolik se teplota musí od cíle odchýlit, aby se kvůli ní otevřelo — platí oběma směry. Zavírá se na cíli, ne na odstupu, takže pokoj dojede tam, kam má.\\n\\nTím je zároveň denní hysterezí: otevře o odstup od cíle, zavře na cíli. „Tloušťka noční smyčky\" se ve dne nepoužívá.\\n\\nJe to taky tolerance pro větrání kvůli CO2: pod cíl se smí vychladit nejvýš o tolik.",
+            "den_pod_cil": "O kolik se teplota musí od cíle odchýlit, aby se kvůli ní otevřelo — platí oběma směry. Nad cílem se chladí venkovním vzduchem, pod cílem se jím ohřívá, a obojí dojede na cíl, ne na odstup.\n\nOhřev potřebuje, aby bylo venku tepleji než v pokoji, jinak není čím ohřívat. V noci se kvůli teplotě otevírá jen pro chlazení.\n\nTím je zároveň denní hysterezí: otevře o odstup od cíle, zavře na cíli. „Tloušťka noční smyčky\" se ve dne nepoužívá. Je to taky tolerance pro větrání kvůli CO2 — pod cíl se smí vychladit nejvýš o tolik.",
             "tloustka_smycky": "Platí jen v noci: o kolik se pokoj musí prohřát nad noční mez, než se otevře znovu, a jak těsně nad mezí se ještě neotvírá. Širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje.\\n\\nVe dne se nepoužívá — tam je hysterezí sám „Odstup od cíle pro otevření\", protože se zavírá na cíli a otevírá o odstup dál. Dřív platila i ve dne a obě pásma se sčítala.",
             "ucinek_po_minutach": "Po téhle době otevřeného okna se ověří, že větrání vůbec zabírá. Když se ani CO2, ani teplota neposunuly k lepšímu, okno se zavře a chvíli se to nezkouší — marně otevřené okno v zimě stojí teplo a nic za to nevrací.\\n\\nNouzové větrání a ruční žádost o vyvětrání tím neprochází. Nula kontrolu vypne."
           },
@@ -415,7 +414,6 @@
             "utlum": "Při otevřeném okně topit na",
             "komfort_odstup": "Otevřeno dokud je venku chladněji nejvýš o",
             "zdroj_obsazenosti": "Obsazenost podle",
-            "zdroj_klidu": "Klid podle",
             "spanek": "Spánkový přepínač",
             "pritomnost": "Čidlo pohybu",
             "dobeh_min": "Doběh po pohybu",
@@ -473,11 +471,10 @@
             "pm_platny": "Prachové čidlo potřebuje proudící vzduch. Když má ventilátor, vyber jeho spínač — při stojícím ventilátoru se naměřeným hodnotám nevěří. Nemáš-li ventilátor, nech prázdné.",
             "climate": "Hlavice místnosti — virtuální z Better Thermostatu i skutečná. Integrace jim posílá cílovou teplotu a režim, když je zapnutý přepínač Ovládat topení.",
             "odchylka": "Cílová teplota se počítá pro celý byt. Tady ji pro tuto místnost posuneš. Plus znamená tepleji. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "noc_min": "Při nočním větrání se okno zavře, jakmile teplota klesne na tuhle hodnotu. Nižší číslo znamená delší větrání a méně cyklů za noc, ale chladnější ložnici.\n\nDřív tu byla ještě druhá hodnota, relativní pokles od stavu při otevření. Posouvala mez podle toho, jak bylo zrovna teplo, takže nebylo poznat, kde okno zavře.",
+            "noc_min": "Při nočním větrání se okno zavře, jakmile teplota klesne na tuhle hodnotu. Nižší číslo znamená delší větrání a méně cyklů za noc, ale chladnější ložnici.",
             "utlum": "Teplota, na kterou se hlavice stáhnou, když je okno otevřené. Je to celá teplota, ne odečet od cíle.",
             "komfort_odstup": "Jak moc smí být venku chladněji než cíl, aby šlo nechat okno trvale otevřené. Nízká hodnota znamená otevřeno jen za teplého počasí, vysoká skoro pořád. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "zdroj_obsazenosti": "Obsazená místnost se udržuje na cíli. Prázdná se nechá být.",
-            "zdroj_klidu": "Kdy má místnost vyžadovat klid. Platí to i pro okna: „žádný\" znamená, že se v ní větrá v noci stejně jako přes den a spánek v sousední místnosti oblasti ji neomezí.",
             "spanek": "Přepínač, kterým dáváš najevo, že se v místnosti spí.",
             "pritomnost": "Čidlo pohybu. Samo o sobě nestačí, protože nevidí sedícího člověka.",
             "dobeh_min": "Jak dlouho po posledním pohybu se místnost ještě považuje za obsazenou.",
@@ -523,7 +520,7 @@
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
             "noc_utlum_topeni": "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. Klesá plynule hodinu před začátkem noci, aby to nebyl skok; zapnutý spánek platí okamžitě.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "den_pod_cil": "O kolik se teplota musí od cíle odchýlit, aby se kvůli ní otevřelo — platí oběma směry. Zavírá se na cíli, ne na odstupu, takže pokoj dojede tam, kam má.\\n\\nTím je zároveň denní hysterezí: otevře o odstup od cíle, zavře na cíli. „Tloušťka noční smyčky\" se ve dne nepoužívá.\\n\\nJe to taky tolerance pro větrání kvůli CO2: pod cíl se smí vychladit nejvýš o tolik.",
+            "den_pod_cil": "O kolik se teplota musí od cíle odchýlit, aby se kvůli ní otevřelo — platí oběma směry. Nad cílem se chladí venkovním vzduchem, pod cílem se jím ohřívá, a obojí dojede na cíl, ne na odstup.\n\nOhřev potřebuje, aby bylo venku tepleji než v pokoji, jinak není čím ohřívat. V noci se kvůli teplotě otevírá jen pro chlazení.\n\nTím je zároveň denní hysterezí: otevře o odstup od cíle, zavře na cíli. „Tloušťka noční smyčky\" se ve dne nepoužívá. Je to taky tolerance pro větrání kvůli CO2 — pod cíl se smí vychladit nejvýš o tolik.",
             "tloustka_smycky": "Platí jen v noci: o kolik se pokoj musí prohřát nad noční mez, než se otevře znovu, a jak těsně nad mezí se ještě neotvírá. Širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje.\\n\\nVe dne se nepoužívá — tam je hysterezí sám „Odstup od cíle pro otevření\", protože se zavírá na cíli a otevírá o odstup dál. Dřív platila i ve dne a obě pásma se sčítala.",
             "ucinek_po_minutach": "Po téhle době otevřeného okna se ověří, že větrání vůbec zabírá. Když se ani CO2, ani teplota neposunuly k lepšímu, okno se zavře a chvíli se to nezkouší — marně otevřené okno v zimě stojí teplo a nic za to nevrací.\\n\\nNouzové větrání a ruční žádost o vyvětrání tím neprochází. Nula kontrolu vypne."
           },
@@ -677,14 +674,6 @@
         "spanek": "Jen když se v ní spí",
         "cidlo_nebo_spanek": "Čidlo nebo spánek",
         "nikdy": "Nikdy (sklad, chodba)"
-      }
-    },
-    "zdroj_klidu": {
-      "options": {
-        "zadny": "Klid se neřeší",
-        "spanek": "Jen podle spánkového přepínače",
-        "noc": "Podle noční doby",
-        "spanek_nebo_noc": "Spánek nebo noc"
       }
     },
     "stineni_pryc": {
