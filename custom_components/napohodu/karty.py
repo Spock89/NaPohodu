@@ -16,11 +16,10 @@ from __future__ import annotations
 POSUVNIKY = [
     ("moje_odchylka_teploty", "Moje odchylka teploty",
      "Přičte se k vypočtenému cíli. Tvoje osobní „chci tepleji“."),
-    ("odstup_od_cile_pro_otevreni", "Odstup od cíle pro otevření",
-     "O kolik se teplota musí od cíle odchýlit, aby se kvůli ní otevřelo "
-     "— oběma směry. Nad cílem chladí venkovním vzduchem, pod cílem jím "
-     "ohřívá, a obojí dojede na cíl. Zároveň je to tolerance pro větrání "
-     "kvůli CO2."),
+    ("denni_hystereze", "Denní hystereze",
+     "Pásmo kolem cíle: nad jeho horní hranou se chladí venkovním "
+     "vzduchem, pod dolní se jím ohřívá, a dojede se vždycky na protější "
+     "hranu. Širší pásmo znamená delší cykly a větší rozkyv."),
     ("v_noci_topit_o_mene", "V noci topit o méně",
      "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. "
      "Klesá plynule hodinu před začátkem noci, spánek platí hned."),
@@ -50,7 +49,7 @@ POSUVNIKY = [
 # identifikátor při přejmenování nemění, takže instalace, která entitu
 # založila dřív, ji má pořád pod starým jménem.
 STARSI_POSUVNIKY = {
-     'odstup_od_cile_pro_otevreni': 've_dne_smi_klesnout_o',
+     'denni_hystereze': 've_dne_smi_klesnout_o',
      'moje_odchylka_teploty': 'odchylka_teploty',
      'v_noci_vychladnout_nejvys_na': 'minimum_na_noc',
      'otevreno_dokud_je_venku_chladneji_nejvys_o': 'trvale_otevreno_do_rozdilu',
@@ -378,15 +377,17 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             c.append("")
 
         c += _karta(polozky, nazev=jm(m))
-        # Konflikt i stupnice v jedné kartě. Dvě karty znamenaly, že
-        # ta s konfliktem byla většinu času prázdný rámeček — a dlouhá
-        # věta se v řádku s atributem navíc ořízne.
+        # Konflikt, stupnice a předpověď v jedné kartě. Stupnice patří
+        # do bloku s pevnou šířkou kvůli zarovnání, věta naopak mimo —
+        # v bloku se nezalomí a na mobilu se odřízne.
         c.append("  - type: markdown")
         c.append("    content: |-")
         c.append(f"      {{% set x = state_attr('{stav}',"
                  f" 'konflikt_mezi') %}}")
         c.append(f"      {{% set y = state_attr('{stav}',"
                  f" 'teplotni_pasmo') %}}")
+        c.append(f"      {{% set u = state_attr('{stav}',"
+                 f" 'teplotni_predpoved') %}}")
         c.append("      {% if x %}⚠ **Konflikt nastavení**")
         c.append("      {% for z in x %}")
         c.append("      - {{ z }}")
@@ -394,7 +395,9 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         c.append("      {% endif %}{% if y %}**Teplotní pásmo větrání**")
         c.append("      ```")
         c.append("      {% for z in y %}{{ z }}")
-        c.append("      {% endfor %}```{% endif %}")
+        c.append("      {% endfor %}```")
+        c.append("      {% endif %}{% if u %}{{ u }}")
+        c.append("      {% endif %}")
         c.append(f"      {{% set w = state_attr('{stav}',"
                  f" 'pevna_pravidla') %}}")
         c.append("      {% if w %}*Platí bez nastavení:*")

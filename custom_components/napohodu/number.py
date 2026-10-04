@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT, CONF_KOMFORT_ODSTUP,
-                    CONF_DEN_POD_CIL, CONF_NOC_MIN, CONF_NOC_UTLUM, CONF_RH_MAX, CONF_RH_MIN,
+                    CONF_DENNI_HYSTEREZE, CONF_NOC_MIN, CONF_NOC_UTLUM, CONF_RH_MAX, CONF_RH_MIN,
                     CONF_TLOUSTKA,
                     CONF_ODCHYLKA, CONF_UTLUM,
                     DOMAIN,
@@ -48,7 +48,7 @@ MISTNOST = [
              "mdi:window-open"),
     Posuvnik(CONF_UTLUM, 5, 20, 0.5, UnitOfTemperature.CELSIUS, 16.0,
              "mdi:radiator-off"),
-    Posuvnik(CONF_DEN_POD_CIL, 0.5, 6, 0.5, UnitOfTemperature.CELSIUS,
+    Posuvnik(CONF_DENNI_HYSTEREZE, 0.5, 6, 0.5, UnitOfTemperature.CELSIUS,
              1.5, "mdi:thermometer-chevron-down"),
     Posuvnik(CONF_CO2_OTEVRIT, 500, 2000, 25, "ppm", 800.0, "mdi:molecule-co2"),
     Posuvnik(CONF_CO2_ZAVRIT, 400, 1500, 25, "ppm", 700.0, "mdi:molecule-co2"),

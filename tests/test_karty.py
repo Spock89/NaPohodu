@@ -81,7 +81,7 @@ def test_kazda_karta_ma_typ():
 
 def test_posuvniky_jsou_pojmenovane_cesky():
     s = dashboard(["kuchyne"], [], vzdy)
-    assert "Odstup od cíle pro otevření" in s
+    assert "Denní hystereze" in s
     assert "Nouzově otevřít nad" in s
 
 
@@ -484,3 +484,33 @@ def test_bez_zvlhcovacu_sekce_neni():
         se_zvlhcovacem=set(), podoba="stranka"))
     assert not [k for s in d["sections"] for k in s["cards"]
                 if k.get("title") == "Zvlhčovače"]
+
+
+
+
+def test_veta_pod_stupnici_je_mimo_blok():
+    """V bloku s pevnou šířkou se dlouhá věta nezalomí a odřízne se,
+    takže stupnice patří do bloku a věta mimo."""
+    import yaml
+    d = yaml.safe_load(dashboard(
+        ["loznice"], [], vzdy, cidla={"loznice": "sensor.t"},
+        podoba="stranka"))
+    md = [k for s in d["sections"] for k in s["cards"]
+          if k["type"] == "markdown"
+          and "teplotni_pasmo" in k["content"]][0]
+    obsah = md["content"]
+    # stupnice uvnitř bloku, předpověď za ním
+    pred, _, za = obsah.partition("```")
+    druhy = za.partition("```")[2]
+    assert "teplotni_pasmo" in pred
+    assert "teplotni_predpoved" in pred      # proměnná se nastavuje výš
+    assert "{{ u }}" in druhy                # ale vypisuje se mimo blok
+
+
+def test_radky_stupnice_jsou_kratke():
+    """Blok nezalamuje, takže delší řádek se na mobilu odřízne."""
+    from core import pasmo_jen_stupnice, pasmo_text
+    r = pasmo_text(22.7, 24.4, 1.5, 18.0, 1.0, otevreno=True, t_max=24.7,
+                   chladi=True, duvod="chlazení větráním")
+    for radek in pasmo_jen_stupnice(r):
+        assert len(radek) <= 45, radek

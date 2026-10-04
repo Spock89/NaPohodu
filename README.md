@@ -177,8 +177,14 @@ otevřeno.
 
 ### Hysterezní smyčka
 
-**Ve dne** je hysterezí sám odstup od cíle: zavírá se na cíli a otevírá
-o odstup od něj. Žádná druhá se nepřidává.
+**Ve dne** je to jedno číslo, denní hystereze, a tvoří pásmo kolem
+cíle. Nad jeho horní hranou se chladí venkovním vzduchem, pod dolní se
+jím ohřívá, a dojede se vždycky na protější hranu — ne na cíl. Právě to
+brání houpání: po zavření přesně na cíli se teplota hned vrací
+a cyklus začíná znovu.
+
+Při cíli 22 °C a hysterezi 1,5 °C pásmo sahá od 20,5 do 23,5. Táž
+hodnota je zároveň tolerance pro větrání kvůli CO2.
 
 **V noci** je mez absolutní, takže hystereze musí být zvlášť — okno
 zavírá při dosažení noční meze a otevírá až po prohřátí o tloušťku
@@ -206,9 +212,9 @@ zároveň vychladí — při mírném počasí ale může zůstat otevřeno do r
 Mez je jedna a absolutní. Dřív k ní patřil ještě relativní pokles od
 stavu při otevření, který ji posouval podle toho, jak bylo zrovna teplo,
 takže nebylo poznat, kde okno zavře. Přes den se mez odvozuje od cíle, aby sledovala sezónu bez
-přenastavování. **Odstup od cíle platí oběma směry**: kvůli teplotě se
-otevře, až je v pokoji o tolik víc nebo méně než cíl, a zavírá se na
-cíli — ne na odstupu, jinak by pokoj cíle nikdy nedosáhl.
+přenastavování. **Denní hystereze platí oběma směry**: kvůli teplotě se otevře, až je
+v pokoji o tolik víc nebo méně než cíl, a dojede se na opačnou hranu
+pásma — ne na cíl, jinak se teplota hned vrací.
 
 Když má oblast souseda za otevřenými dveřmi, vyvětrá ji raději on.
 

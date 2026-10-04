@@ -12,7 +12,7 @@ CONF_T_PRUMER = "t_prumer"          # týdenní průměr pro adaptivní cíl
 CONF_T_SEZONA = "t_sezona"          # třídenní průměr pro topnou sezónu
 CONF_SEZONA_REZIM = "sezona_rezim"
 REZIMY_SEZONY = ["podle_prumeru", "vzdy", "nikdy"]
-CONF_DEN_POD_CIL = "den_pod_cil"
+CONF_DENNI_HYSTEREZE = "denni_hystereze"
 # Po jaké době se ověří, že otevřené okno vůbec zabírá.
 CONF_UCINEK_PO = "ucinek_po_minutach"
 CONF_TOPENI_OBNOVA = "topeni_obnova_min"

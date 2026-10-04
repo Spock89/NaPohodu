@@ -26,7 +26,7 @@ from .const import (
     CONF_AZIMUT, CONF_CIL_MAX, CONF_CIL_MIN, CONF_CISTICKA,
     CONF_CISTICKA_OD, CONF_CLIMATE, CONF_CO2, CONF_CO2_NOC,
     CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT,
-    CONF_DEN_POD_CIL, CONF_DEST, CONF_DEST_PRAH, CONF_DOBEH, CONF_DOMA,
+    CONF_DENNI_HYSTEREZE, CONF_DEST, CONF_DEST_PRAH, CONF_DOBEH, CONF_DOMA,
     CONF_DVERE, CONF_INDICIE_DOBEH, CONF_INDICIE_STAV, CONF_INDICIE_VYKON,
     CONF_I_KDYZ_NIKDO, CONF_KLID_STINENI_MIN, CONF_KLIMA_CHLADIT_OD,
     CONF_KLIMA_DLOUHA, CONF_KLIMA_DLOUHA_H, CONF_KLIMA_ENTITA,
@@ -1025,16 +1025,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # Dřív to byl posuvník nula až deset, u kterého nebylo poznat,
         # co dělá. Teď se rovnou zadává, o kolik stupňů smí teplota
         # při větrání klesnout.
-        den_pod = self.hodnota(p.subentry_id, CONF_DEN_POD_CIL,
-                               float(d.get(CONF_DEN_POD_CIL, 1.5)))
+        den_pod = self.hodnota(p.subentry_id, CONF_DENNI_HYSTEREZE,
+                               float(d.get(CONF_DENNI_HYSTEREZE, 1.5)))
         nast = replace(
-            nast, odstup_od_cile=den_pod,
+            nast, denni_hystereze=den_pod,
             ucinek_po_s=float(d.get(CONF_UCINEK_PO, 30)) * 60)
 
         # Každá mez sama o sobě vypadá rozumně, konflikt s cílem je
         # vidět až dohromady. Bez tohohle by okno jen nefungovalo
         # a nebylo by poznat proč.
-        potize = core.konflikt_mezi(m.cil, nast.odstup_od_cile,
+        potize = core.konflikt_mezi(m.cil, nast.denni_hystereze,
                                     nast.nocni_min, nast.tloustka)
         m.atributy["konflikt_mezi"] = potize or None
         if potize and self._konflikt_hlasen.get(p.subentry_id) != potize:
@@ -1216,15 +1216,26 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Stupnice s mezemi, ať je vidět, co nastavení dělají. Jen
             # tam, kde okno ovládáme — jinak ukazuje meze, podle kterých
             # se nikdy nic nestane, a stav okna, který neznáme.
-            "teplotni_pasmo": None if not okna else core.pasmo_text(
-                m.cil, v.t_in, nast.odstup_od_cile, nast.nocni_min,
+            "teplotni_pasmo": None if not okna else core.pasmo_jen_stupnice(
+                core.pasmo_text(
+                m.cil, v.t_in, nast.denni_hystereze, nast.nocni_min,
                 nast.tloustka, skutecne, bool(m.klid),
                 core._je_noc(self._hodina_ted, nast, bool(m.klid)),
                 core.SPANEK_POJISTKA,
                 m.atributy.get("teplota_max"),
                 pamet.zavreno_chladem, pamet.zavreno_teplem,
                 pamet.chladi, pamet.ohrivam,
-                pamet.posledni_duvod or ""),
+                pamet.posledni_duvod or "")),
+            # věta zvlášť, aby ji karta mohla zalomit
+            "teplotni_predpoved": None if not okna else core.pasmo_predpoved(
+                core.pasmo_text(
+                    m.cil, v.t_in, nast.denni_hystereze, nast.nocni_min,
+                    nast.tloustka, skutecne, bool(m.klid),
+                    core._je_noc(self._hodina_ted, nast, bool(m.klid)),
+                    core.SPANEK_POJISTKA, m.atributy.get("teplota_max"),
+                    pamet.zavreno_chladem, pamet.zavreno_teplem,
+                    pamet.chladi, pamet.ohrivam,
+                    pamet.posledni_duvod or "")),
             # Pravidla, která platí bez nastavení. Schované chování je
             # horší než nastavení, které nepoužíváš — zapomene se, že
             # vůbec existuje.
