@@ -235,6 +235,7 @@ def test_vlhkost_se_ukazuje_i_bez_zarizeni(nahradni_ha):
         _pomocnici_krok = ko.NaPohoduCoordinator._pomocnici_krok
         _stav_pomocnika = staticmethod(
             ko.NaPohoduCoordinator._stav_pomocnika)
+        zvlhcuje: set = set()
         vykonavaci: dict = {}
         hass = None
 
@@ -242,7 +243,8 @@ def test_vlhkost_se_ukazuje_i_bez_zarizeni(nahradni_ha):
     m = Mistnost()
     m.atributy = {}
     d = {c.CONF_RH_VNITRNI: "sensor.vlhkost"}      # žádný odtah, žádný zvlhčovač
-    asyncio.run(k._pomocnici_krok(_Pod(), d, m, {"pm25": 0, "pm10": 0}))
+    asyncio.run(k._pomocnici_krok(_Pod(), d, m, {"pm25": 0, "pm10": 0},
+                                  21.0, 5.0, False, True))
     assert m.atributy["vlhkost"] == 43.5
     assert m.atributy["zvlhcovac_bezi"] == "nenastaveno"
 
@@ -903,3 +905,80 @@ def test_stupnice_bere_pevnou_pojistku(nahradni_ha):
         "custom_components/napohodu/coordinator.py").read_text()
     assert "nast.spanek_pojistka" not in ko
     assert "core.SPANEK_POJISTKA" in ko
+
+
+def test_zvlhcovac_respektuje_okno_a_pritomnost(nahradni_ha):
+    """Zvlhčovat při otevřeném okně znamená zvlhčovat ulici."""
+    import asyncio
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    c = importlib.import_module("napohodu.const")
+
+    class StavRH:
+        state = "30.0"
+        attributes: dict = {}
+
+    class Mistnost:
+        obsazeno = False
+        klid = False
+        atributy: dict = {}
+
+    volani = []
+
+    class Vyk:
+        class stav:
+            zarizeni: dict = {}
+
+        async def zarizeni(self, entity, zapnout, jmeno):
+            volani.append(zapnout)
+            return "ok"
+
+    def postav(otevreno, doma, kdy):
+        class Falesny:
+            _cislo = ko.NaPohoduCoordinator._cislo
+            _stav = staticmethod(lambda eid: StavRH() if eid else None)
+            _pomocnici_krok = ko.NaPohoduCoordinator._pomocnici_krok
+            _stav_pomocnika = staticmethod(
+                ko.NaPohoduCoordinator._stav_pomocnika)
+            hodnota = staticmethod(lambda a, b, vych: vych)
+            vykonavaci = {"id": Vyk()}
+            zvlhcuje: set = set()
+            hass = None
+
+        m = Mistnost()
+        m.atributy = {}
+        d = {c.CONF_RH_VNITRNI: "sensor.vlhkost",
+             c.CONF_ZVLHCOVAC: ["input_boolean.z"],
+             c.CONF_ZVLHCOVAC_KDY: kdy}
+        asyncio.run(Falesny()._pomocnici_krok(
+            _Pod(), d, m, {"pm25": 0, "pm10": 0}, 21.0, 5.0, otevreno, doma))
+        return m
+
+    # vlhkost 30 % je pod dolní mezí, takže by se normálně zapnul
+    volani.clear()
+    m = postav(otevreno=False, doma=True, kdy="vzdy")
+    assert volani == [True]
+
+    volani.clear()
+    m = postav(otevreno=True, doma=True, kdy="vzdy")
+    assert volani == [False]
+    assert "otevřené okno" in m.atributy["zvlhcovac_proc"]
+
+    volani.clear()
+    m = postav(otevreno=False, doma=False, kdy="doma")
+    assert volani == [False]
+    assert "nikdo není doma" in m.atributy["zvlhcovac_proc"]
+
+
+def test_prach_ze_zvlhcovace_se_nepocita(nahradni_ha):
+    """Ultrazvukový zvlhčovač rozprašuje minerály a čidlo je vidí jako
+    prach. Větrat ani čistit kvůli tomu nemá smysl."""
+    import pathlib
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    # prach se pro rozhodování vynuluje
+    assert 'pm25=0.0 if p.subentry_id in self.zvlhcuje' in ko
+    # a čistička na vlastní aerosol taky nereaguje
+    assert "zvlhcuje = p.subentry_id in self.zvlhcuje" in ko
+    assert '"prach_ze_zvlhcovace"' in ko

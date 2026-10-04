@@ -238,11 +238,14 @@ class NaPohoduOptionsFlow(OptionsFlow):
         co2_cidla, rh_cidla = {}, {}
         s_okny, s_klidem = set(), set()
         nazvy, poradi = {}, {}
+        se_zvlhcovacem = set()
         for pod in self.config_entry.subentries.values():
             if pod.subentry_type == c.PODENTITA_MISTNOST:
                 k = klic(pod.title)
                 mistnosti.append(k)
                 nazvy[k] = pod.title
+                if pod.data.get(c.CONF_ZVLHCOVAC):
+                    se_zvlhcovacem.add(k)
                 poradi[k] = float(pod.data.get(c.CONF_PORADI, 0) or 0)
                 teploty = pod.data.get(c.CONF_TEPLOTY) or []
                 if teploty:
@@ -275,6 +278,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 mistnosti, oblasti,
                 lambda e: self.hass.states.get(e) is not None,
                 cidla=cidla, zaluzie=zaluzie, nazvy=nazvy,
+                se_zvlhcovacem=se_zvlhcovacem,
                 venku=g.get(c.CONF_T_VENKU),
                 co2_cidla=co2_cidla, rh_cidla=rh_cidla,
                 s_okny=s_okny, s_klidem=s_klidem, podoba=podoba)
@@ -513,6 +517,10 @@ def _schema_mistnost() -> vol.Schema:
             ["humidifier", "switch", "fan", "input_boolean"], True),
         vol.Optional(c.CONF_RH_MIN, default=38.0): _cislo(20, 55, 1, "%"),
         vol.Optional(c.CONF_RH_MAX, default=60.0): _cislo(40, 80, 1, "%"),
+        vol.Optional(c.CONF_ZVLHCOVAC_KDY, default="vzdy"): _volba(
+            c.ZVLHCOVAC_KDY, "zvlhcovac_kdy"),
+        vol.Optional(c.CONF_ZASKLENI, default="dvojsklo"): _volba(
+            list(c.ZASKLENI_PODIL), "zaskleni"),
     }
 )
 

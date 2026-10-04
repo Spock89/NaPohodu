@@ -218,6 +218,43 @@ class Rozhodnuti:
 # ---------------------------------------------------------------- pomocné
 
 
+def teplota_skla(t_in: float, t_out: float, podil: float) -> float:
+    """Teplota vnitřního povrchu zasklení.
+
+    Sklo je vždycky chladnější než vzduch v pokoji, protože jím teplo
+    uniká. Podíl říká, jakou část rozdílu teplot sklo „sežere" — horší
+    okno větší. Pro trojsklo to je okolo osmi procent, pro běžné
+    dvojsklo pětina, pro starší dvojsklo třetina, pro jednoduché
+    zasklení přes polovinu.
+    """
+    return t_in - max(0.0, podil) * (t_in - t_out)
+
+
+def max_vlhkost(t_in: float, t_out: float, podil: float,
+                rezerva: float = 1.0) -> float:
+    """Nejvyšší vlhkost v pokoji, při které se okno ještě neorosí.
+
+    V mrazu má sklo okolo pěti stupňů a při vnitřních dvaceti dvou
+    a šedesáti procentech je rosný bod kolem čtrnácti — okno se tedy
+    orosí, přestože vlhkost sama o sobě vypadá rozumně. Správná horní
+    mez proto není jedno číslo, ale závisí na venkovní teplotě.
+
+    Rezerva je odstup rosného bodu od skla; bez ní by se zvlhčovalo
+    přesně na hranici orosení.
+    """
+    povrch = teplota_skla(t_in, t_out, podil)
+    if povrch >= t_in:
+        # sklo je teplejší než vzduch v pokoji, orosit se nemůže
+        return 100.0
+    sklo = povrch - max(0.0, rezerva)
+    if sklo >= t_in:
+        return 100.0
+    # obrácený Magnusův vzorec: jaká vlhkost dá rosný bod na skle
+    horni = (MAGNUS_A * sklo) / (MAGNUS_B + sklo)
+    dolni = (MAGNUS_A * t_in) / (MAGNUS_B + t_in)
+    return round(min(100.0, max(0.0, 100.0 * math.exp(horni - dolni))), 1)
+
+
 def rosny_bod(t: float, rh: float) -> float:
     """Magnusův vzorec. Vlhkost se ořízne, aby logaritmus nespadl."""
     rh = min(100.0, max(1.0, rh))

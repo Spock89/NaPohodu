@@ -325,6 +325,29 @@ zvolenou dobu vysokou teplotu, aby ventil zůstal plně otevřený a rozvod
 se odvzdušnil sám. Přebíjí i otevřené okno, protože je to jednorázová
 věc. Nula hodin znamená neodvzdušňovat.
 
+### Zvlhčovač a orosená okna
+
+Horní mez vlhkosti není jedno číslo, protože závisí na venkovní
+teplotě. V mrazu má sklo okolo pěti stupňů a při dvaadvaceti v pokoji
+a šedesáti procentech je rosný bod kolem čtrnácti — okno se tedy orosí,
+přestože vlhkost sama o sobě vypadá rozumně.
+
+Integrace proto z venkovní teploty a typu zasklení spočítá teplotu
+skla a z ní nejvyšší vlhkost, při které se ještě neorosí. Při
+dvaadvaceti stupních a venkovních minus pěti vyjde pro dvojsklo 67 %,
+pro starší dvojsklo 53 %, pro jednoduché zasklení 36 %. Nastavená horní
+mez se tím v mrazu sama sníží a v diagnostice je napsáno proč.
+
+**Při otevřeném okně se nezvlhčuje**, to by znamenalo zvlhčovat ulici.
+A dá se vybrat, kdy zvlhčovač smí běžet: vždy, jen když je někdo doma,
+jen když je někdo v pokoji, nebo jen při spánku v té místnosti — pro
+ložnici má smysl to poslední.
+
+**Prach z ultrazvukového zvlhčovače se nepočítá.** Rozprašuje minerály
+z vody a čidlo je vidí jako PM, takže by se kvůli vlastnímu aerosolu
+větralo a čistilo. Dokud zvlhčovač běží, prach z rozhodování vypadává
+a v kartě je to vidět.
+
 ### Pomocná zařízení
 
 Kromě oken a topení umí integrace ovládat i pomocníky, každého podle

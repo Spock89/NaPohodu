@@ -460,3 +460,27 @@ def test_karta_zvlhcovacu():
     assert "zvlhcovac_proc" in text          # kdy zapne a vypne
     assert "zvlhcovat_pod_vlhkosti" in text  # a obě meze
     assert "vypnout_zvlhcovac_nad" in text
+
+
+def test_zvlhcovace_jen_kde_jsou():
+    """Bez toho karta nabízela meze vlhkosti i místnostem, které žádný
+    zvlhčovač nemají."""
+    import yaml
+    d = yaml.safe_load(dashboard(
+        ["obyvak", "kuchyne"], [], vzdy,
+        cidla={"obyvak": "sensor.a", "kuchyne": "sensor.b"},
+        se_zvlhcovacem={"obyvak"}, podoba="stranka"))
+    karta = [k for s in d["sections"] for k in s["cards"]
+             if k.get("title") == "Zvlhčovače"][0]
+    text = str(karta)
+    assert "obyvak" in text
+    assert "kuchyne" not in text
+
+
+def test_bez_zvlhcovacu_sekce_neni():
+    import yaml
+    d = yaml.safe_load(dashboard(
+        ["obyvak"], [], vzdy, cidla={"obyvak": "sensor.a"},
+        se_zvlhcovacem=set(), podoba="stranka"))
+    assert not [k for s in d["sections"] for k in s["cards"]
+                if k.get("title") == "Zvlhčovače"]

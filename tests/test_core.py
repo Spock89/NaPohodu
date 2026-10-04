@@ -1638,3 +1638,38 @@ def test_kontrola_ucinku_plati_i_na_ohrev():
     r = rozhodni(stary(co2=500, t_in=19.0, t_in_max=19.2, t_out=24.5,
                        rh_out=50.0, cil=23.0, hodina=14.0), p, N)
     assert r.kod == "bez_ucinku"
+
+
+# --------------------- kondenzace na skle
+
+def test_max_vlhkost_klesa_s_mrazem():
+    """V mrazu má sklo okolo pěti stupňů a rosný bod ho dohoní dřív,
+    než vlhkost dojde na nastavenou mez."""
+    from core import max_vlhkost
+    v10 = max_vlhkost(22.0, 10.0, 0.2)
+    v0 = max_vlhkost(22.0, 0.0, 0.2)
+    v15 = max_vlhkost(22.0, -15.0, 0.2)
+    assert v10 > v0 > v15
+    assert 55 < v15 < 65          # kolem 59 %
+
+
+def test_horsi_sklo_snese_mene():
+    from core import max_vlhkost
+    trojsklo = max_vlhkost(22.0, -5.0, 0.08)
+    dvojsklo = max_vlhkost(22.0, -5.0, 0.2)
+    jednoduche = max_vlhkost(22.0, -5.0, 0.55)
+    assert trojsklo > dvojsklo > jednoduche
+    assert jednoduche < 45
+
+
+def test_v_teple_strop_neomezuje():
+    """V létě sklo chladné není, takže se vlhkost neřeší."""
+    from core import max_vlhkost
+    assert max_vlhkost(22.0, 24.0, 0.2) == 100.0
+
+
+def test_teplota_skla():
+    from core import teplota_skla
+    assert teplota_skla(22.0, -5.0, 0.0) == 22.0      # ideální okno
+    assert teplota_skla(22.0, -5.0, 0.2) == 16.6
+    assert teplota_skla(22.0, 22.0, 0.5) == 22.0      # bez rozdílu nic

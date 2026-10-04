@@ -50,11 +50,12 @@ from .const import (
     CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
     CONF_T_VENKU_M, CONF_UCINEK_PO, CONF_UTLUM, CONF_VETRAT, CONF_VITR,
     CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYCHOZI_KDY, CONF_VYNUCENO_M,
-    CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZDROJ_OBSAZENOSTI,
-    CONF_ZIMA_NAJEZD, CONF_ZIMA_O_KOLIK, CONF_ZIMA_PRAH, CONF_ZNACKA_MIMO,
-    CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC,
-    DOMAIN, INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST,
-    PODENTITA_ZONA,
+    CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZASKLENI,
+    CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD, CONF_ZIMA_O_KOLIK,
+    CONF_ZIMA_PRAH, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY,
+    CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, CONF_ZVLHCOVAC_KDY, DOMAIN,
+    INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA,
+    ZASKLENI_PODIL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -129,6 +130,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.cil_rozpad: list[str] = []
         self._konflikt_hlasen: dict = {}
         self._t_out_posledni: float | None = None
+        # místnosti, kde právě běží zvlhčovač a prach z něj se nemá
+        # brát jako prach ve vzduchu
+        self.zvlhcuje: set = set()
         self._rh_out_posledni: float | None = None
         self._hodina_ted: float = 12.0
         self._noc_od: float = 22.0
@@ -972,7 +976,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         v = core.Vstup(
             co2=max(okruh["co2"], uprava.prevzate_co2,
                     self.narazove_co2 if self.narazove_bezi else 0.0),
-            pm25=okruh["pm25"], pm10=okruh["pm10"],
+            # Prach z vlastního zvlhčovače se nepočítá: ultrazvukový
+            # rozprašuje minerály z vody a čidlo je vidí jako PM.
+            pm25=0.0 if p.subentry_id in self.zvlhcuje else okruh["pm25"],
+            pm10=0.0 if p.subentry_id in self.zvlhcuje else okruh["pm10"],
             pm_platny=okruh["pm_platny"],
             pm25_venku=self._cislo(g.get(CONF_PM25_VENKU)),
             pm10_venku=self._cislo(g.get(CONF_PM10_VENKU)),
@@ -1236,7 +1243,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         })
 
         await self._stineni_krok(p, d, u, m, doma, slunce_el, cas_s)
-        await self._pomocnici_krok(p, d, m, okruh)
+        await self._pomocnici_krok(p, d, m, okruh, v.t_in, t_out,
+                                   skutecne, doma)
         await self._topeni_krok(p, d, m, cas_s)
 
     async def _topeni_krok(self, p, d, m, cas_s: float) -> None:
@@ -1352,15 +1360,25 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return "zatím bez povelu"
         return "běží" if bezi else "stojí"
 
-    async def _pomocnici_krok(self, p, d, m, okruh) -> None:
-        """Čistička řeší prach, odtah vlhkost. Okno na to nemusí."""
+    async def _pomocnici_krok(self, p, d, m, okruh, t_in: float,
+                              t_out: float | None, otevreno: bool,
+                              doma: bool) -> None:
+        """Čistička řeší prach, zvlhčovač vlhkost. Okno na to nemusí.
+
+        Venkovní teplota a stav okna jsou tu kvůli zvlhčovači: podle
+        nich se počítá, kdy se orosí sklo, a při otevřeném okně se
+        nezvlhčuje vůbec.
+        """
         vyk = self.vykonavaci.setdefault(
             p.subentry_id, vy.Vykonavac(self.hass, p.subentry_id))
 
         cisticka = d.get(CONF_CISTICKA) or []
         if cisticka:
-            pm = okruh["pm25"] or 0
-            pm10 = okruh["pm10"] or 0
+            # Totéž pro čističku: honit aerosol z vlastního zvlhčovače
+            # znamená držet ji v jednom kole a nic tím nevyčistit.
+            zvlhcuje = p.subentry_id in self.zvlhcuje
+            pm = 0 if zvlhcuje else (okruh["pm25"] or 0)
+            pm10 = 0 if zvlhcuje else (okruh["pm10"] or 0)
             # Vypíná se níž, než zapíná, aby nepřepínala na hraně.
             # PM10 se odvozuje z téhož prahu, běžně bývá zhruba
             # jedenapůlkrát vyšší.
@@ -1373,6 +1391,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 zapnout = False
             m.atributy["cisticka"] = await vyk.zarizeni(
                 cisticka, zapnout, "čistička")
+        m.atributy["prach_ze_zvlhcovace"] = (
+            p.subentry_id in self.zvlhcuje or None)
         m.atributy["cisticka_bezi"] = self._stav_pomocnika(
             d.get(CONF_CISTICKA), vyk.stav.zarizeni.get("čistička"))
 
@@ -1394,16 +1414,53 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             rh_max = max(self.hodnota(p.subentry_id, CONF_RH_MAX,
                                       float(d.get(CONF_RH_MAX, 60.0))),
                          rh_min + 2)
+
+            # Kondenzace na skle: v mrazu je sklo chladné a rosný bod
+            # ho dohoní dřív, než vlhkost dojde na nastavenou mez.
+            podil = ZASKLENI_PODIL.get(d.get(CONF_ZASKLENI, "dvojsklo"),
+                                       0.2)
+            strop = (core.max_vlhkost(t_in, t_out, podil)
+                     if t_out is not None else 100.0)
+            duvod_stropu = ""
+            if strop < rh_max:
+                duvod_stropu = (f", kvůli orosení okna jen {strop:.0f} %")
+                rh_max = max(strop, rh_min + 2)
+
+            # Kdy smí běžet. Zvlhčovat prázdný pokoj je plýtvání
+            # a zvlhčovat při otevřeném okně znamená zvlhčovat ulici.
+            kdy = d.get(CONF_ZVLHCOVAC_KDY, "vzdy")
+            smi = (not otevreno and not (
+                (kdy == "doma" and not doma)
+                or (kdy == "v_pokoji" and not m.obsazeno)
+                or (kdy == "pri_klidu" and not m.klid)))
             m.atributy["zvlhcovac_proc"] = (
                 f"zapnu pod {rh_min:.0f} %, vypnu nad {rh_max:.0f} %, "
                 f"teď {rh_in:.0f} %")
             zapnout = None
-            if rh_in < rh_min:
+            if not smi:
+                zapnout = False
+            elif rh_in < rh_min:
                 zapnout = True
             elif rh_in > rh_max:
                 zapnout = False
+            m.atributy["zvlhcovac_proc"] = (
+                f"zapnu pod {rh_min:.0f} %, vypnu nad {rh_max:.0f} %"
+                f"{duvod_stropu}, teď {rh_in:.0f} %"
+                + ("" if smi else "; teď nesmí — " + (
+                    "otevřené okno" if otevreno else {
+                        "doma": "nikdo není doma",
+                        "v_pokoji": "v pokoji nikdo není",
+                        "pri_klidu": "nespí se tu"}.get(kdy, ""))))
             m.atributy["zvlhcovac"] = await vyk.zarizeni(
                 zvlhcovac, zapnout, "zvlhčovač")
+            # Ultrazvukový zvlhčovač rozprašuje minerály z vody a čidlo
+            # je vidí jako prach. Větrat ani čistit kvůli tomu nemá
+            # smysl — je to jeho vlastní aerosol, ne vzduch zvenčí.
+            if self._stav_pomocnika(zvlhcovac,
+                                    vyk.stav.zarizeni.get("zvlhčovač")):
+                self.zvlhcuje.add(p.subentry_id)
+            else:
+                self.zvlhcuje.discard(p.subentry_id)
         m.atributy["zvlhcovac_bezi"] = self._stav_pomocnika(
             d.get(CONF_ZVLHCOVAC), vyk.stav.zarizeni.get("zvlhčovač"))
 

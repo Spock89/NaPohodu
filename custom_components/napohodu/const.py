@@ -93,6 +93,13 @@ CONF_KOMFORT_ODSTUP = "komfort_odstup"
 CONF_CISTICKA = "cisticka"
 # Od jaké úrovně prachu čistička pracuje. Dřív to bylo natvrdo v kódu.
 CONF_CISTICKA_OD = "cisticka_od_pm"
+# Zvlhčovač: kdy smí běžet a jak dobré je zasklení (kvůli kondenzaci).
+CONF_ZVLHCOVAC_KDY = "zvlhcovac_kdy"
+CONF_ZASKLENI = "zaskleni"
+ZVLHCOVAC_KDY = ["vzdy", "doma", "v_pokoji", "pri_klidu"]
+# podíl rozdílu teplot, který sežere sklo
+ZASKLENI_PODIL = {"trojsklo": 0.08, "dvojsklo": 0.2,
+                  "starsi_dvojsklo": 0.33, "jednoduche": 0.55}
 CONF_RH_VNITRNI = "rh_vnitrni"
 CONF_RH_MAX = "rh_max"
 CONF_ZVLHCOVAC = "zvlhcovac"

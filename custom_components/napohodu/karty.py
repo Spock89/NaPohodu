@@ -238,6 +238,7 @@ def _do_sekci(radky: list[str]) -> list[str]:
 def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
               cidla: dict | None = None, zaluzie: dict | None = None,
               nazvy: dict | None = None,
+              se_zvlhcovacem: set | None = None,
               venku: str | None = None,
               co2_cidla: dict | None = None,
               rh_cidla: dict | None = None, s_okny: set | None = None,
@@ -253,6 +254,10 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     # Klíč místnosti je bez diakritiky, protože z něj vznikají
     # identifikátory entit. Do popisků ale patří pravé jméno.
     nazvy = nazvy or {}
+    # zvlhčovače jen tam, kde opravdu jsou; bez toho by karta nabízela
+    # meze vlhkosti i místnostem, které žádný nemají
+    se_zvlhcovacem = se_zvlhcovacem if se_zvlhcovacem is not None else set(
+        mistnosti)
 
     def jm(m: str) -> str:
         return nazvy.get(m) or m.capitalize()
@@ -529,12 +534,14 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     polozky = []
     for m in mistnosti:
         stav = f"sensor.napohodu_{m}_stav"
-        if not existuje(stav):
+        if not existuje(stav) or m not in se_zvlhcovacem:
             continue
         pred = len(polozky)
         polozky += _atribut(stav, "zvlhcovac_bezi", jm(m))
         polozky += _atribut(stav, "vlhkost", "   vlhkost v pokoji")
         polozky += _atribut(stav, "zvlhcovac_proc", "   kdy zapnu a vypnu")
+        polozky += _atribut(stav, "prach_ze_zvlhcovace",
+                            "   prach je z něj")
         for klic, popis in (("zvlhcovat_pod_vlhkosti", "   zapnout pod"),
                             ("vypnout_zvlhcovac_nad", "   vypnout nad")):
             eid = f"number.napohodu_{m}_{klic}"
