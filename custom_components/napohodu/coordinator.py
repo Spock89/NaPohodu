@@ -1225,7 +1225,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 m.atributy.get("teplota_max"),
                 pamet.zavreno_chladem, pamet.zavreno_teplem,
                 pamet.chladi, pamet.ohrivam,
-                pamet.posledni_duvod or "")),
+                pamet.posledni_duvod or "",
+                core.proc_neotevira(
+                    v, nast, v.t_in,
+                    m.atributy.get("teplota_max") or v.t_in))),
             # věta zvlášť, aby ji karta mohla zalomit
             "teplotni_predpoved": None if not okna else core.pasmo_predpoved(
                 core.pasmo_text(
@@ -1235,7 +1238,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     core.SPANEK_POJISTKA, m.atributy.get("teplota_max"),
                     pamet.zavreno_chladem, pamet.zavreno_teplem,
                     pamet.chladi, pamet.ohrivam,
-                    pamet.posledni_duvod or "")),
+                    pamet.posledni_duvod or "",
+                    core.proc_neotevira(
+                        v, nast, v.t_in,
+                        m.atributy.get("teplota_max") or v.t_in))),
             # Pravidla, která platí bez nastavení. Schované chování je
             # horší než nastavení, které nepoužíváš — zapomene se, že
             # vůbec existuje.

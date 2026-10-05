@@ -163,6 +163,27 @@ s hláškou „venku je příjemně".
 V noci se kvůli teplotě otevírá jen pro chlazení. Ohřev čeká do rána,
 protože ticho je v noci cennější než pár stupňů.
 
+### Kdy venkovní vzduch pomůže
+
+Chlazení i ohřev větráním se spustí, až je pokoj mimo hysterezní pásmo
+kolem cíle, a běží k opačné hraně. Samotné překročení hrany ale nestačí
+— venkovní vzduch musí mít čím pomoct:
+
+- chladit se dá, jen když je venku aspoň o stupeň chladněji než
+  v pokoji a zároveň nad dvanácti stupni; pod tím by se pokoj vymrazil
+  rychleji, než by se stihlo vyvětrat,
+- ohřívat se dá, jen když je venku aspoň o stupeň tepleji.
+
+Když se během větrání dostane teplota do pásma, ale cíl ještě není
+dosažený, větrá se dál — s tím, že **kontrola účinku** po nastavené
+době ověří, že se teplota opravdu hýbe správným směrem, a jinak zavře.
+
+Když venkovní vzduch přestane pomáhat, protože se venku oteplilo při
+chlazení nebo ochladilo při ohřevu, okno se zavře s odpovídajícím
+důvodem. A když je pokoj mimo pásmo, ale otevřít nejde, je v kartě
+napsáno proč — třeba „venku 12,0 °C, pro chlazení chceme aspoň
+12,0 °C".
+
 ### Kontrola účinku větrání
 
 Marně otevřené okno v zimě stojí teplo a nic za to nevrací. Po nastavené

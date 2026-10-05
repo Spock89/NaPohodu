@@ -849,6 +849,16 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             return beze_zmeny(popis_bezi, True)
         return otevri(popis_nove, None)
 
+    # Venkovní vzduch přestal pomáhat: chladili jsme a venku se
+    # oteplilo, nebo jsme ohřívali a venku se ochladilo. Držet okno
+    # otevřené pak nemá smysl, jen se tahá dovnitř, co nechceme.
+    if p.otevreno and p.chladi and not chlazeni and t_max > v.cil:
+        p.chladi = False
+        return zavri(f"venku {v.t_out:.1f} °C už nechladí", kod="teplota")
+    if p.otevreno and p.ohrivam and not ohrev and t_in < v.cil:
+        p.ohrivam = False
+        return zavri(f"venku {v.t_out:.1f} °C už neohřívá", kod="teplota")
+
     p.chladi = chlazeni
     p.ohrivam = ohrev and not chlazeni
 
@@ -1018,6 +1028,13 @@ def pevna_pravidla_bytu() -> list[str]:
         "Denní hysterezní pásmo obemyká cíl z obou stran: nad horní "
         "hranou se chladí, pod dolní ohřívá, a dojede se vždycky na "
         "protější hranu — ne na cíl, jinak se teplota hned vrací.",
+        f"Chladit venkovním vzduchem se vyplatí jen do "
+        f"{Nastaveni.chlazeni_min_venku:.0f} °C venku; pod tím by se "
+        f"pokoj vymrazil rychleji, než by se stihlo vyvětrat. Vzduch "
+        f"musí být zároveň aspoň o "
+        f"{Nastaveni.chlazeni_rozdil:.0f} °C chladnější než v pokoji.",
+        "Když venkovní vzduch přestane pomáhat — chladili jsme a venku "
+        "se oteplilo, nebo naopak — okno se zavře.",
         "V noci se kvůli teplotě otevírá jen pro chlazení. Ohřev "
         "venkovním vzduchem čeká do rána — ticho je v noci cennější "
         "než pár stupňů.",
@@ -1062,6 +1079,39 @@ def _mez_chladu(v: "Vstup", p: "Pamet", n: "Nastaveni") -> float:
     return v.cil - n.denni_hystereze
 
 
+def proc_neotevira(v: "Vstup", n: "Nastaveni", t_in: float,
+                   t_max: float) -> str:
+    """Proč se kvůli teplotě neotvírá, i když je pokoj mimo pásmo.
+
+    Bez toho stupnice ukazuje teplotu nad horní hranou a zavřené okno
+    a není poznat, co tomu brání — nejčastěji venkovní vzduch, který
+    by nepomohl.
+    """
+    if v.t_out is None:
+        return "venkovní teplotu neznám"
+
+    nad_pasmem = t_max > v.cil + n.denni_hystereze
+    pod_pasmem = t_in < v.cil - n.denni_hystereze
+    chladit_lze = (v.t_out < t_max - n.chlazeni_rozdil
+                   and v.t_out > n.chlazeni_min_venku)
+    ohrat_lze = v.t_out > t_in + n.chlazeni_rozdil
+
+    if nad_pasmem and chladit_lze:
+        return ""           # chladit jde, nic nebrání
+    if pod_pasmem and ohrat_lze:
+        return ""           # ohřát jde
+    if nad_pasmem:
+        if v.t_out <= n.chlazeni_min_venku:
+            return (f"venku {v.t_out:.1f} °C, pro chlazení chceme "
+                    f"aspoň {n.chlazeni_min_venku:.1f} °C")
+        return f"venku {v.t_out:.1f} °C, chladnější vzduch nemáme"
+    if pod_pasmem:
+        return f"venku {v.t_out:.1f} °C, teplejší vzduch na ohřev nemáme"
+    if v.t_out < v.cil - n.komfort_odstup:
+        return f"venku {v.t_out:.1f} °C, na otevřené okno moc chladno"
+    return ""
+
+
 def pasmo_predpoved(radky: list[str]) -> str:
     """Poslední řádek stupnice, tedy předpověď.
 
@@ -1086,7 +1136,8 @@ def pasmo_text(cil: float, t_in: float, hystereze: float,
                zavreno_teplem: bool = False,
                chladi: bool = False,
                ohrivam: bool = False,
-               duvod: str = "") -> list[str]:
+               duvod: str = "",
+               brani_teplote: str = "") -> list[str]:
     """Stupnice s mezemi a tím, kde je teplota právě teď.
 
     Hranice se pojmenovávají tím, co jsou, ne budoucím slovesem.
@@ -1140,7 +1191,10 @@ def pasmo_text(cil: float, t_in: float, hystereze: float,
     elif zavreno_teplem:
         radky.append(f"Vychlazeno. Chladit začnu znovu od {horni:.1f} °C.")
     else:
-        radky.append(f"Kvůli teplotě bych otevřel nad {horni:.1f} °C "
-                     f"(chlazení), nebo pod {dolni:.1f} °C, když je "
-                     f"venku tepleji (ohřev).")
+        veta = (f"Kvůli teplotě bych otevřel nad {horni:.1f} °C "
+                f"(chlazení), nebo pod {dolni:.1f} °C, když je venku "
+                f"tepleji (ohřev).")
+        if brani_teplote:
+            veta += f" Teď brání: {brani_teplote}."
+        radky.append(veta)
     return radky

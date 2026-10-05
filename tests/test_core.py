@@ -1765,3 +1765,50 @@ def test_stupnice_ukaze_dojezd():
     t2 = "\n".join(pasmo_text(22.7, 21.0, 1.5, 18.0, 1.0, otevreno=True,
                               t_max=21.3, ohrivam=True, duvod="ohřev"))
     assert "Ohřívám, zavřu na 24.2" in t2
+
+
+# --------------------- proč se kvůli teplotě neotvírá
+
+def test_duvod_proc_neotevira():
+    """Stupnice ukazovala teplotu nad horní hranou a zavřené okno,
+    aniž by řekla, co tomu brání."""
+    from core import Nastaveni as N_, proc_neotevira
+    nast = N_()
+
+    def duvod(t_out, t_in, t_max):
+        v = Vstup(co2=500, t_in=t_in, t_in_max=t_max, t_out=t_out,
+                  rh_out=50.0, cil=22.2, cas_s=1)
+        return proc_neotevira(v, nast, t_in, t_max)
+
+    assert "pro chlazení chceme" in duvod(12.0, 24.4, 24.6)
+    assert "chladnější vzduch nemáme" in duvod(26.0, 24.4, 24.6)
+    assert "teplejší vzduch na ohřev" in duvod(15.0, 19.0, 19.2)
+    assert duvod(18.0, 24.4, 24.6) == ""      # chladit jde
+    assert duvod(22.0, 19.0, 19.2) == ""      # ohřát jde
+
+
+def test_stupnice_rekne_co_brani():
+    from core import Nastaveni as N_, pasmo_text, proc_neotevira
+    v = Vstup(co2=641, t_in=24.4, t_in_max=24.6, t_out=12.0, rh_out=50.0,
+              cil=22.2, cas_s=1)
+    t = "\n".join(pasmo_text(
+        22.2, 24.4, 1.5, 18.0, 1.0, otevreno=False, t_max=24.6,
+        brani_teplote=proc_neotevira(v, N_(), 24.4, 24.6)))
+    assert "Teď brání:" in t and "12.0" in t
+
+
+def test_zavre_kdyz_vzduch_prestane_pomahat():
+    """Chladili jsme a venku se oteplilo — držet okno otevřené pak
+    znamená tahat dovnitř, co nechceme."""
+    p = Pamet(otevreno=True, cas_povelu_s=0, chladi=True, rezim="komfort",
+              komfort_start=24.4)
+    r = rozhodni(stary(co2=500, t_in=23.5, t_in_max=23.8, t_out=25.0,
+                       rh_out=50.0, cil=22.2, hodina=14.0), p, N)
+    assert r.akce is Akce.ZAVRIT and "už nechladí" in r.duvod
+    assert p.chladi is False
+
+    p2 = Pamet(otevreno=True, cas_povelu_s=0, ohrivam=True, rezim="komfort",
+               komfort_start=19.0)
+    r2 = rozhodni(stary(co2=500, t_in=20.0, t_in_max=20.3, t_out=15.0,
+                        rh_out=50.0, cil=22.2, hodina=14.0), p2, N)
+    assert r2.akce is Akce.ZAVRIT and "už neohřívá" in r2.duvod
