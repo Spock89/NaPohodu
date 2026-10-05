@@ -68,6 +68,12 @@ class Nastaveni:
     dest_prah: float = 0.3     # nad tímhle se zavírá, i když je vynuceno
     projezd_s: int = 120
     min_drzeni_s: int = 20 * 60
+    # Po marném větrání se další pokus čeká na změnu venkovních
+    # podmínek, ne na hodiny. Čas je jen zástupná veličina — skutečný
+    # důvod, proč to nešlo, bylo venku.
+    zmena_podminek: float = 2.0      # o kolik °C venku, nula vypne
+    nejdriv_znovu_s: float = 60 * 60  # a nejdřív za tuhle dobu
+    prah_slunce_w: float = 15.0      # práh stínění, slouží i tady
     obnova_s: int = 30 * 60
 
     komfort_odstup: float = 4.0
@@ -94,9 +100,6 @@ class Nastaveni:
     # dál. Dřív platila i ve dne a obě pásma se sčítala.
     tloustka: float = 1.0
     nocni_min: float = 18.0
-    # po jaké době otevřeného okna se ověří, že větrání vůbec zabírá;
-    # nula kontrolu vypne
-    ucinek_po_s: float = 30 * 60
     krize_pod_mez: float = 1.5
 
     noc_od: float = 22.0
@@ -128,6 +131,8 @@ class Vstup:
     # Nevyplněno znamená, že venkovní vlhkost neznáme. Rosný bod se
     # pak nepočítá, místo aby se odhadoval z vymyšleného čísla.
     rh_out: float | None = None
+    # kolik slunce právě dopadá na okna místnosti, ve wattech
+    slunce_w: float = 0.0
     cil: float = 22.0
 
     dest: float = 0.0
@@ -189,6 +194,10 @@ class Pamet:
     ohrivam: bool = False
     # kontrola účinku: kdy a s jakými hodnotami se otevřelo
     ucinek_od_s: float = 0.0
+    # podmínky při marném pokusu, aby se čekalo na jejich změnu
+    marne_od_s: float = 0.0
+    marne_t_out: float = 0.0
+    marne_slunce: float = 0.0
     ucinek_co2: float = 0.0
     ucinek_t_in: float = 0.0
     zavreno_chladem: bool = False
@@ -614,6 +623,17 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                 kolik = f"{zbyva} s"
             return hotovo(Akce.NIC, f"chci {chci}, držím stav ještě {kolik}",
                           kod="drzeni")
+        if chci_otevreno and not p.otevreno:
+            # od čeho se měří, jestli větrání zabírá
+            p.ucinek_od_s = v.cas_s
+            p.ucinek_co2 = v.co2
+            p.ucinek_t_in = t_in
+        elif not chci_otevreno:
+            # Pozorování patří k jednomu otevření. Bez nulování se
+            # počítalo od prvního otevření v historii a vycházely z toho
+            # stovky minut.
+            p.ucinek_od_s = 0.0
+            p.chladi = False
         p.otevreno = chci_otevreno
         p.cas_povelu_s = v.cas_s
         p.pohyby += 1
@@ -704,10 +724,11 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # Když se po nastavené době nezlepšilo ani CO2, ani teplota, zavře
     # se a chvíli se to nezkouší. Nouzové větrání a tvoje ruční žádost
     # tím neprochází, ty mají přednost.
-    # Dřív než uplyne nejkratší doba držení polohy to nemá smysl —
-    # zavřít stejně nejde, takže se bere ta delší z obou dob.
-    ucinek_po = max(n.ucinek_po_s, n.min_drzeni_s)
-    if (p.otevreno and n.ucinek_po_s > 0 and p.ucinek_od_s > 0
+    # Účinek se ověří, jakmile uplyne nejkratší doba držení polohy —
+    # dřív to nemá smysl, protože zavřít stejně nejde. Dvě různé doby
+    # na jednu věc jen pletly.
+    ucinek_po = n.min_drzeni_s
+    if (p.otevreno and ucinek_po > 0 and p.ucinek_od_s > 0
             and v.cas_s - p.ucinek_od_s >= ucinek_po
             and v.co2 <= n.co2_noc_krize
             and not v.vetrat and not v.vynuceno):
@@ -715,11 +736,22 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # teplota se má posunout k cíli, ať z které strany
         blize = abs(t_in - v.cil) <= abs(p.ucinek_t_in - v.cil) - UCINEK_TEPLOTA
         if not lepsi_co2 and not blize:
+            # Couvání: po marném pokusu se čeká déle, jinak se za dvacet
+            # minut otevře znovu a zjistí se totéž.
             p.pulzy_za_sebou += 1
+            p.marne_od_s = v.cas_s
+            p.marne_t_out = v.t_out
+            p.marne_slunce = v.slunce_w
             minuty = int(ucinek_po / 60)
+            # Rozlišit, jestli se nehýbalo nic, nebo to šlo proti nám —
+            # druhé je horší zpráva a je dobré ji vidět.
+            proti = (abs(t_in - v.cil) > abs(p.ucinek_t_in - v.cil)
+                     or v.co2 > p.ucinek_co2)
+            jak = "zhoršuje se to" if proti else "nehýbe se to"
             return zavri(
-                f"bez účinku: za {minuty} min CO2 {p.ucinek_co2:.0f} → "
-                f"{v.co2:.0f}, teplota {p.ucinek_t_in:.1f} → {t_in:.1f} °C",
+                f"bez účinku, {jak}: za {minuty} min CO2 "
+                f"{p.ucinek_co2:.0f} → {v.co2:.0f}, teplota "
+                f"{p.ucinek_t_in:.1f} → {t_in:.1f} °C",
                 kod="bez_ucinku")
 
     # --- 4. vzduch --------------------------------------------------
@@ -814,6 +846,34 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                 and v.t_out > n.chlazeni_min_venku
                 and chlazeni_po_pauze
                 and not v.smog)
+
+    # Po marném pokusu se čeká na změnu venkovních podmínek, ne na
+    # hodiny. Když se venku nic nezmění, nemá smysl zkoušet totéž —
+    # nouzové CO2 a ruční žádost to obchází dál.
+    if (p.marne_od_s > 0 and not p.otevreno and n.zmena_podminek > 0
+            and v.co2 <= n.co2_noc_krize and not v.vetrat
+            and not v.vynuceno):
+        cekam = v.cas_s - p.marne_od_s < n.nejdriv_znovu_s
+        chladneji = v.t_out <= p.marne_t_out - n.zmena_podminek
+        tepleji = v.t_out >= p.marne_t_out + n.zmena_podminek
+        slunce_dolu = (p.marne_slunce >= n.prah_slunce_w
+                       and v.slunce_w < n.prah_slunce_w)
+        slunce_nahoru = (p.marne_slunce < n.prah_slunce_w
+                         and v.slunce_w >= n.prah_slunce_w)
+        # chlazení pomůže chladnější vzduch nebo zapadlé slunce,
+        # ohřevu naopak teplejší vzduch nebo slunce, které vysvitlo
+        zmenilo_se = (chladneji or tepleji or slunce_dolu or slunce_nahoru)
+        if cekam or not zmenilo_se:
+            if chlazeni or ohrev:
+                zbyva = int((n.nejdriv_znovu_s
+                             - (v.cas_s - p.marne_od_s)) / 60)
+                duvod = (f"čekám ještě {zbyva} min" if cekam
+                         else f"čekám na změnu venku o "
+                              f"{n.zmena_podminek:.1f} °C nebo na slunce")
+                return beze_zmeny(f"minule to nepomohlo, {duvod}", False)
+            chlazeni = ohrev = False
+        else:
+            p.marne_od_s = 0.0        # podmínky se změnily, zkusíme to
 
     brani = ""
     if v.smog:
@@ -1069,8 +1129,8 @@ def pevna_pravidla_bytu() -> list[str]:
         f"posune průměr o {PM_VYHLAZENI * 100:.0f} %.",
         f"Když větrání nezabírá na CO2, další pulz zkusím až za "
         f"{PAUZA_PO_PULZU_S // 60:.0f} min a pauza se s každým dalším "
-        f"zdvojnásobí, nejvýš na hodinu. Teplotního kmitání se to "
-        f"netýká, to řeší tloušťka smyčky.",
+        f"zdvojnásobí, nejvýš na hodinu. Po marném větrání kvůli teplotě "
+        f"se místo toho čeká na změnu venkovních podmínek.",
     ]
 
 

@@ -85,6 +85,7 @@ ATRIBUTY_STAVU = [
     ("dnes", "Souhrn dne", None),
     ("co_bylo", "Poslední rozhodnutí", None),
     ("ucinek", "Zabírá to? (od otevření)", None),
+    ("pauza_po_marnem_vetrani_min", "Pauza po marném větrání", " min"),
     ("co_dal", "Co změnu spustí", None),
     ("duvody", "Diagnostika", None),
 ]

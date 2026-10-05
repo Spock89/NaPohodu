@@ -15,8 +15,9 @@ REZIMY_SEZONY = ["podle_prumeru", "vzdy", "nikdy"]
 CONF_DENNI_HYSTEREZE = "denni_hystereze"
 # Pod touhle venkovní teplotou se chlazení větráním nespustí.
 CONF_CHLAZENI_MIN_VENKU = "chlazeni_min_venku"
-# Po jaké době se ověří, že otevřené okno vůbec zabírá.
-CONF_UCINEK_PO = "ucinek_po_minutach"
+# Po marném větrání se čeká na změnu venkovních podmínek (celý byt).
+CONF_ZMENA_PODMINEK = "zmena_podminek"
+CONF_NEJDRIV_ZNOVU = "nejdriv_znovu_min"
 CONF_TOPENI_OBNOVA = "topeni_obnova_min"
 CONF_SEZONA_PRAH = "sezona_prah"
 CONF_SEZONA_HYSTEREZE = "sezona_hystereze"

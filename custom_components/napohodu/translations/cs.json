@@ -38,7 +38,9 @@
           "noc_utlum_predstih": "Noční útlum nabíhat",
           "zima_o_kolik": "Přitopit o",
           "zima_najezd": "Plné hodnoty dosáhnout po",
-          "zima_prah": "Přitápět, když venkovní průměr klesne pod"
+          "zima_prah": "Přitápět, když venkovní průměr klesne pod",
+          "zmena_podminek": "Další pokus až po změně venku o",
+          "nejdriv_znovu_min": "A nejdřív za"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -75,7 +77,9 @@
           "pryc_utlum_po_hodinach": "Jak dlouho musí být prázdno, než se utlumí. Za krátkou nepřítomnost se útlum nezaplatí.",
           "noc_utlum_predstih": "Jak dlouho před začátkem noci se začne klesat. Plynulý náběh je lepší než skok, protože hlavice i zdivo reagují pomalu. Nula znamená skokem.",
           "zima_o_kolik": "O kolik stupňů přitopit, když je venku doopravdy zima. Dál se nepřidává — hlubší mrazy na tom nic nemění.",
-          "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C."
+          "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C.",
+          "zmena_podminek": "Když větrání nebo ohřev oknem nezabraly, nemá smysl zkoušet totéž, dokud se venku něco nezmění. Čeká se na posun venkovní teploty o tolik stupňů — při chlazení dolů, při ohřevu nahoru — nebo na to, až slunce na okně překročí práh stínění.\n\nNula čekání na podmínky vypne, pak platí jen čas. Nouzové větrání a ruční žádost to obchází vždycky.",
+          "nejdriv_znovu_min": "Nejkratší odstup mezi marným pokusem a dalším. I kdyby se venku změnilo všechno hned, dřív se nezkouší."
         },
         "title": "NaPohodu"
       }
@@ -132,7 +136,9 @@
           "noc_utlum_predstih": "Noční útlum nabíhat",
           "zima_o_kolik": "Přitopit o",
           "zima_najezd": "Plné hodnoty dosáhnout po",
-          "zima_prah": "Přitápět, když venkovní průměr klesne pod"
+          "zima_prah": "Přitápět, když venkovní průměr klesne pod",
+          "zmena_podminek": "Další pokus až po změně venku o",
+          "nejdriv_znovu_min": "A nejdřív za"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -169,7 +175,9 @@
           "pryc_utlum_po_hodinach": "Jak dlouho musí být prázdno, než se utlumí. Za krátkou nepřítomnost se útlum nezaplatí.",
           "noc_utlum_predstih": "Jak dlouho před začátkem noci se začne klesat. Plynulý náběh je lepší než skok, protože hlavice i zdivo reagují pomalu. Nula znamená skokem.",
           "zima_o_kolik": "O kolik stupňů přitopit, když je venku doopravdy zima. Dál se nepřidává — hlubší mrazy na tom nic nemění.",
-          "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C."
+          "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C.",
+          "zmena_podminek": "Když větrání nebo ohřev oknem nezabraly, nemá smysl zkoušet totéž, dokud se venku něco nezmění. Čeká se na posun venkovní teploty o tolik stupňů — při chlazení dolů, při ohřevu nahoru — nebo na to, až slunce na okně překročí práh stínění.\n\nNula čekání na podmínky vypne, pak platí jen čas. Nouzové větrání a ruční žádost to obchází vždycky.",
+          "nejdriv_znovu_min": "Nejkratší odstup mezi marným pokusem a dalším. I kdyby se venku změnilo všechno hned, dřív se nezkouší."
         }
       },
       "tester": {
@@ -301,7 +309,6 @@
             "noc_utlum_topeni": "V noci topit o méně",
             "cisticka_od_pm": "Čističku zapnout od PM2.5",
             "tloustka_smycky": "Tloušťka noční smyčky",
-            "ucinek_po_minutach": "Ověřit účinek větrání po",
             "zvlhcovac_kdy": "Zvlhčovat",
             "zaskleni": "Zasklení okna",
             "denni_hystereze": "Denní hystereze",
@@ -340,7 +347,7 @@
             "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené.",
             "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
             "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
-            "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam kvůli hodnotě skákající kolem prahu.",
+            "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam.\n\nPo téhle době se zároveň ověří, že větrání vůbec zabírá: když se ani CO2, ani teplota neposunuly k lepšímu, okno se zavře a pauza se s každým dalším marným pokusem zdvojnásobí. Nouzové větrání a ruční žádost tím neprochází.",
             "odvzdusneni_h": "Po začátku sezóny se tuhle dobu drží vysoká teplota, aby ventil zůstal otevřený a rozvod se sám odvzdušnil. Nula znamená neodvzdušňovat.",
             "odvzdusneni_t": "Teplota, která zaručí plně otevřený ventil. Nemá topit doopravdy, jen otevřít.",
             "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24.",
@@ -358,7 +365,6 @@
             "noc_utlum_topeni": "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. Klesá plynule hodinu před začátkem noci, aby to nebyl skok; zapnutý spánek platí okamžitě.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
             "tloustka_smycky": "Platí jen v noci: o kolik se pokoj musí prohřát nad noční mez, než se otevře znovu, a jak těsně nad mezí se ještě neotvírá. Širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje.\\n\\nVe dne se nepoužívá — tam je hysterezí sám „Odstup od cíle pro otevření\", protože se zavírá na cíli a otevírá o odstup dál. Dřív platila i ve dne a obě pásma se sčítala.",
-            "ucinek_po_minutach": "Po téhle době otevřeného okna se ověří, že větrání vůbec zabírá. Když se ani CO2, ani teplota neposunuly k lepšímu, okno se zavře a chvíli se to nezkouší — marně otevřené okno v zimě stojí teplo a nic za to nevrací.\n\nKratší hodnota než „Nejkratší doba držení polohy\" nemá smysl: zavřít stejně nejde, takže se použije ta delší z obou.\n\nNouzové větrání a ruční žádost o vyvětrání tím neprochází. Nula kontrolu vypne.",
             "zvlhcovac_kdy": "Kdy smí zvlhčovač běžet. V ložnici má smysl „jen při spánku\", v obýváku spíš „jen když je někdo v pokoji\" — zvlhčovat prázdný pokoj je plýtvání.\n\nPři otevřeném okně se nezvlhčuje nikdy, to by znamenalo zvlhčovat ulici.",
             "zaskleni": "Podle zasklení se počítá, jak chladné je sklo, a z toho nejvyšší vlhkost, při které se ještě neorosí. V mrazu má sklo okolo pěti stupňů a při dvaadvaceti v pokoji a šedesáti procentech je rosný bod kolem čtrnácti — okno se tedy orosí, přestože vlhkost sama o sobě vypadá rozumně.\n\nHorní mez vlhkosti se tím v mrazu sama sníží. Při dvaadvaceti stupních a venkovních minus pěti vyjde pro dvojsklo 67 %, pro starší 53 %.",
             "denni_hystereze": "Hysterezní pásmo kolem cílové teploty, souměrně na obě strany. Chlazení venkovním vzduchem se zapne o tolik nad cílem a dojede o tolik pod cíl; ohřev naopak.\n\nZavírat přesně na cíli znamenalo, že se teplota hned začala vracet a žádná rezerva na to nebyla. Širší pásmo znamená méně cyklů a větší rozkyv, nic mezi tím neexistuje.\n\nOhřev potřebuje, aby bylo venku tepleji než v pokoji. V noci se kvůli teplotě otevírá jen pro chlazení a platí „Tloušťka noční smyčky\", ne tohle.\n\nJe to taky tolerance pro větrání kvůli CO2 — pod cíl se smí vychladit nejvýš o tolik.",
@@ -469,7 +475,6 @@
             "noc_utlum_topeni": "V noci topit o méně",
             "cisticka_od_pm": "Čističku zapnout od PM2.5",
             "tloustka_smycky": "Tloušťka noční smyčky",
-            "ucinek_po_minutach": "Ověřit účinek větrání po",
             "zvlhcovac_kdy": "Zvlhčovat",
             "zaskleni": "Zasklení okna",
             "denni_hystereze": "Denní hystereze",
@@ -518,7 +523,7 @@
             "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené.",
             "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
             "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
-            "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam kvůli hodnotě skákající kolem prahu.",
+            "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam.\n\nPo téhle době se zároveň ověří, že větrání vůbec zabírá: když se ani CO2, ani teplota neposunuly k lepšímu, okno se zavře a pauza se s každým dalším marným pokusem zdvojnásobí. Nouzové větrání a ruční žádost tím neprochází.",
             "odvzdusneni_h": "Po začátku sezóny se tuhle dobu drží vysoká teplota, aby ventil zůstal otevřený a rozvod se sám odvzdušnil. Nula znamená neodvzdušňovat.",
             "odvzdusneni_t": "Teplota, která zaručí plně otevřený ventil. Nemá topit doopravdy, jen otevřít.",
             "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24.",
@@ -536,7 +541,6 @@
             "noc_utlum_topeni": "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. Klesá plynule hodinu před začátkem noci, aby to nebyl skok; zapnutý spánek platí okamžitě.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
             "tloustka_smycky": "Platí jen v noci: o kolik se pokoj musí prohřát nad noční mez, než se otevře znovu, a jak těsně nad mezí se ještě neotvírá. Širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje.\\n\\nVe dne se nepoužívá — tam je hysterezí sám „Odstup od cíle pro otevření\", protože se zavírá na cíli a otevírá o odstup dál. Dřív platila i ve dne a obě pásma se sčítala.",
-            "ucinek_po_minutach": "Po téhle době otevřeného okna se ověří, že větrání vůbec zabírá. Když se ani CO2, ani teplota neposunuly k lepšímu, okno se zavře a chvíli se to nezkouší — marně otevřené okno v zimě stojí teplo a nic za to nevrací.\n\nKratší hodnota než „Nejkratší doba držení polohy\" nemá smysl: zavřít stejně nejde, takže se použije ta delší z obou.\n\nNouzové větrání a ruční žádost o vyvětrání tím neprochází. Nula kontrolu vypne.",
             "zvlhcovac_kdy": "Kdy smí zvlhčovač běžet. V ložnici má smysl „jen při spánku\", v obýváku spíš „jen když je někdo v pokoji\" — zvlhčovat prázdný pokoj je plýtvání.\n\nPři otevřeném okně se nezvlhčuje nikdy, to by znamenalo zvlhčovat ulici.",
             "zaskleni": "Podle zasklení se počítá, jak chladné je sklo, a z toho nejvyšší vlhkost, při které se ještě neorosí. V mrazu má sklo okolo pěti stupňů a při dvaadvaceti v pokoji a šedesáti procentech je rosný bod kolem čtrnácti — okno se tedy orosí, přestože vlhkost sama o sobě vypadá rozumně.\n\nHorní mez vlhkosti se tím v mrazu sama sníží. Při dvaadvaceti stupních a venkovních minus pěti vyjde pro dvojsklo 67 %, pro starší 53 %.",
             "denni_hystereze": "Hysterezní pásmo kolem cílové teploty, souměrně na obě strany. Chlazení venkovním vzduchem se zapne o tolik nad cílem a dojede o tolik pod cíl; ohřev naopak.\n\nZavírat přesně na cíli znamenalo, že se teplota hned začala vracet a žádná rezerva na to nebyla. Širší pásmo znamená méně cyklů a větší rozkyv, nic mezi tím neexistuje.\n\nOhřev potřebuje, aby bylo venku tepleji než v pokoji. V noci se kvůli teplotě otevírá jen pro chlazení a platí „Tloušťka noční smyčky\", ne tohle.\n\nJe to taky tolerance pro větrání kvůli CO2 — pod cíl se smí vychladit nejvýš o tolik.",

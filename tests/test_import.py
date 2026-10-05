@@ -982,3 +982,12 @@ def test_prach_ze_zvlhcovace_se_nepocita(nahradni_ha):
     # a čistička na vlastní aerosol taky nereaguje
     assert "zvlhcuje = p.subentry_id in self.zvlhcuje" in ko
     assert '"prach_ze_zvlhcovace"' in ko
+
+
+def test_pauza_po_marnem_vetrani(nahradni_ha):
+    """Po marném pokusu se čeká déle, pokus za pokusem."""
+    import pathlib
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    assert 'if r.kod == "bez_ucinku":' in ko
+    assert '"pauza_po_marnem_vetrani_min"' in ko

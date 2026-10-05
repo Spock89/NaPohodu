@@ -35,27 +35,27 @@ from .const import (
     CONF_KLIMA_V_POKOJI, CONF_KOMFORT_ODSTUP, CONF_KONTAKT_M,
     CONF_MAX_STARI, CONF_MIN_DRZENI, CONF_MISTNOSTI, CONF_NARAZ,
     CONF_NARAZOVE, CONF_NARAZOVE_ODSTUP, CONF_NARAZOVE_STROP,
-    CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NOC_DO, CONF_NOC_MIN, CONF_NOC_OD,
-    CONF_NOC_PREDSTIH, CONF_NOC_UTLUM, CONF_OCHOTA, CONF_ODCHYLKA,
-    CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA, CONF_PM10,
-    CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU, CONF_PM_CISTO,
-    CONF_PM_PLATNY, CONF_PM_SPATNE, CONF_PRAH_VYKONU, CONF_PRITOMNOST,
-    CONF_PROJEZD_M, CONF_PRYC_PO, CONF_PRYC_UTLUM, CONF_RH_MAX,
-    CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI,
-    CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH,
-    CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG,
-    CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
-    CONF_STINENI_CHOVANI, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
-    CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY, CONF_TLOUSTKA,
-    CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA,
-    CONF_T_VENKU, CONF_T_VENKU_M, CONF_UCINEK_PO, CONF_UTLUM, CONF_VETRAT,
-    CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYCHOZI_KDY,
-    CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
-    CONF_ZASKLENI, CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD,
-    CONF_ZIMA_O_KOLIK, CONF_ZIMA_PRAH, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO,
-    CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, CONF_ZVLHCOVAC_KDY,
-    DOMAIN, INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST,
-    PODENTITA_ZONA, ZASKLENI_PODIL,
+    CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NEJDRIV_ZNOVU, CONF_NOC_DO,
+    CONF_NOC_MIN, CONF_NOC_OD, CONF_NOC_PREDSTIH, CONF_NOC_UTLUM,
+    CONF_OCHOTA, CONF_ODCHYLKA, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T,
+    CONF_OKNA, CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU,
+    CONF_PM_CISTO, CONF_PM_PLATNY, CONF_PM_SPATNE, CONF_PRAH_VYKONU,
+    CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_PRYC_PO, CONF_PRYC_UTLUM,
+    CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M,
+    CONF_RH_VNITRNI, CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE,
+    CONF_SEZONA_PRAH, CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE,
+    CONF_SMOG, CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI,
+    CONF_SPANEK, CONF_STINENI_CHOVANI, CONF_STINENI_MAPA,
+    CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
+    CONF_TEPLOTY, CONF_TLOUSTKA, CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU,
+    CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM,
+    CONF_VETRAT, CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH,
+    CONF_VYCHOZI_KDY, CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE,
+    CONF_ZARENI, CONF_ZASKLENI, CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD,
+    CONF_ZIMA_O_KOLIK, CONF_ZIMA_PRAH, CONF_ZMENA_PODMINEK,
+    CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY,
+    CONF_ZVLHCOVAC, CONF_ZVLHCOVAC_KDY, DOMAIN, INTERVAL_S,
+    PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA, ZASKLENI_PODIL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -981,6 +981,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             pm25=0.0 if p.subentry_id in self.zvlhcuje else okruh["pm25"],
             pm10=0.0 if p.subentry_id in self.zvlhcuje else okruh["pm10"],
             pm_platny=okruh["pm_platny"],
+            slunce_w=float(m.slunce or 0.0),
             pm25_venku=self._cislo(g.get(CONF_PM25_VENKU)),
             pm10_venku=self._cislo(g.get(CONF_PM10_VENKU)),
             t_in=self._min(d.get(CONF_TEPLOTY), 21.0),
@@ -1031,9 +1032,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             nast, denni_hystereze=den_pod,
             chlazeni_min_venku=float(
                 d.get(CONF_CHLAZENI_MIN_VENKU, 7.0)),
+            zmena_podminek=float(g.get(CONF_ZMENA_PODMINEK, 2.0)),
+            nejdriv_znovu_s=float(g.get(CONF_NEJDRIV_ZNOVU, 60)) * 60,
+            prah_slunce_w=float(d.get(CONF_PRAH_VYKONU, 15.0)),
             pm_prah=float(d.get(CONF_PM_SPATNE, 35.0)),
-            pm_prah_cisto=float(d.get(CONF_PM_CISTO, 20.0)),
-            ucinek_po_s=float(d.get(CONF_UCINEK_PO, 30)) * 60)
+            pm_prah_cisto=float(d.get(CONF_PM_CISTO, 20.0)))
 
         # Každá mez sama o sobě vypadá rozumně, konflikt s cílem je
         # vidět až dohromady. Bez tohohle by okno jen nefungovalo
@@ -1134,6 +1137,17 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # zdržuje jen otevření, ne zavření, takže se nepřestřelí.
             g = {**self.entry.data, **self.entry.options}
             # routuje se podle strojového kódu, ne podle českého textu
+            if r.kod == "bez_ucinku":
+                # Po marném větrání se čeká déle, jinak se za dvacet
+                # minut otevře znovu a zjistí se totéž. S každým dalším
+                # marným pokusem se pauza zdvojnásobí, nejvýš na hodinu.
+                pauza = min(
+                    core.PAUZA_PO_PULZU_S
+                    * 2 ** max(0, pamet.pulzy_za_sebou - 1), 3600)
+                if pauza > nast.min_drzeni_s:
+                    pamet.cas_povelu_s = cas_s + pauza - nast.min_drzeni_s
+                m.atributy["pauza_po_marnem_vetrani_min"] = round(pauza / 60)
+
             if r.kod == "vitr":
                 await self._posli(g, "vitr", m.nazev, cas_s,
                                   **(self.vitr_pricina or {}))

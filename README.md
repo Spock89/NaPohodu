@@ -188,16 +188,25 @@ napsáno proč — třeba „venku 12,0 °C, pro chlazení chceme aspoň
 
 ### Kontrola účinku větrání
 
-Marně otevřené okno v zimě stojí teplo a nic za to nevrací. Po nastavené
-době, nejdřív ale po uplynutí nejkratší doby držení polohy, se proto
-ověří, že větrání vůbec
+Marně otevřené okno v zimě stojí teplo a nic za to nevrací. Jakmile
+uplyne nejkratší doba držení polohy, se proto ověří, že větrání vůbec
 zabírá: když se CO2 nesnížilo aspoň o padesát ppm ani teplota
 nepřiblížila k cíli o tři desetiny, okno se zavře a chvíli se to
 nezkouší. Pauza se s každým dalším marným pokusem zdvojnásobí.
 
+Po marném pokusu se nečeká na hodiny, ale **na změnu venkovních
+podmínek** — čas je jen zástupná veličina, skutečný důvod, proč to
+nešlo, byl venku. Další pokus se povolí, až se venkovní teplota posune
+o nastavený počet stupňů správným směrem (při chlazení dolů, při ohřevu
+nahoru), nebo až slunce na okně překročí práh stínění. K tomu platí
+nejkratší odstup, ve výchozím stavu hodina.
+
+V hlášce je rozlišené, jestli se nic nehýbalo, nebo jestli se to
+zhoršovalo.
+
 Nouzové větrání a ruční žádost o vyvětrání tím neprochází. V kartě je
 řádek, který ukazuje, od jakých hodnot se otevřelo a jak dlouho už je
-otevřeno.
+otevřeno; pozorování začíná každým otevřením a zavřením končí.
 
 ### Hysterezní smyčka
 

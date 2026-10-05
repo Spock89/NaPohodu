@@ -76,6 +76,10 @@ SCHEMA_GLOBAL = vol.Schema(
             _cislo(0, 240, 5, "min"),
         vol.Optional(c.CONF_SEZONA_REZIM, default="podle_prumeru"): _volba(
             c.REZIMY_SEZONY, "sezona_rezim"),
+        vol.Optional(c.CONF_ZMENA_PODMINEK, default=2.0):
+            _cislo(0, 10, 0.5),
+        vol.Optional(c.CONF_NEJDRIV_ZNOVU, default=60):
+            _cislo(5, 240, 5, "min"),
         vol.Optional(c.CONF_SEZONA_PRAH, default=15.0): _cislo(8, 22),
         vol.Optional(c.CONF_SEZONA_HYSTEREZE, default=1.0): _cislo(0, 5, 0.5),
         vol.Optional(c.CONF_RH_VENKU): _ent(["sensor"], trida=["humidity"]),
@@ -480,8 +484,6 @@ def _schema_mistnost() -> vol.Schema:
             _cislo(0.5, 6, 0.5),
         vol.Optional(c.CONF_CHLAZENI_MIN_VENKU, default=7.0):
             _cislo(-10, 20, 0.5),
-        vol.Optional(c.CONF_UCINEK_PO, default=30):
-            _cislo(0, 180, 5, "min"),
         vol.Optional(c.CONF_KOMFORT_ODSTUP, default=4.0): _cislo(1, 15, 0.5),
         vol.Optional(c.CONF_DEST_PRAH, default=0.3): _cislo(0, 20, 0.1, "mm/h"),
         vol.Optional(c.CONF_I_KDYZ_NIKDO, default=False):
