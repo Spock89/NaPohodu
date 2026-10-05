@@ -170,8 +170,10 @@ kolem cíle, a běží k opačné hraně. Samotné překročení hrany ale nesta
 — venkovní vzduch musí mít čím pomoct:
 
 - chladit se dá, jen když je venku aspoň o stupeň chladněji než
-  v pokoji a zároveň nad dvanácti stupni; pod tím by se pokoj vymrazil
-  rychleji, než by se stihlo vyvětrat,
+  v pokoji a zároveň nad nastavenou hranicí, ve výchozím stavu sedmi
+  stupni — dolní hrana pásma by pokoj zastavila sama, jenže zavření
+  není okamžité kvůli nejkratší době držení polohy a chlazení se řídí
+  nejteplejším čidlem, takže u okna je mezitím výrazně chladněji,
 - ohřívat se dá, jen když je venku aspoň o stupeň tepleji.
 
 Když se během větrání dostane teplota do pásma, ale cíl ještě není
@@ -187,7 +189,8 @@ napsáno proč — třeba „venku 12,0 °C, pro chlazení chceme aspoň
 ### Kontrola účinku větrání
 
 Marně otevřené okno v zimě stojí teplo a nic za to nevrací. Po nastavené
-době, ve výchozím stavu půl hodiny, se proto ověří, že větrání vůbec
+době, nejdřív ale po uplynutí nejkratší doby držení polohy, se proto
+ověří, že větrání vůbec
 zabírá: když se CO2 nesnížilo aspoň o padesát ppm ani teplota
 nepřiblížila k cíli o tři desetiny, okno se zavře a chvíli se to
 nezkouší. Pauza se s každým dalším marným pokusem zdvojnásobí.

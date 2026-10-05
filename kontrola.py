@@ -569,6 +569,28 @@ for jazyk2 in ("cs", "en"):
             chyby.append(
                 f"{jazyk2}/{jm3}: {k} má popisek, ale ve formuláři není")
 
+# 1aa) hodnota, podle které se rozhoduje, musí jít nastavit, nebo být
+# aspoň vidět ve výpisu pravidel. Jinak se podle ní rozhoduje a nikdo
+# o ní neví — přesně to byla zadrátovaná hranice chlazení.
+ve_formulari2 = {konst_hodnoty[k]
+                 for k in re.findall(r"vol\.\w+\(c\.(CONF_\w+)", cf_kod)
+                 if k in konst_hodnoty}
+for u in ast.parse(jadro_text).body:
+    if not (isinstance(u, ast.ClassDef) and u.name == "Nastaveni"):
+        continue
+    for pol in u.body:
+        if not (isinstance(pol, ast.AnnAssign)
+                and isinstance(pol.target, ast.Name)):
+            continue
+        jm = pol.target.id
+        nastavitelne = (jm in ve_formulari2
+                        or re.search(rf"\b{jm}=", ko_kod))
+        if not nastavitelne and jm not in VIDITELNE:
+            chyby.append(
+                f"core.py: Nastaveni.{jm} rozhoduje, ale nejde nastavit "
+                f"ani se neukazuje — přidej pole, nebo ho vypiš "
+                f"v pevna_pravidla_bytu()")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

@@ -72,7 +72,11 @@ class Nastaveni:
 
     komfort_odstup: float = 4.0
     chlazeni_rozdil: float = 1.0
-    chlazeni_min_venku: float = 12.0
+    # Pod touhle venkovní teplotou se nechladí. Dolní hrana pásma by
+    # pokoj zastavila, jenže zavření není okamžité — drží se nejkratší
+    # doba držení polohy — a chlazení se řídí nejteplejším čidlem,
+    # takže u okna je mezitím výrazně chladněji.
+    chlazeni_min_venku: float = 7.0
 
     # Denní mez se odvozuje od cíle, ne od stavu při otevření ani
     # absolutně. Cíl je vidět, takže mez je předvídatelná, a zároveň
@@ -700,8 +704,11 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # Když se po nastavené době nezlepšilo ani CO2, ani teplota, zavře
     # se a chvíli se to nezkouší. Nouzové větrání a tvoje ruční žádost
     # tím neprochází, ty mají přednost.
+    # Dřív než uplyne nejkratší doba držení polohy to nemá smysl —
+    # zavřít stejně nejde, takže se bere ta delší z obou dob.
+    ucinek_po = max(n.ucinek_po_s, n.min_drzeni_s)
     if (p.otevreno and n.ucinek_po_s > 0 and p.ucinek_od_s > 0
-            and v.cas_s - p.ucinek_od_s >= n.ucinek_po_s
+            and v.cas_s - p.ucinek_od_s >= ucinek_po
             and v.co2 <= n.co2_noc_krize
             and not v.vetrat and not v.vynuceno):
         lepsi_co2 = v.co2 <= p.ucinek_co2 - UCINEK_CO2_PPM
@@ -709,7 +716,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         blize = abs(t_in - v.cil) <= abs(p.ucinek_t_in - v.cil) - UCINEK_TEPLOTA
         if not lepsi_co2 and not blize:
             p.pulzy_za_sebou += 1
-            minuty = int(n.ucinek_po_s / 60)
+            minuty = int(ucinek_po / 60)
             return zavri(
                 f"bez účinku: za {minuty} min CO2 {p.ucinek_co2:.0f} → "
                 f"{v.co2:.0f}, teplota {p.ucinek_t_in:.1f} → {t_in:.1f} °C",
@@ -1028,11 +1035,9 @@ def pevna_pravidla_bytu() -> list[str]:
         "Denní hysterezní pásmo obemyká cíl z obou stran: nad horní "
         "hranou se chladí, pod dolní ohřívá, a dojede se vždycky na "
         "protější hranu — ne na cíl, jinak se teplota hned vrací.",
-        f"Chladit venkovním vzduchem se vyplatí jen do "
-        f"{Nastaveni.chlazeni_min_venku:.0f} °C venku; pod tím by se "
-        f"pokoj vymrazil rychleji, než by se stihlo vyvětrat. Vzduch "
-        f"musí být zároveň aspoň o "
-        f"{Nastaveni.chlazeni_rozdil:.0f} °C chladnější než v pokoji.",
+        f"Vzduch na chlazení musí být aspoň o "
+        f"{Nastaveni.chlazeni_rozdil:.0f} °C chladnější než v pokoji; "
+        f"od jaké venkovní teploty se chladí, se nastavuje u místnosti.",
         "Když venkovní vzduch přestane pomáhat — chladili jsme a venku "
         "se oteplilo, nebo naopak — okno se zavře.",
         "V noci se kvůli teplotě otevírá jen pro chlazení. Ohřev "
@@ -1042,6 +1047,24 @@ def pevna_pravidla_bytu() -> list[str]:
         f"nesnížilo aspoň o {UCINEK_CO2_PPM:.0f} ppm ani teplota "
         f"nepřiblížila k cíli o {UCINEK_TEPLOTA:.1f} °C, zavřu — "
         f"nad krizovým prahem a při ruční žádosti ne.",
+        f"Bez funkčního ventilátoru v čidle prachu se práh zvedá na "
+        f"{Nastaveni.pm_prah_bez_ventilatoru:.0f} µg/m³, protože měření "
+        f"bez nasávání podhodnocuje.",
+        f"Náhlý skok prachu o {Nastaveni.pm_skok:.0f} µg/m³ během "
+        f"{Nastaveni.pm_skok_min:.0f} min se bere jako kouř nebo vaření "
+        f"a větrá se i pod běžným prahem.",
+        f"Prach z venku musí být aspoň o {Nastaveni.pm_rozdil:.0f} "
+        f"µg/m³ lepší, aby mělo smysl kvůli němu otevřít. Bez "
+        f"venkovního čidla se to učí z toho, jak prach reaguje na "
+        f"otevřené okno: měří se {Nastaveni.pm_uceni_s / 60:.0f} min "
+        f"a poznatek platí {Nastaveni.pm_poznatek_s / 3600:.0f} h.",
+        f"Nouzové noční větrání smí jít {Nastaveni.krize_pod_mez:.1f} °C "
+        f"pod noční mez — dusno je horší než o stupeň chladnější pokoj.",
+        f"Povel se po {Nastaveni.obnova_s / 60:.0f} min pošle znovu, "
+        f"protože pohon ho občas ztratí. V noci a ve spánku ne.",
+        f"Délka pulzu vychází z rozpočtu "
+        f"{Nastaveni.rozpocet_stupnominut:.0f} stupňominut: čím větší "
+        f"rozdíl teplot, tím kratší větrání, nejvýš 45 a nejméně 5 min.",
         f"Prach se vyhlazuje, aby jeden náraz nerozhodoval: každé měření "
         f"posune průměr o {PM_VYHLAZENI * 100:.0f} %.",
         f"Když větrání nezabírá na CO2, další pulz zkusím až za "

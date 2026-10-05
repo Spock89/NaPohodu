@@ -476,7 +476,10 @@ def _schema_mistnost() -> vol.Schema:
         vol.Optional(c.CONF_CO2_NOC_KRIZE, default=1250): _cislo(800, 2500, 25, "ppm"),
         vol.Optional(c.CONF_NOC_MIN, default=18.0): _cislo(14, 24, 0.5),
         vol.Optional(c.CONF_TLOUSTKA, default=1.0): _cislo(0, 7, 0.5),
-        vol.Optional(c.CONF_DENNI_HYSTEREZE, default=1.5): _cislo(0.5, 6, 0.5),
+        vol.Optional(c.CONF_DENNI_HYSTEREZE, default=1.5):
+            _cislo(0.5, 6, 0.5),
+        vol.Optional(c.CONF_CHLAZENI_MIN_VENKU, default=7.0):
+            _cislo(-10, 20, 0.5),
         vol.Optional(c.CONF_UCINEK_PO, default=30):
             _cislo(0, 180, 5, "min"),
         vol.Optional(c.CONF_KOMFORT_ODSTUP, default=4.0): _cislo(1, 15, 0.5),
@@ -511,6 +514,10 @@ def _schema_mistnost() -> vol.Schema:
         # --- Pomocná zařízení ---
         vol.Optional(c.CONF_CISTICKA): _ent(
             ["fan", "switch", "input_boolean"], True),
+        vol.Optional(c.CONF_PM_SPATNE, default=35):
+            _cislo(10, 100, 1, "µg/m³"),
+        vol.Optional(c.CONF_PM_CISTO, default=20):
+            _cislo(5, 60, 1, "µg/m³"),
         vol.Optional(c.CONF_CISTICKA_OD, default=35):
             _cislo(5, 100, 1, "µg/m³"),
         vol.Optional(c.CONF_ZVLHCOVAC): _ent(

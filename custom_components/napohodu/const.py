@@ -13,6 +13,8 @@ CONF_T_SEZONA = "t_sezona"          # třídenní průměr pro topnou sezónu
 CONF_SEZONA_REZIM = "sezona_rezim"
 REZIMY_SEZONY = ["podle_prumeru", "vzdy", "nikdy"]
 CONF_DENNI_HYSTEREZE = "denni_hystereze"
+# Pod touhle venkovní teplotou se chlazení větráním nespustí.
+CONF_CHLAZENI_MIN_VENKU = "chlazeni_min_venku"
 # Po jaké době se ověří, že otevřené okno vůbec zabírá.
 CONF_UCINEK_PO = "ucinek_po_minutach"
 CONF_TOPENI_OBNOVA = "topeni_obnova_min"
@@ -93,6 +95,9 @@ CONF_KOMFORT_ODSTUP = "komfort_odstup"
 CONF_CISTICKA = "cisticka"
 # Od jaké úrovně prachu čistička pracuje. Dřív to bylo natvrdo v kódu.
 CONF_CISTICKA_OD = "cisticka_od_pm"
+# Prachové prahy: od kolika je vzduch špinavý a od kolika zase čistý.
+CONF_PM_SPATNE = "pm_spatne_od"
+CONF_PM_CISTO = "pm_cisto_pod"
 # Zvlhčovač: kdy smí běžet a jak dobré je zasklení (kvůli kondenzaci).
 CONF_ZVLHCOVAC_KDY = "zvlhcovac_kdy"
 CONF_ZASKLENI = "zaskleni"

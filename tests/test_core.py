@@ -952,14 +952,14 @@ def test_nocni_mez_je_jedna_a_absolutni():
     # otevře se a mez je rovnou ta nastavená, bez ohledu na teplotu
     p = Pamet(cas_povelu_s=0)
     r = rozhodni(Vstup(co2=1100, t_in=23.5, t_in_max=23.7, t_out=12.0,
-                       cil=21.0, hodina=2.0, 
+                       cil=26.0, hodina=2.0, 
                        cas_s=100000), p, nast)
     assert r.akce is Akce.OTEVRIT
     assert p.noc_mez == 21.0
 
     p2 = Pamet(cas_povelu_s=0)
     rozhodni(Vstup(co2=1100, t_in=22.5, t_in_max=22.6, t_out=12.0,
-                   cil=21.0, hodina=2.0, 
+                   cil=26.0, hodina=2.0, 
                    cas_s=100000), p2, nast)
     assert p2.noc_mez == 21.0        # táž mez, jiná výchozí teplota
 
@@ -1331,16 +1331,17 @@ def test_ve_dne_je_hysterezi_odstup_ne_tloustka():
 def test_v_noci_tloustka_plati():
     """V noci je mez absolutní, takže hystereze musí být zvlášť."""
     from core import Nastaveni as N_
+    # cíl vysoko, ať do toho nemluví chlazení
     nast = N_(nocni_min=18.0, tloustka=7.0)
 
     p = Pamet(cas_povelu_s=0)
     r = rozhodni(stary(co2=1200, t_in=24.0, t_in_max=24.2, t_out=12.0,
-                       cil=22.0, hodina=2.0), p, nast)
+                       cil=27.0, hodina=2.0), p, nast)
     assert r.akce is not Akce.OTEVRIT      # do tloušťky nad mezí ne
 
     p2 = Pamet(cas_povelu_s=0)
     r2 = rozhodni(stary(co2=1200, t_in=25.5, t_in_max=25.7, t_out=12.0,
-                        cil=22.0, hodina=2.0), p2, nast)
+                        cil=27.0, hodina=2.0), p2, nast)
     assert r2.akce is Akce.OTEVRIT
 
 
@@ -1780,7 +1781,7 @@ def test_duvod_proc_neotevira():
                   rh_out=50.0, cil=22.2, cas_s=1)
         return proc_neotevira(v, nast, t_in, t_max)
 
-    assert "pro chlazení chceme" in duvod(12.0, 24.4, 24.6)
+    assert "pro chlazení chceme" in duvod(6.0, 24.4, 24.6)
     assert "chladnější vzduch nemáme" in duvod(26.0, 24.4, 24.6)
     assert "teplejší vzduch na ohřev" in duvod(15.0, 19.0, 19.2)
     assert duvod(18.0, 24.4, 24.6) == ""      # chladit jde
@@ -1789,12 +1790,12 @@ def test_duvod_proc_neotevira():
 
 def test_stupnice_rekne_co_brani():
     from core import Nastaveni as N_, pasmo_text, proc_neotevira
-    v = Vstup(co2=641, t_in=24.4, t_in_max=24.6, t_out=12.0, rh_out=50.0,
+    v = Vstup(co2=641, t_in=24.4, t_in_max=24.6, t_out=6.0, rh_out=50.0,
               cil=22.2, cas_s=1)
     t = "\n".join(pasmo_text(
         22.2, 24.4, 1.5, 18.0, 1.0, otevreno=False, t_max=24.6,
         brani_teplote=proc_neotevira(v, N_(), 24.4, 24.6)))
-    assert "Teď brání:" in t and "12.0" in t
+    assert "Teď brání:" in t and "6.0" in t
 
 
 def test_zavre_kdyz_vzduch_prestane_pomahat():
@@ -1812,3 +1813,52 @@ def test_zavre_kdyz_vzduch_prestane_pomahat():
     r2 = rozhodni(stary(co2=500, t_in=20.0, t_in_max=20.3, t_out=15.0,
                         rh_out=50.0, cil=22.2, hodina=14.0), p2, N)
     assert r2.akce is Akce.ZAVRIT and "už neohřívá" in r2.duvod
+
+
+def test_hranice_chlazeni_jde_nastavit():
+    """Zadrátovaná hranice odporovala tomu, že nic nemá být schované."""
+    from core import Nastaveni as N_, proc_neotevira
+    chladna = N_(chlazeni_min_venku=7.0)
+    smela = N_(chlazeni_min_venku=0.0)
+
+    v = Vstup(co2=500, t_in=24.4, t_in_max=24.6, t_out=5.0, rh_out=50.0,
+              cil=22.2, cas_s=1)
+    assert "pro chlazení chceme" in proc_neotevira(v, chladna, 24.4, 24.6)
+    assert proc_neotevira(v, smela, 24.4, 24.6) == ""
+
+    p = Pamet(cas_povelu_s=0)
+    r = rozhodni(stary(co2=500, t_in=24.4, t_in_max=24.6, t_out=5.0,
+                       rh_out=50.0, cil=22.2, hodina=14.0), p, smela)
+    assert r.akce is Akce.OTEVRIT and "chlazení" in r.duvod
+
+
+def test_kontrola_ucinku_ceka_na_konec_drzeni():
+    """Kontrolovat dřív, než se smí zavřít, nemá smysl — zavřít stejně
+    nejde, takže se bere ta delší z obou dob."""
+    from core import Nastaveni as N_
+    nast = N_(ucinek_po_s=10 * 60, min_drzeni_s=21 * 60)
+
+    p = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz", den_mez=19.0,
+              ucinek_od_s=100000 - 15 * 60, ucinek_co2=1100,
+              ucinek_t_in=21.0)
+    r = rozhodni(stary(co2=1100, t_in=21.0, t_in_max=21.2, t_out=12.0,
+                       cil=22.0, hodina=14.0), p, nast)
+    assert r.kod != "bez_ucinku"          # 15 min < 21 min držení
+
+    p2 = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz", den_mez=19.0,
+               ucinek_od_s=100000 - 22 * 60, ucinek_co2=1100,
+               ucinek_t_in=21.0)
+    r2 = rozhodni(stary(co2=1100, t_in=21.0, t_in_max=21.2, t_out=12.0,
+                        cil=22.0, hodina=14.0), p2, nast)
+    assert r2.kod == "bez_ucinku"
+    assert "za 21 min" in r2.duvod        # uvedena skutečná doba
+
+
+def test_vsechny_hodnoty_rozhodovani_jsou_videt():
+    """Hodnota, podle které se rozhoduje, musí jít nastavit, nebo být
+    aspoň vidět. Jinak se podle ní rozhoduje a nikdo o ní neví."""
+    from core import pevna_pravidla_bytu
+    text = " ".join(pevna_pravidla_bytu())
+    for cast in ("bez funkčního ventilátoru", "skok prachu",
+                 "stupňominut", "pošle znovu", "pod noční mez"):
+        assert cast.lower() in text.lower(), cast
