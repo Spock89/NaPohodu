@@ -197,9 +197,12 @@ nezkouší. Pauza se s každým dalším marným pokusem zdvojnásobí.
 Po marném pokusu se nečeká na hodiny, ale **na změnu venkovních
 podmínek** — čas je jen zástupná veličina, skutečný důvod, proč to
 nešlo, byl venku. Další pokus se povolí, až se venkovní teplota posune
-o nastavený počet stupňů správným směrem (při chlazení dolů, při ohřevu
-nahoru), nebo až slunce na okně překročí práh stínění. K tomu platí
-nejkratší odstup, ve výchozím stavu hodina.
+o nastavený počet stupňů kterýmkoli směrem. Když se venku nic nehne,
+zkusí se to tak jako tak po nastavené době, ve výchozím stavu po hodině
+— ta doba je strop, ne zdržení.
+
+Slunce do toho záměrně nevstupuje: čidlo nemá každý a při proměnlivé
+oblačnosti by to spíš mátlo.
 
 V hlášce je rozlišené, jestli se nic nehýbalo, nebo jestli se to
 zhoršovalo.

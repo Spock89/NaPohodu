@@ -991,3 +991,16 @@ def test_pauza_po_marnem_vetrani(nahradni_ha):
         "custom_components/napohodu/coordinator.py").read_text()
     assert 'if r.kod == "bez_ucinku":' in ko
     assert '"pauza_po_marnem_vetrani_min"' in ko
+
+
+def test_popisek_sezony_mluvi_o_trinacti(nahradni_ha):
+    """Patnáctka bývá v mnoha domech moc brzy."""
+    import json
+    import pathlib
+    for jazyk in ("cs", "en"):
+        d = json.loads(pathlib.Path(
+            f"custom_components/napohodu/translations/{jazyk}.json"
+        ).read_text())
+        popis = d["config"]["step"]["user"]["data_description"]["sezona_prah"]
+        assert "13" in popis
+        assert "Obvykle 15" not in popis

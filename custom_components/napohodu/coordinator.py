@@ -981,7 +981,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             pm25=0.0 if p.subentry_id in self.zvlhcuje else okruh["pm25"],
             pm10=0.0 if p.subentry_id in self.zvlhcuje else okruh["pm10"],
             pm_platny=okruh["pm_platny"],
-            slunce_w=float(m.slunce or 0.0),
             pm25_venku=self._cislo(g.get(CONF_PM25_VENKU)),
             pm10_venku=self._cislo(g.get(CONF_PM10_VENKU)),
             t_in=self._min(d.get(CONF_TEPLOTY), 21.0),
@@ -1034,7 +1033,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 d.get(CONF_CHLAZENI_MIN_VENKU, 7.0)),
             zmena_podminek=float(g.get(CONF_ZMENA_PODMINEK, 2.0)),
             nejdriv_znovu_s=float(g.get(CONF_NEJDRIV_ZNOVU, 60)) * 60,
-            prah_slunce_w=float(d.get(CONF_PRAH_VYKONU, 15.0)),
             pm_prah=float(d.get(CONF_PM_SPATNE, 35.0)),
             pm_prah_cisto=float(d.get(CONF_PM_CISTO, 20.0)))
 

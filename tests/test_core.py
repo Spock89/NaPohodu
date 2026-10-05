@@ -1900,37 +1900,38 @@ def test_po_marnem_pokusu_ceka_na_zmenu_venku():
     from core import Nastaveni as N_
     nast = N_(zmena_podminek=2.0, nejdriv_znovu_s=3600)
 
-    def zkus(cas, t_out, slunce, co2=500):
+    def zkus(cas, t_out, co2=500):
         p = Pamet(otevreno=False, cas_povelu_s=0, marne_od_s=100000,
-                  marne_t_out=20.0, marne_slunce=300.0)
+                  marne_t_out=20.0)
         return rozhodni(Vstup(co2=co2, t_in=24.5, t_in_max=24.8,
-                              t_out=t_out, rh_out=50.0, slunce_w=slunce,
+                              t_out=t_out, rh_out=50.0,
                               cil=22.0, hodina=14.0, cas_s=cas), p, nast)
 
-    # venku se nic nezměnilo → nezkouší se, ani po hodině
-    assert zkus(100000 + 1800, 20.0, 300.0).akce is not Akce.OTEVRIT
-    assert zkus(100000 + 4200, 20.0, 300.0).akce is not Akce.OTEVRIT
+    # venku se nic nezměnilo → čeká se
+    assert zkus(100000 + 600, 20.0).akce is not Akce.OTEVRIT
+    assert zkus(100000 + 1800, 20.0).akce is not Akce.OTEVRIT
 
-    # ochladilo se o dva stupně → zkusí
-    assert zkus(100000 + 4200, 18.0, 300.0).akce is Akce.OTEVRIT
+    # ochladilo se o dva stupně → zkusí hned, nečeká na hodinu
+    assert zkus(100000 + 600, 18.0).akce is Akce.OTEVRIT
 
-    # nebo slunce spadlo pod práh stínění
-    assert zkus(100000 + 4200, 20.0, 5.0).akce is Akce.OTEVRIT
+    # a po hodině se zkusí tak jako tak
+    assert zkus(100000 + 4200, 20.0).akce is Akce.OTEVRIT
 
     # krize CO2 to obejde vždycky
-    assert zkus(100000 + 600, 20.0, 300.0, co2=1400).akce is Akce.OTEVRIT
+    assert zkus(100000 + 600, 20.0, co2=1400).akce is Akce.OTEVRIT
 
 
-def test_nejdriv_az_po_nastavene_dobe():
-    """I kdyby se venku změnilo všechno hned, dřív se nezkouší."""
+def test_cas_je_strop_ne_dalsi_podminka():
+    """Když se ochladí dřív, zkusí se dřív — čas jen hlídá, aby se
+    nečekalo věčně."""
     from core import Nastaveni as N_
     nast = N_(zmena_podminek=2.0, nejdriv_znovu_s=3600)
     p = Pamet(otevreno=False, cas_povelu_s=0, marne_od_s=100000,
-              marne_t_out=20.0, marne_slunce=300.0)
+              marne_t_out=20.0)
     r = rozhodni(Vstup(co2=500, t_in=24.5, t_in_max=24.8, t_out=15.0,
-                       rh_out=50.0, slunce_w=5.0, cil=22.0, hodina=14.0,
+                       rh_out=50.0, cil=22.0, hodina=14.0,
                        cas_s=100000 + 600), p, nast)
-    assert r.akce is not Akce.OTEVRIT and "čekám ještě" in r.duvod
+    assert r.akce is Akce.OTEVRIT
 
 
 def test_marny_pokus_si_pamatuje_podminky():
@@ -1938,10 +1939,10 @@ def test_marny_pokus_si_pamatuje_podminky():
               komfort_start=25.0, ucinek_od_s=100000 - 22 * 60,
               ucinek_co2=500, ucinek_t_in=24.0)
     r = rozhodni(Vstup(co2=500, t_in=24.5, t_in_max=24.8, t_out=20.0,
-                       rh_out=50.0, slunce_w=300.0, cil=22.0, hodina=14.0,
+                       rh_out=50.0, cil=22.0, hodina=14.0,
                        cas_s=100000), p, N)
     assert r.kod == "bez_ucinku"
-    assert p.marne_t_out == 20.0 and p.marne_slunce == 300.0
+    assert p.marne_t_out == 20.0
 
 
 def test_hlaska_rozlisi_zhorseni():

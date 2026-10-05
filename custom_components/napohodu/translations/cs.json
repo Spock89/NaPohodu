@@ -39,8 +39,8 @@
           "zima_o_kolik": "Přitopit o",
           "zima_najezd": "Plné hodnoty dosáhnout po",
           "zima_prah": "Přitápět, když venkovní průměr klesne pod",
-          "zmena_podminek": "Další pokus až po změně venku o",
-          "nejdriv_znovu_min": "A nejdřív za"
+          "zmena_podminek": "Další pokus po změně venku o",
+          "nejdriv_znovu_min": "Nebo nejpozději za"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -57,7 +57,7 @@
           "vitr_prah": "Ustálená rychlost větru, nad kterou se okna zavřou a nesmí otevřít. Meteostanice hlásí aktuální rychlost a k ní nárazy, žádný průměr se nepočítá.",
           "t_prumer": "Nepovinné. Když máš vlastní statistický senzor týdenního průměru, zadej ho a bude se počítat podle něj. Bez něj si průměr integrace spočítá sama. Entita „Venkovní teplota, týdenní průměr“ pak ukazuje to, co se skutečně používá.",
           "t_sezona": "Nepovinné. Vlastní senzor třídenního průměru pro topnou sezónu. Bez něj si ho integrace počítá sama.",
-          "sezona_prah": "Pod touto průměrnou teplotou začíná topná sezóna. Obvykle 15 °C.",
+          "sezona_prah": "Pod touhle průměrnou venkovní teplotou začíná topná sezóna. Vyhláška mluví o 13 °C ve dvou dnech po sobě a v praxi se topit začíná spíš až pod touhle hodnotou — patnáctka bývá v mnoha domech moc brzy.\n\nPočítá se z týdenního průměru, ne z okamžité teploty, takže jedno chladné ráno sezónu nespustí.",
           "sezona_hystereze": "O kolik stupňů musí venkovní teplota vylézt nad práh, aby sezóna skončila. Sezóna začíná pod prahem, končí nad prahem plus tímhle číslem. Nula znamená bez hystereze, ale pak se může na hraně přepínat.",
           "naraz_prah": "Nárazy poškodí pohon dřív než ustálená rychlost, proto vlastní práh. Stačí, aby jedna z obou hodnot práh překročila.",
           "vitr_klid": "Blokace povolí, až když obě hodnoty klesnou pod tuhle. Musí být níž než oba prahy, jinak se to překlápí na hraně.",
@@ -78,8 +78,8 @@
           "noc_utlum_predstih": "Jak dlouho před začátkem noci se začne klesat. Plynulý náběh je lepší než skok, protože hlavice i zdivo reagují pomalu. Nula znamená skokem.",
           "zima_o_kolik": "O kolik stupňů přitopit, když je venku doopravdy zima. Dál se nepřidává — hlubší mrazy na tom nic nemění.",
           "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C.",
-          "zmena_podminek": "Když větrání nebo ohřev oknem nezabraly, nemá smysl zkoušet totéž, dokud se venku něco nezmění. Čeká se na posun venkovní teploty o tolik stupňů — při chlazení dolů, při ohřevu nahoru — nebo na to, až slunce na okně překročí práh stínění.\n\nNula čekání na podmínky vypne, pak platí jen čas. Nouzové větrání a ruční žádost to obchází vždycky.",
-          "nejdriv_znovu_min": "Nejkratší odstup mezi marným pokusem a dalším. I kdyby se venku změnilo všechno hned, dřív se nezkouší."
+          "zmena_podminek": "Když větrání nebo ohřev oknem nezabraly, nemá smysl zkoušet totéž, dokud se venku něco nezmění. Čeká se na posun venkovní teploty o tolik stupňů kterýmkoli směrem.\n\nNula čekání na podmínky vypne. Nouzové větrání a ruční žádost to obchází vždycky.",
+          "nejdriv_znovu_min": "Strop čekání: i když se venku nic nezmění, po téhle době se zkusí znovu. Když se venku změní dřív, zkusí se dřív — tahle doba nic nezdržuje."
         },
         "title": "NaPohodu"
       }
@@ -137,8 +137,8 @@
           "zima_o_kolik": "Přitopit o",
           "zima_najezd": "Plné hodnoty dosáhnout po",
           "zima_prah": "Přitápět, když venkovní průměr klesne pod",
-          "zmena_podminek": "Další pokus až po změně venku o",
-          "nejdriv_znovu_min": "A nejdřív za"
+          "zmena_podminek": "Další pokus po změně venku o",
+          "nejdriv_znovu_min": "Nebo nejpozději za"
         },
         "data_description": {
           "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
@@ -155,7 +155,7 @@
           "vitr_prah": "Ustálená rychlost větru, nad kterou se okna zavřou a nesmí otevřít. Meteostanice hlásí aktuální rychlost a k ní nárazy, žádný průměr se nepočítá.",
           "t_prumer": "Nepovinné. Když máš vlastní statistický senzor týdenního průměru, zadej ho a bude se počítat podle něj. Bez něj si průměr integrace spočítá sama. Entita „Venkovní teplota, týdenní průměr“ pak ukazuje to, co se skutečně používá.",
           "t_sezona": "Nepovinné. Vlastní senzor třídenního průměru pro topnou sezónu. Bez něj si ho integrace počítá sama.",
-          "sezona_prah": "Pod touto průměrnou teplotou začíná topná sezóna. Obvykle 15 °C.",
+          "sezona_prah": "Pod touhle průměrnou venkovní teplotou začíná topná sezóna. Vyhláška mluví o 13 °C ve dvou dnech po sobě a v praxi se topit začíná spíš až pod touhle hodnotou — patnáctka bývá v mnoha domech moc brzy.\n\nPočítá se z týdenního průměru, ne z okamžité teploty, takže jedno chladné ráno sezónu nespustí.",
           "sezona_hystereze": "O kolik stupňů musí venkovní teplota vylézt nad práh, aby sezóna skončila. Sezóna začíná pod prahem, končí nad prahem plus tímhle číslem. Nula znamená bez hystereze, ale pak se může na hraně přepínat.",
           "naraz_prah": "Nárazy poškodí pohon dřív než ustálená rychlost, proto vlastní práh. Stačí, aby jedna z obou hodnot práh překročila.",
           "vitr_klid": "Blokace povolí, až když obě hodnoty klesnou pod tuhle. Musí být níž než oba prahy, jinak se to překlápí na hraně.",
@@ -176,8 +176,8 @@
           "noc_utlum_predstih": "Jak dlouho před začátkem noci se začne klesat. Plynulý náběh je lepší než skok, protože hlavice i zdivo reagují pomalu. Nula znamená skokem.",
           "zima_o_kolik": "O kolik stupňů přitopit, když je venku doopravdy zima. Dál se nepřidává — hlubší mrazy na tom nic nemění.",
           "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C.",
-          "zmena_podminek": "Když větrání nebo ohřev oknem nezabraly, nemá smysl zkoušet totéž, dokud se venku něco nezmění. Čeká se na posun venkovní teploty o tolik stupňů — při chlazení dolů, při ohřevu nahoru — nebo na to, až slunce na okně překročí práh stínění.\n\nNula čekání na podmínky vypne, pak platí jen čas. Nouzové větrání a ruční žádost to obchází vždycky.",
-          "nejdriv_znovu_min": "Nejkratší odstup mezi marným pokusem a dalším. I kdyby se venku změnilo všechno hned, dřív se nezkouší."
+          "zmena_podminek": "Když větrání nebo ohřev oknem nezabraly, nemá smysl zkoušet totéž, dokud se venku něco nezmění. Čeká se na posun venkovní teploty o tolik stupňů kterýmkoli směrem.\n\nNula čekání na podmínky vypne. Nouzové větrání a ruční žádost to obchází vždycky.",
+          "nejdriv_znovu_min": "Strop čekání: i když se venku nic nezmění, po téhle době se zkusí znovu. Když se venku změní dřív, zkusí se dřív — tahle doba nic nezdržuje."
         }
       },
       "tester": {
