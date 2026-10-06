@@ -52,7 +52,6 @@ CONF_VITR_KLID = "vitr_klid"      # pod tím blokace povolí
 # --- společné nárazové větrání ---
 CONF_NARAZOVE = "narazove_vetrani"
 CONF_NARAZOVE_ODSTUP = "narazove_odstup"
-CONF_NARAZOVE_STROP = "narazove_strop_min"
 
 # --- místnost ---
 CONF_NAZEV = "nazev"
@@ -90,7 +89,6 @@ CONF_NOC_MIN = "noc_min"
 # Tloušťka hysterezní smyčky teplotního větrání.
 CONF_TLOUSTKA = "tloustka_smycky"
 CONF_STINENI_PRYC = "stineni_pryc"
-CONF_KOMFORT_ODSTUP = "komfort_odstup"
 
 # nucená ventilace (ventilátor, rekuperace)
 CONF_CISTICKA = "cisticka"

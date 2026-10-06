@@ -115,9 +115,8 @@ SCHEMA_GLOBAL = vol.Schema(
             selector.TimeSelector(),
         vol.Optional(c.CONF_NARAZOVE, default=False):
             selector.BooleanSelector(),
-        vol.Optional(c.CONF_NARAZOVE_ODSTUP, default=6.0): _cislo(0, 15, 0.5),
-        vol.Optional(c.CONF_NARAZOVE_STROP, default=10):
-            _cislo(3, 30, 1, "min"),
+        vol.Optional(c.CONF_NARAZOVE_ODSTUP, default=15.0):
+            _cislo(2, 30, 0.5),
         vol.Optional(c.CONF_VITR_PRAH, default=7.0): _cislo(3, 30, 0.5, "m/s"),
         vol.Optional(c.CONF_NARAZ_PRAH, default=11.0): _cislo(3, 40, 0.5, "m/s"),
         vol.Optional(c.CONF_VITR_KLID, default=5.0): _cislo(2, 25, 0.5, "m/s"),
@@ -484,7 +483,6 @@ def _schema_mistnost() -> vol.Schema:
             _cislo(0.5, 6, 0.5),
         vol.Optional(c.CONF_CHLAZENI_MIN_VENKU, default=7.0):
             _cislo(-10, 20, 0.5),
-        vol.Optional(c.CONF_KOMFORT_ODSTUP, default=4.0): _cislo(1, 15, 0.5),
         vol.Optional(c.CONF_DEST_PRAH, default=0.3): _cislo(0, 20, 0.1, "mm/h"),
         vol.Optional(c.CONF_I_KDYZ_NIKDO, default=False):
             selector.BooleanSelector(),

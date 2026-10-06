@@ -32,9 +32,8 @@ from .const import (
     CONF_KLIMA_DLOUHA, CONF_KLIMA_DLOUHA_H, CONF_KLIMA_ENTITA,
     CONF_KLIMA_POKOJE, CONF_KLIMA_SUSIT_OD, CONF_KLIMA_TOPIT_OD,
     CONF_KLIMA_UMI, CONF_KLIMA_UTLUM_CHLAZENI, CONF_KLIMA_UTLUM_TOPENI,
-    CONF_KLIMA_V_POKOJI, CONF_KOMFORT_ODSTUP, CONF_KONTAKT_M,
-    CONF_MAX_STARI, CONF_MIN_DRZENI, CONF_MISTNOSTI, CONF_NARAZ,
-    CONF_NARAZOVE, CONF_NARAZOVE_ODSTUP, CONF_NARAZOVE_STROP,
+    CONF_KLIMA_V_POKOJI, CONF_KONTAKT_M, CONF_MAX_STARI, CONF_MIN_DRZENI,
+    CONF_MISTNOSTI, CONF_NARAZ, CONF_NARAZOVE, CONF_NARAZOVE_ODSTUP,
     CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NEJDRIV_ZNOVU, CONF_NOC_DO,
     CONF_NOC_MIN, CONF_NOC_OD, CONF_NOC_PREDSTIH, CONF_NOC_UTLUM,
     CONF_OCHOTA, CONF_ODCHYLKA, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T,
@@ -116,7 +115,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.narazove: bool = False
         self.narazove_bezi: bool = False
         self.narazove_co2: float = 0.0
-        self.narazove_strop_s: float = 600.0
         # Poslední viděné hodnoty z formuláře. Musí přežít znovunačtení
         # integrace, protože uložení formuláře ho spustí — jinak by se
         # změna nikdy nepoznala a šoupátko by po restartu vyhrálo.
@@ -765,15 +763,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # potřebuje vzduch, otevře se všude naráz a krátce. Průvan vymění
         # vzduch rychleji než dlouhé větrání jedním oknem a stěny se
         # nestihnou vychladit. Kde tomu něco brání, se prostě neotevře.
-        self.narazove_strop_s = float(g.get(CONF_NARAZOVE_STROP, 10)) * 60
         # Rozhoduje, jestli větrání stojí teplo — tedy jestli je venku
         # chladněji než cíl. Pevná venkovní teplota by v lednu a v květnu
         # znamenala něco jiného.
         nejnizsi_cil = min((m.cil for m in self.mistnosti.values()),
                            default=22.0)
-        odstup = float(g.get(CONF_NARAZOVE_ODSTUP, 6.0))
-        self.narazove = (bool(g.get(CONF_NARAZOVE, False))
-                         and t_out < nejnizsi_cil - odstup)
+        # Nárazový režim platí na obě strany: v mrazu i v horku je
+        # venkovní vzduch tak jiný, že dlouhé větrání škodí. Hystereze
+        # půl stupně brání přepínání, když se teplota motá kolem prahu.
+        odstup = float(g.get(CONF_NARAZOVE_ODSTUP, 15.0))
+        rozdil = abs(t_out - nejnizsi_cil) if t_out is not None else 0.0
+        prah = odstup - 0.5 if self.narazove else odstup
+        self.narazove = bool(g.get(CONF_NARAZOVE, False)) and rozdil > prah
         if self.narazove:
             nejhorsi = max((o["co2"] for o in okruhy), default=0.0)
             spousti = max(
@@ -1015,11 +1016,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                                   float(d.get(CONF_TLOUSTKA, 1.0))),
             nocni_min=self.hodnota(p.subentry_id, CONF_NOC_MIN,
                                    float(d.get(CONF_NOC_MIN, 18))),
-            komfort_odstup=self.hodnota(
-                p.subentry_id, CONF_KOMFORT_ODSTUP,
-                float(d.get(CONF_KOMFORT_ODSTUP, 4.0))),
             noc_od=noc_od, noc_do=noc_do,
-            narazove_strop_s=self.narazove_strop_s,
             rucni_klid_s=float(d.get(CONF_RUCNI_KLID, 30)) * 60,
         )
         # Dřív to byl posuvník nula až deset, u kterého nebylo poznat,
@@ -1031,6 +1028,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             nast, denni_hystereze=den_pod,
             chlazeni_min_venku=float(
                 d.get(CONF_CHLAZENI_MIN_VENKU, 7.0)),
+            narazove_odstup=float(g.get(CONF_NARAZOVE_ODSTUP, 15.0)),
             zmena_podminek=float(g.get(CONF_ZMENA_PODMINEK, 2.0)),
             nejdriv_znovu_s=float(g.get(CONF_NEJDRIV_ZNOVU, 60)) * 60,
             pm_prah=float(d.get(CONF_PM_SPATNE, 35.0)),

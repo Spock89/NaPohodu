@@ -26,12 +26,10 @@ POSUVNIKY = [
     ("tloustka_nocni_smycky", "Tloušťka noční smyčky",
      "Platí jen v noci: o kolik se pokoj musí prohřát nad noční mez, "
      "než se otevře znovu. Ve dne je hysterezí sám odstup od cíle — "
-     "zavírá se na cíli, otevírá o odstup dál."),
+     "zavírá se na protější hraně pásma, otevírá o hysterezi od cíle."),
     ("v_noci_vychladnout_nejvys_na", "V noci vychladnout nejvýš na",
      "Při nočním větrání zavřu, až teplota klesne na tuhle hodnotu. "
      "Nižší číslo znamená delší větrání a méně cyklů za noc."),
-    ("otevreno_dokud_je_venku_chladneji_nejvys_o", "Otevřeno dokud je venku chladněji nejvýš o",
-     "Dokud je venku nejvýš o tolik chladněji než cíl, nechám otevřeno."),
     ("pri_otevrenem_okne_topit_na", "Při otevřeném okně topit na",
      "Teplota, na kterou se hlavice stáhnou, když je okno otevřené. "
      "Je to celá teplota, ne odečet od cíle."),
@@ -52,7 +50,6 @@ STARSI_POSUVNIKY = {
      'denni_hystereze': 've_dne_smi_klesnout_o',
      'moje_odchylka_teploty': 'odchylka_teploty',
      'v_noci_vychladnout_nejvys_na': 'minimum_na_noc',
-     'otevreno_dokud_je_venku_chladneji_nejvys_o': 'trvale_otevreno_do_rozdilu',
      'v_noci_topit_o_mene': 'nocni_utlum_topeni',
      'tloustka_nocni_smycky': 'tloustka_hysterezni_smycky',
      'pri_otevrenem_okne_topit_na': 'utlum_pri_otevrenem_okne',

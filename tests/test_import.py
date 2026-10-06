@@ -647,18 +647,21 @@ def test_chovani_zaluzii_neni_dvakrat(nahradni_ha):
 
 
 def test_narazove_je_videt_dokud_bezi(nahradni_ha):
-    """Spouštěcí podmínka zmizí hned, jak CO2 klesne, ale okno běží dál."""
+    """Příznak drží, dokud nárazový pulz běží — i když spouštěcí
+    podmínka mezitím zmizela."""
     import importlib
     core = importlib.import_module("napohodu.core")
 
     p = core.Pamet(cas_povelu_s=0)
     core.rozhodni(core.Vstup(co2=911, t_in=21, t_out=15.5, cil=22,
                              cas_s=100000, narazove=True), p,
-                  core.Nastaveni())
+                  core.Nastaveni(narazove_odstup=4.0))
     assert p.narazove_pulz is True
 
+    # a jakmile pulz skončí, příznak zmizí
     core.rozhodni(core.Vstup(co2=400, t_in=21, t_out=15.5, cil=22,
-                             cas_s=100600), p, core.Nastaveni())
+                             cas_s=200000), p,
+                  core.Nastaveni(narazove_odstup=4.0))
     assert p.narazove_pulz is False
 
 

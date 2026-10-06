@@ -11,7 +11,7 @@ from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import (CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT, CONF_KOMFORT_ODSTUP,
+from .const import (CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT,
                     CONF_DENNI_HYSTEREZE, CONF_NOC_MIN, CONF_NOC_UTLUM, CONF_RH_MAX, CONF_RH_MIN,
                     CONF_TLOUSTKA,
                     CONF_ODCHYLKA, CONF_UTLUM,
@@ -44,8 +44,6 @@ MISTNOST = [
              "mdi:sine-wave"),
     Posuvnik(CONF_NOC_MIN, 14, 24, 0.5, UnitOfTemperature.CELSIUS, 18.0,
              "mdi:weather-night"),
-    Posuvnik(CONF_KOMFORT_ODSTUP, 1, 15, 0.5, UnitOfTemperature.CELSIUS, 4.0,
-             "mdi:window-open"),
     Posuvnik(CONF_UTLUM, 5, 20, 0.5, UnitOfTemperature.CELSIUS, 16.0,
              "mdi:radiator-off"),
     Posuvnik(CONF_DENNI_HYSTEREZE, 0.5, 6, 0.5, UnitOfTemperature.CELSIUS,

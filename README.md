@@ -163,6 +163,25 @@ s hláškou „venku je příjemně".
 V noci se kvůli teplotě otevírá jen pro chlazení. Ohřev čeká do rána,
 protože ticho je v noci cennější než pár stupňů.
 
+### Nárazový režim
+
+Jedna hodnota říká, jak daleko smí být venkovní teplota od cílové —
+nahoru nebo dolů — než se přepne na nárazové větrání. Ve výchozím
+stavu patnáct stupňů, takže při cíli 22 °C jde o venkovní teplotu pod
+7 °C nebo nad 37 °C.
+
+Za tím prahem se **neotvírá kvůli příjemnému počasí**, protože venku
+žádné není. Větrá se jen z důvodu — kvůli CO2, prachu nebo teplotě — a
+**zavře se hned, jakmile důvod pomine**, místo aby se čekalo na dojetí
+celého cyklu — a to včetně nejkratší doby držení polohy, kterou nárazové
+zavření obchází. Délka pulzu zůstává stejná jako jindy; mění se jen to,
+že může skončit dřív.
+
+Režim se přepíná s půlstupňovou hysterezí, aby neposkakoval, když se
+venkovní teplota motá kolem prahu. Brzda proti otvírání pro pohodu
+platí i tehdy, když je nárazové větrání vypnuté — jinak by v mrazu
+zůstalo okno otevřené, kdykoli zrovna nic jiného nevadí.
+
 ### Kdy venkovní vzduch pomůže
 
 Chlazení i ohřev větráním se spustí, až je pokoj mimo hysterezní pásmo

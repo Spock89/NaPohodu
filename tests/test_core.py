@@ -3,7 +3,7 @@
 from core import (Akce, Nastaveni, Pamet, Vstup, cil_adaptivni, rozhodni,
                   rosny_bod)
 
-N = Nastaveni()
+N = Nastaveni(narazove_odstup=4.0)
 
 
 def krok(v: Vstup, p: Pamet | None = None, **kw):
@@ -392,12 +392,13 @@ def test_otevreni_si_zapamatuje_vychozi_teplotu():
 
 # ------------------------------------------- společné nárazové větrání
 
-def test_narazove_zkrati_pulz():
-    """V mrazu krátký průvan místo dlouhého větrání jedním oknem."""
+def test_narazove_bezi_jako_bezne_ale_zavre_driv():
+    """Dřív se pulz zkracoval na pevných deset minut. Teď běží stejně
+    dlouho, jen se zavře, jakmile důvod pomine."""
     bez, _ = krok(stary(co2=900, t_in=21, t_out=14.5, cil=25.5))
     s, _ = krok(stary(co2=900, t_in=21, t_out=14.5, cil=25.5, narazove=True))
-    assert bez.limit_s > s.limit_s
-    assert s.limit_s <= N.narazove_strop_s
+    assert bez.limit_s == s.limit_s
+    assert "nárazově" in s.duvod and "důvod pomine" in s.duvod
 
 
 def test_narazove_prebiji_zastupce():
@@ -431,12 +432,16 @@ def test_narazove_v_noci_respektuje_mez():
     assert r2.akce is Akce.NIC and "jen" in r2.duvod
 
 
-def test_narazove_ma_vlastni_spodni_strop():
-    """Běžný pulz nikdy nejde pod 30 minut, nárazové ano — o to jde."""
-    bezne, _ = krok(stary(co2=900, t_in=21, t_out=-5, cil=20))
-    naraz, _ = krok(stary(co2=900, t_in=21, t_out=-5, cil=20, narazove=True))
-    assert bezne.limit_s == 30 * 60
-    assert naraz.limit_s < 30 * 60
+def test_daleko_od_cile_se_neotvira_pro_pohodu():
+    """Za prahem je venku tak jiný vzduch, že „venku je příjemně"
+    neplatí ani zdaleka. Platí i při vypnutém nárazovém větrání."""
+    from core import Nastaveni as N_
+    nast = N_(narazove_odstup=10.0)
+    p = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
+              komfort_start=21.5)
+    r = rozhodni(stary(co2=500, t_in=21.0, t_in_max=21.2, t_out=-5.0,
+                       rh_out=50.0, cil=20.0, hodina=14.0), p, nast)
+    assert r.akce is Akce.ZAVRIT and "daleko od cíle" in r.duvod
 
 
 # ------------------------------------- komfort a pokles čidla v okně
@@ -1002,7 +1007,7 @@ def test_denni_mez_sleduje_cil():
     """Mez odvozená od cíle sleduje sezónu sama: v zimě zavře výš,
     v létě níž, a nemusí se nic přenastavovat."""
     from core import Nastaveni as N_
-    nast = N_(denni_hystereze=1.5)
+    nast = N_(denni_hystereze=1.5, narazove_odstup=4.0)
     for cil, ceka in ((21.0, 19.5), (26.0, 24.5)):
         p = Pamet(cas_povelu_s=0)
         rozhodni(Vstup(co2=1200, t_in=cil, t_in_max=cil, t_out=cil - 8,
@@ -1209,7 +1214,7 @@ def test_pasmo_ma_teplotu_ve_spravnem_poradi():
 def test_po_zavreni_chladem_se_ve_dne_ceka_na_cil():
     """Ve dne je hranicí cíl, tloušťka se neuplatní."""
     from core import Nastaveni as N_
-    nast = N_(tloustka=7.0)
+    nast = N_(tloustka=7.0, narazove_odstup=4.0)
 
     p = Pamet(otevreno=False, cas_povelu_s=0, zavreno_chladem=True)
     r = rozhodni(stary(co2=1200, t_in=20.5, t_in_max=20.7, t_out=12.0,
@@ -1315,7 +1320,7 @@ def test_ve_dne_je_hysterezi_odstup_ne_tloustka():
     """Tloušťka se ve dne přičítala navíc, takže se obě pásma sčítala.
     Teď je denní hysterezí sám odstup: zavře na cíli, otevře o odstup."""
     from core import Nastaveni as N_
-    nast = N_(denni_hystereze=1.5, tloustka=7.0)   # tloušťka se nesmí sčítat
+    nast = N_(denni_hystereze=1.5, tloustka=7.0, narazove_odstup=4.0)   # tloušťka se nesmí sčítat
 
     p = Pamet(otevreno=False, cas_povelu_s=0, zavreno_teplem=True)
     r = rozhodni(stary(co2=500, t_in=25.2, t_in_max=25.4, t_out=19.0,
@@ -1390,7 +1395,7 @@ def test_smycka_se_pocita_od_hrany_ne_od_zavreni():
     """Tloušťka 7 při cíli 23,1 dávala 30 °C, protože se počítala od
     teploty při zavření. Od hrany pásma a nejvýš k cíli to drží."""
     from core import Nastaveni as N_
-    nast = N_(tloustka=7.0, denni_hystereze=1.5)
+    nast = N_(tloustka=7.0, denni_hystereze=1.5, narazove_odstup=4.0)
 
     p = Pamet(otevreno=False, cas_povelu_s=0, zavreno_chladem=True)
     r = rozhodni(stary(co2=1200, t_in=23.0, t_in_max=23.2, t_out=12.0,
@@ -1681,7 +1686,7 @@ def test_denni_hystereze_obemyka_cil():
     """Jedno číslo, pásmo z obou stran cíle. Po zavření přesně na cíli
     se teplota hned vracela a cyklus začínal znovu."""
     from core import Nastaveni as N_
-    nast = N_(denni_hystereze=1.5)      # cíl 22 → pásmo 20,5 až 23,5
+    nast = N_(denni_hystereze=1.5, narazove_odstup=4.0)      # cíl 22 → pásmo 20,5 až 23,5
 
     # chlazení: otevře nad horní hranou, dojede na dolní
     p = Pamet(cas_povelu_s=0)
@@ -1713,7 +1718,7 @@ def test_denni_hystereze_je_soumerna():
     """Zavírat přesně na cíli znamenalo, že se teplota hned začala
     vracet a žádná rezerva na to nebyla."""
     from core import Nastaveni as N_
-    nast = N_(denni_hystereze=1.5)      # cíl 22,7 → pásmo 21,2 až 24,2
+    nast = N_(denni_hystereze=1.5, narazove_odstup=4.0)      # cíl 22,7 → pásmo 21,2 až 24,2
 
     # chlazení se zapne až nad horní hranou
     p = Pamet(cas_povelu_s=0)
@@ -1743,7 +1748,7 @@ def test_denni_hystereze_je_soumerna():
 def test_ohrev_dojede_nad_cil():
     """Zrcadlově: ohřev končí na horní hraně, ne na cíli."""
     from core import Nastaveni as N_
-    nast = N_(denni_hystereze=1.5)
+    nast = N_(denni_hystereze=1.5, narazove_odstup=4.0)
 
     p = Pamet(otevreno=True, cas_povelu_s=0, ohrivam=True, rezim="komfort",
               komfort_start=21.0)
@@ -1959,3 +1964,51 @@ def test_hlaska_rozlisi_zhorseni():
     r2 = rozhodni(stary(co2=1100, t_in=21.0, t_in_max=21.2, t_out=12.0,
                         cil=22.0, hodina=14.0), p2, N)
     assert "nehýbe se to" in r2.duvod
+
+
+# --------------------- nárazový režim na obě strany
+
+def test_narazovy_rezim_plati_soumerne():
+    """V mrazu i v horku je venku tak jiný vzduch, že se otevírá jen
+    z důvodu, ne pro pohodu."""
+    from core import Nastaveni as N_
+    nast = N_(narazove_odstup=15.0)      # cíl 22 → mimo 7 až 37
+
+    def zkus(t_out, rh=50.0):
+        p = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
+                  komfort_start=21.5)
+        return rozhodni(stary(co2=500, t_in=21.5, t_in_max=21.7,
+                              t_out=t_out, rh_out=rh, cil=22.0,
+                              hodina=14.0), p, nast)
+
+    assert zkus(10.0).akce is not Akce.ZAVRIT      # v pásmu
+    assert "daleko od cíle" in zkus(5.0).duvod     # mráz
+    # v horku: suchý vzduch, ať do toho nemluví rosný bod
+    assert "daleko od cíle" in zkus(40.0, rh=10.0).duvod
+
+
+def test_narazovy_pulz_zavre_hned_po_splneni():
+    """Nečeká se na dojetí cyklu, zavře se, jakmile důvod pomine."""
+    p = Pamet(cas_povelu_s=0)
+    r = rozhodni(stary(co2=900, t_in=21.0, t_in_max=21.2, t_out=14.5,
+                       cil=25.5, narazove=True), p, N)
+    assert r.akce is Akce.OTEVRIT
+    assert "zavřu, jakmile důvod pomine" in r.duvod
+
+
+def test_narazove_zavira_bez_cekani_na_drzeni():
+    """Bez tohohle by nárazové větrání nedělalo nic jiného než běžné —
+    povel zavřít by se o dobu držení zdržel."""
+    from core import Nastaveni as N_
+    nast = N_(narazove_odstup=4.0, min_drzeni_s=21 * 60)
+
+    def zkus(narazove):
+        p = Pamet(otevreno=True, cas_povelu_s=100000 - 300, rezim="pulz",
+                  vetra_se=True, den_mez=19.0)
+        return rozhodni(Vstup(co2=500, t_in=21.0, t_in_max=21.2,
+                              t_out=5.0, rh_out=50.0, cil=22.0,
+                              hodina=14.0, narazove=narazove,
+                              cas_s=100000), p, nast)
+
+    assert zkus(False).akce is Akce.NIC          # drží stav
+    assert zkus(True).akce is Akce.ZAVRIT        # zavře hned
