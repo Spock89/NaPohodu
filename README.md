@@ -188,15 +188,16 @@ Chlazení i ohřev větráním se spustí, až je pokoj mimo hysterezní pásmo
 kolem cíle, a běží k opačné hraně. Samotné překročení hrany ale nestačí
 — venkovní vzduch musí mít čím pomoct:
 
-- chladit se dá, jen když je venku **pod cílovou teplotou** a zároveň
-  aspoň o stupeň chladněji než v pokoji a nad nastavenou hranicí, ve výchozím stavu sedmi
+- chladit se dá, jen když je venku **pod dolní hranou pásma**, tedy
+  tam, kam chlazení dojede, a zároveň aspoň o stupeň chladněji než
+  v pokoji a nad nastavenou hranicí, ve výchozím stavu sedmi
   stupni — dolní hrana pásma by pokoj zastavila sama, jenže zavření
   není okamžité kvůli nejkratší době držení polohy a chlazení se řídí
   nejteplejším čidlem, takže u okna je mezitím výrazně chladněji,
-- ohřívat se dá, jen když je venku **nad cílovou teplotou**, aspoň
+- ohřívat se dá, jen když je venku **nad horní hranou pásma**, aspoň
   o stupeň tepleji než v pokoji a nikde v pokoji se zrovna nepřehřívá.
 
-Vzduch na špatné straně cíle pokoj na cíl nedostane, jen ho zastaví
+Vzduch, který nedosáhne až k hraně pásma, pokoj tam nedostane, jen ho zastaví
 o kus dál — proto se kvůli němu neotvírá vůbec. Cílová teplota se
 přitom sama posouvá se sezónou, takže v létě tím chlazení blokované
 není. Kvůli CO2 se větrá dál bez ohledu na teplotu.
@@ -223,7 +224,9 @@ Po marném pokusu se nečeká na hodiny, ale **na změnu venkovních
 podmínek**, a platí to na všechno větrání — i to kvůli CO2, protože
 jinak by se za dvacet minut zkusilo totéž, co minule nezabralo — čas je jen zástupná veličina, skutečný důvod, proč to
 nešlo, byl venku. Další pokus se povolí, až se venkovní teplota posune
-o nastavený počet stupňů kterýmkoli směrem. Když se venku nic nehne,
+o nastavený počet stupňů, a to jen tím směrem, který by pomohl —
+u chlazení chladněji, u ohřevu tepleji. Měří se od teploty při
+posledním marném pokusu, ne od prvního. Když se venku nic nehne,
 zkusí se to tak jako tak po nastavené době, ve výchozím stavu po hodině
 — ta doba je strop, ne zdržení.
 

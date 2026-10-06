@@ -482,7 +482,7 @@ def _schema_mistnost() -> vol.Schema:
         vol.Optional(c.CONF_DENNI_HYSTEREZE, default=1.5):
             _cislo(0.5, 6, 0.5),
         vol.Optional(c.CONF_CHLAZENI_MIN_VENKU, default=7.0):
-            _cislo(-10, 20, 0.5),
+            _cislo(-20, 10, 0.5),
         vol.Optional(c.CONF_DEST_PRAH, default=0.3): _cislo(0, 20, 0.1, "mm/h"),
         vol.Optional(c.CONF_I_KDYZ_NIKDO, default=False):
             selector.BooleanSelector(),

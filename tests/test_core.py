@@ -108,11 +108,25 @@ def test_komfort_jen_kdyz_neni_pod_cilem():
     assert r.akce is Akce.NIC, r.duvod
 
 
-def test_komfort_kdyz_je_venku_stejne_teplo():
+def test_komfort_neotevira_kdyz_vzduch_nedosahne():
+    """Pokoj je nad cílem, ale venkovní vzduch nedosáhne tam, kam by
+    chlazení dojelo — otevřením se k cíli nepřiblížíme."""
+    # u zavřeného okna se prostě neotevře
     r, _ = krok(stary(co2=550, t_in=25.9, t_out=24.0, cil=25.5, hodina=14))
-    assert r.akce is Akce.OTEVRIT
+    assert r.akce is not Akce.OTEVRIT
+
+    # a u otevřeného se zavře, s důvodem
+    p = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
+              komfort_start=25.9)
+    z = rozhodni(stary(co2=550, t_in=25.9, t_in_max=26.1, t_out=24.0,
+                       rh_out=50.0, cil=25.5, hodina=14), p, N)
+    assert z.akce is Akce.ZAVRIT and "nestačí" in z.duvod
+
+    # o stupeň chladnější vzduch už dosáhne
+    r2, _ = krok(stary(co2=550, t_in=25.9, t_out=23.0, cil=25.5, hodina=14))
+    assert r2.akce is Akce.OTEVRIT
     # popisek má být srozumitelný, ne pojem ze specifikace
-    assert "příjemně" in r.duvod
+    assert "příjemně" in r2.duvod
 
 
 def test_chlazeni_prebiji_nocni_klid():
@@ -783,7 +797,7 @@ def test_zaznam_zminuje_opakovana_vetrani():
     from core import posledni
     p = Pamet(posledni_akce="zavřít", posledni_duvod="pulz",
               posledni_kdy_s=100000, pulzy_za_sebou=4)
-    assert "4. větrání" in " ".join(posledni(p, 100000))
+    assert "4. pulz po sobě" in " ".join(posledni(p, 100000))
 
 
 def test_narazove_zkraceni_je_videt_v_duvodu():
@@ -1472,7 +1486,7 @@ def test_chlazeni_dojede_na_spodni_hranu():
     assert p.chladi is False
 
     p2 = Pamet(cas_povelu_s=0)
-    r2 = rozhodni(stary(co2=500, t_in=23.1, t_in_max=23.4, t_out=21.3,
+    r2 = rozhodni(stary(co2=500, t_in=23.1, t_in_max=23.4, t_out=20.5,
                         rh_out=50.0, cil=22.1, hodina=14.0), p2, nast)
     assert r2.akce is Akce.OTEVRIT and "chlazení" in r2.duvod
 
@@ -1598,7 +1612,7 @@ def test_ohrev_vetranim_ma_vlastni_rezim():
     """Dřív se to jmenovalo „venku je příjemně", takže se nepoznalo,
     že jde o cílené dohánění teploty."""
     p = Pamet(cas_povelu_s=0)
-    r = rozhodni(stary(co2=500, t_in=19.0, t_in_max=19.3, t_out=24.5,
+    r = rozhodni(stary(co2=500, t_in=19.0, t_in_max=19.3, t_out=25.5,
                        rh_out=50.0, cil=23.0, hodina=14.0), p, N)
     assert r.akce is Akce.OTEVRIT and "ohřev" in r.duvod
     assert p.ohrivam is True and p.chladi is False
@@ -2039,7 +2053,7 @@ def test_neotevira_kdyz_je_venku_na_spatne_strane():
         r = rozhodni(stary(co2=500, t_in=22.7, t_in_max=t_max, t_out=22.5,
                            rh_out=50.0, cil=21.9, hodina=14.0), p, nast)
         assert r.akce is Akce.ZAVRIT, t_max
-        assert "nad cílem, nepomůže" in r.duvod
+        assert "nestačí" in r.duvod
         assert p.chladi is False
 
 
@@ -2114,3 +2128,56 @@ def test_nula_vypne_jen_cekani_na_podminky():
     # a se změnou podmínek vypnutou se na ni nečeká
     assert "na změnu venku" not in zkus(22).duvod
     assert "ještě" in zkus(22).duvod
+
+
+# --------------- vzduch musí dosáhnout tam, kam větrání dojede
+
+def test_chlazeni_potrebuje_vzduch_az_na_dobeh():
+    """Venku pod cílem nestačí: chlazení dojede na dolní hranu, takže
+    tam musí vzduch dosáhnout."""
+    from core import Nastaveni as N_
+    nast = N_(denni_hystereze=1.5)      # cíl 22 → doběh 20,5
+
+    def zkus(t_out):
+        p = Pamet(cas_povelu_s=0)
+        r = rozhodni(stary(co2=500, t_in=23.8, t_in_max=24.2, t_out=t_out,
+                           rh_out=50.0, cil=22.0, hodina=14.0), p, nast)
+        return r, p
+
+    r, p = zkus(21.0)                   # pod cílem, ale nad doběhem
+    assert p.chladi is False
+    r, p = zkus(20.0)
+    assert p.chladi is True
+
+
+def test_ohrev_potrebuje_vzduch_az_na_dobeh():
+    from core import Nastaveni as N_
+    nast = N_(denni_hystereze=1.5)      # cíl 22 → doběh 23,5
+
+    p = Pamet(cas_povelu_s=0)
+    rozhodni(stary(co2=500, t_in=19.5, t_in_max=19.8, t_out=23.0,
+                   rh_out=50.0, cil=22.0, hodina=14.0), p, nast)
+    assert p.ohrivam is False
+
+    p2 = Pamet(cas_povelu_s=0)
+    rozhodni(stary(co2=500, t_in=19.5, t_in_max=19.8, t_out=24.0,
+                   rh_out=50.0, cil=22.0, hodina=14.0), p2, nast)
+    assert p2.ohrivam is True
+
+
+def test_zmena_venku_plati_jen_spravnym_smerem():
+    """Chlazení zachrání jen chladnější vzduch, ohřev jen teplejší.
+    Opačný posun situaci nezlepší, jen ji otočí."""
+    from core import Nastaveni as N_
+    nast = N_(zmena_podminek=2.0, nejdriv_znovu_s=3600)
+
+    def zkus(smer, t_out):
+        p = Pamet(otevreno=False, cas_povelu_s=0, marne_od_s=100000,
+                  marne_t_out=20.0, marne_smer=smer)
+        return rozhodni(Vstup(co2=500, t_in=23.8, t_in_max=24.2,
+                              t_out=t_out, rh_out=50.0, cil=22.0,
+                              hodina=14.0, cas_s=100000 + 1200), p, nast)
+
+    # po marném chlazení pomůže jen ochlazení
+    assert zkus("chlazeni", 18.0).akce is Akce.OTEVRIT
+    assert zkus("chlazeni", 22.0).akce is not Akce.OTEVRIT

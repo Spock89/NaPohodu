@@ -14,10 +14,10 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (CONF_NARAZOVE_ODSTUP, CONF_NEJDRIV_ZNOVU,
-                    CONF_SEZONA_PRAH, CONF_ZMENA_PODMINEK,
+                    CONF_ZMENA_PODMINEK,
                     CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT,
-                    CONF_DENNI_HYSTEREZE, CONF_CHLAZENI_MIN_VENKU, CONF_NOC_MIN, CONF_NOC_UTLUM,
-                    CONF_PM_CISTO, CONF_PM_SPATNE, CONF_RH_MAX, CONF_RH_MIN,
+                    CONF_DENNI_HYSTEREZE, CONF_CHLAZENI_MIN_VENKU, CONF_MIN_DRZENI, CONF_NOC_MIN, CONF_NOC_UTLUM,
+                    CONF_PM_CISTO, CONF_PM_SPATNE, CONF_RUCNI_KLID, CONF_RH_MAX, CONF_RH_MIN,
                     CONF_TLOUSTKA,
                     CONF_ODCHYLKA, CONF_UTLUM,
                     DOMAIN,
@@ -45,8 +45,6 @@ CELY_BYT = [
              2.0, "mdi:thermometer-chevron-up"),
     Posuvnik(CONF_NEJDRIV_ZNOVU, 5, 240, 5, "min", 60.0,
              "mdi:timer-sand"),
-    Posuvnik(CONF_SEZONA_PRAH, 8, 22, 0.5, UnitOfTemperature.CELSIUS,
-             15.0, "mdi:radiator"),
 ]
 
 MISTNOST = [
@@ -54,8 +52,10 @@ MISTNOST = [
              "mdi:thermometer-plus"),
     Posuvnik(CONF_NOC_UTLUM, 0, 4, 0.5, UnitOfTemperature.CELSIUS, 0.0,
              "mdi:weather-night-partly-cloudy"),
-    Posuvnik(CONF_CHLAZENI_MIN_VENKU, -10, 20, 0.5,
+    Posuvnik(CONF_CHLAZENI_MIN_VENKU, -20, 10, 0.5,
              UnitOfTemperature.CELSIUS, 7.0, "mdi:snowflake-alert"),
+    Posuvnik(CONF_MIN_DRZENI, 1, 120, 1, "min", 20.0, "mdi:timer-lock"),
+    Posuvnik(CONF_RUCNI_KLID, 0, 240, 5, "min", 30.0, "mdi:hand-back-right"),
     Posuvnik(CONF_PM_SPATNE, 10, 100, 1, "µg/m³", 35.0, "mdi:blur"),
     Posuvnik(CONF_PM_CISTO, 5, 60, 1, "µg/m³", 20.0, "mdi:blur-off"),
     Posuvnik(CONF_RH_MIN, 20, 55, 1, PERCENTAGE, 38.0,

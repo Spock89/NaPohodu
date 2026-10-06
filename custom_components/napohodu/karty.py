@@ -24,13 +24,17 @@ GLOBALNI = [
      "stupňů. Čas je jen zástupná veličina, důvod byl venku."),
     ("nebo_nejpozdeji_za", "Nebo nejpozději za",
      "Strop čekání. Když se venku změní dřív, zkusí se dřív."),
-    ("topna_sezona_pod", "Topná sezóna pod",
-     "Pod touhle třídenní průměrnou teplotou začíná topná sezóna."),
 ]
 
 POSUVNIKY = [
     ("moje_odchylka_teploty", "Moje odchylka teploty",
      "Přičte se k vypočtenému cíli. Tvoje osobní „chci tepleji“."),
+    ("nejkratsi_doba_drzeni_polohy", "Nejkratší doba držení polohy",
+     "Jak dlouho okno zůstane v poloze, do které dojelo. Po téhle době "
+     "se zároveň ověří, že větrání vůbec zabírá."),
+    ("po_rucnim_zasahu_nechat_byt", "Po ručním zásahu nechat být",
+     "Když sáhneš na okno rukou, automatika se do něj tak dlouho "
+     "neplete."),
     ("chladit_jen_pri_venkovni_teplote_nad",
      "Chladit jen při venkovní teplotě nad",
      "Pod touhle venkovní teplotou se chlazení větráním nespustí — "

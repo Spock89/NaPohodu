@@ -76,7 +76,7 @@
           "noc_utlum_predstih": "Jak dlouho před začátkem noci se začne klesat. Plynulý náběh je lepší než skok, protože hlavice i zdivo reagují pomalu. Nula znamená skokem.",
           "zima_o_kolik": "O kolik stupňů přitopit, když je venku doopravdy zima. Dál se nepřidává — hlubší mrazy na tom nic nemění.",
           "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C.",
-          "zmena_podminek": "Když větrání nebo ohřev oknem nezabraly, nemá smysl zkoušet totéž, dokud se venku něco nezmění. Čeká se na posun venkovní teploty o tolik stupňů kterýmkoli směrem.\n\nNula vypne jen čekání na podmínky — strop „Nebo nejpozději za\" platí dál. Nouzové větrání a ruční žádost to obchází vždycky.",
+          "zmena_podminek": "Po marném větrání se čeká, až se venkovní teplota posune o tolik stupňů — a to jen tím směrem, který by pomohl: u chlazení chladněji, u ohřevu tepleji. Opačný posun situaci nezlepší.\n\nMěří se od teploty při posledním marném pokusu, ne od prvního; každý další pokus tedy začíná nové srovnání.\n\nNula vypne jen čekání na podmínky — strop „Nebo nejpozději za\" platí dál. Nouzové větrání a ruční žádost to obchází vždycky.",
           "nejdriv_znovu_min": "Strop čekání: i když se venku nic nezmění, po téhle době se zkusí znovu. Když se venku změní dřív, zkusí se dřív — tahle doba nic nezdržuje."
         },
         "title": "NaPohodu"
@@ -172,7 +172,7 @@
           "noc_utlum_predstih": "Jak dlouho před začátkem noci se začne klesat. Plynulý náběh je lepší než skok, protože hlavice i zdivo reagují pomalu. Nula znamená skokem.",
           "zima_o_kolik": "O kolik stupňů přitopit, když je venku doopravdy zima. Dál se nepřidává — hlubší mrazy na tom nic nemění.",
           "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C.",
-          "zmena_podminek": "Když větrání nebo ohřev oknem nezabraly, nemá smysl zkoušet totéž, dokud se venku něco nezmění. Čeká se na posun venkovní teploty o tolik stupňů kterýmkoli směrem.\n\nNula vypne jen čekání na podmínky — strop „Nebo nejpozději za\" platí dál. Nouzové větrání a ruční žádost to obchází vždycky.",
+          "zmena_podminek": "Po marném větrání se čeká, až se venkovní teplota posune o tolik stupňů — a to jen tím směrem, který by pomohl: u chlazení chladněji, u ohřevu tepleji. Opačný posun situaci nezlepší.\n\nMěří se od teploty při posledním marném pokusu, ne od prvního; každý další pokus tedy začíná nové srovnání.\n\nNula vypne jen čekání na podmínky — strop „Nebo nejpozději za\" platí dál. Nouzové větrání a ruční žádost to obchází vždycky.",
           "nejdriv_znovu_min": "Strop čekání: i když se venku nic nezmění, po téhle době se zkusí znovu. Když se venku změní dřív, zkusí se dřív — tahle doba nic nezdržuje."
         }
       },
@@ -890,8 +890,11 @@
       "nejdriv_znovu_min": {
         "name": "Nebo nejpozději za"
       },
-      "sezona_prah": {
-        "name": "Topná sezóna pod"
+      "min_drzeni_min": {
+        "name": "Nejkratší doba držení polohy"
+      },
+      "rucni_klid_min": {
+        "name": "Po ručním zásahu nechat být"
       }
     },
     "switch": {

@@ -196,6 +196,9 @@ class Pamet:
     # podmínky při marném pokusu, aby se čekalo na jejich změnu
     marne_od_s: float = 0.0
     marne_t_out: float = 0.0
+    # co selhalo: "chlazeni" nebo "ohrev". Podle toho platí změna venku
+    # jen tím směrem, který by pomohl.
+    marne_smer: str = ""
     ucinek_co2: float = 0.0
     ucinek_t_in: float = 0.0
     zavreno_chladem: bool = False
@@ -482,8 +485,8 @@ def posledni(p: Pamet, cas_s: float) -> list[str]:
              f"tehdy CO2 {p.posledni_co2:.0f}, uvnitř "
              f"{p.posledni_t_in:.1f} °C"]
     if p.pulzy_za_sebou > 1:
-        radky.append(f"{p.pulzy_za_sebou}. větrání po sobě bez vyvětrání, "
-                     f"pauzy se prodlužují")
+        radky.append(f"{p.pulzy_za_sebou}. pulz po sobě bez vyvětrání; "
+                     f"u větrání kvůli CO2 se tím prodlužují pauzy")
     return radky
 
 
@@ -739,6 +742,8 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             p.pulzy_za_sebou += 1
             p.marne_od_s = v.cas_s
             p.marne_t_out = v.t_out
+            p.marne_smer = ("chlazeni" if t_in > v.cil
+                            else "ohrev" if t_in < v.cil else "")
             minuty = int(ucinek_po / 60)
             # Rozlišit, jestli se nehýbalo nic, nebo to šlo proti nám —
             # druhé je horší zpráva a je dobré ji vidět.
@@ -843,11 +848,12 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
              # tím zůstává možný
              and t_max < v.cil + n.denni_hystereze
              and v.t_out > t_in + n.chlazeni_rozdil
-             and v.t_out > v.cil
+             and v.t_out > v.cil + n.denni_hystereze
              and not v.smog)
     chlazeni = (t_max > prah_chlazeni
                 and v.t_out < t_max - n.chlazeni_rozdil
-                and v.t_out < v.cil
+                # musí dosáhnout až tam, kam chlazení dojede
+                and v.t_out < v.cil - n.denni_hystereze
                 and v.t_out > n.chlazeni_min_venku
                 and chlazeni_po_pauze
                 and not v.smog)
@@ -865,10 +871,15 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # Stačí jedno z dvojího: venku se posunula teplota správným
         # směrem, nebo uplynul čas. Čas je strop, ne další podmínka —
         # když se ochladí dřív, zkusí se dřív.
-        zmenilo_se = (
-            n.zmena_podminek > 0
-            and (v.t_out <= p.marne_t_out - n.zmena_podminek
-                 or v.t_out >= p.marne_t_out + n.zmena_podminek))
+        # Pomůže jen posun tím směrem, který by větrání zachránil:
+        # chlazení potřebuje chladnější vzduch, ohřev teplejší. Opačný
+        # posun situaci nezlepší, jen ji otočí.
+        chladneji = v.t_out <= p.marne_t_out - n.zmena_podminek
+        tepleji = v.t_out >= p.marne_t_out + n.zmena_podminek
+        zmenilo_se = n.zmena_podminek > 0 and (
+            chladneji if p.marne_smer == "chlazeni"
+            else tepleji if p.marne_smer == "ohrev"
+            else chladneji or tepleji)
         cas_vyprsel = v.cas_s - p.marne_od_s >= n.nejdriv_znovu_s
         if not zmenilo_se and not cas_vyprsel:
             # Platí na všechno, ne jen na teplotu. Dřív prošlo větrání
@@ -907,14 +918,19 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # Teplejší vzduch zvenčí byl důvod, proč se otevíralo. Zavírá
         # se proto, že už je dost teplo, ne proto, že je venku tepleji.
         brani = "dost teplo, jsme na horní hraně pásma"
-    elif not ohrev and t_max > v.cil and v.t_out > v.cil:
-        # Venku je nad cílem a v pokoji taky: otevřením se k cíli
-        # nepřiblížíme, jen zastavíme o kus výš. Cíl se v létě sám
-        # zvedá, takže se tím chlazení v horku neblokuje.
-        brani = f"venku {v.t_out:.1f} °C nad cílem, nepomůže"
-    elif not chlazeni and t_in < v.cil and v.t_out < v.cil:
-        # zrcadlově: chladnější vzduch než cíl pokoj na cíl neohřeje
-        brani = f"venku {v.t_out:.1f} °C pod cílem, nepomůže"
+    elif not ohrev and t_max > v.cil \
+            and v.t_out >= v.cil - n.denni_hystereze:
+        # V pokoji je nad cílem, ale venkovní vzduch nedosáhne tam, kam
+        # chlazení dojede. Otevřením se k cíli nepřiblížíme, jen se
+        # zastavíme o kus výš. Cíl se v létě sám zvedá, takže se tím
+        # chlazení v horku neblokuje.
+        brani = (f"venku {v.t_out:.1f} °C, na chlazení k "
+                 f"{v.cil - n.denni_hystereze:.1f} °C nestačí")
+    elif not chlazeni and t_in < v.cil \
+            and v.t_out <= v.cil + n.denni_hystereze:
+        # zrcadlově pro ohřev
+        brani = (f"venku {v.t_out:.1f} °C, na ohřev k "
+                 f"{v.cil + n.denni_hystereze:.1f} °C nestačí")
     elif not chlazeni and not ohrev and v.t_out < t_in \
             and _pod_cilem(v, n, t_in):
         # když se zároveň někde přehřívá, chlazení má přednost
@@ -933,8 +949,9 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         elif ohrev:
             popis_bezi = popis_nove = "ohřev venkovním vzduchem"
         else:
-            popis_bezi = "venku je příjemně, otevřeno"
-            popis_nove = "venku je příjemně, nechávám otevřeno"
+            # ať je poznat, že za tím nestojí prach, CO2 ani teplota
+            popis_bezi = "nic nevadí, venku je příjemně"
+            popis_nove = "nic nevadí, venku je příjemně — nechávám otevřeno"
         if p.otevreno:
             return beze_zmeny(popis_bezi, True)
         return otevri(popis_nove, None)
@@ -965,7 +982,8 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             # Jen teplota v pokoji. Zavření kvůli venkovní teplotě
             # s rozkyvem uvnitř nemá co dělat a nasazovat na něj
             # smyčku znamenalo čekat na nesmyslné hodnoty.
-            kvuli_teplote = "uvnitř" in brani or "pod cílem" in brani
+            kvuli_teplote = ("uvnitř" in brani or "pod cílem" in brani
+                             or "nestačí" in brani)
             if kvuli_teplote:
                 p.zavreno_chladem = True
             return zavri(f"zavírám, {brani}",
