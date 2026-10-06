@@ -500,7 +500,9 @@ obrazovce, uvede obě čísla a řekne, co s tím udělat.
 Když se integrace zamotá — drží rozdělané větrání, čeká na změnu venku,
 pamatuje si marný pokus — dá se to rozmotat tlačítkem **Vynulovat
 vnitřní stavy** místo restartu. Zapomene jen to, co si jádro pamatuje
-mezi cykly: režim, meze, počítadla, čekání.
+mezi cykly: režim, meze, počítadla a **všechny odpočty** — držení
+polohy, ruční klid, dojezd pulzu, čekání po marném pokusu. Po stisku
+je integrace v bodě nula a smí jednat hned.
 
 Nastavení, posuvníků, naučených průměrů ani skutečného stavu okna se
 nedotkne.

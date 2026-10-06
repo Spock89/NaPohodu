@@ -1084,6 +1084,7 @@ def test_vynulovani_nesahne_na_nastaveni(nahradni_ha):
             ucinek_od_s=500.0, cas_povelu_s=12345.0)}
         hodnoty = {("id", "odchylka_teploty"): 1.5}
         zvlhcuje = {"id"}
+        vykonavaci: dict = {}
 
     k = Falesny()
     k.vynuluj_stavy()
@@ -1096,7 +1097,46 @@ def test_vynulovani_nesahne_na_nastaveni(nahradni_ha):
     assert p.chladi is False and p.ucinek_od_s == 0.0
     assert not k.zvlhcuje
 
+    # čekání a odpočty taky, jinak by „bod nula" neznamenal nic
+    assert p.cas_povelu_s < 0 and p.rucni_do_s == 0.0
+
     # uživatelské volby a skutečný stav okna zůstávají
     assert k.hodnoty[("id", "odchylka_teploty")] == 1.5
     assert p.otevreno is True
-    assert p.cas_povelu_s == 12345.0
+
+
+def test_vynulovani_zrusi_i_cekani(nahradni_ha):
+    """Bez zrušení odpočtů by „bod nula" neznamenal nic — dál by se
+    drželo držení polohy, ruční klid i dojezd pulzu."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    core = importlib.import_module("napohodu.core")
+
+    class Stav:
+        pulz_do_s = 999999.0
+        posledni_cas_s = 999999.0
+
+    class Vyk:
+        stav = Stav()
+
+    class Falesny:
+        vynuluj_stavy = ko.NaPohoduCoordinator.vynuluj_stavy
+        pameti = {"id": core.Pamet(
+            cas_povelu_s=999999.0, rucni_do_s=999999.0,
+            pm_venku_horsi_do_s=999999.0, marne_od_s=999999.0,
+            pm_otevreno_od_s=999999.0)}
+        hodnoty: dict = {}
+        zvlhcuje: set = set()
+        vykonavaci = {"id": Vyk()}
+
+    k = Falesny()
+    k.vynuluj_stavy()
+    p = k.pameti["id"]
+
+    assert p.cas_povelu_s < 0            # žádné držení polohy
+    assert p.rucni_do_s == 0.0           # ani ruční klid
+    assert p.pm_venku_horsi_do_s == 0.0  # ani poznatek o prachu
+    assert p.marne_od_s == 0.0
+    assert k.vykonavaci["id"].stav.pulz_do_s is None
+    assert k.vykonavaci["id"].stav.posledni_cas_s < 0

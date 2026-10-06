@@ -165,15 +165,19 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         """
         for pamet in self.pameti.values():
             cista = core.Pamet()
-            for pole in ("rezim", "den_mez", "noc_mez", "noc_start",
-                         "noc_krize", "noc_zavreno_teplotou",
-                         "komfort_start", "narazove_pulz",
-                         "pulzy_za_sebou", "zavreno_chladem",
-                         "zavreno_teplem", "chladi", "ohrivam",
-                         "ucinek_od_s", "ucinek_co2", "ucinek_t_in",
-                         "marne_od_s", "marne_t_out", "vetra_se",
-                         "pm_prumer", "pm_venku_horsi_do_s"):
-                setattr(pamet, pole, getattr(cista, pole))
+            # Všechno kromě skutečného stavu okna. Čekání a odpočty
+            # patří mezi vnitřní stavy — bez nich by „bod nula"
+            # neznamenal nic, protože by se dál drželo držení polohy,
+            # ruční klid i dojezd pulzu.
+            for pole in vars(cista):
+                if pole != "otevreno":
+                    setattr(pamet, pole, getattr(cista, pole))
+            # cas_povelu_s daleko v minulosti znamená, že žádné držení
+            # neběží a další povel se smí poslat hned
+            pamet.cas_povelu_s = -1e9
+        for vyk in self.vykonavaci.values():
+            vyk.stav.pulz_do_s = None          # dojezd pulzu
+            vyk.stav.posledni_cas_s = -1e9     # a odstup mezi povely
         self.zvlhcuje.clear()
 
     def srovnej(self, pod_id: str | None = None) -> None:
