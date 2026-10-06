@@ -372,7 +372,10 @@ def test_starsi_instalace_ma_posuvniky_taky():
     import re
     from karty import POSUVNIKY, STARSI_POSUVNIKY
 
-    stare = set(STARSI_POSUVNIKY.values())
+    # jeden posuvník může mít víc starších jmen
+    stare = set()
+    for v in STARSI_POSUVNIKY.values():
+        stare.update((v,) if isinstance(v, str) else v)
 
     def existuje(e):
         if e.startswith("number.napohodu_loznice_"):
@@ -381,8 +384,11 @@ def test_starsi_instalace_ma_posuvniky_taky():
 
     s = dashboard(["loznice"], [], existuje, cidla={"loznice": "sensor.t"})
     najdene = set(re.findall(r"number\.napohodu_loznice_(\w+)", s))
-    # každý přejmenovaný posuvník se našel pod starým jménem
-    assert stare <= najdene | {x for x, _, _ in POSUVNIKY}
+    # u každého přejmenovaného posuvníku stačí jedno ze starších jmen —
+    # entita existuje jen pod tím, pod kterým vznikla
+    for klic, varianty in STARSI_POSUVNIKY.items():
+        varianty = (varianty,) if isinstance(varianty, str) else varianty
+        assert najdene & set(varianty) or klic in najdene, klic
 
 
 def test_nova_instalace_ma_vsechny_posuvniky():
@@ -442,7 +448,8 @@ def test_pravidla_bytu_jsou_jednou_a_v_samostatne_sekci():
              if any("pevna_pravidla_bytu" in str(k.get("content", ""))
                     for k in s["cards"])][0]
     nadpisy = [k.get("heading") for k in sekce["cards"] if k.get("heading")]
-    assert nadpisy == ["Základ výpočtu", "Platí bez nastavení"]
+    assert nadpisy == ["Základ výpočtu", "Nastavení pro celý byt",
+                       "Platí bez nastavení"]
 
 
 def test_karta_zvlhcovacu():
@@ -514,3 +521,30 @@ def test_radky_stupnice_jsou_kratke():
                    chladi=True, duvod="chlazení větráním")
     for radek in pasmo_jen_stupnice(r):
         assert len(radek) <= 45, radek
+
+
+def test_posuvnik_najde_i_starsi_jmeno_z_vice_variant():
+    """Přejmenovaná entita si drží původní identifikátor. Denní
+    hystereze se za svůj život jmenovala třemi způsoby."""
+    import yaml
+    stare = {"number.napohodu_obyvak_ve_dne_smi_klesnout_pod_cil_o",
+             "sensor.napohodu_obyvak_stav"}
+    d = yaml.safe_load(dashboard(
+        ["obyvak"], [], lambda e: e in stare,
+        cidla={"obyvak": "sensor.t"}, podoba="stranka"))
+    karta = [k for s in d["sections"] for k in s["cards"]
+             if k.get("title") == "Denní hystereze"][0]
+    assert karta["entities"][0]["entity"] == (
+        "number.napohodu_obyvak_ve_dne_smi_klesnout_pod_cil_o")
+
+
+def test_globalni_nastaveni_je_v_karte():
+    """Globální hodnoty nejsou posuvníky, protože nepatří místnosti.
+    Bez výpisu by na dashboardu nebyly vidět vůbec."""
+    import yaml
+    d = yaml.safe_load(dashboard(
+        ["obyvak"], [], vzdy, cidla={"obyvak": "sensor.a"},
+        podoba="stranka"))
+    md = [k for s in d["sections"] for k in s["cards"]
+          if "nastaveni_bytu" in str(k.get("content", ""))]
+    assert len(md) == 1

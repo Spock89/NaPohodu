@@ -591,6 +591,24 @@ for u in ast.parse(jadro_text).body:
                 f"ani se neukazuje — přidej pole, nebo ho vypiš "
                 f"v pevna_pravidla_bytu()")
 
+# 1ab) přejmenovaný posuvník musí mít v kartě i své starší jméno.
+# Entita si v Home Assistantu drží identifikátor, pod kterým vznikla,
+# takže po přejmenování řádek z dashboardu zmizí.
+import importlib.util as _iu
+_spec = _iu.spec_from_file_location("_karty_k", d / "karty.py")
+_k = _iu.module_from_spec(_spec)
+_spec.loader.exec_module(_k)
+for klic, varianty in _k.STARSI_POSUVNIKY.items():
+    varianty = (varianty,) if isinstance(varianty, str) else varianty
+    if klic not in {x for x, _, _ in _k.POSUVNIKY}:
+        chyby.append(
+            f"karty.py: starší jméno {klic} nemá protějšek mezi "
+            f"posuvníky — zůstalo po smazaném nastavení")
+    for v in varianty:
+        if v == klic:
+            chyby.append(
+                f"karty.py: {klic} má jako starší jméno sám sebe")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

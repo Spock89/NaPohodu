@@ -9,10 +9,15 @@ from homeassistant.components.number import (NumberEntity, NumberMode,
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import (CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT,
-                    CONF_DENNI_HYSTEREZE, CONF_NOC_MIN, CONF_NOC_UTLUM, CONF_RH_MAX, CONF_RH_MIN,
+from .const import (CONF_NARAZOVE_ODSTUP, CONF_NEJDRIV_ZNOVU,
+                    CONF_SEZONA_PRAH, CONF_ZMENA_PODMINEK,
+                    CONF_CO2_NOC, CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT,
+                    CONF_DENNI_HYSTEREZE, CONF_CHLAZENI_MIN_VENKU, CONF_NOC_MIN, CONF_NOC_UTLUM,
+                    CONF_PM_CISTO, CONF_PM_SPATNE, CONF_RH_MAX, CONF_RH_MIN,
                     CONF_TLOUSTKA,
                     CONF_ODCHYLKA, CONF_UTLUM,
                     DOMAIN,
@@ -31,11 +36,28 @@ class Posuvnik:
     ikona: str
 
 
+# Globální hodnoty nepatří místnosti, ale celému bytu. Jsou to pořád
+# čísla, takže si zaslouží posuvník stejně jako ta místnostní.
+CELY_BYT = [
+    Posuvnik(CONF_NARAZOVE_ODSTUP, 2, 30, 0.5, UnitOfTemperature.CELSIUS,
+             15.0, "mdi:weather-windy"),
+    Posuvnik(CONF_ZMENA_PODMINEK, 0, 10, 0.5, UnitOfTemperature.CELSIUS,
+             2.0, "mdi:thermometer-chevron-up"),
+    Posuvnik(CONF_NEJDRIV_ZNOVU, 5, 240, 5, "min", 60.0,
+             "mdi:timer-sand"),
+    Posuvnik(CONF_SEZONA_PRAH, 8, 22, 0.5, UnitOfTemperature.CELSIUS,
+             15.0, "mdi:radiator"),
+]
+
 MISTNOST = [
     Posuvnik(CONF_ODCHYLKA, -3, 3, 0.5, UnitOfTemperature.CELSIUS, 0.0,
              "mdi:thermometer-plus"),
     Posuvnik(CONF_NOC_UTLUM, 0, 4, 0.5, UnitOfTemperature.CELSIUS, 0.0,
              "mdi:weather-night-partly-cloudy"),
+    Posuvnik(CONF_CHLAZENI_MIN_VENKU, -10, 20, 0.5,
+             UnitOfTemperature.CELSIUS, 7.0, "mdi:snowflake-alert"),
+    Posuvnik(CONF_PM_SPATNE, 10, 100, 1, "µg/m³", 35.0, "mdi:blur"),
+    Posuvnik(CONF_PM_CISTO, 5, 60, 1, "µg/m³", 20.0, "mdi:blur-off"),
     Posuvnik(CONF_RH_MIN, 20, 55, 1, PERCENTAGE, 38.0,
              "mdi:water-percent"),
     Posuvnik(CONF_RH_MAX, 40, 80, 1, PERCENTAGE, 60.0,
@@ -61,6 +83,7 @@ MISTNOST = [
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                             pridat: AddEntitiesCallback) -> None:
     k = hass.data[DOMAIN][entry.entry_id]
+    pridat([NaPohoduNumber(k, None, p, entry) for p in CELY_BYT])
     for pod in entry.subentries.values():
         if pod.subentry_type != PODENTITA_MISTNOST:
             continue          # prahy vzduchu patří místnosti, ta se rozhoduje
@@ -81,15 +104,28 @@ class NaPohoduNumber(NaPohoduEntity, RestoreNumber, NumberEntity):
     _attr_mode = NumberMode.SLIDER
     _attr_entity_category = EntityCategory.CONFIG
 
-    def __init__(self, k, pod, p: Posuvnik) -> None:
-        super().__init__(k, pod, p.klic)
+    def __init__(self, k, pod, p: Posuvnik, entry=None) -> None:
+        if pod is None:
+            # Posuvník pro celý byt visí na hlavním zařízení integrace.
+            CoordinatorEntity.__init__(self, k)
+            self.pod = None
+            self.pod_id = entry.entry_id
+            self._attr_translation_key = p.klic
+            self._attr_unique_id = f"{entry.entry_id}_{p.klic}"
+            self._attr_device_info = DeviceInfo(
+                identifiers={(DOMAIN, entry.entry_id)},
+                name="NaPohodu", manufacturer="NaPohodu", model="Byt")
+            data = {**entry.data, **entry.options}
+        else:
+            super().__init__(k, pod, p.klic)
+            data = pod.data
         self._p = p
         self._attr_native_min_value = p.min
         self._attr_native_max_value = p.max
         self._attr_native_step = p.krok
         self._attr_native_unit_of_measurement = p.jednotka
         self._attr_icon = p.ikona
-        self._vychozi = float(pod.data.get(p.klic, p.vychozi))
+        self._vychozi = float(data.get(p.klic, p.vychozi))
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()

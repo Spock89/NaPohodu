@@ -871,6 +871,27 @@
       },
       "denni_hystereze": {
         "name": "Denní hystereze"
+      },
+      "chlazeni_min_venku": {
+        "name": "Chladit jen při venkovní teplotě nad"
+      },
+      "pm_spatne_od": {
+        "name": "Prach je špatný od PM2.5"
+      },
+      "pm_cisto_pod": {
+        "name": "Prach je čistý pod PM2.5"
+      },
+      "narazove_odstup": {
+        "name": "Nárazový režim od rozdílu"
+      },
+      "zmena_podminek": {
+        "name": "Další pokus po změně venku o"
+      },
+      "nejdriv_znovu_min": {
+        "name": "Nebo nejpozději za"
+      },
+      "sezona_prah": {
+        "name": "Topná sezóna pod"
       }
     },
     "switch": {

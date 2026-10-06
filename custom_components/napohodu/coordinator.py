@@ -498,6 +498,28 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         }
         return self.vitr_blokuje
 
+    def _prehled_bytu(self, g: dict) -> list[str]:
+        """Globální nastavení, ať je na dashboardu vidět, co platí."""
+        naraz = bool(g.get(CONF_NARAZOVE, False))
+        odstup_naraz = self.hodnota(
+            self.entry.entry_id, CONF_NARAZOVE_ODSTUP,
+            float(g.get(CONF_NARAZOVE_ODSTUP, 15.0)))
+        radky = [
+            "Nárazový režim: "
+            + (f"od rozdílu {odstup_naraz:.1f} "
+               f"°C mezi venkem a cílem" if naraz else "vypnutý")
+            + f" (teď {'běží' if self.narazove else 'neběží'})",
+            f"Další pokus po marném větrání: po změně venku o "
+            f"{float(g.get(CONF_ZMENA_PODMINEK, 2.0)):.1f} °C, "
+            f"nejpozději za {int(g.get(CONF_NEJDRIV_ZNOVU, 60))} min",
+            f"Topná sezóna pod {float(g.get(CONF_SEZONA_PRAH, 15.0)):.1f} "
+            f"°C třídenního průměru (teď "
+            f"{'běží' if self.topna_sezona else 'neběží'})",
+            f"Noční hodiny {self._cas(float(g.get(CONF_NOC_OD, 22)))}"
+            f" – {self._cas(float(g.get(CONF_NOC_DO, 6.5)))}",
+        ]
+        return radky
+
     def _sezona(self, g: dict) -> bool:
         rezim = g.get(CONF_SEZONA_REZIM, "podle_prumeru")
         if rezim == "vzdy":
@@ -513,7 +535,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
         Bez vlastní entity se použije počítaný průměr.
         """
-        prah = float(g.get(CONF_SEZONA_PRAH, 15.0))
+        prah = self.hodnota(self.entry.entry_id, CONF_SEZONA_PRAH,
+                            float(g.get(CONF_SEZONA_PRAH, 15.0)))
         hyst = float(g.get(CONF_SEZONA_HYSTEREZE, 1.0))
         t = self._cislo(g.get(CONF_T_SEZONA))
         zdroj = "cidlo"
@@ -771,7 +794,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # Nárazový režim platí na obě strany: v mrazu i v horku je
         # venkovní vzduch tak jiný, že dlouhé větrání škodí. Hystereze
         # půl stupně brání přepínání, když se teplota motá kolem prahu.
-        odstup = float(g.get(CONF_NARAZOVE_ODSTUP, 15.0))
+        odstup = self.hodnota(self.entry.entry_id, CONF_NARAZOVE_ODSTUP,
+                              float(g.get(CONF_NARAZOVE_ODSTUP, 15.0)))
         rozdil = abs(t_out - nejnizsi_cil) if t_out is not None else 0.0
         prah = odstup - 0.5 if self.narazove else odstup
         self.narazove = bool(g.get(CONF_NARAZOVE, False)) and rozdil > prah
@@ -1028,9 +1052,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             nast, denni_hystereze=den_pod,
             chlazeni_min_venku=float(
                 d.get(CONF_CHLAZENI_MIN_VENKU, 7.0)),
-            narazove_odstup=float(g.get(CONF_NARAZOVE_ODSTUP, 15.0)),
-            zmena_podminek=float(g.get(CONF_ZMENA_PODMINEK, 2.0)),
-            nejdriv_znovu_s=float(g.get(CONF_NEJDRIV_ZNOVU, 60)) * 60,
+            narazove_odstup=self.hodnota(
+                self.entry.entry_id, CONF_NARAZOVE_ODSTUP,
+                float(g.get(CONF_NARAZOVE_ODSTUP, 15.0))),
+            zmena_podminek=self.hodnota(
+                self.entry.entry_id, CONF_ZMENA_PODMINEK,
+                float(g.get(CONF_ZMENA_PODMINEK, 2.0))),
+            nejdriv_znovu_s=self.hodnota(
+                self.entry.entry_id, CONF_NEJDRIV_ZNOVU,
+                float(g.get(CONF_NEJDRIV_ZNOVU, 60))) * 60,
             pm_prah=float(d.get(CONF_PM_SPATNE, 35.0)),
             pm_prah_cisto=float(d.get(CONF_PM_CISTO, 20.0)))
 
@@ -1222,6 +1252,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 if skutecne and pamet.ucinek_od_s else None),
             # pravidla pro celý byt, aby nebyla pod každou místností
             "pevna_pravidla_bytu": core.pevna_pravidla_bytu(),
+            # Globální nastavení nejsou posuvníky, protože nepatří
+            # místnosti. Bez tohohle výpisu by na dashboardu nebyla
+            # vidět vůbec a nikdo by nevěděl, že existují.
+            "nastaveni_bytu": self._prehled_bytu(g),
             "doma_podle": self.doma_popis,
             # jak se dospělo k cílové teplotě, ať to není magie.
             # Odchylka místnosti se sem nepřidává: je vidět na svém

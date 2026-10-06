@@ -13,9 +13,34 @@ from __future__ import annotations
 # pořadí a názvy, aby karta dávala smysl a nebyla jen výpisem
 # Pořadí, názvy a jedna řádka, co to dělá — bez ní člověk za měsíc
 # neví, co která hodnota znamená, a nastavuje naslepo.
+# Posuvníky pro celý byt. Nepatří místnosti, takže mají vlastní sekci.
+GLOBALNI = [
+    ("narazovy_rezim_od_rozdilu", "Nárazový režim od rozdílu",
+     "O kolik se venkovní teplota musí lišit od cílové, než se přepne "
+     "na nárazové větrání. Za prahem se otevírá jen z důvodu a zavírá "
+     "hned, jakmile důvod pomine."),
+    ("dalsi_pokus_po_zmene_venku_o", "Další pokus po změně venku o",
+     "Po marném větrání se čeká, až se venkovní teplota posune o tolik "
+     "stupňů. Čas je jen zástupná veličina, důvod byl venku."),
+    ("nebo_nejpozdeji_za", "Nebo nejpozději za",
+     "Strop čekání. Když se venku změní dřív, zkusí se dřív."),
+    ("topna_sezona_pod", "Topná sezóna pod",
+     "Pod touhle třídenní průměrnou teplotou začíná topná sezóna."),
+]
+
 POSUVNIKY = [
     ("moje_odchylka_teploty", "Moje odchylka teploty",
      "Přičte se k vypočtenému cíli. Tvoje osobní „chci tepleji“."),
+    ("chladit_jen_pri_venkovni_teplote_nad",
+     "Chladit jen při venkovní teplotě nad",
+     "Pod touhle venkovní teplotou se chlazení větráním nespustí — "
+     "zavření není okamžité a u okna je mezitím výrazně chladněji."),
+    ("prach_je_spatny_od_pm2_5", "Prach je špatný od PM2.5",
+     "Od téhle úrovně se vzduch bere za zaprášený a větrá se kvůli němu. "
+     "PM10 se odvozuje z téhož čísla."),
+    ("prach_je_cisty_pod_pm2_5", "Prach je čistý pod PM2.5",
+     "Pod touhle úrovní se vzduch bere za čistý. Mezera mezi prahy brání "
+     "přepínání na hraně."),
     ("denni_hystereze", "Denní hystereze",
      "Pásmo kolem cíle: nad jeho horní hranou se chladí venkovním "
      "vzduchem, pod dolní se jím ohřívá, a dojede se vždycky na protější "
@@ -47,11 +72,13 @@ POSUVNIKY = [
 # identifikátor při přejmenování nemění, takže instalace, která entitu
 # založila dřív, ji má pořád pod starým jménem.
 STARSI_POSUVNIKY = {
-     'denni_hystereze': 've_dne_smi_klesnout_o',
+     'denni_hystereze': ('ve_dne_smi_klesnout_pod_cil_o',
+                         've_dne_smi_klesnout_o',
+                         'odstup_od_cile_pro_otevreni'),
      'moje_odchylka_teploty': 'odchylka_teploty',
      'v_noci_vychladnout_nejvys_na': 'minimum_na_noc',
      'v_noci_topit_o_mene': 'nocni_utlum_topeni',
-     'tloustka_nocni_smycky': 'tloustka_hysterezni_smycky',
+     'tloustka_nocni_smycky': ('tloustka_hysterezni_smycky',),
      'pri_otevrenem_okne_topit_na': 'utlum_pri_otevrenem_okne',
      'v_noci_otevrit_nad_co2': 'v_noci_otevrit_nad',
      'nouzove_otevrit_nad_co2': 'nouzove_otevrit_nad'}
@@ -342,6 +369,25 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
 
     # --- pravidla bez nastavení, pro celý byt jednou ---
     if mistnosti:
+        c += _hlavicka("Nastavení pro celý byt", "mdi:home-switch",
+                       "subtitle")
+        # posuvníky pro celý byt visí na hlavním zařízení integrace
+        for klic, nazev, popis in GLOBALNI:
+            eid = f"number.napohodu_{klic}"
+            if not existuje(eid):
+                continue
+            c += _karta(_radek(eid, nazev), nazev=None)
+            c.append("  - type: markdown")
+            c.append(f"    content: '*{popis}*'")
+        c.append("  - type: markdown")
+        c.append("    content: |-")
+        c.append(f"      {{% set q = state_attr("
+                 f"'sensor.napohodu_{mistnosti[0]}_stav',"
+                 f" 'nastaveni_bytu') %}}")
+        c.append("      {% if q %}{% for z in q %}")
+        c.append("      - {{ z }}")
+        c.append("      {% endfor %}{% endif %}")
+        c.append("")
         c += _hlavicka("Platí bez nastavení", "mdi:gavel", "subtitle")
         c.append("  - type: markdown")
         c.append("    content: |-")
@@ -473,12 +519,15 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         # Home Assistant identifikátor entity při přejmenování nemění,
         # takže starší instalace mají jiný než nové. Zkusí se obojí.
         drive = STARSI_POSUVNIKY.get(klic)
+        # Přejmenovaná entita si v Home Assistantu drží původní
+        # identifikátor, takže se zkouší všechny, pod kterými kdy byla.
+        drive = (drive,) if isinstance(drive, str) else (drive or ())
         if klic == "otevrit_nad_co2":
             c.append(SEKCE)      # prahy CO2 do vlastní sekce
         polozky = []
         for m in mistnosti:
             eid = _prvni(existuje, f"number.napohodu_{m}_{klic}",
-                         f"number.napohodu_{m}_{drive}" if drive else "")
+                         *(f"number.napohodu_{m}_{x}" for x in drive))
             if existuje(eid):
                 polozky += _radek(eid, jm(m))
         c += _karta(polozky, nazev=nadpis)

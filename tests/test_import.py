@@ -481,6 +481,10 @@ def _sezona(rezim, tri_dny=None):
         _sezona = ko.NaPohoduCoordinator._sezona
         _sezona_podle_prumeru = ko.NaPohoduCoordinator._sezona_podle_prumeru
         _cislo = staticmethod(lambda eid, nahrada=None: tri_dny)
+        hodnota = staticmethod(lambda a, b, vych: vych)
+
+        class entry:
+            entry_id = "id"
 
         class prumery:
             tri_dny = None
@@ -1007,3 +1011,32 @@ def test_popisek_sezony_mluvi_o_trinacti(nahradni_ha):
         popis = d["config"]["step"]["user"]["data_description"]["sezona_prah"]
         assert "13" in popis
         assert "Obvykle 15" not in popis
+
+
+def test_prehled_bytu_uvadi_narazovy_rezim(nahradni_ha):
+    """Volba, kterou jsme přidali naposled, musí být na dashboardu
+    vidět — posuvník z ní udělat nejde, je globální."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    c = importlib.import_module("napohodu.const")
+
+    class Zapis:
+        entry_id = "id"
+
+    class Falesny:
+        _prehled_bytu = ko.NaPohoduCoordinator._prehled_bytu
+        _cas = staticmethod(ko.NaPohoduCoordinator._cas)
+        hodnota = staticmethod(lambda a, b, vych: vych)
+        entry = Zapis()
+        narazove = True
+        topna_sezona = False
+
+    radky = Falesny()._prehled_bytu({
+        c.CONF_NARAZOVE: True, c.CONF_NARAZOVE_ODSTUP: 15.0,
+        c.CONF_ZMENA_PODMINEK: 2.0, c.CONF_NEJDRIV_ZNOVU: 60})
+    text = " | ".join(radky)
+    assert "Nárazový režim" in text and "15.0" in text
+    assert "běží" in text
+    assert "změně venku o 2.0" in text
+    assert "Topná sezóna" in text

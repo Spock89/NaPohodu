@@ -495,6 +495,14 @@ Integrace to hlídá při každém cyklu a ohlásí zprávou, řádkem v kartě 
 zápisem do protokolu. Hláška pojmenuje nastavení tak, jak ho vidíš na
 obrazovce, uvede obě čísla a řekne, co s tím udělat.
 
+## Nastavení pro celý byt
+
+Některé hodnoty nepatří místnosti, ale celému bytu — nárazový režim,
+čekání po marném větrání, topná sezóna, noční hodiny. Číselné z nich
+mají **vlastní posuvníky** na hlavním zařízení integrace a v kartě
+samostatnou sekci; k tomu je tam přehled i s aktuálním stavem: je vidět nejen co je nastavené, ale i jestli
+nárazový režim nebo topná sezóna právě běží.
+
 ## Co platí bez nastavení
 
 Některá pravidla nemají vlastní nastavení, protože by se dala nastavit
