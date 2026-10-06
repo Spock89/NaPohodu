@@ -515,8 +515,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             f"Topná sezóna pod {float(g.get(CONF_SEZONA_PRAH, 15.0)):.1f} "
             f"°C třídenního průměru (teď "
             f"{'běží' if self.topna_sezona else 'neběží'})",
-            f"Noční hodiny {self._cas(float(g.get(CONF_NOC_OD, 22)))}"
-            f" – {self._cas(float(g.get(CONF_NOC_DO, 6.5)))}",
+            # čas z formuláře chodí jako „22:00:00", ne jako číslo
+            f"Noční hodiny "
+            f"{self._cas(self._hodina(g.get(CONF_NOC_OD), 22.0))} – "
+            f"{self._cas(self._hodina(g.get(CONF_NOC_DO), 6.5))}",
         ]
         return radky
 

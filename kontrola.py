@@ -609,6 +609,17 @@ for klic, varianty in _k.STARSI_POSUVNIKY.items():
             chyby.append(
                 f"karty.py: {klic} má jako starší jméno sám sebe")
 
+# 1ac) čas z formuláře chodí jako „22:00:00". Kdo ho převede přímo
+# na číslo, shodí načtení integrace.
+CASOVE = ("CONF_NOC_OD", "CONF_NOC_DO", "CONF_PRYC_OD", "CONF_PRYC_DO")
+for p in d.glob("*.py"):
+    for i, radek in enumerate(p.read_text().splitlines(), 1):
+        for klic in CASOVE:
+            if re.search(rf"float\(\s*\w*\.?get\({klic}", radek):
+                chyby.append(
+                    f"{p.name}:{i}: {klic} se převádí přímo na číslo — "
+                    f"použij _hodina(), formulář posílá čas jako text")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

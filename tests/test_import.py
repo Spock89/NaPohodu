@@ -1027,6 +1027,7 @@ def test_prehled_bytu_uvadi_narazovy_rezim(nahradni_ha):
     class Falesny:
         _prehled_bytu = ko.NaPohoduCoordinator._prehled_bytu
         _cas = staticmethod(ko.NaPohoduCoordinator._cas)
+        _hodina = staticmethod(ko.NaPohoduCoordinator._hodina)
         hodnota = staticmethod(lambda a, b, vych: vych)
         entry = Zapis()
         narazove = True
@@ -1040,3 +1041,29 @@ def test_prehled_bytu_uvadi_narazovy_rezim(nahradni_ha):
     assert "běží" in text
     assert "změně venku o 2.0" in text
     assert "Topná sezóna" in text
+
+
+def test_prehled_bytu_zvlada_cas_z_formulare(nahradni_ha):
+    """Noční hodiny chodí z formuláře jako „22:00:00", ne jako číslo —
+    integrace se kvůli tomu nenačetla."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    c = importlib.import_module("napohodu.const")
+
+    class Zapis:
+        entry_id = "id"
+
+    class Falesny:
+        _prehled_bytu = ko.NaPohoduCoordinator._prehled_bytu
+        _cas = staticmethod(ko.NaPohoduCoordinator._cas)
+        _hodina = staticmethod(ko.NaPohoduCoordinator._hodina)
+        hodnota = staticmethod(lambda a, b, vych: vych)
+        entry = Zapis()
+        narazove = False
+        topna_sezona = True
+
+    radky = Falesny()._prehled_bytu({
+        c.CONF_NOC_OD: "22:00:00", c.CONF_NOC_DO: "06:30:00"})
+    text = " | ".join(radky)
+    assert "22:00" in text and "6:30" in text
