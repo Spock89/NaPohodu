@@ -188,12 +188,18 @@ Chlazení i ohřev větráním se spustí, až je pokoj mimo hysterezní pásmo
 kolem cíle, a běží k opačné hraně. Samotné překročení hrany ale nestačí
 — venkovní vzduch musí mít čím pomoct:
 
-- chladit se dá, jen když je venku aspoň o stupeň chladněji než
-  v pokoji a zároveň nad nastavenou hranicí, ve výchozím stavu sedmi
+- chladit se dá, jen když je venku **pod cílovou teplotou** a zároveň
+  aspoň o stupeň chladněji než v pokoji a nad nastavenou hranicí, ve výchozím stavu sedmi
   stupni — dolní hrana pásma by pokoj zastavila sama, jenže zavření
   není okamžité kvůli nejkratší době držení polohy a chlazení se řídí
   nejteplejším čidlem, takže u okna je mezitím výrazně chladněji,
-- ohřívat se dá, jen když je venku aspoň o stupeň tepleji.
+- ohřívat se dá, jen když je venku **nad cílovou teplotou**, aspoň
+  o stupeň tepleji než v pokoji a nikde v pokoji se zrovna nepřehřívá.
+
+Vzduch na špatné straně cíle pokoj na cíl nedostane, jen ho zastaví
+o kus dál — proto se kvůli němu neotvírá vůbec. Cílová teplota se
+přitom sama posouvá se sezónou, takže v létě tím chlazení blokované
+není. Kvůli CO2 se větrá dál bez ohledu na teplotu.
 
 Když se během větrání dostane teplota do pásma, ale cíl ještě není
 dosažený, větrá se dál — s tím, že **kontrola účinku** po nastavené

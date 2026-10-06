@@ -1981,7 +1981,9 @@ def test_narazovy_rezim_plati_soumerne():
                               t_out=t_out, rh_out=rh, cil=22.0,
                               hodina=14.0), p, nast)
 
-    assert zkus(10.0).akce is not Akce.ZAVRIT      # v pásmu
+    # venku 10 je pod cílem, takže otevřením se k cíli nepřiblížíme —
+    # zavírá se, ale z jiného důvodu než kvůli nárazovému režimu
+    assert "daleko od cíle" not in zkus(10.0).duvod
     assert "daleko od cíle" in zkus(5.0).duvod     # mráz
     # v horku: suchý vzduch, ať do toho nemluví rosný bod
     assert "daleko od cíle" in zkus(40.0, rh=10.0).duvod
@@ -2021,3 +2023,49 @@ def test_stupnice_nerika_ze_dojede_na_cil():
                              t_max=22.0))
     assert "dojede na 20.5" in t
     assert "dojede na cíl" not in t
+
+
+# --------------------- venkovní vzduch na správné straně cíle
+
+def test_neotevira_kdyz_je_venku_na_spatne_strane():
+    """Cíl 21,9, v pokoji 22,7, venku 22,5: otevřením se k cíli
+    nepřiblížíme, jen se zastavíme o kus výš."""
+    from core import Nastaveni as N_
+    nast = N_(denni_hystereze=1.5)
+
+    for t_max in (22.7, 24.0, 26.0):
+        p = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
+                  komfort_start=22.0)
+        r = rozhodni(stary(co2=500, t_in=22.7, t_in_max=t_max, t_out=22.5,
+                           rh_out=50.0, cil=21.9, hodina=14.0), p, nast)
+        assert r.akce is Akce.ZAVRIT, t_max
+        assert "nad cílem, nepomůže" in r.duvod
+        assert p.chladi is False
+
+
+def test_chlazeni_v_horku_zustava_mozne():
+    """Cíl se v létě sám zvedá, takže se tím chlazení neblokuje."""
+    from core import Nastaveni as N_
+    p = Pamet(cas_povelu_s=0)
+    r = rozhodni(stary(co2=500, t_in=26.5, t_in_max=27.5, t_out=22.5,
+                       rh_out=50.0, cil=25.5, hodina=14.0), p,
+                 N_(denni_hystereze=1.5))
+    assert r.akce is Akce.OTEVRIT and p.chladi is True
+
+
+def test_ohrev_nepusti_vedro_do_prehrate_mistnosti():
+    """Kuchyň 27, ložnice 22, venku 29. Nejchladnější čidlo volá po
+    teple, ale do přehřáté kuchyně ho pouštět nechceme."""
+    p = Pamet(cas_povelu_s=0)
+    r = rozhodni(stary(co2=550, t_in=22, t_in_max=27, t_out=29,
+                       rh_out=50.0, cil=25, hodina=14.0), p, N)
+    assert r.akce is not Akce.OTEVRIT
+    assert p.ohrivam is False
+
+
+def test_co2_vetra_i_kdyz_venku_nepomuze():
+    """Dusno přebíjí teplotu — jinak by se v zimě nevyvětralo nikdy."""
+    p = Pamet(cas_povelu_s=0)
+    r = rozhodni(stary(co2=1200, t_in=21.5, t_in_max=21.7, t_out=10.0,
+                       rh_out=50.0, cil=22.0, hodina=14.0), p, N)
+    assert r.akce is Akce.OTEVRIT and "CO2" in r.duvod

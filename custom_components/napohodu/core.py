@@ -835,11 +835,19 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     prah_ohrevu = (v.cil + n.denni_hystereze
                    if (p.otevreno and p.ohrivam)
                    else v.cil - n.denni_hystereze)
+    # Venkovní vzduch musí být na správné straně cíle, ne jen lepší než
+    # v pokoji. Teplejší vzduch než cíl pokoj na cíl nikdy neochladí,
+    # jen ho zastaví o kus výš — a totéž zrcadlově u ohřevu.
     ohrev = (t_in < prah_ohrevu
+             # nikde v pokoji se nesmí přehřívat; dojezd k horní hraně
+             # tím zůstává možný
+             and t_max < v.cil + n.denni_hystereze
              and v.t_out > t_in + n.chlazeni_rozdil
+             and v.t_out > v.cil
              and not v.smog)
     chlazeni = (t_max > prah_chlazeni
                 and v.t_out < t_max - n.chlazeni_rozdil
+                and v.t_out < v.cil
                 and v.t_out > n.chlazeni_min_venku
                 and chlazeni_po_pauze
                 and not v.smog)
@@ -888,10 +896,18 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # tím se probudí dům, ne místnost. Chlazení je výjimka, kvůli
         # němu se v létě otevírá právě v noci.
         brani = "noční hodiny"
-    elif t_max > v.cil + n.denni_hystereze and v.t_out > t_max:
+    elif p.ohrivam and t_max > v.cil + n.denni_hystereze:
         # Teplejší vzduch zvenčí byl důvod, proč se otevíralo. Zavírá
         # se proto, že už je dost teplo, ne proto, že je venku tepleji.
         brani = "dost teplo, jsme na horní hraně pásma"
+    elif not ohrev and t_max > v.cil and v.t_out > v.cil:
+        # Venku je nad cílem a v pokoji taky: otevřením se k cíli
+        # nepřiblížíme, jen zastavíme o kus výš. Cíl se v létě sám
+        # zvedá, takže se tím chlazení v horku neblokuje.
+        brani = f"venku {v.t_out:.1f} °C nad cílem, nepomůže"
+    elif not chlazeni and t_in < v.cil and v.t_out < v.cil:
+        # zrcadlově: chladnější vzduch než cíl pokoj na cíl neohřeje
+        brani = f"venku {v.t_out:.1f} °C pod cílem, nepomůže"
     elif not chlazeni and not ohrev and v.t_out < t_in \
             and _pod_cilem(v, n, t_in):
         # když se zároveň někde přehřívá, chlazení má přednost
