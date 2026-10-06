@@ -2069,3 +2069,48 @@ def test_co2_vetra_i_kdyz_venku_nepomuze():
     r = rozhodni(stary(co2=1200, t_in=21.5, t_in_max=21.7, t_out=10.0,
                        rh_out=50.0, cil=22.0, hodina=14.0), p, N)
     assert r.akce is Akce.OTEVRIT and "CO2" in r.duvod
+
+
+def test_po_marnem_pokusu_ceka_i_vetrani_kvuli_co2():
+    """Dřív prošlo větrání kvůli CO2 a za dvacet minut se zkusilo
+    totéž, co minule nezabralo."""
+    from core import Nastaveni as N_
+    nast = N_(zmena_podminek=2.0, nejdriv_znovu_s=3600)
+
+    def zkus(cas_min, t_out=20.0, co2=900, vetrat=False):
+        p = Pamet(otevreno=False, cas_povelu_s=0, marne_od_s=100000,
+                  marne_t_out=20.0)
+        return rozhodni(Vstup(co2=co2, t_in=21.5, t_in_max=21.7,
+                              t_out=t_out, rh_out=50.0, cil=22.0,
+                              hodina=14.0, vetrat=vetrat,
+                              cas_s=100000 + cas_min * 60), p, nast)
+
+    assert zkus(22).akce is not Akce.OTEVRIT      # čeká se
+    assert zkus(65).akce is Akce.OTEVRIT          # strop vypršel
+    assert zkus(22, t_out=18.0).akce is Akce.OTEVRIT   # venku se změnilo
+    assert zkus(22, co2=1400).akce is Akce.OTEVRIT     # krize
+    assert zkus(22, vetrat=True).akce is Akce.OTEVRIT  # ruční žádost
+
+
+def test_nula_vypne_jen_cekani_na_podminky():
+    """Dřív nula vypnula celou bránu a zbyla jen doba držení polohy,
+    takže se zkoušelo každých dvacet minut."""
+    from core import Nastaveni as N_
+    nast = N_(zmena_podminek=0.0, nejdriv_znovu_s=3600,
+              min_drzeni_s=21 * 60)
+
+    def zkus(cas_min, t_out=19.0):
+        p = Pamet(otevreno=False, cas_povelu_s=0, marne_od_s=100000,
+                  marne_t_out=20.0)
+        return rozhodni(Vstup(co2=500, t_in=24.2, t_in_max=24.5,
+                              t_out=t_out, rh_out=50.0, cil=22.0,
+                              hodina=14.0,
+                              cas_s=100000 + cas_min * 60), p, nast)
+
+    assert zkus(22).akce is not Akce.OTEVRIT      # strop platí dál
+    assert zkus(45).akce is not Akce.OTEVRIT
+    assert zkus(65).akce is Akce.OTEVRIT          # až po stropu
+
+    # a se změnou podmínek vypnutou se na ni nečeká
+    assert "na změnu venku" not in zkus(22).duvod
+    assert "ještě" in zkus(22).duvod

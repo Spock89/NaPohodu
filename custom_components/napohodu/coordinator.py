@@ -1190,17 +1190,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # zdržuje jen otevření, ne zavření, takže se nepřestřelí.
             g = {**self.entry.data, **self.entry.options}
             # routuje se podle strojového kódu, ne podle českého textu
-            if r.kod == "bez_ucinku":
-                # Po marném větrání se čeká déle, jinak se za dvacet
-                # minut otevře znovu a zjistí se totéž. S každým dalším
-                # marným pokusem se pauza zdvojnásobí, nejvýš na hodinu.
-                pauza = min(
-                    core.PAUZA_PO_PULZU_S
-                    * 2 ** max(0, pamet.pulzy_za_sebou - 1), 3600)
-                if pauza > nast.min_drzeni_s:
-                    pamet.cas_povelu_s = cas_s + pauza - nast.min_drzeni_s
-                m.atributy["pauza_po_marnem_vetrani_min"] = round(pauza / 60)
-
             if r.kod == "vitr":
                 await self._posli(g, "vitr", m.nazev, cas_s,
                                   **(self.vitr_pricina or {}))
@@ -1272,6 +1261,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "narazove_vetrani": pamet.narazove_pulz and skutecne,
             "narazove_mozne": self.narazove,
             # jak dlouho je otevřeno a jestli to zabírá
+            # jak dlouho se ještě čeká, než se zkusí znovu
+            "cekani_po_marnem": (
+                f"od marného pokusu {int((cas_s - pamet.marne_od_s) / 60)} "
+                f"min, zkusím po změně venku o "
+                f"{nast.zmena_podminek:.1f} °C, nejpozději za "
+                f"{int((nast.nejdriv_znovu_s - (cas_s - pamet.marne_od_s)) / 60)}"
+                f" min"
+                if pamet.marne_od_s else None),
             "ucinek": (
                 f"CO2 {pamet.ucinek_co2:.0f} → {v.co2:.0f}, teplota "
                 f"{pamet.ucinek_t_in:.1f} → {v.t_in:.1f} °C za "

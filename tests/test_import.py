@@ -991,13 +991,14 @@ def test_prach_ze_zvlhcovace_se_nepocita(nahradni_ha):
     assert '"prach_ze_zvlhcovace"' in ko
 
 
-def test_pauza_po_marnem_vetrani(nahradni_ha):
-    """Po marném pokusu se čeká déle, pokus za pokusem."""
+def test_cekani_po_marnem_je_videt(nahradni_ha):
+    """Čekání řídí jedno pravidlo — změna venku, nejpozději strop.
+    Dvojí mechanismus jen pletl, kolik se vlastně čeká."""
     import pathlib
     ko = pathlib.Path(
         "custom_components/napohodu/coordinator.py").read_text()
-    assert 'if r.kod == "bez_ucinku":' in ko
-    assert '"pauza_po_marnem_vetrani_min"' in ko
+    assert '"cekani_po_marnem"' in ko
+    assert 'if r.kod == "bez_ucinku":' not in ko
 
 
 def test_popisek_sezony_mluvi_o_trinacti(nahradni_ha):

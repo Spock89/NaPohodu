@@ -220,7 +220,8 @@ nepřiblížila k cíli o tři desetiny, okno se zavře a chvíli se to
 nezkouší. Pauza se s každým dalším marným pokusem zdvojnásobí.
 
 Po marném pokusu se nečeká na hodiny, ale **na změnu venkovních
-podmínek** — čas je jen zástupná veličina, skutečný důvod, proč to
+podmínek**, a platí to na všechno větrání — i to kvůli CO2, protože
+jinak by se za dvacet minut zkusilo totéž, co minule nezabralo — čas je jen zástupná veličina, skutečný důvod, proč to
 nešlo, byl venku. Další pokus se povolí, až se venkovní teplota posune
 o nastavený počet stupňů kterýmkoli směrem. Když se venku nic nehne,
 zkusí se to tak jako tak po nastavené době, ve výchozím stavu po hodině

@@ -855,24 +855,31 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # Po marném pokusu se čeká na změnu venkovních podmínek, ne na
     # hodiny. Když se venku nic nezmění, nemá smysl zkoušet totéž —
     # nouzové CO2 a ruční žádost to obchází dál.
-    if (p.marne_od_s > 0 and not p.otevreno and n.zmena_podminek > 0
+    # Nula u změny podmínek vypíná jen čekání na ně, ne celou bránu —
+    # strop čekání platí dál. Dřív nula vypnula obojí a zbyla jen doba
+    # držení polohy, takže se zkoušelo každých dvacet minut.
+    if (p.marne_od_s > 0 and not p.otevreno
+            and (n.zmena_podminek > 0 or n.nejdriv_znovu_s > 0)
             and v.co2 <= n.co2_noc_krize and not v.vetrat
             and not v.vynuceno):
         # Stačí jedno z dvojího: venku se posunula teplota správným
         # směrem, nebo uplynul čas. Čas je strop, ne další podmínka —
         # když se ochladí dřív, zkusí se dřív.
-        zmenilo_se = (v.t_out <= p.marne_t_out - n.zmena_podminek
-                      or v.t_out >= p.marne_t_out + n.zmena_podminek)
+        zmenilo_se = (
+            n.zmena_podminek > 0
+            and (v.t_out <= p.marne_t_out - n.zmena_podminek
+                 or v.t_out >= p.marne_t_out + n.zmena_podminek))
         cas_vyprsel = v.cas_s - p.marne_od_s >= n.nejdriv_znovu_s
         if not zmenilo_se and not cas_vyprsel:
-            if chlazeni or ohrev:
-                zbyva = int((n.nejdriv_znovu_s
-                             - (v.cas_s - p.marne_od_s)) / 60)
-                return beze_zmeny(
-                    f"minule to nepomohlo, čekám na změnu venku o "
-                    f"{n.zmena_podminek:.1f} °C, nejpozději {zbyva} min",
-                    False)
-            chlazeni = ohrev = False
+            # Platí na všechno, ne jen na teplotu. Dřív prošlo větrání
+            # kvůli CO2 a za dvacet minut se zkusilo totéž, co minule
+            # nezabralo. Krize a ruční žádost to obchází dál.
+            zbyva = int((n.nejdriv_znovu_s
+                         - (v.cas_s - p.marne_od_s)) / 60)
+            cim = (f"na změnu venku o {n.zmena_podminek:.1f} °C, "
+                   f"nejpozději {zbyva} min" if n.zmena_podminek > 0
+                   else f"ještě {zbyva} min")
+            return beze_zmeny(f"minule to nepomohlo, čekám {cim}", False)
         else:
             p.marne_od_s = 0.0        # zkusíme to znovu
 
