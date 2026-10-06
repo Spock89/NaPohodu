@@ -611,6 +611,9 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     polozky = []
     if existuje("button.napohodu_srovnat_vse"):
         polozky += _radek("button.napohodu_srovnat_vse", "Všechno naráz")
+        if existuje("button.napohodu_vynulovat_vnitrni_stavy"):
+            polozky += _radek("button.napohodu_vynulovat_vnitrni_stavy",
+                              "Vynulovat vnitřní stavy")
         polozky.append("      - type: divider")
     # Identifikátor entity vzniká z přeloženého jména, ne z klíče
     # v kódu — „srovnat_stineni" se jmenuje Srovnat žaluzie, takže

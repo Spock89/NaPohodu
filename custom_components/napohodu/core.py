@@ -1269,8 +1269,9 @@ def pasmo_text(cil: float, t_in: float, hystereze: float,
         else:
             radky.append(f"{proc}Zavřu při poklesu na {dolni:.1f} °C; "
                          f"nad {horni:.1f} °C se přepne na chlazení, "
-                         f"které dojede na cíl.")
+                         f"které dojede na {dolni:.1f} °C.")
     elif zavreno_chladem:
+        # ve dne se čeká na návrat k cíli, v noci na prohřátí o tloušťku
         otevru = cil if not noc else min(dolni + tloustka, cil)
         radky.append(f"Zavřeno kvůli chladu. Kvůli teplotě otevřu "
                      f"od {otevru:.1f} °C.")

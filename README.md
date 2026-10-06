@@ -495,6 +495,16 @@ Integrace to hlídá při každém cyklu a ohlásí zprávou, řádkem v kartě 
 zápisem do protokolu. Hláška pojmenuje nastavení tak, jak ho vidíš na
 obrazovce, uvede obě čísla a řekne, co s tím udělat.
 
+## Vynulovat vnitřní stavy
+
+Když se integrace zamotá — drží rozdělané větrání, čeká na změnu venku,
+pamatuje si marný pokus — dá se to rozmotat tlačítkem **Vynulovat
+vnitřní stavy** místo restartu. Zapomene jen to, co si jádro pamatuje
+mezi cykly: režim, meze, počítadla, čekání.
+
+Nastavení, posuvníků, naučených průměrů ani skutečného stavu okna se
+nedotkne.
+
 ## Nastavení pro celý byt
 
 Některé hodnoty nepatří místnosti, ale celému bytu — nárazový režim,

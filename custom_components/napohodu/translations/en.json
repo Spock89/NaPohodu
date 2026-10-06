@@ -941,6 +941,9 @@
       },
       "zavrit_okno": {
         "name": "Zavřít okno"
+      },
+      "vynulovat_stavy": {
+        "name": "Vynulovat vnitřní stavy"
       }
     },
     "select": {

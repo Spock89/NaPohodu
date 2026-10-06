@@ -155,6 +155,27 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._uloziste_pameti = Store(hass, 1, f"{DOMAIN}.pameti")
         self.mistnosti: dict[str, VysledekMistnosti] = {}
 
+    def vynuluj_stavy(self) -> None:
+        """Zapomene vnitřní stavy rozhodování, nic uživatelského.
+
+        Mění se jen to, co si jádro pamatuje mezi cykly: rozdělané
+        větrání, čekání po marném pokusu, zapamatované meze a počítadla.
+        Nastavení, posuvníky ani naučené průměry se nedotkne, jinak by
+        tlačítko bylo nebezpečné.
+        """
+        for pamet in self.pameti.values():
+            cista = core.Pamet()
+            for pole in ("rezim", "den_mez", "noc_mez", "noc_start",
+                         "noc_krize", "noc_zavreno_teplotou",
+                         "komfort_start", "narazove_pulz",
+                         "pulzy_za_sebou", "zavreno_chladem",
+                         "zavreno_teplem", "chladi", "ohrivam",
+                         "ucinek_od_s", "ucinek_co2", "ucinek_t_in",
+                         "marne_od_s", "marne_t_out", "vetra_se",
+                         "pm_prumer", "pm_venku_horsi_do_s"):
+                setattr(pamet, pole, getattr(cista, pole))
+        self.zvlhcuje.clear()
+
     def srovnej(self, pod_id: str | None = None) -> None:
         """Zapomene poslední povely, takže se v dalším cyklu pošlou znovu.
 
@@ -1311,7 +1332,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
         await self._stineni_krok(p, d, u, m, doma, slunce_el, cas_s)
         await self._pomocnici_krok(p, d, m, okruh, v.t_in, t_out,
-                                   skutecne, doma)
+                                   # V místnosti bez ovládaného okna je
+                                   # „otevřeno" jen vnitřní stav jádra,
+                                   # ne skutečnost — zvlhčovač by pak
+                                   # hlásil otevřené okno, které není.
+                                   bool(okna) and skutecne, doma)
         await self._topeni_krok(p, d, m, cas_s)
 
     async def _topeni_krok(self, p, d, m, cas_s: float) -> None:

@@ -2012,3 +2012,12 @@ def test_narazove_zavira_bez_cekani_na_drzeni():
 
     assert zkus(False).akce is Akce.NIC          # drží stav
     assert zkus(True).akce is Akce.ZAVRIT        # zavře hned
+
+
+def test_stupnice_nerika_ze_dojede_na_cil():
+    """Chlazení dojede na dolní hranu pásma, ne na cíl."""
+    from core import pasmo_text
+    t = "\n".join(pasmo_text(22.0, 21.8, 1.5, 18.0, 1.0, otevreno=True,
+                             t_max=22.0))
+    assert "dojede na 20.5" in t
+    assert "dojede na cíl" not in t

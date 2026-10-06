@@ -53,7 +53,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                 if vy.cile_zaluzii(role, mapa):
                     tlacitka.append(Stineni(k, pod, klic, role))
             pridat(tlacitka, config_subentry_id=pod.subentry_id)
-    pridat([SrovnatVse(k, entry)])
+    pridat([SrovnatVse(k, entry), VynulovatStavy(k, entry)])
 
 
 class Srovnat(NaPohoduEntity, ButtonEntity):
@@ -83,6 +83,32 @@ class SrovnatVse(CoordinatorEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         self.coordinator.srovnej()
+        await self.coordinator.async_request_refresh()
+
+
+class VynulovatStavy(CoordinatorEntity, ButtonEntity):
+    """Zapomene vnitřní stavy rozhodování.
+
+    Když se integrace zamotá — drží nedokončené větrání, čeká na změnu
+    venku, pamatuje si marný pokus — není jak to rozmotat jinak než
+    restartem. Tohle zapomene jen vnitřní stavy; nastavení, posuvníky
+    ani naučené průměry se nedotkne.
+    """
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "vynulovat_stavy"
+    _attr_icon = "mdi:restore-alert"
+
+    def __init__(self, koordinator, entry) -> None:
+        super().__init__(koordinator)
+        self._attr_unique_id = f"{entry.entry_id}_vynulovat_stavy"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name="NaPohodu", manufacturer="NaPohodu", model="Společné",
+        )
+
+    async def async_press(self) -> None:
+        self.coordinator.vynuluj_stavy()
         await self.coordinator.async_request_refresh()
 
 

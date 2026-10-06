@@ -1067,3 +1067,36 @@ def test_prehled_bytu_zvlada_cas_z_formulare(nahradni_ha):
         c.CONF_NOC_OD: "22:00:00", c.CONF_NOC_DO: "06:30:00"})
     text = " | ".join(radky)
     assert "22:00" in text and "6:30" in text
+
+
+def test_vynulovani_nesahne_na_nastaveni(nahradni_ha):
+    """Tlačítko smí zapomenout rozdělané větrání, ne uživatelské volby."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    core = importlib.import_module("napohodu.core")
+
+    class Falesny:
+        vynuluj_stavy = ko.NaPohoduCoordinator.vynuluj_stavy
+        pameti = {"id": core.Pamet(
+            otevreno=True, rezim="pulz", den_mez=19.0, pulzy_za_sebou=3,
+            marne_od_s=1000.0, zavreno_chladem=True, chladi=True,
+            ucinek_od_s=500.0, cas_povelu_s=12345.0)}
+        hodnoty = {("id", "odchylka_teploty"): 1.5}
+        zvlhcuje = {"id"}
+
+    k = Falesny()
+    k.vynuluj_stavy()
+    p = k.pameti["id"]
+
+    # vnitřní stavy pryč
+    assert p.rezim == core.Pamet().rezim
+    assert p.den_mez is None and p.pulzy_za_sebou == 0
+    assert p.marne_od_s == 0.0 and p.zavreno_chladem is False
+    assert p.chladi is False and p.ucinek_od_s == 0.0
+    assert not k.zvlhcuje
+
+    # uživatelské volby a skutečný stav okna zůstávají
+    assert k.hodnoty[("id", "odchylka_teploty")] == 1.5
+    assert p.otevreno is True
+    assert p.cas_povelu_s == 12345.0
