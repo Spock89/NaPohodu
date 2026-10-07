@@ -267,6 +267,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
               cidla: dict | None = None, zaluzie: dict | None = None,
               nazvy: dict | None = None,
               se_zvlhcovacem: set | None = None,
+              zvlhcovace: dict | None = None,
               venku: str | None = None,
               co2_cidla: dict | None = None,
               rh_cidla: dict | None = None, s_okny: set | None = None,
@@ -671,6 +672,13 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     klidy = [(f"binary_sensor.napohodu_{m}_klid", f"Klid {m}")
              for m in mistnosti if m in s_klidem]
     c += _graf("Okna, žaluzie a klid", 24, okna + zal + klidy, existuje)
+
+    # Zvlhčovače zvlášť: zajímá, kdy běžely, a jen tam, kde jsou.
+    # Bere se skutečná entita zařízení, ne naše představa o ní —
+    # u infraportu se ty dvě věci můžou rozejít.
+    zvlh = [(e, f"Zvlhčovač {jm(m)}")
+            for m in mistnosti for e in (zvlhcovace or {}).get(m, [])]
+    c += _graf("Zvlhčovače", 48, zvlh, existuje, min_radku=1)
 
     karty = [x for x in c if x is not None]
 

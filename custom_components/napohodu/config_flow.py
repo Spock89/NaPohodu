@@ -80,7 +80,7 @@ SCHEMA_GLOBAL = vol.Schema(
             _cislo(0, 10, 0.5),
         vol.Optional(c.CONF_NEJDRIV_ZNOVU, default=60):
             _cislo(5, 240, 5, "min"),
-        vol.Optional(c.CONF_SEZONA_PRAH, default=15.0): _cislo(8, 22),
+        vol.Optional(c.CONF_SEZONA_PRAH, default=13.0): _cislo(8, 22),
         vol.Optional(c.CONF_SEZONA_HYSTEREZE, default=1.0): _cislo(0, 5, 0.5),
         vol.Optional(c.CONF_RH_VENKU): _ent(["sensor"], trida=["humidity"]),
         vol.Optional(c.CONF_ZARENI): _ent(["sensor"]),
@@ -241,7 +241,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
         co2_cidla, rh_cidla = {}, {}
         s_okny, s_klidem = set(), set()
         nazvy, poradi = {}, {}
-        se_zvlhcovacem = set()
+        se_zvlhcovacem, zvlhcovace = set(), {}
         for pod in self.config_entry.subentries.values():
             if pod.subentry_type == c.PODENTITA_MISTNOST:
                 k = klic(pod.title)
@@ -249,6 +249,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 nazvy[k] = pod.title
                 if pod.data.get(c.CONF_ZVLHCOVAC):
                     se_zvlhcovacem.add(k)
+                    zvlhcovace[k] = list(pod.data[c.CONF_ZVLHCOVAC])
                 poradi[k] = float(pod.data.get(c.CONF_PORADI, 0) or 0)
                 teploty = pod.data.get(c.CONF_TEPLOTY) or []
                 if teploty:
@@ -281,7 +282,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 mistnosti, oblasti,
                 lambda e: self.hass.states.get(e) is not None,
                 cidla=cidla, zaluzie=zaluzie, nazvy=nazvy,
-                se_zvlhcovacem=se_zvlhcovacem,
+                se_zvlhcovacem=se_zvlhcovacem, zvlhcovace=zvlhcovace,
                 venku=g.get(c.CONF_T_VENKU),
                 co2_cidla=co2_cidla, rh_cidla=rh_cidla,
                 s_okny=s_okny, s_klidem=s_klidem, podoba=podoba)

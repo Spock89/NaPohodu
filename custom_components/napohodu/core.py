@@ -502,8 +502,13 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     noc = _je_noc(v.hodina, n, v.spanek)
 
     if v.cas_s < p.rucni_do_s:
-        seznam.append(f"sáhl jsi na okno, čekám na nový podnět "
-                      f"(ještě {int((p.rucni_do_s - v.cas_s) / 60)} min)")
+        # Dokud platí ruční zásah, automatika do okna nemluví — další
+        # řádky o zavírání by slibovaly něco, co se nestane. Nouzové
+        # větrání je jediné, co to obchází, takže patří k tomu.
+        return [f"sáhl jsi na okno, čekám na nový podnět "
+                f"(ještě {int((p.rucni_do_s - v.cas_s) / 60)} min)",
+                f"dřív jen při nouzovém větrání nad "
+                f"{n.co2_noc_krize:.0f} ppm (teď {v.co2:.0f})"]
 
     zbyva = n.min_drzeni_s - (v.cas_s - p.cas_povelu_s)
     if zbyva > 0:

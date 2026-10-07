@@ -2225,3 +2225,20 @@ def test_po_rucnim_zasahu_stupnice_neslibuje_zavreni():
     bez = pasmo_predpoved(pasmo_text(
         21.5, 19.4, 2.5, 19.0, 1.0, otevreno=True, spanek=True, noc=True))
     assert "Zavřu" in bez
+
+
+def test_pri_rucnim_zasahu_se_neslibuje_nic_dalsiho():
+    """Automatika do okna nemluví, takže řádky o zavírání by slibovaly
+    něco, co se nestane."""
+    from core import ocekavani
+    p = Pamet(otevreno=True, cas_povelu_s=99000, rucni_do_s=100000 + 29 * 60,
+              rezim="pulz", den_mez=19.4, vetra_se=True)
+    v = Vstup(co2=542, t_in=19.7, t_in_max=19.9, t_out=12.0, cil=21.0,
+              hodina=14.0, cas_s=100000)
+    radky = ocekavani(v, p, N)
+
+    assert len(radky) == 2
+    assert "sáhl jsi na okno" in radky[0]
+    assert "nouzovém větrání" in radky[1]
+    assert not any("zavřu při poklesu" in x for x in radky)
+    assert not any("držím stav" in x for x in radky)

@@ -567,7 +567,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             f"Další pokus po marném větrání: po změně venku o "
             f"{float(g.get(CONF_ZMENA_PODMINEK, 2.0)):.1f} °C, "
             f"nejpozději za {int(g.get(CONF_NEJDRIV_ZNOVU, 60))} min",
-            f"Topná sezóna pod {float(g.get(CONF_SEZONA_PRAH, 15.0)):.1f} "
+            f"Topná sezóna pod {float(g.get(CONF_SEZONA_PRAH, 13.0)):.1f} "
             f"°C třídenního průměru (teď "
             f"{'běží' if self.topna_sezona else 'neběží'})",
             # čas z formuláře chodí jako „22:00:00", ne jako číslo
@@ -593,7 +593,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         Bez vlastní entity se použije počítaný průměr.
         """
         prah = self.hodnota(self.entry.entry_id, CONF_SEZONA_PRAH,
-                            float(g.get(CONF_SEZONA_PRAH, 15.0)))
+                            float(g.get(CONF_SEZONA_PRAH, 13.0)))
         hyst = float(g.get(CONF_SEZONA_HYSTEREZE, 1.0))
         t = self._cislo(g.get(CONF_T_SEZONA))
         zdroj = "cidlo"

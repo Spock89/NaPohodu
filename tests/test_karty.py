@@ -548,3 +548,28 @@ def test_globalni_nastaveni_je_v_karte():
     md = [k for s in d["sections"] for k in s["cards"]
           if "nastaveni_bytu" in str(k.get("content", ""))]
     assert len(md) == 1
+
+
+def test_graf_zvlhcovacu_jen_kde_jsou():
+    """Zajímá, kdy běžely — a bere se skutečná entita zařízení, ne naše
+    představa o ní."""
+    import yaml
+    d = yaml.safe_load(dashboard(
+        ["obyvak", "kuchyne"], [], vzdy,
+        cidla={"obyvak": "sensor.a", "kuchyne": "sensor.b"},
+        se_zvlhcovacem={"obyvak"},
+        zvlhcovace={"obyvak": ["input_boolean.zvhlcovac_o"]},
+        podoba="stranka"))
+    grafy = [k for s in d["sections"] for k in s["cards"]
+             if k["type"] == "history-graph" and k.get("title") == "Zvlhčovače"]
+    assert len(grafy) == 1
+    assert [e["entity"] for e in grafy[0]["entities"]] == [
+        "input_boolean.zvhlcovac_o"]
+
+    # bez zvlhčovačů graf nevznikne
+    d2 = yaml.safe_load(dashboard(
+        ["obyvak"], [], vzdy, cidla={"obyvak": "sensor.a"},
+        podoba="stranka"))
+    assert not [k for s in d2["sections"] for k in s["cards"]
+                if k.get("title") == "Zvlhčovače"
+                and k["type"] == "history-graph"]
