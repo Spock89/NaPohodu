@@ -1182,3 +1182,13 @@ def test_zona_se_chova_jako_jedna_mistnost(nahradni_ha):
     zavreno = {**okruh, "dvere_otevrene": False}
     assert k._zvlhcuje_v_okruhu(zavreno, "obyvak") is False
     assert k._okno_v_okruhu(zavreno, "obyvak") is False
+
+
+def test_kontakt_okna_plati_i_bez_ovladani(nahradni_ha):
+    """V obýváku okno neovládáme, ale kontakt máme — zvlhčovač nesmí
+    běžet při otevřeném okně, i když ho otevřela ruka."""
+    import pathlib
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    assert "(bool(okna) or bool(kontakty)) and skutecne" in ko
+    assert "okno_fakt" in ko

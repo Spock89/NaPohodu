@@ -1375,14 +1375,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         })
 
         await self._stineni_krok(p, d, u, m, doma, slunce_el, cas_s)
+        # O otevřeném okně musí mluvit fakt, ne vnitřní stav jádra:
+        # kontakt ví o skutečnosti i tam, kde okno neovládáme, a bez
+        # kontaktu i ovládaného okna o ní nevíme nic. K tomu okna
+        # v zóně, se kterou místnost dýchá.
+        okno_fakt = (((bool(okna) or bool(kontakty)) and skutecne)
+                     or self._okno_v_okruhu(okruh, p.subentry_id))
         await self._pomocnici_krok(p, d, m, okruh, v.t_in, t_out,
-                                   # V místnosti bez ovládaného okna je
-                                   # „otevřeno" jen vnitřní stav jádra,
-                                   # ne skutečnost — zvlhčovač by pak
-                                   # hlásil otevřené okno, které není.
-                                   (bool(okna) and skutecne)
-                                   or self._okno_v_okruhu(
-                                       okruh, p.subentry_id), doma)
+                                   okno_fakt, doma)
         await self._topeni_krok(p, d, m, cas_s)
 
     async def _topeni_krok(self, p, d, m, cas_s: float) -> None:
