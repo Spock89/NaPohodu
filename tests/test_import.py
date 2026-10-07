@@ -984,8 +984,9 @@ def test_prach_ze_zvlhcovace_se_nepocita(nahradni_ha):
     import pathlib
     ko = pathlib.Path(
         "custom_components/napohodu/coordinator.py").read_text()
-    # prach se pro rozhodování vynuluje
-    assert 'pm25=0.0 if p.subentry_id in self.zvlhcuje' in ko
+    # prach se pro rozhodování vynuluje, a to v celé zóně
+    assert "pm25=0.0 if self._zvlhcuje_v_okruhu" in ko
+    assert "def _zvlhcuje_v_okruhu" in ko
     # a čistička na vlastní aerosol taky nereaguje
     assert "zvlhcuje = p.subentry_id in self.zvlhcuje" in ko
     assert '"prach_ze_zvlhcovace"' in ko
@@ -1141,3 +1142,43 @@ def test_vynulovani_zrusi_i_cekani(nahradni_ha):
     assert p.marne_od_s == 0.0
     assert k.vykonavaci["id"].stav.pulz_do_s is None
     assert k.vykonavaci["id"].stav.posledni_cas_s < 0
+
+
+def test_zona_se_chova_jako_jedna_mistnost(nahradni_ha):
+    """Kuchyň a obývák za otevřenými dveřmi mají společný vzduch:
+    zvlhčovač v jednom zvedne prach v druhém a otevřené okno v jednom
+    znamená, že druhý nemá co zvlhčovat."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+
+    class Pod:
+        def __init__(self, pid):
+            self.subentry_id = pid
+
+    class Stav:
+        def __init__(self, povel=None):
+            self.posledni_povel = povel
+
+    class Vyk:
+        def __init__(self, povel=None):
+            self.stav = Stav(povel)
+
+    class Falesny:
+        _zvlhcuje_v_okruhu = ko.NaPohoduCoordinator._zvlhcuje_v_okruhu
+        _okno_v_okruhu = ko.NaPohoduCoordinator._okno_v_okruhu
+        zvlhcuje = {"kuchyne"}
+        vykonavaci = {"kuchyne": Vyk("otevrit"), "obyvak": Vyk()}
+
+    k = Falesny()
+    okruh = {"cleni": [Pod("kuchyne"), Pod("obyvak")],
+             "dvere_otevrene": True}
+
+    # obývák vidí zvlhčovač i okno kuchyně
+    assert k._zvlhcuje_v_okruhu(okruh, "obyvak") is True
+    assert k._okno_v_okruhu(okruh, "obyvak") is True
+
+    # se zavřenými dveřmi se neovlivňují
+    zavreno = {**okruh, "dvere_otevrene": False}
+    assert k._zvlhcuje_v_okruhu(zavreno, "obyvak") is False
+    assert k._okno_v_okruhu(zavreno, "obyvak") is False

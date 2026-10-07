@@ -2181,3 +2181,31 @@ def test_zmena_venku_plati_jen_spravnym_smerem():
     # po marném chlazení pomůže jen ochlazení
     assert zkus("chlazeni", 18.0).akce is Akce.OTEVRIT
     assert zkus("chlazeni", 22.0).akce is not Akce.OTEVRIT
+
+
+def test_stupnice_a_diagnostika_mluvi_o_teze_mezi():
+    """Stupnice brala nastavenou noční mez, rozhodování tu zapamatovanou
+    při otevření — a tvrdily každá jiné číslo."""
+    from core import ocekavani, pasmo_text
+    p = Pamet(otevreno=True, cas_povelu_s=0, rezim="noc", noc_mez=19.0,
+              vetra_se=True)
+    v = Vstup(co2=663, t_in=19.4, t_in_max=19.6, t_out=10.0, rh_out=50.0,
+              cil=21.5, hodina=3.0, spanek=True, cas_s=100000)
+
+    # diagnostika mluví o 19,0
+    assert any("19.0" in x for x in ocekavani(v, p, N))
+
+    # a stupnice, když dostane tutéž mez, taky
+    t = "\n".join(pasmo_text(21.5, 19.4, 2.5, p.noc_mez, 1.0,
+                             otevreno=True, spanek=True, noc=True))
+    assert "17.0" in t          # pojistka 2 °C pod zapamatovanou mezí
+    assert "13.0" not in t      # ne pod nastavenou
+
+
+def test_ve_spanku_stupnice_nemluvi_o_chlazeni():
+    """Ve spánku teplota okno neotvírá ani nezavírá."""
+    from core import pasmo_text
+    t = "\n".join(pasmo_text(21.5, 19.4, 2.5, 21.0, 1.0, otevreno=True,
+                             spanek=True, noc=True))
+    assert "chlazení" not in t
+    assert "rozhoduje jen CO2" in t

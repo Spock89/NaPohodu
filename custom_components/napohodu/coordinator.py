@@ -523,6 +523,36 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         }
         return self.vitr_blokuje
 
+    def _zvlhcuje_v_okruhu(self, okruh: dict, pod_id: str) -> bool:
+        """Běží v téhle místnosti nebo v zóně, se kterou dýchá, zvlhčovač?
+
+        Zóna s otevřenými dveřmi je ve skutečnosti jedna místnost
+        přepažená průchodem, takže se aerosol z jednoho zvlhčovače
+        objeví na čidlech obou.
+        """
+        if pod_id in self.zvlhcuje:
+            return True
+        if not okruh.get("dvere_otevrene", True):
+            return False
+        return any(x.subentry_id in self.zvlhcuje
+                   for x in okruh.get("cleni", []))
+
+    def _okno_v_okruhu(self, okruh: dict, pod_id: str) -> bool:
+        """Je otevřené okno tady, nebo vedle za otevřenými dveřmi?
+
+        Zvlhčovat při otevřeném okně vedle je totéž jako zvlhčovat
+        ulici — vzduch si zóna vyměňuje celá.
+        """
+        if not okruh.get("dvere_otevrene", True):
+            return False
+        for x in okruh.get("cleni", []):
+            if x.subentry_id == pod_id:
+                continue
+            vyk = self.vykonavaci.get(x.subentry_id)
+            if vyk is not None and vyk.stav.posledni_povel == "otevrit":
+                return True
+        return False
+
     def _prehled_bytu(self, g: dict) -> list[str]:
         """Globální nastavení, ať je na dashboardu vidět, co platí."""
         naraz = bool(g.get(CONF_NARAZOVE, False))
@@ -1030,8 +1060,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     self.narazove_co2 if self.narazove_bezi else 0.0),
             # Prach z vlastního zvlhčovače se nepočítá: ultrazvukový
             # rozprašuje minerály z vody a čidlo je vidí jako PM.
-            pm25=0.0 if p.subentry_id in self.zvlhcuje else okruh["pm25"],
-            pm10=0.0 if p.subentry_id in self.zvlhcuje else okruh["pm10"],
+            # Zvlhčovač v jedné místnosti zóny zvedne prach i vedle,
+            # pokud jsou dveře otevřené — vzduch je společný, takže
+            # i ten vlastní aerosol se musí ignorovat společně.
+            pm25=0.0 if self._zvlhcuje_v_okruhu(okruh, p.subentry_id)
+            else okruh["pm25"],
+            pm10=0.0 if self._zvlhcuje_v_okruhu(okruh, p.subentry_id)
+            else okruh["pm10"],
             pm_platny=okruh["pm_platny"],
             pm25_venku=self._cislo(g.get(CONF_PM25_VENKU)),
             pm10_venku=self._cislo(g.get(CONF_PM10_VENKU)),
@@ -1290,7 +1325,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # se nikdy nic nestane, a stav okna, který neznáme.
             "teplotni_pasmo": None if not okna else core.pasmo_jen_stupnice(
                 core.pasmo_text(
-                m.cil, v.t_in, nast.denni_hystereze, nast.nocni_min,
+                m.cil, v.t_in, nast.denni_hystereze,
+                # mez zapamatovaná při otevření, ne nastavená — jinak
+                # stupnice a diagnostika tvrdí každá jiné číslo
+                pamet.noc_mez if pamet.noc_mez is not None
+                else nast.nocni_min,
                 nast.tloustka, skutecne, bool(m.klid),
                 core._je_noc(self._hodina_ted, nast, bool(m.klid)),
                 core.SPANEK_POJISTKA,
@@ -1304,7 +1343,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # věta zvlášť, aby ji karta mohla zalomit
             "teplotni_predpoved": None if not okna else core.pasmo_predpoved(
                 core.pasmo_text(
-                    m.cil, v.t_in, nast.denni_hystereze, nast.nocni_min,
+                    m.cil, v.t_in, nast.denni_hystereze,
+                    pamet.noc_mez if pamet.noc_mez is not None
+                    else nast.nocni_min,
                     nast.tloustka, skutecne, bool(m.klid),
                     core._je_noc(self._hodina_ted, nast, bool(m.klid)),
                     core.SPANEK_POJISTKA, m.atributy.get("teplota_max"),
@@ -1337,7 +1378,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                                    # „otevřeno" jen vnitřní stav jádra,
                                    # ne skutečnost — zvlhčovač by pak
                                    # hlásil otevřené okno, které není.
-                                   bool(okna) and skutecne, doma)
+                                   (bool(okna) and skutecne)
+                                   or self._okno_v_okruhu(
+                                       okruh, p.subentry_id), doma)
         await self._topeni_krok(p, d, m, cas_s)
 
     async def _topeni_krok(self, p, d, m, cas_s: float) -> None:

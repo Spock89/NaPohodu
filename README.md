@@ -396,6 +396,19 @@ zvolenou dobu vysokou teplotu, aby ventil zůstal plně otevřený a rozvod
 se odvzdušnil sám. Přebíjí i otevřené okno, protože je to jednorázová
 věc. Nula hodin znamená neodvzdušňovat.
 
+### Zóna se chová jako jedna místnost
+
+Místnosti, které spolu dýchají a nemají mezi sebou zavřené dveře, mají
+společný vzduch — a tak se s nimi i zachází:
+
+- **zvlhčovač se nezapne, když je otevřené okno kdekoli v zóně**, ne
+  jen v jeho místnosti; zvlhčovat při větrání vedle je totéž jako
+  zvlhčovat ulici,
+- **prach z ultrazvukového zvlhčovače se ignoruje v celé zóně**, jinak
+  by aerosol z obýváku zavřel okno v kuchyni.
+
+Zavřené dveře to ruší, protože pak si vzduch zóna nevyměňuje.
+
 ### Zvlhčovač a orosená okna
 
 Horní mez vlhkosti není jedno číslo, protože závisí na venkovní
