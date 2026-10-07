@@ -408,7 +408,8 @@ společný vzduch — a tak se s nimi i zachází:
 - **zvlhčovač se nezapne, když je otevřené okno kdekoli v zóně**, ne
   jen v jeho místnosti; zvlhčovat při větrání vedle je totéž jako
   zvlhčovat ulici. Platí to i pro okna, která neovládáme — stačí mít
-  u místnosti nastavený kontakt,
+  u místnosti nastavený kontakt, a ten pak rozhoduje oběma směry, tedy
+  i o tom, že je zavřeno,
 - **prach z ultrazvukového zvlhčovače se ignoruje v celé zóně**, jinak
   by aerosol z obýváku zavřel okno v kuchyni.
 

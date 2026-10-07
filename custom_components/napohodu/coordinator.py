@@ -131,6 +131,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # místnosti, kde právě běží zvlhčovač a prach z něj se nemá
         # brát jako prach ve vzduchu
         self.zvlhcuje: set = set()
+        # skutečný stav okna v každé místnosti; None znamená, že o něm
+        # nevíme nic — ani kontakt, ani ovládané okno
+        self.okna_stav: dict[str, bool | None] = {}
         self._rh_out_posledni: float | None = None
         self._hodina_ted: float = 12.0
         self._noc_od: float = 22.0
@@ -548,8 +551,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         for x in okruh.get("cleni", []):
             if x.subentry_id == pod_id:
                 continue
-            vyk = self.vykonavaci.get(x.subentry_id)
-            if vyk is not None and vyk.stav.posledni_povel == "otevrit":
+            if self.okna_stav.get(x.subentry_id) is True:
                 return True
         return False
 
@@ -1155,7 +1157,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # otevřené rukou, o kterém pohon nic neví.
         kontakty = d.get(CONF_KONTAKT_M) or []
         rucne = any(self._zapnuto(e) for e in kontakty)
-        if kontakty and rucne and not skutecne:
+        if kontakty and not okna:
+            # Bez ovládaného okna je kontakt jediná pravda, a to oběma
+            # směry. Dřív umíval stav jen zapnout, takže po zavření
+            # okna rukou zůstal zaseknutý na „otevřeno".
+            skutecne = rucne
+            stav_znamy = True
+        elif kontakty and rucne and not skutecne:
             skutecne = True
             stav_znamy = True
 
@@ -1379,7 +1387,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # kontakt ví o skutečnosti i tam, kde okno neovládáme, a bez
         # kontaktu i ovládaného okna o ní nevíme nic. K tomu okna
         # v zóně, se kterou místnost dýchá.
-        okno_fakt = (((bool(okna) or bool(kontakty)) and skutecne)
+        # Skutečný stav si místnost zapíše, aby ho ostatní v zóně mohly
+        # přečíst. Dřív se zóna ptala na poslední povel, který zůstane
+        # „otevřít" i po ručním zavření nebo dojezdu pulzu — a zvlhčovač
+        # pak hlásil otevřené okno, které už bylo zavřené.
+        self.okna_stav[p.subentry_id] = (
+            ((bool(okna) or bool(kontakty)) and skutecne)
+            if (okna or kontakty) else None)
+        okno_fakt = (self.okna_stav[p.subentry_id] is True
                      or self._okno_v_okruhu(okruh, p.subentry_id))
         await self._pomocnici_krok(p, d, m, okruh, v.t_in, t_out,
                                    okno_fakt, doma)

@@ -1169,6 +1169,8 @@ def test_zona_se_chova_jako_jedna_mistnost(nahradni_ha):
         _okno_v_okruhu = ko.NaPohoduCoordinator._okno_v_okruhu
         zvlhcuje = {"kuchyne"}
         vykonavaci = {"kuchyne": Vyk("otevrit"), "obyvak": Vyk()}
+        # skutečný stav okna, jak si ho místnosti zapisují
+        okna_stav = {"kuchyne": True, "obyvak": False}
 
     k = Falesny()
     okruh = {"cleni": [Pod("kuchyne"), Pod("obyvak")],
@@ -1192,3 +1194,19 @@ def test_kontakt_okna_plati_i_bez_ovladani(nahradni_ha):
         "custom_components/napohodu/coordinator.py").read_text()
     assert "(bool(okna) or bool(kontakty)) and skutecne" in ko
     assert "okno_fakt" in ko
+    # a bez ovládaného okna kontakt rozhoduje oběma směry
+    assert "if kontakty and not okna:" in ko
+    assert "skutecne = rucne" in ko
+
+
+def test_kontakt_umi_stav_i_vypnout(nahradni_ha):
+    """Dřív umíval kontakt stav jen zapnout, takže po zavření okna
+    rukou zůstal zaseknutý na „otevřeno" a zvlhčovač nejel."""
+    import pathlib
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    kus = ko[ko.index("kontakty = d.get"):ko.index("# Po dojezdu")]
+    # v místnosti bez ovládaného okna se stav rovná kontaktu
+    assert "skutecne = rucne" in kus
+    # a jen tam, kde okno neovládáme
+    assert "if kontakty and not okna:" in kus
