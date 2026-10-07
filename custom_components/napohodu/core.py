@@ -1264,7 +1264,8 @@ def pasmo_text(cil: float, t_in: float, hystereze: float,
                chladi: bool = False,
                ohrivam: bool = False,
                duvod: str = "",
-               brani_teplote: str = "") -> list[str]:
+               brani_teplote: str = "",
+               rucni_min: int | None = None) -> list[str]:
     """Stupnice s mezemi a tím, kde je teplota právě teď.
 
     Hranice se pojmenovávají tím, co jsou, ne budoucím slovesem.
@@ -1301,7 +1302,12 @@ def pasmo_text(cil: float, t_in: float, hystereze: float,
     radky.insert(kde, f"{znacka:5.1f} \u25cf teď, {cidlo}, "
                       + ("otevřeno" if otevreno else "zavřeno"))
 
-    if otevreno:
+    if rucni_min:
+        # Po ručním zásahu se automatika do okna neplete, takže všechny
+        # sliby o zavření by v té chvíli lhaly.
+        radky.append(f"Sáhl jsi na okno, automatika mlčí ještě "
+                     f"{rucni_min} min. Teplota do toho teď nemluví.")
+    elif otevreno:
         proc = f"Otevřeno: {duvod}. " if duvod else "Otevřeno. "
         if chladi:
             radky.append(f"{proc}Chladím, zavřu na {dolni:.1f} °C.")

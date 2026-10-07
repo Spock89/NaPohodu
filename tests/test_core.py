@@ -2209,3 +2209,19 @@ def test_ve_spanku_stupnice_nemluvi_o_chlazeni():
                              spanek=True, noc=True))
     assert "chlazení" not in t
     assert "rozhoduje jen CO2" in t
+
+
+def test_po_rucnim_zasahu_stupnice_neslibuje_zavreni():
+    """Automatika se do okna neplete, takže sliby o zavření by lhaly."""
+    from core import pasmo_predpoved, pasmo_text
+
+    veta = pasmo_predpoved(pasmo_text(
+        21.5, 19.4, 2.5, 19.0, 1.0, otevreno=True, spanek=True, noc=True,
+        rucni_min=27))
+    assert "automatika mlčí ještě 27 min" in veta
+    assert "Zavřu" not in veta
+
+    # bez ručního zásahu se předpověď chová jako dřív
+    bez = pasmo_predpoved(pasmo_text(
+        21.5, 19.4, 2.5, 19.0, 1.0, otevreno=True, spanek=True, noc=True))
+    assert "Zavřu" in bez

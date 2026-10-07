@@ -261,6 +261,10 @@ neotevře těsně nad mezí. Každé zavření kvůli teplotě navíc nasadí pa
 která se s dalším zdvojnásobí — když se okno pořád vrací, je to znamení,
 že se mez a tepelná odezva pokoje nesnesou.
 
+Po ručním zásahu do okna předpověď pod stupnicí žádné zavření neslibuje
+— řekne jen, jak dlouho ještě automatika mlčí, protože do té doby
+teplota nerozhoduje o ničem.
+
 V kartě je pod každou místností stupnice s mezemi a značkou, kde je
 teplota právě teď, aby bylo z nastavení vidět, co dělá.
 

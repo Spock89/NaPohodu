@@ -1354,7 +1354,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     pamet.posledni_duvod or "",
                     core.proc_neotevira(
                         v, nast, v.t_in,
-                        m.atributy.get("teplota_max") or v.t_in))),
+                        m.atributy.get("teplota_max") or v.t_in),
+                    # po ručním zásahu se o teplotě nemluví
+                    int(max(0, pamet.rucni_do_s - cas_s) / 60) or None)),
             # Pravidla, která platí bez nastavení. Schované chování je
             # horší než nastavení, které nepoužíváš — zapomene se, že
             # vůbec existuje.
