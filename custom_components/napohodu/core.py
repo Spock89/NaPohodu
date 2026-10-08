@@ -1124,8 +1124,8 @@ def pevna_pravidla_bytu() -> list[str]:
         f"venkovního čidla se to učí z toho, jak prach reaguje na "
         f"otevřené okno: měří se {Nastaveni.pm_uceni_s / 60:.0f} min "
         f"a poznatek platí {Nastaveni.pm_poznatek_s / 3600:.0f} h.",
-        f"Nouzové noční větrání smí jít {Nastaveni.krize_pod_mez:.1f} °C "
-        f"pod noční mez — dusno je horší než o stupeň chladnější pokoj.",
+        "Teplotu při každém větrání drží dvě absolutní pojistky "
+        "u místnosti; obchází je jen ruční žádost o vyvětrání.",
         f"Povel se po {Nastaveni.obnova_s / 60:.0f} min pošle znovu, "
         f"protože pohon ho občas ztratí. V noci a ve spánku ne.",
         f"Délka pulzu vychází z rozpočtu "

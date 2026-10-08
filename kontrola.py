@@ -529,17 +529,25 @@ def _pole_tridy(jmeno):
     return set()
 
 
-# jen jednoznačná jména; „v" je běžná proměnná i jinde
+# jen jednoznačná jména; „v" je běžná proměnná i jinde. Přístup přes
+# třídu (Nastaveni.x) se hlídá taky — tak se do textu pravidel dostala
+# zmínka o hodnotě, která už neexistovala.
 TRIDY = {"nast": ("Nastaveni", _pole_tridy("Nastaveni")),
-         "pamet": ("Pamet", _pole_tridy("Pamet"))}
+         "pamet": ("Pamet", _pole_tridy("Pamet")),
+         "Nastaveni": ("Nastaveni", _pole_tridy("Nastaveni")),
+         "Pamet": ("Pamet", _pole_tridy("Pamet"))}
 for p in d.glob("*.py"):
-    if p.name == "core.py":
-        continue
+    # V jádře se „nast" a „pamet" používají legitimně uvnitř funkcí,
+    # ale přístup přes třídu se hlídá i tam — právě odtud se do textu
+    # pravidel dostala zmínka o zrušené hodnotě.
+    jen_trida = p.name == "core.py"
     text = p.read_text()
     for u in ast.walk(ast.parse(text)):
         if not (isinstance(u, ast.Attribute)
                 and isinstance(u.value, ast.Name)
                 and u.value.id in TRIDY):
+            continue
+        if jen_trida and not u.value.id[:1].isupper():
             continue
         jmeno_tridy, pole = TRIDY[u.value.id]
         if pole and u.attr not in pole and not u.attr.startswith("_"):

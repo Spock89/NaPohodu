@@ -1195,3 +1195,15 @@ def test_kontakt_umi_stav_i_vypnout(nahradni_ha):
     assert "skutecne = rucne" in kus
     # a jen tam, kde okno neovládáme
     assert "if kontakty and not okna:" in kus
+
+
+def test_pravidla_nemluvi_o_zrusenych_hodnotach(nahradni_ha):
+    """Text pravidel sahá na Nastaveni přes třídu, takže zmínka
+    o zrušené hodnotě shodí načtení integrace."""
+    import importlib
+
+    core = importlib.import_module("napohodu.core")
+    # projde všechna pravidla, tedy i ta, která sahají na konstanty
+    assert core.pevna_pravidla_bytu()
+    assert core.pevna_pravidla(True, True, 1000.0, 1250.0, 700.0)
+    assert core.pevna_pravidla(False, True, 1000.0, 1250.0, 700.0)
