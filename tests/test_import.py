@@ -111,8 +111,10 @@ def test_mistnost_dostane_vsechny_prepinace(nahradni_ha):
     import importlib
     const = importlib.import_module("napohodu.const")
     pod = FalesnaPodentita(const.PODENTITA_MISTNOST, "Kuchyne")
-    assert _klice(_entity_platformy("switch", [pod])) == [
-        "ovladat_okno", "ovladat_stineni", "ovladat_topeni"]
+    # k ovládání přibyly volby místnosti, které nejsou číslo
+    assert sorted(_klice(_entity_platformy("switch", [pod]))) == sorted([
+        "ovladat_okno", "ovladat_stineni", "ovladat_topeni",
+        "otevirat_i_pro_pohodu", "zvlhcovat_i_ve_spanku"])
 
 
 def test_klima_dostane_svuj_prepinac(nahradni_ha):
@@ -340,9 +342,9 @@ def test_pamet_jde_ulozit_a_nacist(nahradni_ha):
     from dataclasses import asdict, fields
 
     core = importlib.import_module("napohodu.core")
-    p = core.Pamet(otevreno=True, rezim="pulz", den_mez=20.5,
+    p = core.Pamet(otevreno=True, rezim="pulz",
                    cas_povelu_s=12345.0, vetra_se=True,
-                   noc_mez=18.0, komfort_start=24.0,
+                   komfort_start=24.0,
                    rucni_do_s=99999.0, pm_venku_horsi_do_s=5555.0)
 
     zaznam = asdict(p)
@@ -423,11 +425,11 @@ def test_nezmenene_pole_soupatkem_nehne(nahradni_ha):
     import importlib
     c = importlib.import_module("napohodu.const")
     k = _koordinator()
-    k._srovnej_posuvniky("m1", {c.CONF_NOC_MIN: 18.0})
-    k.hodnoty[("m1", c.CONF_NOC_MIN)] = 19.5
+    k._srovnej_posuvniky("m1", {c.CONF_MEZ_DOLNI: 18.0})
+    k.hodnoty[("m1", c.CONF_MEZ_DOLNI)] = 19.5
     for _ in range(5):
-        k._srovnej_posuvniky("m1", {c.CONF_NOC_MIN: 18.0})
-    assert k.hodnoty[("m1", c.CONF_NOC_MIN)] == 19.5
+        k._srovnej_posuvniky("m1", {c.CONF_MEZ_DOLNI: 18.0})
+    assert k.hodnoty[("m1", c.CONF_MEZ_DOLNI)] == 19.5
 
 
 def test_prepsane_klice_maji_prednost_pred_obnovou(nahradni_ha):
@@ -438,7 +440,7 @@ def test_prepsane_klice_maji_prednost_pred_obnovou(nahradni_ha):
     k = _koordinator()
     k._srovnej_posuvniky("m1", {c.CONF_CO2_OTEVRIT: 800.0})
     assert k.prepsano_formularem(("m1", c.CONF_CO2_OTEVRIT)) is True
-    assert k.prepsano_formularem(("m1", c.CONF_NOC_MIN)) is False
+    assert k.prepsano_formularem(("m1", c.CONF_MEZ_DOLNI)) is False
 
 
 def test_formular_zmenen_hlasi_jen_zmenu(nahradni_ha):
@@ -531,7 +533,7 @@ def test_formular_ukazuje_platne_hodnoty(nahradni_ha):
     c = importlib.import_module("napohodu.const")
 
     class FalesnyKoordinator:
-        hodnoty = {("m1", c.CONF_NOC_MIN): 19.5}
+        hodnoty = {("m1", c.CONF_MEZ_DOLNI): 19.5}
 
     class FalesnyFlow:
         _platne = cf.MistnostSubentryFlow._platne
@@ -543,9 +545,9 @@ def test_formular_ukazuje_platne_hodnoty(nahradni_ha):
         def _get_entry():
             return type("E", (), {"entry_id": "e1"})()
 
-    out = FalesnyFlow()._platne("m1", {c.CONF_NOC_MIN: 18.0,
+    out = FalesnyFlow()._platne("m1", {c.CONF_MEZ_DOLNI: 18.0,
                                        c.CONF_NAZEV: "Ložnice"})
-    assert out[c.CONF_NOC_MIN] == 19.5      # platí posuvník
+    assert out[c.CONF_MEZ_DOLNI] == 19.5      # platí posuvník
     assert out[c.CONF_NAZEV] == "Ložnice"   # ostatní zůstává
 
 
@@ -893,25 +895,8 @@ def test_zavrene_dvere_rusi_spolecny_klid(nahradni_ha):
     assert 'if o["dvere_otevrene"] else False' in ko
 
 
-def test_tloustka_az_do_sedmi(nahradni_ha):
-    """Čtyři stupně nestačily, okno pořád lítalo."""
-    import pathlib
-    import re
-    cf = pathlib.Path(
-        "custom_components/napohodu/config_flow.py").read_text()
-    nb = pathlib.Path("custom_components/napohodu/number.py").read_text()
-    assert "CONF_TLOUSTKA, default=1.0): _cislo(0, 7, 0.5)" in cf
-    assert re.search(r"Posuvnik\(CONF_TLOUSTKA, 0, 7", nb)
 
 
-def test_stupnice_bere_pevnou_pojistku(nahradni_ha):
-    """Nastavení zmizelo, ale stupnice ho ještě chvíli chtěla — a
-    integrace se kvůli tomu nenačetla."""
-    import pathlib
-    ko = pathlib.Path(
-        "custom_components/napohodu/coordinator.py").read_text()
-    assert "nast.spanek_pojistka" not in ko
-    assert "core.SPANEK_POJISTKA" in ko
 
 
 def test_zvlhcovac_respektuje_okno_a_pritomnost(nahradni_ha):
@@ -1081,8 +1066,8 @@ def test_vynulovani_nesahne_na_nastaveni(nahradni_ha):
     class Falesny:
         vynuluj_stavy = ko.NaPohoduCoordinator.vynuluj_stavy
         pameti = {"id": core.Pamet(
-            otevreno=True, rezim="pulz", den_mez=19.0, pulzy_za_sebou=3,
-            marne_od_s=1000.0, zavreno_chladem=True, chladi=True,
+            otevreno=True, rezim="pulz", pulzy_za_sebou=3,
+            marne_od_s=1000.0, chladi=True,
             ucinek_od_s=500.0, cas_povelu_s=12345.0)}
         hodnoty = {("id", "odchylka_teploty"): 1.5}
         zvlhcuje = {"id"}
@@ -1094,8 +1079,8 @@ def test_vynulovani_nesahne_na_nastaveni(nahradni_ha):
 
     # vnitřní stavy pryč
     assert p.rezim == core.Pamet().rezim
-    assert p.den_mez is None and p.pulzy_za_sebou == 0
-    assert p.marne_od_s == 0.0 and p.zavreno_chladem is False
+    assert p.pulzy_za_sebou == 0
+    assert p.marne_od_s == 0.0
     assert p.chladi is False and p.ucinek_od_s == 0.0
     assert not k.zvlhcuje
 

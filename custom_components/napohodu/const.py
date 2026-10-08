@@ -12,9 +12,20 @@ CONF_T_PRUMER = "t_prumer"          # týdenní průměr pro adaptivní cíl
 CONF_T_SEZONA = "t_sezona"          # třídenní průměr pro topnou sezónu
 CONF_SEZONA_REZIM = "sezona_rezim"
 REZIMY_SEZONY = ["podle_prumeru", "vzdy", "nikdy"]
-CONF_DENNI_HYSTEREZE = "denni_hystereze"
 # Pod touhle venkovní teplotou se chlazení větráním nespustí.
 CONF_CHLAZENI_MIN_VENKU = "chlazeni_min_venku"
+# Hysterezní pásmo kolem cíle, zvlášť pro den a pro noc, a absolutní
+# pojistky, které zavřou okno bez ohledu na důvod.
+CONF_HYST_DEN_OTEVRIT = "hyst_den_otevrit"
+CONF_HYST_DEN_ZAVRIT = "hyst_den_zavrit"
+CONF_HYST_NOC_OTEVRIT = "hyst_noc_otevrit"
+CONF_HYST_NOC_ZAVRIT = "hyst_noc_zavrit"
+CONF_MEZ_DOLNI = "mez_dolni"
+CONF_MEZ_HORNI = "mez_horni"
+# Smí se otevírat i tehdy, když k tomu není důvod, jen pro pohodu?
+CONF_PRO_POHODU = "pro_pohodu"
+# Smí zvlhčovač běžet i ve spánku?
+CONF_ZVLHCOVAC_VE_SPANKU = "zvlhcovac_ve_spanku"
 # Po marném větrání se čeká na změnu venkovních podmínek (celý byt).
 CONF_ZMENA_PODMINEK = "zmena_podminek"
 CONF_NEJDRIV_ZNOVU = "nejdriv_znovu_min"
@@ -83,11 +94,8 @@ CONF_ODVZDUSNENI_H = "odvzdusneni_h"
 CONF_ODVZDUSNENI_T = "odvzdusneni_t"
 CONF_UTLUM = "utlum"
 CONF_ODCHYLKA = "odchylka"
-CONF_NOC_MIN = "noc_min"
 # O kolik pod noční mez smí teplota ve spánku spadnout, než se okno
 # zavře. Ve spánku se kvůli teplotě nevětrá, tohle je jen pojistka.
-# Tloušťka hysterezní smyčky teplotního větrání.
-CONF_TLOUSTKA = "tloustka_smycky"
 CONF_STINENI_PRYC = "stineni_pryc"
 
 # nucená ventilace (ventilátor, rekuperace)

@@ -14,11 +14,6 @@ from enum import Enum
 
 # Pojmenovaná čísla rozhodování. Zadrátovaná do výrazu jsou
 # k nenalezení a nikdo neví, proč tam jsou.
-# Pojistka ve spánku: o kolik pod noční mez smí teplota spadnout, než
-# se okno zavře. Ve spánku se kvůli teplotě nevětrá, takže tohle je
-# jediná teplotní záchrana — bez ní by mráz ložnici vychladil.
-SPANEK_POJISTKA = 2.0
-
 # Kontrola účinku: o kolik se měřená hodnota musí zlepšit, aby se
 # otevřené okno dalo považovat za užitečné. Pod tím je to v šumu čidla.
 UCINEK_CO2_PPM = 50.0
@@ -50,6 +45,21 @@ class Nastaveni:
     co2_zavrit: float = 700.0
     co2_noc: float = 1000.0
     co2_noc_krize: float = 1250.0
+
+    # Hysterezní pásmo kolem cíle, zvlášť pro den a pro noc. Otevře se
+    # při odchylce od cíle o „otevrit", zavře až za cílem o „zavrit" —
+    # při chlazení pod cílem, při ohřevu nad ním. Obě hodnoty platí
+    # souměrně pro chlazení i pro topení.
+    hyst_den_otevrit: float = 2.5
+    hyst_den_zavrit: float = 1.0
+    hyst_noc_otevrit: float = 2.5
+    hyst_noc_zavrit: float = 1.0
+    # Absolutní pojistky: zavřou okno bez ohledu na to, proč je
+    # otevřené. Obchází je jen ruční žádost o vyvětrání.
+    mez_dolni: float = 18.0
+    mez_horni: float = 27.0
+    # Smí se otevřít i tehdy, když k tomu není důvod, jen pro pohodu?
+    pro_pohodu: bool = True
 
     pm_prah: float = 35.0
     pm_prah_bez_ventilatoru: float = 50.0
@@ -94,15 +104,11 @@ class Nastaveni:
     # cíl + hystereze (chlazení) nebo pod cíl − hystereze (ohřev)
     # a dojede se na protější hranu pásma, ne na cíl — po zavření přesně
     # na cíli se teplota hned vrací a cyklus začíná znovu.
-    denni_hystereze: float = 1.5
     # Tloušťka noční hysterezní smyčky: o kolik se musí pokoj prohřát
     # nad noční mez, než se v noci otevře znovu, a jak těsně nad mezí
     # se ještě neotvírá. Ve dne se nepoužívá — tam je hysterezí sám
     # hystereze kolem cíle: otevírá o ni od cíle, zavírá na protější
     # dál. Dřív platila i ve dne a obě pásma se sčítala.
-    tloustka: float = 1.0
-    nocni_min: float = 18.0
-    krize_pod_mez: float = 1.5
 
     noc_od: float = 22.0
     noc_do: float = 6.5
@@ -162,11 +168,6 @@ class Pamet:
     pm_prumer: float | None = None
     vetra_se: bool = False
     rezim: str = "pulz"
-    noc_mez: float | None = None
-    noc_krize: bool = False
-    noc_zavreno_teplotou: bool = False
-    noc_start: float | None = None
-    den_mez: float | None = None
     komfort_start: float | None = None
     # učení bez venkovního čidla: prach při otevření a jak dlouho
     # ještě platí poznatek, že venku je horší
@@ -181,13 +182,6 @@ class Pamet:
     pulzy_za_sebou: int = 0
     # při jaké teplotě se zavřelo kvůli chladu; znovu se otevře až po
     # návratu o tloušťku smyčky
-    # Zavřelo se kvůli teplotě v pokoji? Smyčka se pak počítá od hrany
-    # pásma, ne od teploty při zavření — ta se pokaždé liší podle toho,
-    # jak hluboko se to stihlo přehnat, a při větší tloušťce z toho
-    # vycházely nesmyslné hodnoty.
-    # běží chlazení? Dokud běží, dojede se na cíl. Bez téhle paměti by
-    # se za chlazení počítal každý pokoj o dvě desetiny nad cílem a tím
-    # by obešel noční pravidlo.
     chladi: bool = False
     # a totéž pro opačný směr: teplejší vzduch zvenčí dohání cíl
     ohrivam: bool = False
@@ -201,8 +195,6 @@ class Pamet:
     marne_smer: str = ""
     ucinek_co2: float = 0.0
     ucinek_t_in: float = 0.0
-    zavreno_chladem: bool = False
-    zavreno_teplem: bool = False
     # běží právě pulz zkrácený kvůli nárazovému větrání? Spouštěcí
     # podmínka zmizí hned, jak CO2 klesne, ale okno běží dál.
     narazove_pulz: bool = False
@@ -322,40 +314,39 @@ def cil_adaptivni(prumer_venku: float, posun: float = 0.0,
     return round(min(max(zaklad, dolni) + pritopit, horni), 1)
 
 
-def konflikt_mezi(cil: float, denni_hystereze: float, nocni_min: float,
-                  # Tloušťka noční hysterezní smyčky: o kolik se musí pokoj prohřát
-    # nad noční mez, než se v noci otevře znovu, a jak těsně nad mezí
-    # se ještě neotvírá. Ve dne se nepoužívá — tam je hysterezí sám
-    # hystereze kolem cíle: otevírá o ni od cíle, zavírá na protější
-    # dál. Dřív platila i ve dne a obě pásma se sčítala.
-    tloustka: float = 1.0) -> list[str]:
-    """Nesrovnalosti mezi mezemi větrání a cílovou teplotou.
+def konflikt_mezi(cil: float, otevrit: float, zavrit: float,
+                  mez_dolni: float, mez_horni: float) -> list[str]:
+    """Nesrovnalosti v nastavení pásma a pojistek.
 
-    Mez nad cílem znamená, že se okno zavře hned po otevření, nebo se
-    vůbec neotevře — a není to nikde vidět, protože každé nastavení
-    samo o sobě vypadá rozumně.
-
-    Hlášky pojmenovávají nastavení tak, jak ho člověk vidí na
-    obrazovce, a říkají, co s tím udělat. Bez toho je z hlášky jen
-    „konflikt nastavení" a nikdo neví, kam sáhnout.
+    Každé nastavení samo o sobě vypadá rozumně, teprve dohromady dají
+    chování, které nikdo nechtěl — a není to nikde vidět.
     """
     potize = []
-    if denni_hystereze < 0.5:
+    if otevrit <= 0 and zavrit <= 0:
         potize.append(
-            f"„Denní hystereze“ je jen {denni_hystereze:.1f} °C: "
-            f"okno se otevře a hned zavře. Zvyš na 1 °C a víc.")
-
-    if nocni_min >= cil:
+            "Obě hodnoty pásma jsou nulové: "
+            "okno by se kvůli teplotě otevřelo i zavřelo na cíli a "
+            "jezdilo by sem a tam. Zvyš aspoň jedno z nich.")
+    if mez_dolni >= cil:
         potize.append(
-            f"„V noci vychladnout nejvýš na“ {nocni_min:.1f} °C je nad "
-            f"cílem {cil:.1f} °C: v noci se vůbec nevyvětrá. Sniž mez, "
-            f"nebo zvyš cílovou teplotu.")
-    elif nocni_min + tloustka >= cil:
+            f"Pojistka „nevychladit pod“ {mez_dolni:.1f} °C je nad cílem "
+            f"{cil:.1f} °C, takže zavře okno dřív, než se dá něco "
+            f"vyvětrat. Sniž ji pod cíl.")
+    if mez_horni <= cil:
         potize.append(
-            f"„V noci vychladnout nejvýš na“ {nocni_min:.1f} °C je moc "
-            f"blízko cíli {cil:.1f} °C: noční větrání potřebuje aspoň "
-            f"{tloustka:.1f} °C rezervu, takže se nerozjede. "
-            f"Sniž mez pod {cil - tloustka:.1f} °C.")
+            f"Pojistka „nepřehřát nad“ {mez_horni:.1f} °C je pod cílem "
+            f"{cil:.1f} °C, takže se okno kvůli teplu nikdy neotevře. "
+            f"Zvyš ji nad cíl.")
+    if mez_dolni > cil - otevrit:
+        potize.append(
+            f"Pojistka „nevychladit pod“ {mez_dolni:.1f} °C je nad dolní "
+            f"hranou pásma {cil - otevrit:.1f} °C, takže se kvůli chladu "
+            f"nikdy neotevře — pojistka zasáhne dřív.")
+    if mez_horni < cil + otevrit:
+        potize.append(
+            f"Pojistka „nepřehřát nad“ {mez_horni:.1f} °C je pod horní "
+            f"hranou pásma {cil + otevrit:.1f} °C, takže se chlazení "
+            f"nikdy nerozjede — pojistka zasáhne dřív.")
     return potize
 
 
@@ -384,6 +375,18 @@ def zimni_pritapeni(prumer_venku: float, prah: float = 7.0,
     if nabeh <= 0:
         return round(o_kolik, 2)
     return round(min(pod / nabeh, 1.0) * o_kolik, 2)
+
+
+def _hyst(v: "Vstup", n: "Nastaveni") -> tuple[float, float]:
+    """Platné pásmo: v noci noční, jinak denní.
+
+    Vrací odchylku pro otevření a pro zavření. Zavření je za cílem,
+    tedy při chlazení pod ním a při ohřevu nad ním — proto se obě
+    hodnoty používají souměrně.
+    """
+    if _je_noc(v.hodina, n, v.spanek):
+        return n.hyst_noc_otevrit, n.hyst_noc_zavrit
+    return n.hyst_den_otevrit, n.hyst_den_zavrit
 
 
 def _je_noc(hodina: float, n: Nastaveni, spanek: bool) -> bool:
@@ -433,8 +436,8 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         seznam.append("noční klid")
         if v.zastupce:
             seznam.append("větrá za nás soused")
-        if tin <= n.nocni_min + n.tloustka:
-            seznam.append(f"pod noční mezí {n.nocni_min:.1f} °C")
+        if tin <= n.mez_dolni:
+            seznam.append(f"pojistka: pod {n.mez_dolni:.1f} °C")
         prah = n.co2_noc
     else:
         prah = n.co2_zavrit if p.vetra_se else n.co2_otevrit
@@ -472,7 +475,7 @@ def _pod_cilem(v: Vstup, n: Nastaveni, t_in: float) -> bool:
     # Jedna mez, tvoje nastavená. Dřív tu byla pevná půlstupňová pro
     # zavřené okno a nastavená pro otevřené — dvě pravidla pro totéž,
     # takže nastavení nad půl stupně se nikdy neprojevilo.
-    return t_in <= v.cil - n.denni_hystereze
+    return t_in <= v.cil - _hyst(v, n)[1]
 
 
 def posledni(p: Pamet, cas_s: float) -> list[str]:
@@ -515,20 +518,18 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         seznam.append(f"nejdřív za {int(zbyva / 60)} min (držím stav)")
 
     if p.otevreno:
-        if noc and p.noc_mez is not None:
-            seznam.append(f"zavřu při poklesu na {p.noc_mez:.1f} °C "
+        h_otevrit, h_zavrit = _hyst(v, n)
+        if p.chladi:
+            seznam.append(f"chladím, zavřu na {v.cil - h_zavrit:.1f} °C "
                           f"(teď {t_in:.1f})")
-        elif p.rezim == "komfort" and p.komfort_start is not None:
-            mez = v.cil - n.denni_hystereze
-            seznam.append(f"zavřu při poklesu na {mez:.1f} °C "
-                          f"(teď {t_in:.1f})")
-        elif p.den_mez is not None:
-            seznam.append(f"zavřu při poklesu na {p.den_mez:.1f} °C "
+        elif p.ohrivam:
+            seznam.append(f"ohřívám, zavřu na {v.cil + h_zavrit:.1f} °C "
                           f"(teď {t_in:.1f})")
         else:
-            mez = v.cil - n.denni_hystereze
-            seznam.append(f"zavřu při poklesu na {mez:.1f} °C "
-                          f"(teď {t_in:.1f})")
+            # Větrání kvůli vzduchu čeká na vyvětrání; o teplotu se
+            # starají pojistky, ne hrana pásma.
+            seznam.append(f"pojistky {n.mez_dolni:.1f} a "
+                          f"{n.mez_horni:.1f} °C (teď {t_in:.1f})")
         # Zavření nebrání jen CO2. „Vyvětráno" znamená všechno naráz,
         # takže se musí vyjmenovat, co zbývá — jinak člověk kouká na
         # nízké CO2 a nechápe, proč je pořád otevřeno.
@@ -567,10 +568,6 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
             seznam.append(f"kvůli prachu neotevřu — při posledním větrání "
                           f"stoupal, takže se tahá zvenčí (platí ještě "
                           f"{kolik} min)")
-        if noc:
-            seznam.append(f"a jen nad {n.nocni_min + n.tloustka:.1f} °C "
-                          f"(teď {t_in:.1f})")
-
     return seznam
 
 
@@ -584,8 +581,6 @@ def rucni_zasah(p: Pamet, n: Nastaveni, cas_s: float, otevreno: bool) -> None:
     """
     p.otevreno = otevreno
     p.rezim = "pulz"
-    p.den_mez = None
-    p.noc_mez = None
     p.komfort_start = None
     p.vetra_se = otevreno
     p.cas_povelu_s = cas_s
@@ -718,12 +713,6 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         p.ucinek_od_s = v.cas_s
         p.ucinek_co2 = v.co2
         p.ucinek_t_in = t_in
-    if (p.otevreno and p.den_mez is None and p.noc_mez is None
-            and p.komfort_start is None
-            and t_in > v.cil - n.denni_hystereze):
-        # Jen když je teplota nad mezí. Jinak by přijetí okna rovnou
-        # vedlo k jeho zavření, přestože se otevřelo z jiného důvodu.
-        p.den_mez = round(v.cil - n.denni_hystereze, 1)
 
     # --- 3b. zabírá to vůbec? ----------------------------------------
     # Marně otevřené okno v zimě stojí teplo a nic za to nevrací.
@@ -760,6 +749,34 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                 f"{p.ucinek_co2:.0f} → {v.co2:.0f}, teplota "
                 f"{p.ucinek_t_in:.1f} → {t_in:.1f} °C",
                 kod="bez_ucinku")
+
+    # --- 3c. absolutní pojistky --------------------------------------
+    # Zavřou okno bez ohledu na to, proč je otevřené, a nic jiného
+    # neotevřou. Obchází je jen ruční žádost o vyvětrání — v mrazu je
+    # vymrzlý pokoj horší problém než dusno.
+    if not v.vetrat and v.t_out is not None:
+        # Pojistka platí jen proti vzduchu, který tlačí špatným směrem.
+        # Zavřít okno, které zrovna chladí přehřátý pokoj, by bylo
+        # proti smyslu — pojistka má chránit před větráním, ne před
+        # teplotou samotnou.
+        chladi_nas = v.t_out < t_in
+        hreje_nas = v.t_out > t_max
+        # Ostré srovnání: na hranici se nic neděje, jinak by se při
+        # rovnosti zavřelo a už nikdy neotevřelo.
+        if t_in < n.mez_dolni and chladi_nas:
+            if p.otevreno:
+                return zavri(f"pojistka: kleslo na {t_in:.1f} °C "
+                             f"(mez {n.mez_dolni:.1f})", kod="pojistka")
+            return beze_zmeny(
+                f"pojistka: {t_in:.1f} °C pod mezí {n.mez_dolni:.1f} °C",
+                False)
+        if t_max > n.mez_horni and hreje_nas:
+            if p.otevreno:
+                return zavri(f"pojistka: vyšplhalo na {t_max:.1f} °C "
+                             f"(mez {n.mez_horni:.1f})", kod="pojistka")
+            return beze_zmeny(
+                f"pojistka: {t_max:.1f} °C nad mezí {n.mez_horni:.1f} °C",
+                False)
 
     # --- 4. vzduch --------------------------------------------------
     if p.pm_prumer is None:
@@ -829,38 +846,32 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
 
     # --- 5. komfort a chlazení --------------------------------------
     noc = _je_noc(v.hodina, n, v.spanek)
-    # Po zavření kvůli dostatečnému ochlazení se čeká na návrat o
-    # tloušťku smyčky, stejně jako v chladném směru.
-    chlazeni_po_pauze = (not p.zavreno_teplem or p.otevreno
-                         or t_max >= v.cil + n.denni_hystereze)
     # Zapíná se s odstupem, aby se neotvíralo kvůli dvěma desetinám,
     # ale dojede se na cíl. Dřív se tou samou hranicí zapínalo
     # i vypínalo, takže se pokoj zastavil o odstup nad cílem.
-    prah_chlazeni = (v.cil - n.denni_hystereze
-                     if (p.otevreno and p.chladi)
-                     else v.cil + n.denni_hystereze)
+    h_otevrit, h_zavrit = _hyst(v, n)
+    prah_chlazeni = (v.cil - h_zavrit if (p.otevreno and p.chladi)
+                     else v.cil + h_otevrit)
     # Ohřev větráním je zrcadlový obraz chlazení: venku je tepleji než
     # v pokoji a pokoj je pod cílem. Dojede se na cíl, stejně jako
     # u chlazení — proto taky vlastní příznak.
-    prah_ohrevu = (v.cil + n.denni_hystereze
-                   if (p.otevreno and p.ohrivam)
-                   else v.cil - n.denni_hystereze)
+    prah_ohrevu = (v.cil + h_zavrit if (p.otevreno and p.ohrivam)
+                   else v.cil - h_otevrit)
     # Venkovní vzduch musí být na správné straně cíle, ne jen lepší než
     # v pokoji. Teplejší vzduch než cíl pokoj na cíl nikdy neochladí,
     # jen ho zastaví o kus výš — a totéž zrcadlově u ohřevu.
     ohrev = (t_in < prah_ohrevu
              # nikde v pokoji se nesmí přehřívat; dojezd k horní hraně
              # tím zůstává možný
-             and t_max < v.cil + n.denni_hystereze
+             and t_max < v.cil + h_zavrit
              and v.t_out > t_in + n.chlazeni_rozdil
-             and v.t_out > v.cil + n.denni_hystereze
+             and v.t_out > v.cil + h_zavrit
              and not v.smog)
     chlazeni = (t_max > prah_chlazeni
                 and v.t_out < t_max - n.chlazeni_rozdil
                 # musí dosáhnout až tam, kam chlazení dojede
-                and v.t_out < v.cil - n.denni_hystereze
+                and v.t_out < v.cil - h_zavrit
                 and v.t_out > n.chlazeni_min_venku
-                and chlazeni_po_pauze
                 and not v.smog)
 
     # Po marném pokusu se čeká na změnu venkovních podmínek, ne na
@@ -912,34 +923,46 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     elif not chlazeni and not ohrev and daleko_venku:
         # Za prahem je venku tak jiný vzduch, že „venku je příjemně"
         # neplatí ani zdaleka — otevírá se jen z důvodu, ne pro pohodu.
-        brani = f"venku {v.t_out:.1f} °C, daleko od cíle"
+        brani = (f"venku {v.t_out:.1f} °C, mimo pásmo kolem cíle "
+                 f"— pro pohodu neotvírám")
     elif not chlazeni and (noc or _v_pasmu(v.hodina, n.noc_od, n.noc_do)):
         # Nočních hodin se to drží i tam, kde se klid neřeší. Že je
         # venku příjemně, není ve tři ráno důvod nechat okno otevřené —
         # tím se probudí dům, ne místnost. Chlazení je výjimka, kvůli
         # němu se v létě otevírá právě v noci.
         brani = "noční hodiny"
-    elif p.ohrivam and t_max > v.cil + n.denni_hystereze:
+    elif p.ohrivam and t_max > v.cil + h_zavrit:
         # Teplejší vzduch zvenčí byl důvod, proč se otevíralo. Zavírá
         # se proto, že už je dost teplo, ne proto, že je venku tepleji.
         brani = "dost teplo, jsme na horní hraně pásma"
-    elif not ohrev and t_max > v.cil \
-            and v.t_out >= v.cil - n.denni_hystereze:
+    elif (not ohrev and t_max > v.cil + h_otevrit
+            and v.t_out >= v.cil - h_zavrit):
         # V pokoji je nad cílem, ale venkovní vzduch nedosáhne tam, kam
         # chlazení dojede. Otevřením se k cíli nepřiblížíme, jen se
         # zastavíme o kus výš. Cíl se v létě sám zvedá, takže se tím
         # chlazení v horku neblokuje.
         brani = (f"venku {v.t_out:.1f} °C, na chlazení k "
-                 f"{v.cil - n.denni_hystereze:.1f} °C nestačí")
-    elif not chlazeni and t_in < v.cil \
-            and v.t_out <= v.cil + n.denni_hystereze:
+                 f"{v.cil - h_zavrit:.1f} °C nestačí")
+    elif (not chlazeni and t_in < v.cil - h_otevrit
+            and v.t_out <= v.cil + h_zavrit):
         # zrcadlově pro ohřev
         brani = (f"venku {v.t_out:.1f} °C, na ohřev k "
-                 f"{v.cil + n.denni_hystereze:.1f} °C nestačí")
+                 f"{v.cil + h_zavrit:.1f} °C nestačí")
     elif not chlazeni and not ohrev and v.t_out < t_in \
             and _pod_cilem(v, n, t_in):
         # když se zároveň někde přehřívá, chlazení má přednost
         brani = f"uvnitř {t_in:.1f} °C, pod cílem"
+    elif not chlazeni and not ohrev and not n.pro_pohodu:
+        # Otevírání bez důvodu se dá vypnout: pak se okno hýbe jen
+        # kvůli CO2, prachu, chlazení nebo ohřevu.
+        brani = "pro pohodu se neotvírá"
+    elif (not chlazeni and not ohrev
+            and abs(v.t_out - v.cil) > h_otevrit):
+        # „Venku je příjemně" musí znamenat, že venkovní teplota je
+        # blízko cíle. Jinak by se pro pohodu otevřelo i při
+        # devětadvaceti venku, jen proto, že pokoj je v pásmu.
+        brani = (f"venku {v.t_out:.1f} °C, mimo pásmo kolem cíle "
+                 f"— pro pohodu neotvírám")
 
     if not brani:
         if p.rezim != "komfort" or p.komfort_start is None:
@@ -977,8 +1000,6 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     if p.rezim == "komfort":
         p.rezim = "pulz"
         p.komfort_start = None
-        if not potreba and t_max <= v.cil - n.denni_hystereze:
-            p.zavreno_teplem = True
         if not potreba:
             # Zavření kvůli teplotě se pozná podle kódu: koordinátor
             # na něj nasadí pauzu, aby se okno hned neotevřelo znovu.
@@ -989,93 +1010,43 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             # smyčku znamenalo čekat na nesmyslné hodnoty.
             kvuli_teplote = ("uvnitř" in brani or "pod cílem" in brani
                              or "nestačí" in brani)
-            if kvuli_teplote:
-                p.zavreno_chladem = True
             return zavri(f"zavírám, {brani}",
                          kod="teplota" if kvuli_teplote else "")
 
-    # --- 6. noční režim ---------------------------------------------
+    # --- 6. noc a spánek: rozhoduje CO2 ------------------------------
+    # Teplotu v noci řeší noční pásmo výš a pojistky; tady už jde jen
+    # o vzduch. Dřív tu byla vlastní noční mez, vlastní hystereze
+    # a vlastní pojistka ve spánku — tři pojmy pro totéž, co dnes umí
+    # pásmo s pojistkami.
     if noc:
-        krize = v.co2 > n.co2_noc_krize
-        # Když za nás větrá soused, sami se v noci otevřeme až při krizi.
+        # Když za nás větrá soused, sami se otevřeme až při krizi.
         # Lepší pomalejší výměna přes dveře než průvan nad postelí.
-        prah_noc = n.co2_noc_krize if v.zastupce else n.co2_noc
-        # Jedna mez, absolutní. Relativní pokles od stavu při otevření
-        # ji posouval podle toho, jak bylo zrovna teplo, takže nebylo
-        # poznat, kde okno zavře — a vyšší z obou hodnot stejně skoro
-        # vždycky vyhrála podlaha.
-        mez = p.noc_mez if p.noc_mez is not None else n.nocni_min
+        # Ve spánku to platí vždycky: rámus okna vzbudí spolehlivěji
+        # než oxid uhličitý.
+        prah = (n.co2_noc_krize if (v.spanek or v.zastupce)
+                else n.co2_noc)
 
         if p.otevreno:
-            # Ve spánku se kvůli teplotě nevětrá ani nezavírá. Okno dělá
-            # při každém pohybu rámus a teplota se v malém pokoji vrací
-            # za dvacet minut, takže z toho byla celá noc lítání tam
-            # a sem. Zbývá jen pojistka hluboko pod mezí, aby se
-            # v mrazu ložnice nevychladila donekonečna.
-            pojistka = mez - SPANEK_POJISTKA if v.spanek else mez
-            if t_in <= pojistka:
-                p.noc_zavreno_teplotou = True
-                return zavri(f"noc: kleslo na {t_in:.1f} °C", kod="noc_zima")
-            # Noční větrání mělo původně ložnici zároveň vychladit na
-            # noční mez, takže se čekalo jen na pokles teploty. Když je
-            # venku mírně, pokles nepřijde a okno zůstane otevřené do
-            # rána — proto se dá zavřít už po vyvětrání.
-            # Ve spánku otevírá krizový práh a zavírá noční. Jsou to
-            # dvě hodnoty, které si uživatel nastavuje a vidí, takže je
-            # poznat, v jakém pásmu okno zůstane otevřené. Bez toho by
-            # okno otevřené před spaním zůstalo celou noc: otevřít ho
-            # smí jen krize, ale zavřít se smělo až po vyvětrání,
-            # kterého spící člověk nedosáhne.
-            if v.spanek and v.co2 < n.co2_noc:
-                return zavri(f"noc: klid, CO2 {v.co2:.0f}",
-                             kod="noc_hotovo")
-            if (v.co2 < n.co2_zavrit
-                    and not pm_spatne and not v.vetrat and not v.vynuceno):
+            # Jedna hladina pro zavření, tatáž jako ve dne. Dřív se ve
+            # spánku zavíralo na nočním prahu, takže se jedna hodnota
+            # používala na otevírání i zavírání a nebylo poznat, co dělá.
+            if (v.co2 < n.co2_zavrit and not pm_spatne
+                    and not v.vetrat and not v.vynuceno):
                 return zavri(f"noc: vyvětráno, CO2 {v.co2:.0f}",
-                             hned=bool(v.narazove),
-                             kod="noc_hotovo")
-            return beze_zmeny(f"noc: větrá {t_in:.1f} °C, CO2 {v.co2:.0f}", True)
+                             hned=bool(v.narazove), kod="noc_hotovo")
+            return beze_zmeny(
+                f"noc: větrá {t_in:.1f} °C, CO2 {v.co2:.0f}", True)
 
-        # Po zavření kvůli teplotě se místnost musí znovu prohřát, ne jen
-        # na chvíli skočit. Čidlo umístěné v okně po zavření rychle
-        # vyskočí — bez téhle hystereze by se okno otevřelo za pár minut.
-        if p.noc_zavreno_teplotou and p.noc_start is not None:
-            vratit = p.noc_start - n.tloustka
-            if t_in >= vratit:
-                p.noc_zavreno_teplotou = False
-            elif not krize:
-                return beze_zmeny(
-                    f"noc: čekám na prohřátí, {t_in:.1f} z {vratit:.1f} °C",
-                    False)
-
-        # Ve spánku otvírá jen krizový práh. Běžné dusno se vydrží,
-        # protože rámus okna vzbudí spolehlivěji než CO2.
-        prah_spanek = n.co2_noc_krize if v.spanek else prah_noc
-        if v.co2 > prah_spanek or pm_spatne or v.vetrat:
-            if krize and t_in > n.nocni_min - n.krize_pod_mez:
-                p.noc_mez = n.nocni_min - n.krize_pod_mez
-                p.noc_krize = True
-                return otevri("noc: nouzové větrání", 12 * 60, kod="noc_krize")
-            if t_in <= n.nocni_min + n.tloustka:
-                return beze_zmeny(f"noc: dusno, ale jen {t_in:.1f} °C")
-            p.noc_mez = n.nocni_min
-            p.noc_start = t_in
-            p.noc_krize = False
-            p.noc_zavreno_teplotou = False
-            return otevri(f"noc: otevírám do {p.noc_mez:.1f} °C", 4 * 3600,
+        if v.co2 > prah or pm_spatne or v.vetrat:
+            return otevri(f"noc: otevírám, CO2 {v.co2:.0f}", 4 * 3600,
                           kod="noc_otevri")
         return beze_zmeny(f"noc: klid, CO2 {v.co2:.0f}", False)
-
-    p.noc_mez = None
 
     # --- 7. spánek nebo vyvětráno ------------------------------------
     if cisto:
         if not p.otevreno:
             return beze_zmeny(f"čisto, CO2 {v.co2:.0f}", False)
-        p.den_mez = None
         p.narazove_pulz = False
-        p.zavreno_chladem = False   # vyvětráno, smyčka se ruší
-        p.zavreno_teplem = False
         p.pulzy_za_sebou = 0          # povedlo se, couvání se ruší
         # V nárazovém režimu se zavírá okamžitě, bez čekání na nejkratší
         # dobu držení. Bez toho by nárazové větrání nedělalo nic jiného
@@ -1083,25 +1054,13 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         return zavri(f"vyvětráno, CO2 {v.co2:.0f}", hned=bool(v.narazove),
                      kod="cisto")
 
-    # Po zavření kvůli teplotě se čeká na návrat o tloušťku smyčky.
-    # Bez toho se okno vrátilo, jakmile pokoj skočil o desetinu — a to
-    # v malém pokoji trvá pár minut.
-    if p.zavreno_chladem and not p.otevreno and v.co2 <= n.co2_noc_krize:
-        # Ve dne je hysterezí sám odstup od cíle: otevírá se o něj
-        # od cíle a zavírá na protější hraně pásma. Tloušťka se tu dřív přičítala
-        # navíc, takže se obě pásma sčítala a nikdo to neuhlídal.
-        vratit = v.cil if not _je_noc(v.hodina, n, v.spanek) else min(
-            _mez_chladu(v, p, n) + n.tloustka, v.cil)
-        if t_in < vratit:
-            return beze_zmeny(
-                f"čekám na prohřátí, {t_in:.1f} z {vratit:.1f} °C", False)
-        p.zavreno_chladem = False
 
     # --- 8. pulzní větrání -------------------------------------------
     if potreba:
         if p.otevreno:
-            if p.den_mez is not None and t_in <= p.den_mez:
-                return zavri(f"kleslo na {t_in:.1f} °C")
+            # Větrání kvůli vzduchu čeká na vyvětrání; o prochladnutí
+            # se stará pojistka výš, ne hrana pásma. Dřív se zavíralo
+            # na dolní hraně i s dusnem a hned se otevíralo znovu.
             return beze_zmeny(f"větrá se, CO2 {v.co2:.0f}", True)
 
         dt = max(t_in - v.t_out, 1.0)
@@ -1117,7 +1076,6 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         zkraceno = bool(v.narazove)
 
         p.rezim = "pulz"
-        p.den_mez = round(v.cil - n.denni_hystereze, 1)
         duvod = f"CO2 {v.co2:.0f}"
         if pm_spatne:
             duvod = f"PM2.5 {v.pm25:.0f}" + ("" if v.pm_platny else " (bez ventilátoru)")
@@ -1182,32 +1140,20 @@ def pevna_pravidla_bytu() -> list[str]:
     ]
 
 
-def pevna_pravidla(spanek: bool, noc: bool, nocni_min: float,
-                   co2_noc: float, co2_krize: float) -> list[str]:
+def pevna_pravidla(spanek: bool, noc: bool, co2_noc: float,
+                   co2_krize: float, co2_zavrit: float) -> list[str]:
     """Pravidla bez nastavení, která závisí na stavu místnosti."""
     if spanek:
         return [
             f"Ve spánku rozhoduje jen CO2: otevře nad {co2_krize:.0f}, "
-            f"zavře pod {co2_noc:.0f} ppm. Teplota okno neotvírá ani "
-            f"nezavírá.",
-            f"Jediná teplotní pojistka: zavřu, až klesne na "
-            f"{nocni_min - SPANEK_POJISTKA:.1f} °C, tedy "
-            f"{SPANEK_POJISTKA:.0f} °C pod noční mezí.",
+            f"zavře pod {co2_zavrit:.0f} ppm. Teplota okno neotvírá ani "
+            f"nezavírá, drží ji jen pojistky.",
         ]
     if noc:
-        return [f"V noci zavřu, až je vyvětráno, nebo při poklesu na "
-                f"{nocni_min:.1f} °C."]
+        return [f"V noci otevře CO2 nad {co2_noc:.0f} ppm a zavře "
+                f"vyvětrání pod {co2_zavrit:.0f} ppm; teplotu řeší "
+                f"noční pásmo a pojistky."]
     return []
-
-
-def _mez_chladu(v: "Vstup", p: "Pamet", n: "Nastaveni") -> float:
-    """Dolní hrana pásma: kde se zavírá kvůli chladu."""
-    noc = _je_noc(v.hodina, n, v.spanek)
-    if v.spanek:
-        return n.nocni_min - SPANEK_POJISTKA
-    if noc:
-        return p.noc_mez if p.noc_mez is not None else n.nocni_min
-    return v.cil - n.denni_hystereze
 
 
 def proc_neotevira(v: "Vstup", n: "Nastaveni", t_in: float,
@@ -1221,8 +1167,8 @@ def proc_neotevira(v: "Vstup", n: "Nastaveni", t_in: float,
     if v.t_out is None:
         return "venkovní teplotu neznám"
 
-    nad_pasmem = t_max > v.cil + n.denni_hystereze
-    pod_pasmem = t_in < v.cil - n.denni_hystereze
+    nad_pasmem = t_max > v.cil + n.hyst_den_otevrit
+    pod_pasmem = t_in < v.cil - n.hyst_den_otevrit
     chladit_lze = (v.t_out < t_max - n.chlazeni_rozdil
                    and v.t_out > n.chlazeni_min_venku)
     ohrat_lze = v.t_out > t_in + n.chlazeni_rozdil
@@ -1238,9 +1184,10 @@ def proc_neotevira(v: "Vstup", n: "Nastaveni", t_in: float,
         return f"venku {v.t_out:.1f} °C, chladnější vzduch nemáme"
     if pod_pasmem:
         return f"venku {v.t_out:.1f} °C, teplejší vzduch na ohřev nemáme"
-    if abs(v.t_out - v.cil) > n.narazove_odstup:
-        return (f"venku {v.t_out:.1f} °C, daleko od cíle — otevírá se "
-                f"jen z důvodu, ne pro pohodu")
+    # Nárazový režim teplotnímu větrání nebrání, zakazuje jen otevírání
+    # pro pohodu — takže mezi překážky toho, co ta věta popisuje,
+    # nepatří. Dřív tu stál a tvrdil, že chlazení ani ohřev nejdou.
+    return ""
     return ""
 
 
@@ -1259,46 +1206,37 @@ def pasmo_jen_stupnice(radky: list[str]) -> list[str]:
     return radky[:-1] if radky else []
 
 
-def pasmo_text(cil: float, t_in: float, hystereze: float,
-               nocni_min: float, tloustka: float, otevreno: bool,
+def pasmo_text(cil: float, t_in: float, otevrit: float, zavrit: float,
+               mez_dolni: float, mez_horni: float, otevreno: bool,
                spanek: bool = False, noc: bool = False,
-               spanek_pojistka: float = 2.0,
                t_max: float | None = None,
-               zavreno_chladem: bool = False,
-               zavreno_teplem: bool = False,
-               chladi: bool = False,
-               ohrivam: bool = False,
-               duvod: str = "",
-               brani_teplote: str = "",
+               chladi: bool = False, ohrivam: bool = False,
+               duvod: str = "", brani_teplote: str = "",
                rucni_min: int | None = None) -> list[str]:
-    """Stupnice s mezemi a tím, kde je teplota právě teď.
+    """Stupnice: pojistky, pásmo a kde je teplota právě teď.
 
-    Hranice se pojmenovávají tím, co jsou, ne budoucím slovesem.
-    Dřív stálo u horní „nad ní začnu chladit", i když se zrovna
-    chladilo, a u dvou hranic naráz „tady zavřu", přestože zavřít jde
-    v dané chvíli jen na jedné straně. Předpověď patří do věty pod
-    stupnici, ne k hranicím.
+    U každé hrany je napsané, které nastavení ji určuje — bez toho se
+    v číslech kolem cíle nikdo nevyzná.
     """
     t_max = t_max if t_max is not None else t_in
-    dolni = (nocni_min - spanek_pojistka if spanek
-             else nocni_min if noc else cil - hystereze)
-    popis_dolni = ("pojistka ve spánku" if spanek
-                   else "noční mez" if noc else "dolní mez")
-    horni = cil + hystereze
-
-    body = [(horni, "horní hrana pásma"),
-            (cil, "cíl"),
-            (dolni, popis_dolni)]
-    if zavreno_teplem:
-        body.append((horni, "hranice chlazení"))
-    if zavreno_chladem and not noc:
-        pass          # ve dne je hranicí cíl, ten už v seznamu je
-    elif zavreno_chladem:
-        body.append((min(dolni + tloustka, cil), "znovu otevřu odtud"))
-
-    znacka = t_max if chladi or t_max > horni else t_in
+    kdy = "v noci" if (noc or spanek) else "ve dne"
+    horni = cil + otevrit
+    dolni = cil - otevrit
+    # U každé hrany je v závorce šoupátko, které ji určuje — bez toho
+    # se v číslech kolem cíle nikdo nevyzná.
+    body = [
+        (mez_horni, "zavřu — pojistka „nepřehřát nad“"),
+        (horni, f"začnu chladit — „{kdy} otevřít“"),
+        (cil + zavrit, f"ohřev dojede — „{kdy} zavřít“"),
+        (cil, "cíl"),
+        (cil - zavrit, f"chlazení dojede — „{kdy} zavřít“"),
+        (dolni, f"začnu ohřívat — „{kdy} otevřít“"),
+        (mez_dolni, "zavřu — pojistka „nevychladit pod“"),
+    ]
+    znacka = t_max if (chladi or t_max > horni) else t_in
     cidlo = ("nejteplejší čidlo" if znacka == t_max and t_max != t_in
              else "nejchladnější čidlo")
+
     radky = []
     for hodnota, popis in sorted(set(body), key=lambda x: -x[0]):
         radky.append(f"{hodnota:5.1f} \u2524 {popis}")
@@ -1308,36 +1246,23 @@ def pasmo_text(cil: float, t_in: float, hystereze: float,
                       + ("otevřeno" if otevreno else "zavřeno"))
 
     if rucni_min:
-        # Po ručním zásahu se automatika do okna neplete, takže všechny
-        # sliby o zavření by v té chvíli lhaly.
         radky.append(f"Sáhl jsi na okno, automatika mlčí ještě "
                      f"{rucni_min} min. Teplota do toho teď nemluví.")
+    elif otevreno and chladi:
+        radky.append(f"Otevřeno: {duvod}. " if duvod else "Otevřeno. "
+                     + f"Chladím, zavřu na {cil - zavrit:.1f} °C.")
+    elif otevreno and ohrivam:
+        radky.append((f"Otevřeno: {duvod}. " if duvod else "Otevřeno. ")
+                     + f"Ohřívám, zavřu na {cil + zavrit:.1f} °C.")
+    elif otevreno and spanek:
+        radky.append(f"Ve spánku rozhoduje jen CO2; teplotu drží "
+                     f"pojistky {mez_dolni:.1f} a {mez_horni:.1f} °C.")
     elif otevreno:
-        proc = f"Otevřeno: {duvod}. " if duvod else "Otevřeno. "
-        if chladi:
-            radky.append(f"{proc}Chladím, zavřu na {dolni:.1f} °C.")
-        elif ohrivam:
-            radky.append(f"{proc}Ohřívám, zavřu na {horni:.1f} °C.")
-        elif spanek:
-            # Ve spánku teplota okno neotvírá ani nezavírá, takže
-            # mluvit tu o chlazení je nesmysl.
-            radky.append(f"{proc}Zavřu, až klesne na {dolni:.1f} °C, "
-                         f"jinak rozhoduje jen CO2.")
-        else:
-            radky.append(f"{proc}Zavřu při poklesu na {dolni:.1f} °C; "
-                         f"nad {horni:.1f} °C se přepne na chlazení, "
-                         f"které dojede na {cil - hystereze:.1f} °C.")
-    elif zavreno_chladem:
-        # ve dne se čeká na návrat k cíli, v noci na prohřátí o tloušťku
-        otevru = cil if not noc else min(dolni + tloustka, cil)
-        radky.append(f"Zavřeno kvůli chladu. Kvůli teplotě otevřu "
-                     f"od {otevru:.1f} °C.")
-    elif zavreno_teplem:
-        radky.append(f"Vychlazeno. Chladit začnu znovu od {horni:.1f} °C.")
+        radky.append(f"Větrá se kvůli vzduchu; teplotu drží pojistky "
+                     f"{mez_dolni:.1f} a {mez_horni:.1f} °C.")
     else:
         veta = (f"Kvůli teplotě bych otevřel nad {horni:.1f} °C "
-                f"(chlazení), nebo pod {dolni:.1f} °C, když je venku "
-                f"tepleji (ohřev).")
+                f"(chlazení), nebo pod {dolni:.1f} °C (ohřev).")
         if brani_teplote:
             veta += f" Teď brání: {brani_teplote}."
         radky.append(veta)

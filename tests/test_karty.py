@@ -81,7 +81,7 @@ def test_kazda_karta_ma_typ():
 
 def test_posuvniky_jsou_pojmenovane_cesky():
     s = dashboard(["kuchyne"], [], vzdy)
-    assert "Denní hystereze" in s
+    assert "Ve dne otevřít při odchylce od cíle o" in s
     assert "Nouzově otevřít nad" in s
 
 
@@ -272,7 +272,9 @@ def test_prepinace_ovladani_hned_pod_teplotou():
         podoba="stranka"))
     prvni = d["sections"][0]["cards"]
     assert prvni[0]["heading"] == "Cílová teplota"
-    assert prvni[-1]["title"] == "Co smí ovládat"
+    # za ovládáním ještě volby místnosti, které nejsou číslo
+    assert [k.get("title") for k in prvni][-2:] == [
+        "Co smí ovládat", "Co se smí dít"]
 
 
 def test_doma_podle_je_jen_jednou():
@@ -338,8 +340,8 @@ def test_rozvrzeni_sekci():
 def test_posuvniky_maji_popisky():
     """Bez nich člověk za měsíc neví, co která hodnota znamená."""
     s = dashboard(["loznice"], [], vzdy, cidla={"loznice": "sensor.t"})
-    assert "V noci vychladnout nejvýš na" in s
-    assert "méně cyklů za noc" in s
+    assert "Pojistka: nevychladit pod" in s
+    assert "ať je otevřené z jakéhokoli důvodu" in s
     # každý posuvník s položkami má svou řádku
     from karty import POSUVNIKY
     assert all(len(x) == 3 for x in POSUVNIKY)
@@ -495,47 +497,10 @@ def test_bez_zvlhcovacu_sekce_neni():
 
 
 
-def test_veta_pod_stupnici_je_mimo_blok():
-    """V bloku s pevnou šířkou se dlouhá věta nezalomí a odřízne se,
-    takže stupnice patří do bloku a věta mimo."""
-    import yaml
-    d = yaml.safe_load(dashboard(
-        ["loznice"], [], vzdy, cidla={"loznice": "sensor.t"},
-        podoba="stranka"))
-    md = [k for s in d["sections"] for k in s["cards"]
-          if k["type"] == "markdown"
-          and "teplotni_pasmo" in k["content"]][0]
-    obsah = md["content"]
-    # stupnice uvnitř bloku, předpověď za ním
-    pred, _, za = obsah.partition("```")
-    druhy = za.partition("```")[2]
-    assert "teplotni_pasmo" in pred
-    assert "teplotni_predpoved" in pred      # proměnná se nastavuje výš
-    assert "{{ u }}" in druhy                # ale vypisuje se mimo blok
 
 
-def test_radky_stupnice_jsou_kratke():
-    """Blok nezalamuje, takže delší řádek se na mobilu odřízne."""
-    from core import pasmo_jen_stupnice, pasmo_text
-    r = pasmo_text(22.7, 24.4, 1.5, 18.0, 1.0, otevreno=True, t_max=24.7,
-                   chladi=True, duvod="chlazení větráním")
-    for radek in pasmo_jen_stupnice(r):
-        assert len(radek) <= 45, radek
 
 
-def test_posuvnik_najde_i_starsi_jmeno_z_vice_variant():
-    """Přejmenovaná entita si drží původní identifikátor. Denní
-    hystereze se za svůj život jmenovala třemi způsoby."""
-    import yaml
-    stare = {"number.napohodu_obyvak_ve_dne_smi_klesnout_pod_cil_o",
-             "sensor.napohodu_obyvak_stav"}
-    d = yaml.safe_load(dashboard(
-        ["obyvak"], [], lambda e: e in stare,
-        cidla={"obyvak": "sensor.t"}, podoba="stranka"))
-    karta = [k for s in d["sections"] for k in s["cards"]
-             if k.get("title") == "Denní hystereze"][0]
-    assert karta["entities"][0]["entity"] == (
-        "number.napohodu_obyvak_ve_dne_smi_klesnout_pod_cil_o")
 
 
 def test_globalni_nastaveni_je_v_karte():

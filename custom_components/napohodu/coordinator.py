@@ -25,36 +25,39 @@ from . import (core, pritomnost as pr, prumery as pm, slunce as sl,
 from .const import (
     CONF_AZIMUT, CONF_CHLAZENI_MIN_VENKU, CONF_CIL_MAX, CONF_CIL_MIN,
     CONF_CISTICKA, CONF_CISTICKA_OD, CONF_CLIMATE, CONF_CO2, CONF_CO2_NOC,
-    CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT,
-    CONF_DENNI_HYSTEREZE, CONF_DEST, CONF_DEST_PRAH, CONF_DOBEH, CONF_DOMA,
-    CONF_DVERE, CONF_INDICIE_DOBEH, CONF_INDICIE_STAV, CONF_INDICIE_VYKON,
-    CONF_I_KDYZ_NIKDO, CONF_KLID_STINENI_MIN, CONF_KLIMA_CHLADIT_OD,
-    CONF_KLIMA_DLOUHA, CONF_KLIMA_DLOUHA_H, CONF_KLIMA_ENTITA,
-    CONF_KLIMA_POKOJE, CONF_KLIMA_SUSIT_OD, CONF_KLIMA_TOPIT_OD,
-    CONF_KLIMA_UMI, CONF_KLIMA_UTLUM_CHLAZENI, CONF_KLIMA_UTLUM_TOPENI,
-    CONF_KLIMA_V_POKOJI, CONF_KONTAKT_M, CONF_MAX_STARI, CONF_MIN_DRZENI,
+    CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT, CONF_DEST,
+    CONF_DEST_PRAH, CONF_DOBEH, CONF_DOMA, CONF_DVERE,
+    CONF_HYST_DEN_OTEVRIT, CONF_HYST_DEN_ZAVRIT, CONF_HYST_NOC_OTEVRIT,
+    CONF_HYST_NOC_ZAVRIT, CONF_INDICIE_DOBEH, CONF_INDICIE_STAV,
+    CONF_INDICIE_VYKON, CONF_I_KDYZ_NIKDO, CONF_KLID_STINENI_MIN,
+    CONF_KLIMA_CHLADIT_OD, CONF_KLIMA_DLOUHA, CONF_KLIMA_DLOUHA_H,
+    CONF_KLIMA_ENTITA, CONF_KLIMA_POKOJE, CONF_KLIMA_SUSIT_OD,
+    CONF_KLIMA_TOPIT_OD, CONF_KLIMA_UMI, CONF_KLIMA_UTLUM_CHLAZENI,
+    CONF_KLIMA_UTLUM_TOPENI, CONF_KLIMA_V_POKOJI, CONF_KONTAKT_M,
+    CONF_MAX_STARI, CONF_MEZ_DOLNI, CONF_MEZ_HORNI, CONF_MIN_DRZENI,
     CONF_MISTNOSTI, CONF_NARAZ, CONF_NARAZOVE, CONF_NARAZOVE_ODSTUP,
     CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NEJDRIV_ZNOVU, CONF_NOC_DO,
-    CONF_NOC_MIN, CONF_NOC_OD, CONF_NOC_PREDSTIH, CONF_NOC_UTLUM,
-    CONF_OCHOTA, CONF_ODCHYLKA, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T,
-    CONF_OKNA, CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU,
-    CONF_PM_CISTO, CONF_PM_PLATNY, CONF_PM_SPATNE, CONF_PRAH_VYKONU,
-    CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_PRYC_PO, CONF_PRYC_UTLUM,
+    CONF_NOC_OD, CONF_NOC_PREDSTIH, CONF_NOC_UTLUM, CONF_OCHOTA,
+    CONF_ODCHYLKA, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA,
+    CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU, CONF_PM_CISTO,
+    CONF_PM_PLATNY, CONF_PM_SPATNE, CONF_PRAH_VYKONU, CONF_PRITOMNOST,
+    CONF_PROJEZD_M, CONF_PRO_POHODU, CONF_PRYC_PO, CONF_PRYC_UTLUM,
     CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M,
     CONF_RH_VNITRNI, CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE,
     CONF_SEZONA_PRAH, CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE,
     CONF_SMOG, CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI,
     CONF_SPANEK, CONF_STINENI_CHOVANI, CONF_STINENI_MAPA,
     CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC, CONF_STINENI_REZIM,
-    CONF_TEPLOTY, CONF_TLOUSTKA, CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU,
-    CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM,
-    CONF_VETRAT, CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH,
-    CONF_VYCHOZI_KDY, CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE,
-    CONF_ZARENI, CONF_ZASKLENI, CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD,
+    CONF_TEPLOTY, CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER,
+    CONF_T_SEZONA, CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT,
+    CONF_VITR, CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VYCHOZI_KDY,
+    CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI,
+    CONF_ZASKLENI, CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD,
     CONF_ZIMA_O_KOLIK, CONF_ZIMA_PRAH, CONF_ZMENA_PODMINEK,
     CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY,
-    CONF_ZVLHCOVAC, CONF_ZVLHCOVAC_KDY, DOMAIN, INTERVAL_S,
-    PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA, ZASKLENI_PODIL,
+    CONF_ZVLHCOVAC, CONF_ZVLHCOVAC_KDY, CONF_ZVLHCOVAC_VE_SPANKU, DOMAIN,
+    INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA,
+    ZASKLENI_PODIL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -554,6 +557,23 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             if self.okna_stav.get(x.subentry_id) is True:
                 return True
         return False
+
+    def _pasmo(self, nast, m, v, pamet, otevreno: bool,
+               cas_s: float = 0.0) -> list[str]:
+        """Stupnice teplotního pásma pro kartu."""
+        noc = core._je_noc(self._hodina_ted, nast, bool(m.klid))
+        otevrit, zavrit = ((nast.hyst_noc_otevrit, nast.hyst_noc_zavrit)
+                           if noc or m.klid
+                           else (nast.hyst_den_otevrit,
+                                 nast.hyst_den_zavrit))
+        return core.pasmo_text(
+            m.cil, v.t_in, otevrit, zavrit, nast.mez_dolni, nast.mez_horni,
+            otevreno, bool(m.klid), noc,
+            m.atributy.get("teplota_max"), pamet.chladi, pamet.ohrivam,
+            pamet.posledni_duvod or "",
+            core.proc_neotevira(v, nast, v.t_in,
+                                m.atributy.get("teplota_max") or v.t_in),
+            int(max(0, pamet.rucni_do_s - cas_s) / 60) or None)
 
     def _prehled_bytu(self, g: dict) -> list[str]:
         """Globální nastavení, ať je na dashboardu vidět, co platí."""
@@ -1100,20 +1120,33 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             min_drzeni_s=self.hodnota(
                 p.subentry_id, CONF_MIN_DRZENI,
                 float(d.get(CONF_MIN_DRZENI, 20))) * 60,
-            tloustka=self.hodnota(p.subentry_id, CONF_TLOUSTKA,
-                                  float(d.get(CONF_TLOUSTKA, 1.0))),
-            nocni_min=self.hodnota(p.subentry_id, CONF_NOC_MIN,
-                                   float(d.get(CONF_NOC_MIN, 18))),
+            hyst_den_otevrit=self.hodnota(
+                p.subentry_id, CONF_HYST_DEN_OTEVRIT,
+                float(d.get(CONF_HYST_DEN_OTEVRIT, 2.5))),
+            hyst_den_zavrit=self.hodnota(
+                p.subentry_id, CONF_HYST_DEN_ZAVRIT,
+                float(d.get(CONF_HYST_DEN_ZAVRIT, 1.0))),
+            hyst_noc_otevrit=self.hodnota(
+                p.subentry_id, CONF_HYST_NOC_OTEVRIT,
+                float(d.get(CONF_HYST_NOC_OTEVRIT, 2.5))),
+            hyst_noc_zavrit=self.hodnota(
+                p.subentry_id, CONF_HYST_NOC_ZAVRIT,
+                float(d.get(CONF_HYST_NOC_ZAVRIT, 1.0))),
+            pro_pohodu=bool(self.hodnota(
+                p.subentry_id, "pro_pohodu",
+                float(bool(d.get(CONF_PRO_POHODU, True))))),
+            mez_dolni=self.hodnota(p.subentry_id, CONF_MEZ_DOLNI,
+                                   float(d.get(CONF_MEZ_DOLNI, 18.0))),
+            mez_horni=self.hodnota(p.subentry_id, CONF_MEZ_HORNI,
+                                   float(d.get(CONF_MEZ_HORNI, 27.0))),
             noc_od=noc_od, noc_do=noc_do,
             rucni_klid_s=float(d.get(CONF_RUCNI_KLID, 30)) * 60,
         )
         # Dřív to byl posuvník nula až deset, u kterého nebylo poznat,
         # co dělá. Teď se rovnou zadává, o kolik stupňů smí teplota
         # při větrání klesnout.
-        den_pod = self.hodnota(p.subentry_id, CONF_DENNI_HYSTEREZE,
-                               float(d.get(CONF_DENNI_HYSTEREZE, 1.5)))
         nast = replace(
-            nast, denni_hystereze=den_pod,
+            nast,
             chlazeni_min_venku=float(
                 d.get(CONF_CHLAZENI_MIN_VENKU, 7.0)),
             narazove_odstup=self.hodnota(
@@ -1131,8 +1164,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # Každá mez sama o sobě vypadá rozumně, konflikt s cílem je
         # vidět až dohromady. Bez tohohle by okno jen nefungovalo
         # a nebylo by poznat proč.
-        potize = core.konflikt_mezi(m.cil, nast.denni_hystereze,
-                                    nast.nocni_min, nast.tloustka)
+        potize = core.konflikt_mezi(
+            m.cil, nast.hyst_den_otevrit, nast.hyst_den_zavrit,
+            nast.mez_dolni, nast.mez_horni)
         m.atributy["konflikt_mezi"] = potize or None
         if potize and self._konflikt_hlasen.get(p.subentry_id) != potize:
             self._konflikt_hlasen[p.subentry_id] = potize
@@ -1331,47 +1365,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Stupnice s mezemi, ať je vidět, co nastavení dělají. Jen
             # tam, kde okno ovládáme — jinak ukazuje meze, podle kterých
             # se nikdy nic nestane, a stav okna, který neznáme.
+            # Stupnice a předpověď. Argumenty se tu vyjmenovávají
+            # jednou a obě funkce z nich berou totéž, aby nemohly
+            # tvrdit každá jiné číslo.
             "teplotni_pasmo": None if not okna else core.pasmo_jen_stupnice(
-                core.pasmo_text(
-                m.cil, v.t_in, nast.denni_hystereze,
-                # mez zapamatovaná při otevření, ne nastavená — jinak
-                # stupnice a diagnostika tvrdí každá jiné číslo
-                pamet.noc_mez if pamet.noc_mez is not None
-                else nast.nocni_min,
-                nast.tloustka, skutecne, bool(m.klid),
-                core._je_noc(self._hodina_ted, nast, bool(m.klid)),
-                core.SPANEK_POJISTKA,
-                m.atributy.get("teplota_max"),
-                pamet.zavreno_chladem, pamet.zavreno_teplem,
-                pamet.chladi, pamet.ohrivam,
-                pamet.posledni_duvod or "",
-                core.proc_neotevira(
-                    v, nast, v.t_in,
-                    m.atributy.get("teplota_max") or v.t_in))),
+                self._pasmo(nast, m, v, pamet, skutecne, cas_s)),
             # věta zvlášť, aby ji karta mohla zalomit
             "teplotni_predpoved": None if not okna else core.pasmo_predpoved(
-                core.pasmo_text(
-                    m.cil, v.t_in, nast.denni_hystereze,
-                    pamet.noc_mez if pamet.noc_mez is not None
-                    else nast.nocni_min,
-                    nast.tloustka, skutecne, bool(m.klid),
-                    core._je_noc(self._hodina_ted, nast, bool(m.klid)),
-                    core.SPANEK_POJISTKA, m.atributy.get("teplota_max"),
-                    pamet.zavreno_chladem, pamet.zavreno_teplem,
-                    pamet.chladi, pamet.ohrivam,
-                    pamet.posledni_duvod or "",
-                    core.proc_neotevira(
-                        v, nast, v.t_in,
-                        m.atributy.get("teplota_max") or v.t_in),
-                    # po ručním zásahu se o teplotě nemluví
-                    int(max(0, pamet.rucni_do_s - cas_s) / 60) or None)),
-            # Pravidla, která platí bez nastavení. Schované chování je
-            # horší než nastavení, které nepoužíváš — zapomene se, že
-            # vůbec existuje.
+                self._pasmo(nast, m, v, pamet, skutecne, cas_s)),
             "pevna_pravidla": core.pevna_pravidla(
                 bool(m.klid),
                 core._je_noc(self._hodina_ted, nast, bool(m.klid)),
-                nast.nocni_min, nast.co2_noc, nast.co2_noc_krize),
+                nast.co2_noc, nast.co2_noc_krize, nast.co2_zavrit),
             "vitr": self.vitr_stav,
             "dnes": {
                 "pohyby": sh["pohyby"],
@@ -1582,7 +1587,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Kdy smí běžet. Zvlhčovat prázdný pokoj je plýtvání
             # a zvlhčovat při otevřeném okně znamená zvlhčovat ulici.
             kdy = d.get(CONF_ZVLHCOVAC_KDY, "vzdy")
-            smi = (not otevreno and not (
+            ve_spanku = bool(self.hodnota(
+                p.subentry_id, "zvlhcovac_ve_spanku",
+                float(bool(d.get(CONF_ZVLHCOVAC_VE_SPANKU, True)))))
+            smi = (not otevreno
+                   and (ve_spanku or not m.klid)
+                   and not (
                 (kdy == "doma" and not doma)
                 or (kdy == "v_pokoji" and not m.obsazeno)
                 or (kdy == "pri_klidu" and not m.klid)))

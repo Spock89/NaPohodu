@@ -266,7 +266,6 @@
             "pm_platny": "Kdy platí údaj o prachu",
             "climate": "Topení (jen topí)",
             "odchylka": "Moje odchylka teploty",
-            "noc_min": "V noci vychladnout nejvýš na",
             "utlum": "Při otevřeném okně topit na",
             "cisticka": "Čistička vzduchu",
             "rh_vnitrni": "Čidlo vlhkosti",
@@ -303,13 +302,19 @@
             "poradi": "Pořadí na kartě",
             "noc_utlum_topeni": "V noci topit o méně",
             "cisticka_od_pm": "Čističku zapnout od PM2.5",
-            "tloustka_smycky": "Tloušťka noční smyčky",
             "zvlhcovac_kdy": "Zvlhčovat",
             "zaskleni": "Zasklení okna",
-            "denni_hystereze": "Denní hystereze",
             "chlazeni_min_venku": "Chladit jen při venkovní teplotě nad",
             "pm_spatne_od": "Prach je špatný od PM2.5",
-            "pm_cisto_pod": "Prach je čistý pod PM2.5"
+            "pm_cisto_pod": "Prach je čistý pod PM2.5",
+            "hyst_den_otevrit": "Ve dne otevřít při odchylce od cíle o",
+            "hyst_den_zavrit": "Ve dne zavřít až za cílem o",
+            "hyst_noc_otevrit": "V noci otevřít při odchylce od cíle o",
+            "hyst_noc_zavrit": "V noci zavřít až za cílem o",
+            "mez_dolni": "Pojistka: nevychladit pod",
+            "mez_horni": "Pojistka: nepřehřát nad",
+            "pro_pohodu": "Otevírat i pro pohodu",
+            "zvlhcovac_ve_spanku": "Zvlhčovat i ve spánku"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -320,7 +325,6 @@
             "pm_platny": "Prachové čidlo potřebuje proudící vzduch. Když má ventilátor, vyber jeho spínač — při stojícím ventilátoru se naměřeným hodnotám nevěří. Nemáš-li ventilátor, nech prázdné.",
             "climate": "Hlavice místnosti — virtuální z Better Thermostatu i skutečná. Integrace jim posílá cílovou teplotu a režim, když je zapnutý přepínač Ovládat topení.",
             "odchylka": "Cílová teplota se počítá pro celý byt. Tady ji pro tuto místnost posuneš. Plus znamená tepleji. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "noc_min": "Při nočním větrání se okno zavře, jakmile teplota klesne na tuhle hodnotu. Nižší číslo znamená delší větrání a méně cyklů za noc, ale chladnější ložnici.",
             "utlum": "Teplota, na kterou se hlavice stáhnou, když je okno otevřené. Je to celá teplota, ne odečet od cíle.",
             "cisticka": "Čistička vzduchu. Umí prach, ne CO2. V zimě a v noci je lepší než otevřít okno.",
             "rh_vnitrni": "Čidlo vlhkosti v místnosti. Bez něj se odtah neřídí.",
@@ -358,13 +362,19 @@
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
             "noc_utlum_topeni": "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. Klesá plynule hodinu před začátkem noci, aby to nebyl skok; zapnutý spánek platí okamžitě.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "tloustka_smycky": "Platí jen v noci: o kolik se pokoj musí prohřát nad noční mez, než se otevře znovu, a jak těsně nad mezí se ještě neotvírá. Širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje.\\n\\nVe dne se nepoužívá — tam je hysterezí sám „Odstup od cíle pro otevření\", kde se otevírá o hysterezi od cíle a zavírá na protější hraně pásma. Dřív platila i ve dne a obě pásma se sčítala.",
             "zvlhcovac_kdy": "Kdy smí zvlhčovač běžet. V ložnici má smysl „jen při spánku\", v obýváku spíš „jen když je někdo v pokoji\" — zvlhčovat prázdný pokoj je plýtvání.\n\nPři otevřeném okně se nezvlhčuje nikdy, to by znamenalo zvlhčovat ulici.",
             "zaskleni": "Podle zasklení se počítá, jak chladné je sklo, a z toho nejvyšší vlhkost, při které se ještě neorosí. V mrazu má sklo okolo pěti stupňů a při dvaadvaceti v pokoji a šedesáti procentech je rosný bod kolem čtrnácti — okno se tedy orosí, přestože vlhkost sama o sobě vypadá rozumně.\n\nHorní mez vlhkosti se tím v mrazu sama sníží. Při dvaadvaceti stupních a venkovních minus pěti vyjde pro dvojsklo 67 %, pro starší 53 %.",
-            "denni_hystereze": "Hysterezní pásmo kolem cílové teploty, souměrně na obě strany. Chlazení venkovním vzduchem se zapne o tolik nad cílem a dojede o tolik pod cíl; ohřev naopak.\n\nZavírat na cíli, jak to bylo dřív, znamenalo, že se teplota hned začala vracet a žádná rezerva na to nebyla. Širší pásmo znamená méně cyklů a větší rozkyv, nic mezi tím neexistuje.\n\nOhřev potřebuje, aby bylo venku tepleji než v pokoji. V noci se kvůli teplotě otevírá jen pro chlazení a platí „Tloušťka noční smyčky\", ne tohle.\n\nJe to taky tolerance pro větrání kvůli CO2 — pod cíl se smí vychladit nejvýš o tolik.",
             "chlazeni_min_venku": "Pod touhle venkovní teplotou se chlazení větráním nespustí.\n\nDolní hrana hysterezního pásma by pokoj zastavila sama, jenže zavření není okamžité — drží se „Nejkratší doba držení polohy\" — a chlazení se řídí nejteplejším čidlem, takže u okna je mezitím výrazně chladněji. Čím studenější vzduch, tím větší ten rozdíl je.",
             "pm_spatne_od": "Od téhle úrovně se vzduch bere za zaprášený a větrá se kvůli němu. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "pm_cisto_pod": "Pod touhle úrovní se vzduch bere za čistý. Mezera mezi oběma prahy brání tomu, aby se na hraně přepínalo."
+            "pm_cisto_pod": "Pod touhle úrovní se vzduch bere za čistý. Mezera mezi oběma prahy brání tomu, aby se na hraně přepínalo.",
+            "hyst_den_otevrit": "O kolik se teplota musí odchýlit od cíle, aby se kvůli ní otevřelo — nad cílem se chladí venkovním vzduchem, pod cílem se jím ohřívá. Platí souměrně na obě strany.",
+            "hyst_den_zavrit": "Jak daleko za cíl se dojede, než se zavře: při chlazení pod cíl, při ohřevu nad cíl. Zavírat přesně na cíli znamená, že se teplota hned začne vracet.\n\nJe to zároveň tolerance pro větrání kvůli teplotě. Větrání kvůli CO2 nebo prachu čeká na vyvětrání a drží ho jen pojistky.",
+            "hyst_noc_otevrit": "Totéž pro noční hodiny a spánek. V noci se obvykle nastavuje širší pásmo, aby okno nejezdilo.",
+            "hyst_noc_zavrit": "Totéž pro noční hodiny a spánek.",
+            "mez_dolni": "Absolutní spodní mez: pod ní se okno zavře, ať je otevřené z jakéhokoli důvodu. Obchází ji jen ruční žádost o vyvětrání.\n\nNahradila dřívější noční mez i pojistku ve spánku, které dělaly totéž na třech místech.",
+            "mez_horni": "Absolutní horní mez proti přehřátí: nad ní se okno zavře, ať je otevřené z jakéhokoli důvodu.",
+            "pro_pohodu": "Otevřít smí i tehdy, když k tomu není důvod — vzduch je v pořádku, teplota v pásmu a venku je příjemně.\n\nVypnutím se okno bude otevírat jen z důvodu: kvůli CO2, prachu, chlazení nebo ohřevu.",
+            "zvlhcovac_ve_spanku": "Zvlhčovač smí běžet i při zapnutém spánku. Vypni, když ho v ložnici slyšíš."
           },
           "submit": "Další"
         },
@@ -420,7 +430,6 @@
             "pm_platny": "Kdy platí údaj o prachu",
             "climate": "Topení (jen topí)",
             "odchylka": "Moje odchylka teploty",
-            "noc_min": "V noci vychladnout nejvýš na",
             "utlum": "Při otevřeném okně topit na",
             "zdroj_obsazenosti": "Obsazenost podle",
             "spanek": "Spánkový přepínač",
@@ -467,13 +476,19 @@
             "poradi": "Pořadí na kartě",
             "noc_utlum_topeni": "V noci topit o méně",
             "cisticka_od_pm": "Čističku zapnout od PM2.5",
-            "tloustka_smycky": "Tloušťka noční smyčky",
             "zvlhcovac_kdy": "Zvlhčovat",
             "zaskleni": "Zasklení okna",
-            "denni_hystereze": "Denní hystereze",
             "chlazeni_min_venku": "Chladit jen při venkovní teplotě nad",
             "pm_spatne_od": "Prach je špatný od PM2.5",
-            "pm_cisto_pod": "Prach je čistý pod PM2.5"
+            "pm_cisto_pod": "Prach je čistý pod PM2.5",
+            "hyst_den_otevrit": "Ve dne otevřít při odchylce od cíle o",
+            "hyst_den_zavrit": "Ve dne zavřít až za cílem o",
+            "hyst_noc_otevrit": "V noci otevřít při odchylce od cíle o",
+            "hyst_noc_zavrit": "V noci zavřít až za cílem o",
+            "mez_dolni": "Pojistka: nevychladit pod",
+            "mez_horni": "Pojistka: nepřehřát nad",
+            "pro_pohodu": "Otevírat i pro pohodu",
+            "zvlhcovac_ve_spanku": "Zvlhčovat i ve spánku"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -484,7 +499,6 @@
             "pm_platny": "Prachové čidlo potřebuje proudící vzduch. Když má ventilátor, vyber jeho spínač — při stojícím ventilátoru se naměřeným hodnotám nevěří. Nemáš-li ventilátor, nech prázdné.",
             "climate": "Hlavice místnosti — virtuální z Better Thermostatu i skutečná. Integrace jim posílá cílovou teplotu a režim, když je zapnutý přepínač Ovládat topení.",
             "odchylka": "Cílová teplota se počítá pro celý byt. Tady ji pro tuto místnost posuneš. Plus znamená tepleji. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "noc_min": "Při nočním větrání se okno zavře, jakmile teplota klesne na tuhle hodnotu. Nižší číslo znamená delší větrání a méně cyklů za noc, ale chladnější ložnici.",
             "utlum": "Teplota, na kterou se hlavice stáhnou, když je okno otevřené. Je to celá teplota, ne odečet od cíle.",
             "zdroj_obsazenosti": "Obsazená místnost se udržuje na cíli. Prázdná se nechá být.",
             "spanek": "Přepínač, kterým dáváš najevo, že se v místnosti spí.",
@@ -532,13 +546,19 @@
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
             "noc_utlum_topeni": "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. Klesá plynule hodinu před začátkem noci, aby to nebyl skok; zapnutý spánek platí okamžitě.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "tloustka_smycky": "Platí jen v noci: o kolik se pokoj musí prohřát nad noční mez, než se otevře znovu, a jak těsně nad mezí se ještě neotvírá. Širší smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje.\\n\\nVe dne se nepoužívá — tam je hysterezí sám „Odstup od cíle pro otevření\", kde se otevírá o hysterezi od cíle a zavírá na protější hraně pásma. Dřív platila i ve dne a obě pásma se sčítala.",
             "zvlhcovac_kdy": "Kdy smí zvlhčovač běžet. V ložnici má smysl „jen při spánku\", v obýváku spíš „jen když je někdo v pokoji\" — zvlhčovat prázdný pokoj je plýtvání.\n\nPři otevřeném okně se nezvlhčuje nikdy, to by znamenalo zvlhčovat ulici.",
             "zaskleni": "Podle zasklení se počítá, jak chladné je sklo, a z toho nejvyšší vlhkost, při které se ještě neorosí. V mrazu má sklo okolo pěti stupňů a při dvaadvaceti v pokoji a šedesáti procentech je rosný bod kolem čtrnácti — okno se tedy orosí, přestože vlhkost sama o sobě vypadá rozumně.\n\nHorní mez vlhkosti se tím v mrazu sama sníží. Při dvaadvaceti stupních a venkovních minus pěti vyjde pro dvojsklo 67 %, pro starší 53 %.",
-            "denni_hystereze": "Hysterezní pásmo kolem cílové teploty, souměrně na obě strany. Chlazení venkovním vzduchem se zapne o tolik nad cílem a dojede o tolik pod cíl; ohřev naopak.\n\nZavírat na cíli, jak to bylo dřív, znamenalo, že se teplota hned začala vracet a žádná rezerva na to nebyla. Širší pásmo znamená méně cyklů a větší rozkyv, nic mezi tím neexistuje.\n\nOhřev potřebuje, aby bylo venku tepleji než v pokoji. V noci se kvůli teplotě otevírá jen pro chlazení a platí „Tloušťka noční smyčky\", ne tohle.\n\nJe to taky tolerance pro větrání kvůli CO2 — pod cíl se smí vychladit nejvýš o tolik.",
             "chlazeni_min_venku": "Pod touhle venkovní teplotou se chlazení větráním nespustí.\n\nDolní hrana hysterezního pásma by pokoj zastavila sama, jenže zavření není okamžité — drží se „Nejkratší doba držení polohy\" — a chlazení se řídí nejteplejším čidlem, takže u okna je mezitím výrazně chladněji. Čím studenější vzduch, tím větší ten rozdíl je.",
             "pm_spatne_od": "Od téhle úrovně se vzduch bere za zaprášený a větrá se kvůli němu. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "pm_cisto_pod": "Pod touhle úrovní se vzduch bere za čistý. Mezera mezi oběma prahy brání tomu, aby se na hraně přepínalo."
+            "pm_cisto_pod": "Pod touhle úrovní se vzduch bere za čistý. Mezera mezi oběma prahy brání tomu, aby se na hraně přepínalo.",
+            "hyst_den_otevrit": "O kolik se teplota musí odchýlit od cíle, aby se kvůli ní otevřelo — nad cílem se chladí venkovním vzduchem, pod cílem se jím ohřívá. Platí souměrně na obě strany.",
+            "hyst_den_zavrit": "Jak daleko za cíl se dojede, než se zavře: při chlazení pod cíl, při ohřevu nad cíl. Zavírat přesně na cíli znamená, že se teplota hned začne vracet.\n\nJe to zároveň tolerance pro větrání kvůli teplotě. Větrání kvůli CO2 nebo prachu čeká na vyvětrání a drží ho jen pojistky.",
+            "hyst_noc_otevrit": "Totéž pro noční hodiny a spánek. V noci se obvykle nastavuje širší pásmo, aby okno nejezdilo.",
+            "hyst_noc_zavrit": "Totéž pro noční hodiny a spánek.",
+            "mez_dolni": "Absolutní spodní mez: pod ní se okno zavře, ať je otevřené z jakéhokoli důvodu. Obchází ji jen ruční žádost o vyvětrání.\n\nNahradila dřívější noční mez i pojistku ve spánku, které dělaly totéž na třech místech.",
+            "mez_horni": "Absolutní horní mez proti přehřátí: nad ní se okno zavře, ať je otevřené z jakéhokoli důvodu.",
+            "pro_pohodu": "Otevřít smí i tehdy, když k tomu není důvod — vzduch je v pořádku, teplota v pásmu a venku je příjemně.\n\nVypnutím se okno bude otevírat jen z důvodu: kvůli CO2, prachu, chlazení nebo ohřevu.",
+            "zvlhcovac_ve_spanku": "Zvlhčovač smí běžet i při zapnutém spánku. Vypni, když ho v ložnici slyšíš."
           },
           "submit": "Další"
         },
@@ -839,9 +859,6 @@
       "odchylka": {
         "name": "Moje odchylka teploty"
       },
-      "noc_min": {
-        "name": "V noci vychladnout nejvýš na"
-      },
       "utlum": {
         "name": "Při otevřeném okně topit na"
       },
@@ -860,17 +877,11 @@
       "noc_utlum_topeni": {
         "name": "V noci topit o méně"
       },
-      "tloustka_smycky": {
-        "name": "Tloušťka noční smyčky"
-      },
       "rh_min": {
         "name": "Zvlhčovat pod vlhkostí"
       },
       "rh_max": {
         "name": "Vypnout zvlhčovač nad"
-      },
-      "denni_hystereze": {
-        "name": "Denní hystereze"
       },
       "chlazeni_min_venku": {
         "name": "Chladit jen při venkovní teplotě nad"
@@ -895,6 +906,24 @@
       },
       "rucni_klid_min": {
         "name": "Po ručním zásahu nechat být"
+      },
+      "hyst_den_otevrit": {
+        "name": "Ve dne otevřít při odchylce od cíle o"
+      },
+      "hyst_den_zavrit": {
+        "name": "Ve dne zavřít až za cílem o"
+      },
+      "hyst_noc_otevrit": {
+        "name": "V noci otevřít při odchylce od cíle o"
+      },
+      "hyst_noc_zavrit": {
+        "name": "V noci zavřít až za cílem o"
+      },
+      "mez_dolni": {
+        "name": "Pojistka: nevychladit pod"
+      },
+      "mez_horni": {
+        "name": "Pojistka: nepřehřát nad"
       }
     },
     "switch": {
@@ -909,6 +938,12 @@
       },
       "ovladat_topeni": {
         "name": "Ovládat topení"
+      },
+      "otevirat_i_pro_pohodu": {
+        "name": "Otevírat i pro pohodu"
+      },
+      "zvlhcovat_i_ve_spanku": {
+        "name": "Zvlhčovat i ve spánku"
       }
     },
     "button": {

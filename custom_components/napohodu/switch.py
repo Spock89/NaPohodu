@@ -23,6 +23,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_MISTNOST:
             pridat([OvladatOkno(k, pod), OvladatStineni(k, pod),
+                    OtevritProPohodu(k, pod), ZvlhcovatVeSpanku(k, pod),
                     OvladatTopeni(k, pod)],
                    config_subentry_id=pod.subentry_id)
         elif pod.subentry_type == PODENTITA_KLIMA:
@@ -63,6 +64,44 @@ class NaPohoduPrepinac(NaPohoduEntity, SwitchEntity, RestoreEntity):
             (self.pod_id, self._klic_hodnoty)] = float(hodnota)
         self.async_write_ha_state()
         await self.coordinator.async_request_refresh()
+
+
+class ZVolbyMistnosti(NaPohoduPrepinac):
+    """Přepínač, který ve výchozím stavu kopíruje formulář.
+
+    Výchozí stav nese formulář místnosti, protože tyhle volby se tam
+    zakládají. Přepínač je pak jen pohodlnější cesta, jak je měnit
+    z panelu.
+    """
+
+    _vychozi_klic = ""
+
+    async def async_added_to_hass(self) -> None:
+        data = {**self.pod.data}
+        self._zap = bool(data.get(self._vychozi_klic, True))
+        await super().async_added_to_hass()
+
+
+class OtevritProPohodu(ZVolbyMistnosti):
+    """Smí se otevřít i tehdy, když k tomu není důvod?"""
+
+    _attr_icon = "mdi:weather-sunny"
+    _klic_hodnoty = "pro_pohodu"
+    _vychozi_klic = "pro_pohodu"
+
+    def __init__(self, k, pod):
+        super().__init__(k, pod, "otevirat_i_pro_pohodu")
+
+
+class ZvlhcovatVeSpanku(ZVolbyMistnosti):
+    """Smí zvlhčovač běžet i při zapnutém spánku?"""
+
+    _attr_icon = "mdi:air-humidifier"
+    _klic_hodnoty = "zvlhcovac_ve_spanku"
+    _vychozi_klic = "zvlhcovac_ve_spanku"
+
+    def __init__(self, k, pod):
+        super().__init__(k, pod, "zvlhcovat_i_ve_spanku")
 
 
 class OvladatOkno(NaPohoduPrepinac):

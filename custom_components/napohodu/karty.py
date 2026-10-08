@@ -29,6 +29,25 @@ GLOBALNI = [
 POSUVNIKY = [
     ("moje_odchylka_teploty", "Moje odchylka teploty",
      "Přičte se k vypočtenému cíli. Tvoje osobní „chci tepleji“."),
+    ("ve_dne_otevrit_pri_odchylce_od_cile_o",
+     "Ve dne otevřít při odchylce od cíle o",
+     "O kolik se teplota musí odchýlit od cíle, aby se kvůli ní "
+     "otevřelo — nad cílem chladí venkovním vzduchem, pod cílem ohřívá."),
+    ("ve_dne_zavrit_az_za_cilem_o", "Ve dne zavřít až za cílem o",
+     "Jak daleko za cíl se dojede, než se zavře: při chlazení pod cíl, "
+     "při ohřevu nad cíl."),
+    ("v_noci_otevrit_pri_odchylce_od_cile_o",
+     "V noci otevřít při odchylce od cíle o",
+     "Totéž pro noční hodiny a spánek. V noci se obvykle nastavuje "
+     "širší pásmo, aby okno nejezdilo."),
+    ("v_noci_zavrit_az_za_cilem_o", "V noci zavřít až za cílem o",
+     "Totéž pro noční hodiny a spánek."),
+    ("pojistka_nevychladit_pod", "Pojistka: nevychladit pod",
+     "Pod touhle teplotou se okno zavře, ať je otevřené z jakéhokoli "
+     "důvodu. Obchází ji jen ruční žádost o vyvětrání."),
+    ("pojistka_neprehrat_nad", "Pojistka: nepřehřát nad",
+     "Nad touhle teplotou se okno zavře, ať je otevřené z jakéhokoli "
+     "důvodu."),
     ("nejkratsi_doba_drzeni_polohy", "Nejkratší doba držení polohy",
      "Jak dlouho okno zůstane v poloze, do které dojelo. Po téhle době "
      "se zároveň ověří, že větrání vůbec zabírá."),
@@ -45,20 +64,9 @@ POSUVNIKY = [
     ("prach_je_cisty_pod_pm2_5", "Prach je čistý pod PM2.5",
      "Pod touhle úrovní se vzduch bere za čistý. Mezera mezi prahy brání "
      "přepínání na hraně."),
-    ("denni_hystereze", "Denní hystereze",
-     "Pásmo kolem cíle: nad jeho horní hranou se chladí venkovním "
-     "vzduchem, pod dolní se jím ohřívá, a dojede se vždycky na protější "
-     "hranu. Širší pásmo znamená delší cykly a větší rozkyv."),
     ("v_noci_topit_o_mene", "V noci topit o méně",
      "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. "
      "Klesá plynule hodinu před začátkem noci, spánek platí hned."),
-    ("tloustka_nocni_smycky", "Tloušťka noční smyčky",
-     "Platí jen v noci: o kolik se pokoj musí prohřát nad noční mez, "
-     "než se otevře znovu. Ve dne je hysterezí sám odstup od cíle — "
-     "zavírá se na protější hraně pásma, otevírá o hysterezi od cíle."),
-    ("v_noci_vychladnout_nejvys_na", "V noci vychladnout nejvýš na",
-     "Při nočním větrání zavřu, až teplota klesne na tuhle hodnotu. "
-     "Nižší číslo znamená delší větrání a méně cyklů za noc."),
     ("pri_otevrenem_okne_topit_na", "Při otevřeném okně topit na",
      "Teplota, na kterou se hlavice stáhnou, když je okno otevřené. "
      "Je to celá teplota, ne odečet od cíle."),
@@ -76,13 +84,15 @@ POSUVNIKY = [
 # identifikátor při přejmenování nemění, takže instalace, která entitu
 # založila dřív, ji má pořád pod starým jménem.
 STARSI_POSUVNIKY = {
-     'denni_hystereze': ('ve_dne_smi_klesnout_pod_cil_o',
-                         've_dne_smi_klesnout_o',
-                         'odstup_od_cile_pro_otevreni'),
+     # Pásmo nahradilo denní hysterezi a noční mez; entita si ale drží
+     # identifikátor, pod kterým vznikla, takže se zkouší i ty.
+     've_dne_otevrit_pri_odchylce_od_cile_o': (
+         'denni_hystereze', 'odstup_od_cile_pro_otevreni',
+         've_dne_smi_klesnout_pod_cil_o'),
+     'pojistka_nevychladit_pod': ('v_noci_vychladnout_nejvys_na',
+                                  'minimum_na_noc'),
      'moje_odchylka_teploty': 'odchylka_teploty',
-     'v_noci_vychladnout_nejvys_na': 'minimum_na_noc',
      'v_noci_topit_o_mene': 'nocni_utlum_topeni',
-     'tloustka_nocni_smycky': ('tloustka_hysterezni_smycky',),
      'pri_otevrenem_okne_topit_na': 'utlum_pri_otevrenem_okne',
      'v_noci_otevrit_nad_co2': 'v_noci_otevrit_nad',
      'nouzove_otevrit_nad_co2': 'nouzove_otevrit_nad'}
@@ -161,7 +171,8 @@ def _karta(polozky: list[str], nazev: str | None = None) -> list[str]:
         return []
     r = ["  - type: entities"]
     if nazev:
-        r.append(f"    title: {nazev}")
+        # Dvojtečka v názvu rozbíjí YAML, proto uvozovky vždycky.
+        r.append(f'    title: "{nazev}"')
     r += ["    show_header_toggle: false", "    entities:"] + polozky
     return r
 
@@ -222,8 +233,11 @@ def _klic_sekce(sekce: list[str]) -> tuple:
         znacka = "#pokoj"          # budíky místnosti a její údaje
     else:
         text = "\n".join(sekce)
+        # Názvy karet jsou v uvozovkách kvůli dvojtečkám, nadpisy ne —
+        # hledá se proto obojí.
         znacka = next((z for z in PORADI_SEKCI
-                       if z != "#pokoj" and f": {z}" in text), None)
+                       if z != "#pokoj"
+                       and (f": {z}" in text or f': "{z}"' in text)), None)
     try:
         return (PORADI_SEKCI.index(znacka), 0)
     except ValueError:
@@ -364,6 +378,21 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
                 polozky += _radek(eid, f"{jm(m)} — {popis}")
         polozky.append("      - type: divider")
     c += _karta(polozky[:-1], nazev="Co smí ovládat")
+
+    # Volby místnosti, které nejsou číslo: otevírání pro pohodu
+    # a zvlhčování ve spánku. Posuvník z nich udělat nejde.
+    polozky = []
+    for klic, popis in (("otevirat_i_pro_pohodu", "otevírat pro pohodu"),
+                        ("zvlhcovat_i_ve_spanku", "zvlhčovat ve spánku")):
+        pred = len(polozky)
+        for m in mistnosti:
+            eid = f"switch.napohodu_{m}_{klic}"
+            if existuje(eid):
+                polozky += _radek(eid, f"{jm(m)} — {popis}")
+        if len(polozky) > pred:
+            polozky.append("      - type: divider")
+    if polozky:
+        c += _karta(polozky[:-1], nazev="Co se smí dít")
     c.append("")
 
     if zaklad:

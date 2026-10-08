@@ -240,33 +240,53 @@ Nouzové větrání a ruční žádost o vyvětrání tím neprochází. V kart�
 řádek, který ukazuje, od jakých hodnot se otevřelo a jak dlouho už je
 otevřeno; pozorování začíná každým otevřením a zavřením končí.
 
-### Hysterezní smyčka
+### Teplotní pásmo a pojistky
 
-**Ve dne** je to jedno číslo, denní hystereze, a tvoří pásmo kolem
-cíle. Nad jeho horní hranou se chladí venkovním vzduchem, pod dolní se
-jím ohřívá, a dojede se vždycky na protější hranu — ne na cíl. Právě to
-brání houpání: po zavření přesně na cíli se teplota hned vrací
-a cyklus začíná znovu.
+Teplotní větrání stojí na jedné myšlence se dvěma časy. Kolem cílové
+teploty je **hysterezní pásmo**, zvlášť pro den a pro noc, a nad ním
+dvě **absolutní pojistky**:
 
-Při cíli 22 °C a hysterezi 1,5 °C pásmo sahá od 20,5 do 23,5. Táž
-hodnota je zároveň tolerance pro větrání kvůli CO2.
+```
+cíl                      adaptivní, podle sezóny
 
-**V noci** je mez absolutní, takže hystereze musí být zvlášť — okno
-zavírá při dosažení noční meze a otevírá až po prohřátí o tloušťku
-noční smyčky. Tloušťka je směnný kurz mezi rozkyvem a počtem cyklů: širší
-smyčka znamená delší cykly a větší rozkyv, nic mezi tím neexistuje.
+denní pásmo              otevřít při odchylce o   2,5 °C
+                         zavřít až za cílem o     1,0 °C
+noční pásmo              otevřít při odchylce o   2,5 °C
+                         zavřít až za cílem o     1,0 °C
 
-Nastavuje se u místnosti a z téhož čísla se odvozuje i to, že se okno
-neotevře těsně nad mezí. Každé zavření kvůli teplotě navíc nasadí pauzu,
-která se s dalším zdvojnásobí — když se okno pořád vrací, je to znamení,
-že se mez a tepelná odezva pokoje nesnesou.
+pojistky                 nevychladit pod   18 °C
+                         nepřehřát nad     27 °C
+```
 
-Po ručním zásahu do okna předpověď pod stupnicí žádné zavření neslibuje
-— řekne jen, jak dlouho ještě automatika mlčí, protože do té doby
-teplota nerozhoduje o ničem.
+Obě hodnoty pásma platí souměrně: nad horní hranou se chladí venkovním
+vzduchem, pod dolní se jím ohřívá, a dojede se na **protější stranu**
+cíle, ne na cíl — jinak by se teplota hned začala vracet. Pásmo může
+být nesouměrné a zavírací hodnota smí být nula, pak se dojede přesně
+na cíl.
 
-V kartě je pod každou místností stupnice s mezemi a značkou, kde je
-teplota právě teď, aby bylo z nastavení vidět, co dělá.
+**Pojistky zavřou okno bez ohledu na to, proč je otevřené**, a nic
+neotevřou. Platí jen proti vzduchu, který tlačí špatným směrem — okno,
+které zrovna chladí přehřátý pokoj, pojistka nezavře. Obchází je jen
+ruční žádost o vyvětrání.
+
+Větrání kvůli CO2 nebo prachu **čeká na vyvětrání** a o prochladnutí se
+stará pojistka. Dřív se zavíralo na dolní hraně pásma i s dusnem a hned
+se otevíralo znovu.
+
+Tím zmizely čtyři starší pojmy: denní hystereze, noční mez, tloušťka
+noční smyčky a pojistka ve spánku — čtyři čísla, která dělala totéž na
+různých místech a tvrdila o sobě rozporné věci.
+
+### Otevírání pro pohodu
+
+Kromě větrání z důvodu umí okno zůstat otevřené i tehdy, když nic
+nevadí a venku je příjemně. Platí k tomu dvě podmínky: pokoj je uvnitř
+pásma a **venkovní teplota je taky v pásmu kolem cíle**. Jinak by se
+otevíralo i při devětadvaceti venku, jen proto, že v pokoji je zrovna
+dobře.
+
+Zaškrtávátkem **Otevírat i pro pohodu** se to dá u místnosti vypnout
+úplně; pak se okno hýbe jen kvůli CO2, prachu, chlazení nebo ohřevu.
 
 ### Noční režim
 
@@ -278,12 +298,10 @@ Zavírá se ze dvou důvodů: když teplota klesne na nastavenou mez, nebo
 když je vyvětráno. To druhé se dá vypnout, a pak noční větrání ložnici
 zároveň vychladí — při mírném počasí ale může zůstat otevřeno do rána.
 
-Mez je jedna a absolutní. Dřív k ní patřil ještě relativní pokles od
-stavu při otevření, který ji posouval podle toho, jak bylo zrovna teplo,
-takže nebylo poznat, kde okno zavře. Přes den se mez odvozuje od cíle, aby sledovala sezónu bez
-přenastavování. **Denní hystereze platí oběma směry**: kvůli teplotě se otevře, až je
-v pokoji o tolik víc nebo méně než cíl, a dojede se na opačnou hranu
-pásma — ne na cíl, jinak se teplota hned vrací.
+V noci platí vlastní pásmo kolem cíle, obvykle širší než denní, aby
+okno nejezdilo. Teplotu nad ním drží tytéž dvě pojistky jako ve dne —
+jedna hodnota místo bývalé noční meze, tloušťky noční smyčky a pojistky
+ve spánku.
 
 Když má oblast souseda za otevřenými dveřmi, vyvětrá ji raději on.
 

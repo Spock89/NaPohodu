@@ -508,7 +508,7 @@ for u in ast.parse(jadro_text).body:
 # které nikdo nepoužívá.
 # obě funkce s výpisem pravidel, pro byt i pro místnost
 VIDITELNE = jadro_text[jadro_text.index("def pevna_pravidla_bytu"):
-                       jadro_text.index("def _mez_chladu")]
+                       jadro_text.index("def pasmo_predpoved")]
 for jm in re.findall(r"^([A-Z][A-Z_]+) = [\d.]+", jadro_text, re.M):
     if jm in ("MAGNUS_A", "MAGNUS_B"):
         continue              # vzorec, ne rozhodnutí
