@@ -314,7 +314,8 @@
             "mez_dolni": "Pojistka: nevychladit pod",
             "mez_horni": "Pojistka: nepřehřát nad",
             "pro_pohodu": "Otevírat i pro pohodu",
-            "zvlhcovac_ve_spanku": "Zvlhčovat i ve spánku"
+            "zvlhcovac_ve_spanku": "Zvlhčovat i ve spánku",
+            "rezerva_venku": "Venku musí být za dojezdem o"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -374,7 +375,8 @@
             "mez_dolni": "Absolutní spodní mez: pod ní se okno zavře, ať je otevřené z jakéhokoli důvodu. Obchází ji jen ruční žádost o vyvětrání.\n\nNahradila dřívější noční mez i pojistku ve spánku, které dělaly totéž na třech místech.",
             "mez_horni": "Absolutní horní mez proti přehřátí: nad ní se okno zavře, ať je otevřené z jakéhokoli důvodu.",
             "pro_pohodu": "Otevřít smí i tehdy, když k tomu není důvod — vzduch je v pořádku, teplota v pásmu a venku je příjemně.\n\nVypnutím se okno bude otevírat jen z důvodu: kvůli CO2, prachu, chlazení nebo ohřevu.",
-            "zvlhcovac_ve_spanku": "Zvlhčovač smí běžet i při zapnutém spánku. Vypni, když ho v ložnici slyšíš."
+            "zvlhcovac_ve_spanku": "Zvlhčovač smí běžet i při zapnutém spánku. Vypni, když ho v ložnici slyšíš.",
+            "rezerva_venku": "O kolik musí být venkovní vzduch za dojezdem pásma, aby se větrání vůbec spustilo — při chlazení o tolik pod dolní hranou, při ohřevu o tolik nad horní.\n\nBez té rezervy se cyklus doplazí k hraně a nikdy ji nepřejde, takže větrání dojezd nedokončí a jen vystydne."
           },
           "submit": "Další"
         },
@@ -488,7 +490,8 @@
             "mez_dolni": "Pojistka: nevychladit pod",
             "mez_horni": "Pojistka: nepřehřát nad",
             "pro_pohodu": "Otevírat i pro pohodu",
-            "zvlhcovac_ve_spanku": "Zvlhčovat i ve spánku"
+            "zvlhcovac_ve_spanku": "Zvlhčovat i ve spánku",
+            "rezerva_venku": "Venku musí být za dojezdem o"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -558,7 +561,8 @@
             "mez_dolni": "Absolutní spodní mez: pod ní se okno zavře, ať je otevřené z jakéhokoli důvodu. Obchází ji jen ruční žádost o vyvětrání.\n\nNahradila dřívější noční mez i pojistku ve spánku, které dělaly totéž na třech místech.",
             "mez_horni": "Absolutní horní mez proti přehřátí: nad ní se okno zavře, ať je otevřené z jakéhokoli důvodu.",
             "pro_pohodu": "Otevřít smí i tehdy, když k tomu není důvod — vzduch je v pořádku, teplota v pásmu a venku je příjemně.\n\nVypnutím se okno bude otevírat jen z důvodu: kvůli CO2, prachu, chlazení nebo ohřevu.",
-            "zvlhcovac_ve_spanku": "Zvlhčovač smí běžet i při zapnutém spánku. Vypni, když ho v ložnici slyšíš."
+            "zvlhcovac_ve_spanku": "Zvlhčovač smí běžet i při zapnutém spánku. Vypni, když ho v ložnici slyšíš.",
+            "rezerva_venku": "O kolik musí být venkovní vzduch za dojezdem pásma, aby se větrání vůbec spustilo — při chlazení o tolik pod dolní hranou, při ohřevu o tolik nad horní.\n\nBez té rezervy se cyklus doplazí k hraně a nikdy ji nepřejde, takže větrání dojezd nedokončí a jen vystydne."
           },
           "submit": "Další"
         },
@@ -924,6 +928,9 @@
       },
       "mez_horni": {
         "name": "Pojistka: nepřehřát nad"
+      },
+      "rezerva_venku": {
+        "name": "Venku musí být za dojezdem o"
       }
     },
     "switch": {

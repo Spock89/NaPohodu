@@ -20,6 +20,9 @@ CONF_HYST_DEN_OTEVRIT = "hyst_den_otevrit"
 CONF_HYST_DEN_ZAVRIT = "hyst_den_zavrit"
 CONF_HYST_NOC_OTEVRIT = "hyst_noc_otevrit"
 CONF_HYST_NOC_ZAVRIT = "hyst_noc_zavrit"
+# O kolik musí být venkovní vzduch za dojezdem pásma, aby se vyplatilo
+# větrat — jinak cyklus hranu nikdy nepřejde.
+CONF_REZERVA_VENKU = "rezerva_venku"
 CONF_MEZ_DOLNI = "mez_dolni"
 CONF_MEZ_HORNI = "mez_horni"
 # Smí se otevírat i tehdy, když k tomu není důvod, jen pro pohodu?

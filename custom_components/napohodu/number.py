@@ -13,17 +13,15 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import (PODENTITA_MISTNOST,
-                    CONF_CHLAZENI_MIN_VENKU, CONF_CO2_NOC,
-                    CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT,
-                    CONF_HYST_DEN_OTEVRIT, CONF_HYST_DEN_ZAVRIT,
-                    CONF_HYST_NOC_OTEVRIT, CONF_HYST_NOC_ZAVRIT,
-                    CONF_MEZ_DOLNI, CONF_MEZ_HORNI, CONF_MIN_DRZENI,
-                    CONF_NARAZOVE_ODSTUP, CONF_NEJDRIV_ZNOVU,
-                    CONF_NOC_UTLUM, CONF_ODCHYLKA, CONF_PM_CISTO,
-                    CONF_PM_SPATNE, CONF_RH_MAX, CONF_RH_MIN,
-                    CONF_RUCNI_KLID, CONF_UTLUM, CONF_ZMENA_PODMINEK,
-                    DOMAIN,
+from .const import (
+    CONF_CHLAZENI_MIN_VENKU, CONF_CO2_NOC, CONF_CO2_NOC_KRIZE,
+    CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT, CONF_HYST_DEN_OTEVRIT,
+    CONF_HYST_DEN_ZAVRIT, CONF_HYST_NOC_OTEVRIT, CONF_HYST_NOC_ZAVRIT,
+    CONF_MEZ_DOLNI, CONF_MEZ_HORNI, CONF_MIN_DRZENI, CONF_NARAZOVE_ODSTUP,
+    CONF_NEJDRIV_ZNOVU, CONF_NOC_UTLUM, CONF_ODCHYLKA, CONF_PM_CISTO,
+    CONF_PM_SPATNE, CONF_REZERVA_VENKU, CONF_RH_MAX, CONF_RH_MIN,
+    CONF_RUCNI_KLID, CONF_UTLUM, CONF_ZMENA_PODMINEK, DOMAIN,
+    PODENTITA_MISTNOST,
 )
 from .entity import NaPohoduEntity
 
@@ -63,6 +61,8 @@ MISTNOST = [
              2.5, "mdi:weather-night"),
     Posuvnik(CONF_HYST_NOC_ZAVRIT, 0, 8, 0.5, UnitOfTemperature.CELSIUS,
              1.0, "mdi:weather-night-partly-cloudy"),
+    Posuvnik(CONF_REZERVA_VENKU, 0, 8, 0.5, UnitOfTemperature.CELSIUS,
+             2.0, "mdi:thermometer-chevron-down"),
     Posuvnik(CONF_MEZ_DOLNI, 10, 24, 0.5, UnitOfTemperature.CELSIUS,
              18.0, "mdi:thermometer-low"),
     Posuvnik(CONF_MEZ_HORNI, 22, 35, 0.5, UnitOfTemperature.CELSIUS,

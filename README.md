@@ -188,14 +188,15 @@ Chlazení i ohřev větráním se spustí, až je pokoj mimo hysterezní pásmo
 kolem cíle, a běží k opačné hraně. Samotné překročení hrany ale nestačí
 — venkovní vzduch musí mít čím pomoct:
 
-- chladit se dá, jen když je venku **pod dolní hranou pásma**, tedy
-  tam, kam chlazení dojede, a zároveň aspoň o stupeň chladněji než
-  v pokoji a nad nastavenou hranicí, ve výchozím stavu sedmi
+- chladit se dá, jen když je venku **za dolní hranou pásma o nastavenou
+  rezervu**, tedy o kus dál, než kam chlazení dojede, a zároveň nad
+  spodní hranicí pro chlazení. Bez té rezervy se cyklus doplazí k hraně
+  a nikdy ji nepřejde, ve výchozím stavu sedmi
   stupni — dolní hrana pásma by pokoj zastavila sama, jenže zavření
   není okamžité kvůli nejkratší době držení polohy a chlazení se řídí
   nejteplejším čidlem, takže u okna je mezitím výrazně chladněji,
-- ohřívat se dá, jen když je venku **nad horní hranou pásma**, aspoň
-  o stupeň tepleji než v pokoji a nikde v pokoji se zrovna nepřehřívá.
+- ohřívat se dá zrcadlově: venku musí být o tutéž rezervu **nad horní
+  hranou pásma** a nikde v pokoji se zrovna nesmí přehřívat.
 
 Vzduch, který nedosáhne až k hraně pásma, pokoj tam nedostane, jen ho zastaví
 o kus dál — proto se kvůli němu neotvírá vůbec. Cílová teplota se

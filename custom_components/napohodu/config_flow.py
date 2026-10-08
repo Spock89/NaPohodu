@@ -486,6 +486,7 @@ def _schema_mistnost() -> vol.Schema:
             _cislo(0, 8, 0.5),
         vol.Optional(c.CONF_HYST_NOC_ZAVRIT, default=1.0):
             _cislo(0, 8, 0.5),
+        vol.Optional(c.CONF_REZERVA_VENKU, default=2.0): _cislo(0, 8, 0.5),
         vol.Optional(c.CONF_MEZ_DOLNI, default=18.0): _cislo(10, 24, 0.5),
         vol.Optional(c.CONF_MEZ_HORNI, default=27.0): _cislo(22, 35, 0.5),
         vol.Optional(c.CONF_PRO_POHODU, default=True):

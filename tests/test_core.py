@@ -1166,7 +1166,7 @@ def test_ohrev_vetranim_ma_vlastni_rezim():
     """Dřív se to jmenovalo „venku je příjemně", takže se nepoznalo,
     že jde o cílené dohánění teploty."""
     p = Pamet(cas_povelu_s=0)
-    r = rozhodni(stary(co2=500, t_in=19.0, t_in_max=19.3, t_out=25.5,
+    r = rozhodni(stary(co2=500, t_in=19.0, t_in_max=19.3, t_out=27.0,
                        rh_out=50.0, cil=23.0, hodina=14.0), p, N)
     assert r.akce is Akce.OTEVRIT and "ohřev" in r.duvod
     assert p.ohrivam is True and p.chladi is False
@@ -1175,7 +1175,7 @@ def test_ohrev_vetranim_ma_vlastni_rezim():
 def test_ohrev_dojede_na_horni_hranu():
     p = Pamet(otevreno=True, cas_povelu_s=0, ohrivam=True, rezim="komfort",
               komfort_start=19.0)
-    r = rozhodni(stary(co2=500, t_in=23.1, t_in_max=23.3, t_out=26.0,
+    r = rozhodni(stary(co2=500, t_in=23.1, t_in_max=23.3, t_out=28.0,
                        rh_out=50.0, cil=23.0, hodina=14.0), p, N)
     assert r.akce is not Akce.ZAVRIT      # pásmo sahá do 24,5
 
@@ -1473,7 +1473,7 @@ def test_chlazeni_v_horku_zustava_mozne():
     """Cíl se v létě sám zvedá, takže se tím chlazení neblokuje."""
     from core import Nastaveni as N_
     p = Pamet(cas_povelu_s=0)
-    r = rozhodni(stary(co2=500, t_in=26.5, t_in_max=27.5, t_out=22.5,
+    r = rozhodni(stary(co2=500, t_in=26.5, t_in_max=27.5, t_out=21.0,
                        rh_out=50.0, cil=25.5, hodina=14.0), p,
                  N_(hyst_den_otevrit=1.5))
     assert r.akce is Akce.OTEVRIT and p.chladi is True
@@ -1684,7 +1684,7 @@ def test_pojistka_nezavre_okno_ktere_pomaha():
     from core import Nastaveni as N_
     nast = N_(mez_horni=27.0, hyst_den_otevrit=1.5)
     p = Pamet(cas_povelu_s=0)
-    r = rozhodni(stary(co2=500, t_in=26.5, t_in_max=27.5, t_out=22.5,
+    r = rozhodni(stary(co2=500, t_in=26.5, t_in_max=27.5, t_out=21.0,
                        rh_out=50.0, cil=25.5, hodina=14.0), p, nast)
     assert r.akce is Akce.OTEVRIT and p.chladi is True
 
@@ -1754,22 +1754,22 @@ def test_ohrev_dojede_nad_cil():
     """Zrcadlově k chlazení: ohřev končí nad cílem, ne na něm."""
     from core import Nastaveni as N_
     nast = N_(hyst_den_otevrit=2.5, hyst_den_zavrit=1.0)
-    # cíl 22 → ohřívat od 19,5, dojet na 23,0
+    # cíl 22 → ohřívat od 19,5, dojet na 23,0, venku aspoň 25,0 + rezerva
 
     p = Pamet(cas_povelu_s=0)
-    r = rozhodni(stary(co2=500, t_in=19.2, t_in_max=19.4, t_out=25.0,
+    r = rozhodni(stary(co2=500, t_in=19.2, t_in_max=19.4, t_out=25.5,
                        rh_out=50.0, cil=22.0, hodina=14.0), p, nast)
     assert r.akce is Akce.OTEVRIT and p.ohrivam is True
 
     p2 = Pamet(otevreno=True, cas_povelu_s=0, ohrivam=True,
                rezim="komfort", komfort_start=19.4)
-    r2 = rozhodni(stary(co2=500, t_in=22.5, t_in_max=22.7, t_out=25.0,
+    r2 = rozhodni(stary(co2=500, t_in=22.5, t_in_max=22.7, t_out=25.5,
                         rh_out=50.0, cil=22.0, hodina=14.0), p2, nast)
     assert r2.akce is not Akce.ZAVRIT      # ještě pod horní hranou
 
     p3 = Pamet(otevreno=True, cas_povelu_s=0, ohrivam=True,
                rezim="komfort", komfort_start=19.4)
-    r3 = rozhodni(stary(co2=500, t_in=23.2, t_in_max=23.4, t_out=25.0,
+    r3 = rozhodni(stary(co2=500, t_in=23.2, t_in_max=23.4, t_out=25.5,
                         rh_out=50.0, cil=22.0, hodina=14.0), p3, nast)
     assert r3.akce is Akce.ZAVRIT
 
@@ -1832,7 +1832,7 @@ def test_pojistka_nebrani_ohrevu_zdola():
     from core import Nastaveni as N_
     nast = N_(mez_dolni=18.0)
     p = Pamet(cas_povelu_s=0)
-    r = rozhodni(stary(co2=500, t_in=17.0, t_in_max=17.2, t_out=24.0,
+    r = rozhodni(stary(co2=500, t_in=17.0, t_in_max=17.2, t_out=25.0,
                        rh_out=40.0, cil=21.0, hodina=14.0), p, nast)
     assert r.akce is Akce.OTEVRIT and p.ohrivam is True
 
@@ -1859,3 +1859,45 @@ def test_narazovy_rezim_nebrani_teplotnimu_vetrani():
     v = Vstup(co2=641, t_in=23.2, t_in_max=23.4, t_out=12.0, rh_out=50.0,
               cil=22.2, cas_s=1)
     assert proc_neotevira(v, nast, 23.2, 23.4) == ""
+
+
+def test_vzduch_musi_byt_za_dojezdem():
+    """Bez rezervy se cyklus doplazí k hraně a nikdy ji nepřejde,
+    takže větrání dojezd nedokončí a jen vystydne."""
+    from core import Nastaveni as N_
+    nast = N_(hyst_den_otevrit=2.5, hyst_den_zavrit=1.0,
+              rezerva_venku=2.0)
+    # cíl 22 → dojezd 21,0 → venku musí být pod 19,0
+
+    def chladi(t_out):
+        p = Pamet(cas_povelu_s=0)
+        rozhodni(stary(co2=500, t_in=24.4, t_in_max=24.8, t_out=t_out,
+                       rh_out=50.0, cil=22.0, hodina=14.0), p, nast)
+        return p.chladi
+
+    assert chladi(20.0) is False      # pod dojezdem, ale bez rezervy
+    assert chladi(19.5) is False
+    assert chladi(18.5) is True
+
+    # bez rezervy stačí být pod dojezdem
+    bez = N_(hyst_den_otevrit=2.5, hyst_den_zavrit=1.0, rezerva_venku=0.0)
+    p = Pamet(cas_povelu_s=0)
+    rozhodni(stary(co2=500, t_in=24.4, t_in_max=24.8, t_out=20.5,
+                   rh_out=50.0, cil=22.0, hodina=14.0), p, bez)
+    assert p.chladi is True
+
+
+def test_rezerva_plati_i_pro_ohrev():
+    from core import Nastaveni as N_
+    nast = N_(hyst_den_otevrit=2.5, hyst_den_zavrit=1.0,
+              rezerva_venku=2.0)
+    # cíl 22 → dojezd 23,0 → venku musí být nad 25,0
+
+    def ohriva(t_out):
+        p = Pamet(cas_povelu_s=0)
+        rozhodni(stary(co2=500, t_in=19.2, t_in_max=19.4, t_out=t_out,
+                       rh_out=40.0, cil=22.0, hodina=14.0), p, nast)
+        return p.ohrivam
+
+    assert ohriva(24.0) is False
+    assert ohriva(25.5) is True

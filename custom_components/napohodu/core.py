@@ -89,7 +89,10 @@ class Nastaveni:
     nejdriv_znovu_s: float = 60 * 60  # nebo nejpozději za tuhle dobu
     obnova_s: int = 30 * 60
 
-    chlazeni_rozdil: float = 1.0
+    # Vzduch musí dosáhnout za dojezd pásma, ne jen být lepší než
+    # v pokoji. Bez té rezervy se cyklus doplazí k hraně a nikdy ji
+    # nepřejde, takže větrání dojezd nikdy nedokončí.
+    rezerva_venku: float = 2.0
     # Pod touhle venkovní teplotou se nechladí. Dolní hrana pásma by
     # pokoj zastavila, jenže zavření není okamžité — drží se nejkratší
     # doba držení polohy — a chlazení se řídí nejteplejším čidlem,
@@ -864,13 +867,10 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
              # nikde v pokoji se nesmí přehřívat; dojezd k horní hraně
              # tím zůstává možný
              and t_max < v.cil + h_zavrit
-             and v.t_out > t_in + n.chlazeni_rozdil
-             and v.t_out > v.cil + h_zavrit
+             and v.t_out > v.cil + h_zavrit + n.rezerva_venku
              and not v.smog)
     chlazeni = (t_max > prah_chlazeni
-                and v.t_out < t_max - n.chlazeni_rozdil
-                # musí dosáhnout až tam, kam chlazení dojede
-                and v.t_out < v.cil - h_zavrit
+                and v.t_out < v.cil - h_zavrit - n.rezerva_venku
                 and v.t_out > n.chlazeni_min_venku
                 and not v.smog)
 
@@ -1101,9 +1101,8 @@ def pevna_pravidla_bytu() -> list[str]:
         "Denní hysterezní pásmo obemyká cíl z obou stran: nad horní "
         "hranou se chladí, pod dolní ohřívá, a dojede se vždycky na "
         "protější hranu — ne na cíl, jinak se teplota hned vrací.",
-        f"Vzduch na chlazení musí být aspoň o "
-        f"{Nastaveni.chlazeni_rozdil:.0f} °C chladnější než v pokoji; "
-        f"od jaké venkovní teploty se chladí, se nastavuje u místnosti.",
+        "Od jaké venkovní teploty se vůbec chladí a o kolik musí být "
+        "vzduch za dojezdem pásma, se nastavuje u místnosti.",
         "Když venkovní vzduch přestane pomáhat — chladili jsme a venku "
         "se oteplilo, nebo naopak — okno se zavře.",
         "V noci se kvůli teplotě otevírá jen pro chlazení. Ohřev "
@@ -1169,9 +1168,9 @@ def proc_neotevira(v: "Vstup", n: "Nastaveni", t_in: float,
 
     nad_pasmem = t_max > v.cil + n.hyst_den_otevrit
     pod_pasmem = t_in < v.cil - n.hyst_den_otevrit
-    chladit_lze = (v.t_out < t_max - n.chlazeni_rozdil
+    chladit_lze = (v.t_out < v.cil - n.hyst_den_zavrit - n.rezerva_venku
                    and v.t_out > n.chlazeni_min_venku)
-    ohrat_lze = v.t_out > t_in + n.chlazeni_rozdil
+    ohrat_lze = v.t_out > v.cil + n.hyst_den_zavrit + n.rezerva_venku
 
     if nad_pasmem and chladit_lze:
         return ""           # chladit jde, nic nebrání

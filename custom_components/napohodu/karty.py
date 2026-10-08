@@ -42,6 +42,10 @@ POSUVNIKY = [
      "širší pásmo, aby okno nejezdilo."),
     ("v_noci_zavrit_az_za_cilem_o", "V noci zavřít až za cílem o",
      "Totéž pro noční hodiny a spánek."),
+    ("venku_musi_byt_za_dojezdem_o", "Venku musí být za dojezdem o",
+     "O kolik musí být venkovní vzduch za dojezdem pásma, aby se "
+     "vyplatilo větrat. Bez rezervy se cyklus doplazí k hraně a nikdy "
+     "ji nepřejde."),
     ("pojistka_nevychladit_pod", "Pojistka: nevychladit pod",
      "Pod touhle teplotou se okno zavře, ať je otevřené z jakéhokoli "
      "důvodu. Obchází ji jen ruční žádost o vyvětrání."),
