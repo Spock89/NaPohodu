@@ -496,7 +496,7 @@ def _schema_mistnost(mistnosti: list[dict] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_PRACH_DOSAH, default="byt"): _volba(
             c.DOSAHY, "dosah"),
         vol.Optional(c.CONF_PRACH_MISTNOSTI): _vyber(mistnosti or []),
-        vol.Optional(c.CONF_VLHKOST_DOSAH, default="zona"): _volba(
+        vol.Optional(c.CONF_VLHKOST_DOSAH, default="byt"): _volba(
             c.DOSAHY, "dosah"),
         vol.Optional(c.CONF_VLHKOST_MISTNOSTI): _vyber(mistnosti or []),
         vol.Optional(c.CONF_CHLAZENI_MIN_VENKU, default=7.0):
@@ -513,7 +513,7 @@ def _schema_mistnost(mistnosti: list[dict] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_TOPIT_PRI_OKNU, default="nechat"): _volba(
             c.PRI_OKNU, "topit_pri_oknu"),
         vol.Optional(c.CONF_UTLUM, default=16.0): _cislo(5, 20),
-        vol.Optional(c.CONF_NOC_UTLUM, default=0.0): _cislo(0, 4, 0.5),
+        vol.Optional(c.CONF_NOC_POSUN, default=0.0): _cislo(-5, 5, 0.5),
         vol.Optional(c.CONF_SEZONU_RIDI_HLAVICE, default=True):
             selector.BooleanSelector(),
         vol.Optional(c.CONF_ZNACKA_OKNO, default=5.5): _cislo(4, 12, 0.1),

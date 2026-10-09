@@ -300,7 +300,6 @@
             "rucni_klid_min": "Po ručním zásahu nechat být",
             "ochota_vetrat": "Ochota větrat",
             "poradi": "Pořadí na kartě",
-            "noc_utlum_topeni": "V noci topit o méně",
             "cisticka_od_pm": "Čističku zapnout od PM2.5",
             "zvlhcovac_kdy": "Zvlhčovat",
             "zaskleni": "Zasklení okna",
@@ -319,7 +318,8 @@
             "prach_dosah": "Prach z tohoto zvlhčovače neberu vážně",
             "prach_mistnosti": "   a to v těchto místnostech",
             "vlhkost_dosah": "Nezvlhčovat při otevřeném okně",
-            "vlhkost_mistnosti": "   a to v těchto místnostech"
+            "vlhkost_mistnosti": "   a to v těchto místnostech",
+            "noc_posun": "V noci posun cílové teploty"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -365,7 +365,6 @@
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
-            "noc_utlum_topeni": "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. Klesá plynule hodinu před začátkem noci, aby to nebyl skok; zapnutý spánek platí okamžitě.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
             "zvlhcovac_kdy": "Kdy smí zvlhčovač běžet. V ložnici má smysl „jen při spánku\", v obýváku spíš „jen když je někdo v pokoji\" — zvlhčovat prázdný pokoj je plýtvání.\n\nPři otevřeném okně se nezvlhčuje nikdy, to by znamenalo zvlhčovat ulici.",
             "zaskleni": "Podle zasklení se počítá, jak chladné je sklo, a z toho nejvyšší vlhkost, při které se ještě neorosí. V mrazu má sklo okolo pěti stupňů a při dvaadvaceti v pokoji a šedesáti procentech je rosný bod kolem čtrnácti — okno se tedy orosí, přestože vlhkost sama o sobě vypadá rozumně.\n\nHorní mez vlhkosti se tím v mrazu sama sníží. Při dvaadvaceti stupních a venkovních minus pěti vyjde pro dvojsklo 67 %, pro starší 53 %.",
@@ -383,8 +382,9 @@
             "rezerva_venku": "O kolik musí být venkovní vzduch za dojezdem pásma, aby se větrání vůbec spustilo — při chlazení o tolik pod dolní hranou, při ohřevu o tolik nad horní.\n\nBez té rezervy se cyklus doplazí k hraně a nikdy ji nepřejde, takže větrání dojezd nedokončí a jen vystydne.",
             "prach_dosah": "Ultrazvukový zvlhčovač rozprašuje minerály z vody a čidla je vidí jako prach. Kvůli tomu by se větralo a čistilo, přestože je to jeho vlastní aerosol — a ten se vyvětrat nedá.\n\nAerosol se nedrží zóny, protože zóna je definovaná sdílením vzduchu kvůli CO2. Proto se dosah nastavuje zvlášť; ve výchozím stavu platí pro celý byt.",
             "prach_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“. Pro velký byt, kde je něco mezi zónou a celkem.",
-            "vlhkost_dosah": "Zvlhčovat při otevřeném okně znamená zvlhčovat ulici. Vlhkost se ale šíří dál než jen do vlastní místnosti, takže se dá určit, odkud se otevřené okno počítá.\n\nVe výchozím stavu je to jeho zóna — okno na druhém konci bytu by zvlhčovač v ložnici zastavovat nemělo.",
-            "vlhkost_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“."
+            "vlhkost_dosah": "Zvlhčovat při otevřeném okně znamená zvlhčovat ulici. Vlhkost se šíří dál než jen do vlastní místnosti, takže se dá určit, odkud se otevřené okno počítá.\n\nVe výchozím stavu platí celý byt; v jeho zóně nebo ve vybraných místnostech, pokud ti to stačí.",
+            "vlhkost_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“.",
+            "noc_posun": "O kolik se v noci posune cílová teplota. Záporné číslo znamená topit míň, kladné víc, nula nechává cíl být.\n\nKlesá se s předstihem před začátkem noci, aby to nebyl skok; zapnutý spánek platí hned, bez ohledu na hodinu."
           },
           "submit": "Další"
         },
@@ -484,7 +484,6 @@
             "rucni_klid_min": "Po ručním zásahu nechat být",
             "ochota_vetrat": "Ochota větrat",
             "poradi": "Pořadí na kartě",
-            "noc_utlum_topeni": "V noci topit o méně",
             "cisticka_od_pm": "Čističku zapnout od PM2.5",
             "zvlhcovac_kdy": "Zvlhčovat",
             "zaskleni": "Zasklení okna",
@@ -503,7 +502,8 @@
             "prach_dosah": "Prach z tohoto zvlhčovače neberu vážně",
             "prach_mistnosti": "   a to v těchto místnostech",
             "vlhkost_dosah": "Nezvlhčovat při otevřeném okně",
-            "vlhkost_mistnosti": "   a to v těchto místnostech"
+            "vlhkost_mistnosti": "   a to v těchto místnostech",
+            "noc_posun": "V noci posun cílové teploty"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -559,7 +559,6 @@
             "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
-            "noc_utlum_topeni": "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. Klesá plynule hodinu před začátkem noci, aby to nebyl skok; zapnutý spánek platí okamžitě.",
             "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
             "zvlhcovac_kdy": "Kdy smí zvlhčovač běžet. V ložnici má smysl „jen při spánku\", v obýváku spíš „jen když je někdo v pokoji\" — zvlhčovat prázdný pokoj je plýtvání.\n\nPři otevřeném okně se nezvlhčuje nikdy, to by znamenalo zvlhčovat ulici.",
             "zaskleni": "Podle zasklení se počítá, jak chladné je sklo, a z toho nejvyšší vlhkost, při které se ještě neorosí. V mrazu má sklo okolo pěti stupňů a při dvaadvaceti v pokoji a šedesáti procentech je rosný bod kolem čtrnácti — okno se tedy orosí, přestože vlhkost sama o sobě vypadá rozumně.\n\nHorní mez vlhkosti se tím v mrazu sama sníží. Při dvaadvaceti stupních a venkovních minus pěti vyjde pro dvojsklo 67 %, pro starší 53 %.",
@@ -577,8 +576,9 @@
             "rezerva_venku": "O kolik musí být venkovní vzduch za dojezdem pásma, aby se větrání vůbec spustilo — při chlazení o tolik pod dolní hranou, při ohřevu o tolik nad horní.\n\nBez té rezervy se cyklus doplazí k hraně a nikdy ji nepřejde, takže větrání dojezd nedokončí a jen vystydne.",
             "prach_dosah": "Ultrazvukový zvlhčovač rozprašuje minerály z vody a čidla je vidí jako prach. Kvůli tomu by se větralo a čistilo, přestože je to jeho vlastní aerosol — a ten se vyvětrat nedá.\n\nAerosol se nedrží zóny, protože zóna je definovaná sdílením vzduchu kvůli CO2. Proto se dosah nastavuje zvlášť; ve výchozím stavu platí pro celý byt.",
             "prach_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“. Pro velký byt, kde je něco mezi zónou a celkem.",
-            "vlhkost_dosah": "Zvlhčovat při otevřeném okně znamená zvlhčovat ulici. Vlhkost se ale šíří dál než jen do vlastní místnosti, takže se dá určit, odkud se otevřené okno počítá.\n\nVe výchozím stavu je to jeho zóna — okno na druhém konci bytu by zvlhčovač v ložnici zastavovat nemělo.",
-            "vlhkost_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“."
+            "vlhkost_dosah": "Zvlhčovat při otevřeném okně znamená zvlhčovat ulici. Vlhkost se šíří dál než jen do vlastní místnosti, takže se dá určit, odkud se otevřené okno počítá.\n\nVe výchozím stavu platí celý byt; v jeho zóně nebo ve vybraných místnostech, pokud ti to stačí.",
+            "vlhkost_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“.",
+            "noc_posun": "O kolik se v noci posune cílová teplota. Záporné číslo znamená topit míň, kladné víc, nula nechává cíl být.\n\nKlesá se s předstihem před začátkem noci, aby to nebyl skok; zapnutý spánek platí hned, bez ohledu na hodinu."
           },
           "submit": "Další"
         },
@@ -902,9 +902,6 @@
       "co2_noc_krize": {
         "name": "Nouzově otevřít nad CO2"
       },
-      "noc_utlum_topeni": {
-        "name": "V noci topit o méně"
-      },
       "rh_min": {
         "name": "Zvlhčovat pod vlhkostí"
       },
@@ -955,6 +952,9 @@
       },
       "rezerva_venku": {
         "name": "Venku musí být za dojezdem o"
+      },
+      "noc_posun": {
+        "name": "V noci posun cílové teploty"
       }
     },
     "switch": {

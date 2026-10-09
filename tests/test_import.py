@@ -1277,9 +1277,9 @@ def test_dosah_zvlhcovace_jde_nastavit(nahradni_ha):
     assert byt._zvlhcuje_na("kuchyne") is True
 
 
-def test_dosah_vlhkosti_ma_vlastni_vychozi(nahradni_ha):
-    """Okno na druhém konci bytu nemá zastavovat zvlhčovač v ložnici,
-    takže vlhkost má ve výchozím stavu jen zónu."""
+def test_dosah_vlhkosti_jde_nastavit(nahradni_ha):
+    """Vlhkost se šíří dál než jen do vlastní místnosti, takže se dá
+    určit, odkud se otevřené okno počítá."""
     import importlib
 
     ko = importlib.import_module("napohodu.coordinator")
@@ -1306,14 +1306,26 @@ def test_dosah_vlhkosti_ma_vlastni_vychozi(nahradni_ha):
                               "dvere_otevrene": True}]
         return Falesny()
 
-    # výchozí zóna: okno v obýváku brání, v dílně ne
+    # výchozí celý byt: brání okno kdekoli
     assert postav({}, {"obyvak": True})._okno_brani_zvlhcovani("loznice")
-    assert not postav({}, {"dilna": True})._okno_brani_zvlhcovani("loznice")
+    assert postav({}, {"dilna": True})._okno_brani_zvlhcovani("loznice")
 
-    # na celý byt brání i dílna
-    cely = postav({c.CONF_VLHKOST_DOSAH: "byt"}, {"dilna": True})
-    assert cely._okno_brani_zvlhcovani("loznice")
+    # jen zóna: dílna už nevadí
+    zona = postav({c.CONF_VLHKOST_DOSAH: "zona"}, {"dilna": True})
+    assert not zona._okno_brani_zvlhcovani("loznice")
+    zona2 = postav({c.CONF_VLHKOST_DOSAH: "zona"}, {"obyvak": True})
+    assert zona2._okno_brani_zvlhcovani("loznice")
 
     # jen vlastní místnost: cizí okna nevadí
     sam = postav({c.CONF_VLHKOST_DOSAH: "mistnost"}, {"obyvak": True})
     assert not sam._okno_brani_zvlhcovani("loznice")
+
+
+def test_stary_utlum_se_prevede_na_posun(nahradni_ha):
+    """Starý útlum byl kladné číslo s opačným významem. Bez převodu by
+    se u stávajících instalací v noci přitápělo."""
+    import pathlib
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    assert "-float(d.get(CONF_NOC_UTLUM, 0.0))" in ko
+    assert "CONF_NOC_POSUN" in ko

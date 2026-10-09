@@ -287,14 +287,14 @@ def _v_pasmu(hodina: float, od: float, do: float) -> bool:
 
 def nocni_utlum(hodina: float, noc_od: float, noc_do: float, utlum: float,
                 predstih_min: float = 60.0, spanek: bool = False) -> float:
-    """O kolik v noci ubrat topení.
+    """O kolik v noci posunout cíl. Kladné číslo znamená ubrat.
 
     Klesá se s předstihem před začátkem noci, aby to nebyl skok —
     hlavice i zdivo reagují pomalu a náhlá změna se stejně nestihne
     projevit. Zapnutý spánek platí hned, bez ohledu na hodinu, a po
     skončení noci se útlum pouští.
     """
-    if utlum <= 0:
+    if utlum == 0:
         return 0.0
     if spanek:
         return round(utlum, 2)

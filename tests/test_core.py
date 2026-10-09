@@ -1990,3 +1990,15 @@ def test_stupnice_skryje_nemozny_smer():
     bez = "\n".join(pasmo_jen_stupnice(pasmo_text(
         22.2, 22.0, 2.5, 1.5, 16.0, 30.0, otevreno=False, t_max=22.2)))
     assert "začnu chladit" in bez and "začnu ohřívat" in bez
+
+
+def test_nocni_posun_umi_obe_strany():
+    """Záporné číslo topí míň, kladné víc — nula nechává cíl být."""
+    from core import nocni_utlum
+
+    assert nocni_utlum(2.0, 22.0, 6.5, 1.5) == 1.5     # topit míň
+    assert nocni_utlum(2.0, 22.0, 6.5, -1.0) == -1.0   # topit víc
+    assert nocni_utlum(2.0, 22.0, 6.5, 0.0) == 0.0
+    # náběh platí oběma směry
+    assert nocni_utlum(21.5, 22.0, 6.5, -1.0) == -0.5
+    assert nocni_utlum(14.0, 22.0, 6.5, -1.0) == 0.0

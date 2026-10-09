@@ -308,6 +308,12 @@ Když má oblast souseda za otevřenými dveřmi, vyvětrá ji raději on.
 
 ### Topení
 
+**V noci posun cílové teploty** se zadává se znaménkem: záporné číslo
+znamená topit míň, kladné víc, nula nechává cíl být. Dřív to byl útlum,
+tedy kladné číslo s opačným významem — stará hodnota se proto při
+načtení přepočítá, aby se u stávajících instalací v noci nezačalo
+přitápět.
+
 Cíl se hlavici posílá jen při skutečné změně a **porovnává se s tím, co
 hlavice hlásí**, ne s tím, co jsme naposled poslali. Better Thermostat
 si cíl občas přepíše sám a dřív jsme kvůli tomu čekali na obnovu
@@ -365,6 +371,12 @@ jednou za patnáct minut. Kompresor ani člověk nemá rád, když se hodnota
 vrtí každou minutu.
 
 ### Topení
+
+**V noci posun cílové teploty** se zadává se znaménkem: záporné číslo
+znamená topit míň, kladné víc, nula nechává cíl být. Dřív to byl útlum,
+tedy kladné číslo s opačným významem — stará hodnota se proto při
+načtení přepočítá, aby se u stávajících instalací v noci nezačalo
+přitápět.
 
 Integrace posílá hlavicím cílovou teplotu a režim. Funguje na virtuální
 hlavici z Better Thermostatu i na skutečnou, protože používá jen běžné
@@ -446,8 +458,9 @@ Výchozí hodnoty jsou nesouměrné schválně:
 - **prach z tohoto zvlhčovače neberu vážně v celém bytě**, protože
   aerosol putuje dál a falešné větrání kvůli němu je horší chyba než
   zbytečně nezvlhčená ložnice,
-- **nezvlhčovat při otevřeném okně v jeho zóně**, aby okno na druhém
-  konci bytu nezastavovalo zvlhčovač v ložnici.
+- **nezvlhčovat při otevřeném okně kdekoli v bytě**, protože vlhkost
+  se šíří dál než jen do vlastní místnosti; pro menší dosah je tu zóna
+  nebo výběr místností.
 
 ### Zvlhčovač a orosená okna
 

@@ -390,6 +390,8 @@ for p in d.glob("*.py"):
 # řídí hodnotou, kterou nejde změnit.
 kod_mimo_flow = "\n".join(
     x.read_text() for x in d.glob("*.py") if x.name != "config_flow.py")
+# klíče, které se už nenastavují a čtou se jen kvůli převodu
+PREVOD = {"CONF_NOC_UTLUM"}
 UI_POLE = {"CONF_KARTA_YAML", "CONF_NAZEV_STAVU", "CONF_SEKVENCE",
            "CONF_STAVY_TEXT", "CONF_TIMEOUT", "CONF_NAZEV", "CONF_DALSI",
            "CONF_PORADI", "CONF_MISTNOSTI", "CONF_SOUSEDI",
@@ -410,7 +412,9 @@ cte = (set(re.findall(r"\.get\((CONF_\w+)", kod_mimo_flow))
        | set(re.findall(r"[(,]\s*(CONF_\w+)\s*,\s*\"", kod_mimo_flow))
        | CTENO_JINAK)
 for k in sorted(cte - ve_form):
-    if k.endswith("_STARE") or k in UI_POLE:
+    # „_STARE" a klíče jen pro převod ze staršího nastavení se do
+    # formuláře nevracejí, čtou se kvůli zpětné slučitelnosti
+    if k.endswith("_STARE") or k in UI_POLE or k in PREVOD:
         continue
     chyby.append(f"{k}: kód to čte, ale ve formuláři to nejde vyplnit")
 for k in sorted(ve_form - cte - UI_POLE):

@@ -37,28 +37,29 @@ from .const import (
     CONF_MAX_STARI, CONF_MEZ_DOLNI, CONF_MEZ_HORNI, CONF_MIN_DRZENI,
     CONF_MISTNOSTI, CONF_NARAZ, CONF_NARAZOVE, CONF_NARAZOVE_ODSTUP,
     CONF_NARAZ_PRAH, CONF_NAZEV, CONF_NEJDRIV_ZNOVU, CONF_NOC_DO,
-    CONF_NOC_OD, CONF_NOC_PREDSTIH, CONF_NOC_UTLUM, CONF_OCHOTA,
-    CONF_ODCHYLKA, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA,
-    CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU, CONF_PM_CISTO,
-    CONF_PM_PLATNY, CONF_PM_SPATNE, CONF_PRACH_DOSAH, CONF_PRACH_MISTNOSTI,
-    CONF_PRAH_VYKONU, CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_PRO_POHODU,
-    CONF_PRYC_PO, CONF_PRYC_UTLUM, CONF_REZERVA_VENKU, CONF_RH_MAX,
-    CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI,
-    CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH,
-    CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG,
-    CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
-    CONF_STINENI_CHOVANI, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
-    CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
-    CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA,
-    CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT, CONF_VITR,
-    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VLHKOST_DOSAH,
-    CONF_VLHKOST_MISTNOSTI, CONF_VYCHOZI_KDY, CONF_VYNUCENO_M,
-    CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZASKLENI,
-    CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD, CONF_ZIMA_O_KOLIK,
-    CONF_ZIMA_PRAH, CONF_ZMENA_PODMINEK, CONF_ZNACKA_MIMO,
-    CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC,
-    CONF_ZVLHCOVAC_KDY, CONF_ZVLHCOVAC_VE_SPANKU, DOMAIN, INTERVAL_S,
-    PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA, ZASKLENI_PODIL,
+    CONF_NOC_OD, CONF_NOC_POSUN, CONF_NOC_PREDSTIH, CONF_NOC_UTLUM,
+    CONF_OCHOTA, CONF_ODCHYLKA, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T,
+    CONF_OKNA, CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU,
+    CONF_PM_CISTO, CONF_PM_PLATNY, CONF_PM_SPATNE, CONF_PRACH_DOSAH,
+    CONF_PRACH_MISTNOSTI, CONF_PRAH_VYKONU, CONF_PRITOMNOST,
+    CONF_PROJEZD_M, CONF_PRO_POHODU, CONF_PRYC_PO, CONF_PRYC_UTLUM,
+    CONF_REZERVA_VENKU, CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU,
+    CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_RUCNI_KLID,
+    CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SEZONA_REZIM,
+    CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG, CONF_SOUHRN_CAS,
+    CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_CHOVANI,
+    CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC,
+    CONF_STINENI_REZIM, CONF_TEPLOTY, CONF_TOPENI_OBNOVA,
+    CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
+    CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT, CONF_VITR, CONF_VITR_KLID,
+    CONF_VITR_PRAH, CONF_VLHKOST_DOSAH, CONF_VLHKOST_MISTNOSTI,
+    CONF_VYCHOZI_KDY, CONF_VYNUCENO_M, CONF_ZALUZIE, CONF_ZALUZIE_STARE,
+    CONF_ZARENI, CONF_ZASKLENI, CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD,
+    CONF_ZIMA_O_KOLIK, CONF_ZIMA_PRAH, CONF_ZMENA_PODMINEK,
+    CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY,
+    CONF_ZVLHCOVAC, CONF_ZVLHCOVAC_KDY, CONF_ZVLHCOVAC_VE_SPANKU, DOMAIN,
+    INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA,
+    ZASKLENI_PODIL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -613,7 +614,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
     def _okno_brani_zvlhcovani(self, pod_id: str) -> bool:
         """Je otevřené okno tam, odkud to na vlhkost tady dosáhne?"""
         dosah = self._dosah(pod_id, CONF_VLHKOST_DOSAH,
-                            CONF_VLHKOST_MISTNOSTI, "zona")
+                            CONF_VLHKOST_MISTNOSTI, "byt")
         return any(self.okna_stav.get(x) is True
                    for x in dosah if x != pod_id)
 
@@ -1497,8 +1498,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         g = {**self.entry.data, **self.entry.options}
         utlum_noc = core.nocni_utlum(
             self._hodina_ted, self._noc_od, self._noc_do,
-            self.hodnota(p.subentry_id, CONF_NOC_UTLUM,
-                         float(d.get(CONF_NOC_UTLUM, 0.0))),
+            # Posun se zadává se znaménkem: mínus topit míň. Starý
+            # útlum byl kladné číslo s opačným významem, tak se přepočte
+            # — jinak by se u stávajících instalací v noci přitápělo.
+            -self.hodnota(
+                p.subentry_id, CONF_NOC_POSUN,
+                float(d.get(CONF_NOC_POSUN,
+                            -float(d.get(CONF_NOC_UTLUM, 0.0))))),
             float(g.get(CONF_NOC_PREDSTIH, 60)),
             spanek=bool(m.klid))
 
@@ -1514,7 +1520,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             povel = replace(povel, cil=round(povel.cil - celkem, 1)
                             if povel.cil is not None else None)
         m.atributy["topeni_utlum"] = [
-            x for x in (f"noc -{utlum_noc:.1f} °C" if utlum_noc else "",
+            x for x in (f"noc {-utlum_noc:+.1f} °C" if utlum_noc else "",
                         f"nikdo doma -{utlum_pryc:.1f} °C" if utlum_pryc
                         else "") if x] or None
 

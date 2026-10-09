@@ -55,6 +55,7 @@ CONF_DOMA = "doma"
 # chladněji — tohle je vědomé doplnění normy.
 # Útlumy topení. Nejsou to absolutní teploty, ale odečty od cíle, aby
 # zůstala zachovaná adaptivní křivka.
+CONF_NOC_POSUN = "noc_posun"
 CONF_NOC_UTLUM = "noc_utlum_topeni"
 CONF_NOC_PREDSTIH = "noc_utlum_predstih"
 CONF_PRYC_UTLUM = "pryc_utlum_topeni"

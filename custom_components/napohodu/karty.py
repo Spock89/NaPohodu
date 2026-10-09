@@ -68,7 +68,7 @@ POSUVNIKY = [
     ("prach_je_cisty_pod_pm2_5", "Prach je čistý pod PM2.5",
      "Pod touhle úrovní se vzduch bere za čistý. Mezera mezi prahy brání "
      "přepínání na hraně."),
-    ("v_noci_topit_o_mene", "V noci topit o méně",
+    ("v_noci_posun_cilove_teploty", "V noci posun cílové teploty",
      "O kolik stupňů v noci ubrat z cílové teploty. Nula netlumí. "
      "Klesá plynule hodinu před začátkem noci, spánek platí hned."),
     ("pri_otevrenem_okne_topit_na", "Při otevřeném okně topit na",
@@ -96,7 +96,8 @@ STARSI_POSUVNIKY = {
      'pojistka_nevychladit_pod': ('v_noci_vychladnout_nejvys_na',
                                   'minimum_na_noc'),
      'moje_odchylka_teploty': 'odchylka_teploty',
-     'v_noci_topit_o_mene': 'nocni_utlum_topeni',
+     'v_noci_posun_cilove_teploty': ('v_noci_topit_o_mene',
+                                     'nocni_utlum_topeni'),
      'pri_otevrenem_okne_topit_na': 'utlum_pri_otevrenem_okne',
      'v_noci_otevrit_nad_co2': 'v_noci_otevrit_nad',
      'nouzove_otevrit_nad_co2': 'nouzove_otevrit_nad'}
