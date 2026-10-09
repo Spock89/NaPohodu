@@ -634,6 +634,25 @@ for p in d.glob("*.py"):
                     f"{p.name}:{i}: {klic} se převádí přímo na číslo — "
                     f"použij _hodina(), formulář posílá čas jako text")
 
+# 1ad) odkaz na konstantu cizího modulu, která tam není. Projeví se
+# až při běhu, protože modul se importuje jako celek.
+ALIASY = {"core": "core.py", "vy": "vykon.py", "pr": "pritomnost.py",
+          "pm": "prumery.py", "sl": "slunce.py", "so": "sousedstvi.py",
+          "zp": "zpravy.py"}
+for p in d.glob("*.py"):
+    text = p.read_text()
+    for u in ast.walk(ast.parse(text)):
+        if not (isinstance(u, ast.Attribute)
+                and isinstance(u.value, ast.Name)
+                and u.value.id in ALIASY
+                and u.attr.isupper()):
+            continue
+        cizi = (d / ALIASY[u.value.id]).read_text()
+        if not re.search(rf"^{u.attr}\s*[:=]", cizi, re.M):
+            chyby.append(
+                f"{p.name}:{u.lineno}: {u.value.id}.{u.attr} v "
+                f"{ALIASY[u.value.id]} neexistuje")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

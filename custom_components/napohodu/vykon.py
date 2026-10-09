@@ -243,10 +243,15 @@ class Vykonavac:
                 return None
             cil = self.stav.topeni_cil
 
+        # Porovnává se s tím, co hlásí hlavice, ne s tím, co jsme
+        # naposled poslali. Better Thermostat si cíl občas přepíše sám
+        # a my bychom pak čekali na obnovu s vědomím, že „už na tom
+        # stojí", přestože stojí jinde.
+        stav_hlavice = hlasi_cil if hlasi_cil is not None \
+            else self.stav.topeni_cil
         zmena_cile = (cil is not None
-                      and (self.stav.topeni_cil is None
-                           or abs(cil - self.stav.topeni_cil)
-                           >= TOPENI_ZMENA_MIN))
+                      and (stav_hlavice is None
+                           or abs(cil - stav_hlavice) >= TOPENI_ZMENA_MIN))
         uplynulo = cas_s - self.stav.topeni_cas_s >= TOPENI_KLID_S
         # obnova: hlavice mohla povel zahodit, tak ho po čase zopakujeme
         obnova = (obnova_s > 0

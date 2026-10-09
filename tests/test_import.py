@@ -1234,3 +1234,41 @@ def test_trend_se_pocita_z_delsiho_odstupu(nahradni_ha):
     assert k._trend("obyvak", V(21.5), 400) == 1
     assert k._trend("obyvak", V(21.5), 500) == 0  # proti vzorku z 400
     assert k._trend("obyvak", V(21.9), 600) == 1
+
+
+def test_topeni_porovnava_s_hlavici_ne_s_pameti(nahradni_ha):
+    """Better Thermostat si cíl občas přepíše sám. Dřív jsme čekali na
+    obnovu s vědomím, že „už na tom stojí", přestože stojí jinde."""
+    import asyncio
+    import importlib
+
+    vy = importlib.import_module("napohodu.vykon")
+
+    class Stav:
+        state = "heat"
+        attributes = {"temperature": 22.0}
+
+    volani = []
+
+    class Sluzby:
+        async def async_call(self, domena, sluzba, data, blocking=False):
+            volani.append((sluzba, data.get("temperature")))
+
+    class Stavy:
+        @staticmethod
+        def get(eid):
+            return Stav()
+
+    class Hass:
+        services = Sluzby()
+        states = Stavy()
+
+    v = vy.Vykonavac(Hass(), "m1")
+    # naposledy jsme poslali 22,9, hlavice hlásí 22,0
+    v.stav.topeni_cil = 22.9
+    v.stav.topeni_cas_s = 0
+
+    povel = vy.PovelTopeni(cil=22.9, rezim=None, duvod="topím")
+    asyncio.run(v.topeni(["climate.h"], povel, 10000))
+
+    assert volani and volani[-1] == ("set_temperature", 22.9)

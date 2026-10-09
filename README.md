@@ -306,6 +306,16 @@ ve spánku.
 
 Když má oblast souseda za otevřenými dveřmi, vyvětrá ji raději on.
 
+### Topení
+
+Cíl se hlavici posílá jen při skutečné změně a **porovnává se s tím, co
+hlavice hlásí**, ne s tím, co jsme naposled poslali. Better Thermostat
+si cíl občas přepíše sám a dřív jsme kvůli tomu čekali na obnovu
+s vědomím, že hlavice „už na tom stojí", přestože stála jinde.
+
+V kartě je proto rozlišené, jestli hlavice opravdu stojí na našem cíli,
+nebo jestli hlásí něco jiného a čeká se na klid mezi povely.
+
 ### Stínění
 
 Sluneční zisk se počítá pro každé okno zvlášť z jeho azimutu a polohy

@@ -582,6 +582,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     TREND_ODSTUP_S = 5 * 60
 
+    @staticmethod
+    def _cislo_z(hodnota) -> float | None:
+        """Číslo z atributu entity, nebo nic."""
+        try:
+            return float(hodnota)
+        except (TypeError, ValueError):
+            return None
+
     def _trend(self, pod_id: str, v, cas_s: float) -> int:
         """Kam se teplota hýbe: +1 nahoru, -1 dolů, 0 stojí."""
         drive = self._t_in_drive.get(pod_id)
@@ -1527,7 +1535,21 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         elif povel.cil is None:
             m.atributy["topeni_poslano"] = "nic — teplotu si řídí hlavice"
         else:
-            m.atributy["topeni_poslano"] = "nic — hlavice už na tom stojí"
+            # Rozlišit, jestli hlavice opravdu stojí na našem cíli, nebo
+            # jen čekáme — dřív to tvrdilo totéž v obou případech.
+            hlasi = None
+            for h in hlavice:
+                st = self._stav(h)
+                if st is not None:
+                    hlasi = self._cislo_z(st.attributes.get("temperature"))
+                    break
+            if (hlasi is not None and povel.cil is not None
+                    and abs(hlasi - povel.cil) >= vy.TOPENI_ZMENA_MIN):
+                m.atributy["topeni_poslano"] = (
+                    f"nic — hlavice hlásí {hlasi:.1f} °C místo "
+                    f"{povel.cil:.1f} °C, čekám na klid mezi povely")
+            else:
+                m.atributy["topeni_poslano"] = "nic — hlavice už na tom stojí"
         m.atributy["topeni_hlavice"] = ", ".join(skutecnost) or None
         m.atributy["odvzdusneni"] = odvzdusneni
 
