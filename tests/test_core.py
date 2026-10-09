@@ -1729,23 +1729,34 @@ def test_pro_pohodu_se_da_vypnout():
     assert r2.akce is Akce.OTEVRIT
 
 
-def test_stupnice_ukaze_pasmo_i_pojistky():
-    """U každé hrany je napsané, které nastavení ji určuje."""
+def test_stupnice_ukaze_jen_to_co_plati():
+    """Sedm čísel, z nichž šest nic neznamená, je k ničemu: dojezdy
+    jen v odpovídajícím režimu, pojistky jen když jsou nejblíž."""
     from core import pasmo_text
     t = "\n".join(pasmo_text(22.0, 23.0, 2.5, 1.0, 18.0, 27.0,
                              otevreno=False, t_max=23.2))
-    assert "pojistka „nepřehřát nad“" in t
-    assert "pojistka „nevychladit pod“" in t
-    assert "„ve dne otevřít“" in t
-    assert "„ve dne zavřít“" in t
-    assert "cíl" in t
+    assert "začnu chladit" in t and "cíl" in t
+    assert "pojistka" not in t          # daleko, nepatří do obrázku
+    assert "dojede" not in t            # nechladí se ani neohřívá
+
+    # při chlazení přibude jeho dojezd
+    t2 = "\n".join(pasmo_text(22.0, 23.0, 2.5, 1.0, 18.0, 27.0,
+                              otevreno=True, t_max=25.0, chladi=True))
+    assert "chlazení dojede" in t2
+    assert "ohřev dojede" not in t2
+
+    # a pojistka, když je hned za teplotou
+    t3 = "\n".join(pasmo_text(22.0, 18.4, 2.5, 1.0, 18.0, 27.0,
+                              otevreno=True, t_max=18.6))
+    assert "pojistka: tady zavřu" in t3
 
 
 def test_stupnice_v_noci_mluvi_o_nocnim_pasmu():
     from core import pasmo_text
     t = "\n".join(pasmo_text(22.0, 21.0, 4.0, 1.5, 18.0, 27.0,
-                             otevreno=False, noc=True, t_max=21.2))
-    assert "„v noci otevřít“" in t and "„v noci zavřít“" in t
+                             otevreno=True, noc=True, t_max=21.2,
+                             ohrivam=True))
+    assert "začnu ohřívat" in t and "ohřev dojede" in t
 
 
 # ============ doplněné pokrytí nového modelu ============
@@ -1841,11 +1852,11 @@ def test_stupnice_jmenuje_soupatka():
     """Bez toho se v pěti číslech kolem cíle nikdo nevyzná."""
     from core import pasmo_jen_stupnice, pasmo_text
     radky = pasmo_jen_stupnice(pasmo_text(
-        22.0, 23.0, 2.5, 1.0, 18.0, 27.0, otevreno=False, t_max=23.2))
+        22.0, 18.4, 2.5, 1.0, 18.0, 27.0, otevreno=True, t_max=25.0,
+        chladi=True))
     t = "\n".join(radky)
-    assert "„ve dne otevřít“" in t and "„ve dne zavřít“" in t
-    assert "pojistka „nepřehřát nad“" in t
-    assert "pojistka „nevychladit pod“" in t
+    assert "začnu chladit" in t and "chlazení dojede" in t
+    assert "pojistka" in t
     # a pořád se to vejde do řádku
     for radek in radky:
         assert len(radek) <= 45, radek
@@ -1901,3 +1912,81 @@ def test_rezerva_plati_i_pro_ohrev():
 
     assert ohriva(24.0) is False
     assert ohriva(25.5) is True
+
+
+def test_stupnice_ukaze_kam_se_teplota_hybe():
+    from core import pasmo_jen_stupnice, pasmo_text
+
+    def znacka(trend):
+        radky = pasmo_jen_stupnice(pasmo_text(
+            22.0, 23.0, 2.5, 1.0, 18.0, 27.0, otevreno=False,
+            t_max=23.2, trend=trend))
+        return next(r for r in radky if "teď" in r)
+
+    assert "↑" in znacka(1)
+    assert "↓" in znacka(-1)
+    assert "↑" not in znacka(0) and "↓" not in znacka(0)
+
+
+def test_couvani_neni_drzeni_stavu():
+    """Couvání posouvalo čas posledního povelu do budoucnosti, takže se
+    tvářilo jako držení stavu a drželo i den po zavření kvůli větru."""
+    from core import Nastaveni as N_, ocekavani
+    nast = N_(min_drzeni_s=21 * 60)
+
+    # den po povelu, couvání dávno vypršelo
+    p = Pamet(otevreno=False, cas_povelu_s=100000 - 1127 * 60,
+              pauza_do_s=100000 - 900 * 60)
+    t = ocekavani(Vstup(co2=576, t_in=23.3, cil=22.2, t_out=18.0,
+                        cas_s=100000), p, nast)
+    assert not any("držím stav" in x for x in t)
+    assert not any("couvám" in x for x in t)
+
+    # s běžícím couváním se to pojmenuje pravdivě
+    p2 = Pamet(otevreno=False, cas_povelu_s=100000 - 1127 * 60,
+               pauza_do_s=100000 + 2400)
+    t2 = ocekavani(Vstup(co2=576, t_in=23.3, cil=22.2, t_out=18.0,
+                         cas_s=100000), p2, nast)
+    assert any("couvám po marném větrání, zkusím za 40 min" in x
+               for x in t2)
+
+
+def test_couvani_brzdi_jen_otevirani():
+    """Zavřít se smí vždycky, jinak by okno zůstalo otevřené kvůli
+    pauze."""
+    from core import Nastaveni as N_
+    nast = N_(min_drzeni_s=0)
+
+    p = Pamet(otevreno=False, cas_povelu_s=0, pauza_do_s=100000 + 1800)
+    r = rozhodni(stary(co2=950, t_in=23.3, t_in_max=23.5, t_out=18.0,
+                       rh_out=50.0, cil=22.2, hodina=14.0), p, nast)
+    assert r.akce is not Akce.OTEVRIT and r.kod == "pauza"
+
+    # krize to obejde
+    p2 = Pamet(otevreno=False, cas_povelu_s=0, pauza_do_s=100000 + 1800)
+    r2 = rozhodni(stary(co2=1400, t_in=23.3, t_in_max=23.5, t_out=18.0,
+                        rh_out=50.0, cil=22.2, hodina=14.0), p2, nast)
+    assert r2.akce is Akce.OTEVRIT
+
+
+def test_stupnice_skryje_nemozny_smer():
+    """V zimě netopíme oknem a v létě jím nechladíme — ten stav
+    nenastane, tak nemá co svítit ve stupnici."""
+    from core import pasmo_jen_stupnice, pasmo_text
+
+    zima = "\n".join(pasmo_jen_stupnice(pasmo_text(
+        22.2, 23.3, 2.5, 1.5, 16.0, 30.0, otevreno=False, t_max=23.5,
+        t_out=5.0)))
+    assert "začnu chladit" in zima
+    assert "začnu ohřívat" not in zima
+
+    leto = "\n".join(pasmo_jen_stupnice(pasmo_text(
+        25.5, 26.0, 2.5, 1.5, 16.0, 30.0, otevreno=False, t_max=26.2,
+        t_out=29.0)))
+    assert "začnu ohřívat" in leto
+    assert "začnu chladit" not in leto
+
+    # bez venkovní teploty se neskrývá nic
+    bez = "\n".join(pasmo_jen_stupnice(pasmo_text(
+        22.2, 22.0, 2.5, 1.5, 16.0, 30.0, otevreno=False, t_max=22.2)))
+    assert "začnu chladit" in bez and "začnu ohřívat" in bez

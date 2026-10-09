@@ -137,6 +137,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # skutečný stav okna v každé místnosti; None znamená, že o něm
         # nevíme nic — ani kontakt, ani ovládané okno
         self.okna_stav: dict[str, bool | None] = {}
+        # Teplota místnosti před pěti minutami, ať je ve stupnici vidět,
+        # kam se hýbe. Kratší odstup by blikal, protože menší posun než
+        # desetina je šum čidla.
+        self._t_in_drive: dict[str, tuple[float, float]] = {}
         self._rh_out_posledni: float | None = None
         self._hodina_ted: float = 12.0
         self._noc_od: float = 22.0
@@ -573,7 +577,23 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             pamet.posledni_duvod or "",
             core.proc_neotevira(v, nast, v.t_in,
                                 m.atributy.get("teplota_max") or v.t_in),
-            int(max(0, pamet.rucni_do_s - cas_s) / 60) or None)
+            int(max(0, pamet.rucni_do_s - cas_s) / 60) or None,
+            self._trend(m, v, cas_s), v.t_out)
+
+    TREND_ODSTUP_S = 5 * 60
+
+    def _trend(self, m, v, cas_s: float) -> int:
+        """Kam se teplota hýbe: +1 nahoru, -1 dolů, 0 stojí."""
+        drive = self._t_in_drive.get(m.id)
+        if drive is None:
+            self._t_in_drive[m.id] = (v.t_in, cas_s)
+            return 0
+        teplota, kdy = drive
+        if cas_s - kdy >= self.TREND_ODSTUP_S:
+            self._t_in_drive[m.id] = (v.t_in, cas_s)
+        if abs(v.t_in - teplota) < 0.1:
+            return 0
+        return 1 if v.t_in > teplota else -1
 
     def _prehled_bytu(self, g: dict) -> list[str]:
         """Globální nastavení, ať je na dashboardu vidět, co platí."""
@@ -1261,7 +1281,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 # svým oknem skoro neovlivní.
                 zaklad = core.PAUZA_PO_PULZU_S
                 pauza = min(zaklad * 2 ** (pamet.pulzy_za_sebou - 1), 3600)
-                pamet.cas_povelu_s = cas_s + pauza - nast.min_drzeni_s
+                pamet.pauza_do_s = cas_s + pauza
                 m.atributy["pauza_po_pulzu_min"] = round(pauza / 60)
 
             # Totéž po nočním zavření kvůli chladu. Ložnice se prohřeje
@@ -1376,6 +1396,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # věta zvlášť, aby ji karta mohla zalomit
             "teplotni_predpoved": None if not okna else core.pasmo_predpoved(
                 self._pasmo(nast, m, v, pamet, skutecne, cas_s)),
+            "teplota_trend": self._trend(m, v, cas_s),
             "pevna_pravidla": core.pevna_pravidla(
                 bool(m.klid),
                 core._je_noc(self._hodina_ted, nast, bool(m.klid)),

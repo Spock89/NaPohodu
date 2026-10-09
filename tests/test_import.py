@@ -1207,3 +1207,34 @@ def test_pravidla_nemluvi_o_zrusenych_hodnotach(nahradni_ha):
     assert core.pevna_pravidla_bytu()
     assert core.pevna_pravidla(True, True, 1000.0, 1250.0, 700.0)
     assert core.pevna_pravidla(False, True, 1000.0, 1250.0, 700.0)
+
+
+def test_trend_se_pocita_z_delsiho_odstupu(nahradni_ha):
+    """Kratší odstup by blikal, protože menší posun než desetina je
+    šum čidla."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+
+    class M:
+        id = "obyvak"
+
+    class V:
+        def __init__(self, t):
+            self.t_in = t
+
+    class Falesny:
+        TREND_ODSTUP_S = ko.NaPohoduCoordinator.TREND_ODSTUP_S
+        _trend = ko.NaPohoduCoordinator._trend
+        _t_in_drive: dict = {}
+
+    k = Falesny()
+    m = M()
+    assert k._trend(m, V(21.0), 0) == 0          # první měření
+    assert k._trend(m, V(21.4), 60) == 1         # proti hodnotě z nuly
+    assert k._trend(m, V(21.0), 120) == 0        # zpátky, žádný posun
+    # po pěti minutách se vzorek obnoví, takže se napříště porovnává
+    # s touhle hodnotou
+    assert k._trend(m, V(21.5), 400) == 1
+    assert k._trend(m, V(21.5), 500) == 0        # proti vzorku z 400
+    assert k._trend(m, V(21.9), 600) == 1

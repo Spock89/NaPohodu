@@ -191,6 +191,10 @@ class Pamet:
     # kontrola účinku: kdy a s jakými hodnotami se otevřelo
     ucinek_od_s: float = 0.0
     # podmínky při marném pokusu, aby se čekalo na jejich změnu
+    # Do kdy couváme po marném pulzu. Dřív se kvůli tomu posouval čas
+    # posledního povelu do budoucnosti, takže se couvání tvářilo jako
+    # držení stavu a drželo i den po zavření kvůli větru.
+    pauza_do_s: float = 0.0
     marne_od_s: float = 0.0
     marne_t_out: float = 0.0
     # co selhalo: "chlazeni" nebo "ohrev". Podle toho platí změna venku
@@ -519,6 +523,9 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     zbyva = n.min_drzeni_s - (v.cas_s - p.cas_povelu_s)
     if zbyva > 0:
         seznam.append(f"nejdřív za {int(zbyva / 60)} min (držím stav)")
+    elif p.pauza_do_s > v.cas_s:
+        seznam.append(f"couvám po marném větrání, zkusím za "
+                      f"{int((p.pauza_do_s - v.cas_s) / 60)} min")
 
     if p.otevreno:
         h_otevrit, h_zavrit = _hyst(v, n)
@@ -618,6 +625,14 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     def _povel(chci_otevreno: bool, duvod: str, limit_s: float | None,
                hned: bool, kod: str = "") -> Rozhodnuti:
         limit = n.projezd_s if hned else max(n.projezd_s, n.min_drzeni_s)
+        # Couvání po marném pulzu brzdí jen otevírání; zavřít se smí
+        # vždycky, jinak by okno zůstalo otevřené kvůli pauze.
+        if (chci_otevreno and not hned and p.pauza_do_s > v.cas_s
+                and v.co2 <= n.co2_noc_krize and not v.vetrat):
+            zbyva_p = int((p.pauza_do_s - v.cas_s) / 60)
+            return hotovo(Akce.NIC,
+                          f"couvám po marném větrání, zkusím za "
+                          f"{zbyva_p} min", kod="pauza")
         if v.cas_s - p.cas_povelu_s < limit:
             zbyva = int(limit - (v.cas_s - p.cas_povelu_s))
             chci = "otevřít" if chci_otevreno else "zavřít"
@@ -1211,28 +1226,44 @@ def pasmo_text(cil: float, t_in: float, otevrit: float, zavrit: float,
                t_max: float | None = None,
                chladi: bool = False, ohrivam: bool = False,
                duvod: str = "", brani_teplote: str = "",
-               rucni_min: int | None = None) -> list[str]:
+               rucni_min: int | None = None,
+               trend: int = 0, t_out: float | None = None) -> list[str]:
     """Stupnice: pojistky, pásmo a kde je teplota právě teď.
 
     U každé hrany je napsané, které nastavení ji určuje — bez toho se
     v číslech kolem cíle nikdo nevyzná.
     """
     t_max = t_max if t_max is not None else t_in
-    kdy = "v noci" if (noc or spanek) else "ve dne"
     horni = cil + otevrit
     dolni = cil - otevrit
     # U každé hrany je v závorce šoupátko, které ji určuje — bez toho
-    # se v číslech kolem cíle nikdo nevyzná.
-    body = [
-        (mez_horni, "zavřu — pojistka „nepřehřát nad“"),
-        (horni, f"začnu chladit — „{kdy} otevřít“"),
-        (cil + zavrit, f"ohřev dojede — „{kdy} zavřít“"),
-        (cil, "cíl"),
-        (cil - zavrit, f"chlazení dojede — „{kdy} zavřít“"),
-        (dolni, f"začnu ohřívat — „{kdy} otevřít“"),
-        (mez_dolni, "zavřu — pojistka „nevychladit pod“"),
-    ]
-    znacka = t_max if (chladi or t_max > horni) else t_in
+    # se v číslech kolem cíle nikdo nevyzná. Ukazuje se ale jen to, co
+    # právě platí: dojezdy jen v odpovídajícím režimu a pojistky jen
+    # tehdy, když jsou hned za teplotou. Jinak je v tom sedm čísel,
+    # z nichž šest nic neznamená.
+    znacka_t = t_max if (chladi or t_max > horni) else t_in
+    # Chladit jde jen chladnějším vzduchem a ohřívat jen teplejším,
+    # takže v zimě nemá smysl ukazovat hranu ohřevu a v létě hranu
+    # chlazení — ten stav stejně nenastane.
+    lze_chladit = t_out is None or t_out < cil or chladi
+    lze_ohrat = t_out is None or t_out > cil or ohrivam
+    body = [(cil, "cíl")]
+    if lze_chladit:
+        body.append((horni, "začnu chladit"))
+    if lze_ohrat:
+        body.append((dolni, "začnu ohřívat"))
+    if chladi:
+        body.append((cil - zavrit, "chlazení dojede"))
+    if ohrivam:
+        body.append((cil + zavrit, "ohřev dojede"))
+    # pojistka patří do obrázku, až když je nejbližší hranou
+    nad = [h for h, _ in body if h > znacka_t]
+    pod = [h for h, _ in body if h < znacka_t]
+    if not nad or mez_horni < min(nad):
+        body.append((mez_horni, "pojistka: tady zavřu"))
+    if not pod or mez_dolni > max(pod):
+        body.append((mez_dolni, "pojistka: tady zavřu"))
+    znacka = znacka_t
     cidlo = ("nejteplejší čidlo" if znacka == t_max and t_max != t_in
              else "nejchladnější čidlo")
 
@@ -1241,7 +1272,8 @@ def pasmo_text(cil: float, t_in: float, otevrit: float, zavrit: float,
         radky.append(f"{hodnota:5.1f} \u2524 {popis}")
     kde = sorted(set(body) | {(znacka, "")},
                  key=lambda x: -x[0]).index((znacka, ""))
-    radky.insert(kde, f"{znacka:5.1f} \u25cf teď, {cidlo}, "
+    sipka = {1: " \u2191", -1: " \u2193"}.get(trend, "")
+    radky.insert(kde, f"{znacka:5.1f} \u25cf{sipka} teď, {cidlo}, "
                       + ("otevřeno" if otevreno else "zavřeno"))
 
     if rucni_min:
@@ -1253,7 +1285,7 @@ def pasmo_text(cil: float, t_in: float, otevrit: float, zavrit: float,
     elif otevreno and ohrivam:
         radky.append((f"Otevřeno: {duvod}. " if duvod else "Otevřeno. ")
                      + f"Ohřívám, zavřu na {cil + zavrit:.1f} °C.")
-    elif otevreno and spanek:
+    elif otevreno and (spanek or noc):
         radky.append(f"Ve spánku rozhoduje jen CO2; teplotu drží "
                      f"pojistky {mez_dolni:.1f} a {mez_horni:.1f} °C.")
     elif otevreno:
