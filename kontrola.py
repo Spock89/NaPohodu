@@ -520,8 +520,8 @@ for jm in re.findall(r"^([A-Z][A-Z_]+) = [\d.]+", jadro_text, re.M):
 # 1y) odkaz na nastavení nebo paměť, která v jádře neexistuje.
 # Koordinátor je sestavuje za běhu, takže překladač ani testy to
 # nenajdou — projeví se to až chybou při načtení integrace.
-def _pole_tridy(jmeno):
-    for u in ast.parse(jadro_text).body:
+def _pole_tridy(jmeno, text=None):
+    for u in ast.parse(text if text is not None else jadro_text).body:
         if isinstance(u, ast.ClassDef) and u.name == jmeno:
             return {x.target.id for x in u.body
                     if isinstance(x, ast.AnnAssign)
@@ -535,21 +535,27 @@ def _pole_tridy(jmeno):
 TRIDY = {"nast": ("Nastaveni", _pole_tridy("Nastaveni")),
          "pamet": ("Pamet", _pole_tridy("Pamet")),
          "Nastaveni": ("Nastaveni", _pole_tridy("Nastaveni")),
-         "Pamet": ("Pamet", _pole_tridy("Pamet"))}
+         "Pamet": ("Pamet", _pole_tridy("Pamet")),
+         }
+# „m" je výsledek místnosti, ale jen v koordinátoru — jinde je to
+# třeba výsledek regulárního výrazu.
+TRIDY_KO = dict(TRIDY, m=("VysledekMistnosti",
+                          _pole_tridy("VysledekMistnosti", ko_kod)))
 for p in d.glob("*.py"):
     # V jádře se „nast" a „pamet" používají legitimně uvnitř funkcí,
     # ale přístup přes třídu se hlídá i tam — právě odtud se do textu
     # pravidel dostala zmínka o zrušené hodnotě.
     jen_trida = p.name == "core.py"
     text = p.read_text()
+    tridy = TRIDY_KO if p.name == "coordinator.py" else TRIDY
     for u in ast.walk(ast.parse(text)):
         if not (isinstance(u, ast.Attribute)
                 and isinstance(u.value, ast.Name)
-                and u.value.id in TRIDY):
+                and u.value.id in tridy):
             continue
         if jen_trida and not u.value.id[:1].isupper():
             continue
-        jmeno_tridy, pole = TRIDY[u.value.id]
+        jmeno_tridy, pole = tridy[u.value.id]
         if pole and u.attr not in pole and not u.attr.startswith("_"):
             chyby.append(
                 f"{p.name}:{u.lineno}: {u.value.id}.{u.attr} v {jmeno_tridy}"

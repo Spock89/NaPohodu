@@ -1216,9 +1216,6 @@ def test_trend_se_pocita_z_delsiho_odstupu(nahradni_ha):
 
     ko = importlib.import_module("napohodu.coordinator")
 
-    class M:
-        id = "obyvak"
-
     class V:
         def __init__(self, t):
             self.t_in = t
@@ -1229,12 +1226,11 @@ def test_trend_se_pocita_z_delsiho_odstupu(nahradni_ha):
         _t_in_drive: dict = {}
 
     k = Falesny()
-    m = M()
-    assert k._trend(m, V(21.0), 0) == 0          # první měření
-    assert k._trend(m, V(21.4), 60) == 1         # proti hodnotě z nuly
-    assert k._trend(m, V(21.0), 120) == 0        # zpátky, žádný posun
+    assert k._trend("obyvak", V(21.0), 0) == 0    # první měření
+    assert k._trend("obyvak", V(21.4), 60) == 1   # proti hodnotě z nuly
+    assert k._trend("obyvak", V(21.0), 120) == 0  # zpátky, žádný posun
     # po pěti minutách se vzorek obnoví, takže se napříště porovnává
     # s touhle hodnotou
-    assert k._trend(m, V(21.5), 400) == 1
-    assert k._trend(m, V(21.5), 500) == 0        # proti vzorku z 400
-    assert k._trend(m, V(21.9), 600) == 1
+    assert k._trend("obyvak", V(21.5), 400) == 1
+    assert k._trend("obyvak", V(21.5), 500) == 0  # proti vzorku z 400
+    assert k._trend("obyvak", V(21.9), 600) == 1

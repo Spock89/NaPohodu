@@ -563,7 +563,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         return False
 
     def _pasmo(self, nast, m, v, pamet, otevreno: bool,
-               cas_s: float = 0.0) -> list[str]:
+               cas_s: float = 0.0, pod_id: str = "") -> list[str]:
         """Stupnice teplotního pásma pro kartu."""
         noc = core._je_noc(self._hodina_ted, nast, bool(m.klid))
         otevrit, zavrit = ((nast.hyst_noc_otevrit, nast.hyst_noc_zavrit)
@@ -578,19 +578,19 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             core.proc_neotevira(v, nast, v.t_in,
                                 m.atributy.get("teplota_max") or v.t_in),
             int(max(0, pamet.rucni_do_s - cas_s) / 60) or None,
-            self._trend(m, v, cas_s), v.t_out)
+            self._trend(pod_id, v, cas_s), v.t_out)
 
     TREND_ODSTUP_S = 5 * 60
 
-    def _trend(self, m, v, cas_s: float) -> int:
+    def _trend(self, pod_id: str, v, cas_s: float) -> int:
         """Kam se teplota hýbe: +1 nahoru, -1 dolů, 0 stojí."""
-        drive = self._t_in_drive.get(m.id)
+        drive = self._t_in_drive.get(pod_id)
         if drive is None:
-            self._t_in_drive[m.id] = (v.t_in, cas_s)
+            self._t_in_drive[pod_id] = (v.t_in, cas_s)
             return 0
         teplota, kdy = drive
         if cas_s - kdy >= self.TREND_ODSTUP_S:
-            self._t_in_drive[m.id] = (v.t_in, cas_s)
+            self._t_in_drive[pod_id] = (v.t_in, cas_s)
         if abs(v.t_in - teplota) < 0.1:
             return 0
         return 1 if v.t_in > teplota else -1
@@ -1392,11 +1392,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # jednou a obě funkce z nich berou totéž, aby nemohly
             # tvrdit každá jiné číslo.
             "teplotni_pasmo": None if not okna else core.pasmo_jen_stupnice(
-                self._pasmo(nast, m, v, pamet, skutecne, cas_s)),
+                self._pasmo(nast, m, v, pamet, skutecne, cas_s,
+                            p.subentry_id)),
             # věta zvlášť, aby ji karta mohla zalomit
             "teplotni_predpoved": None if not okna else core.pasmo_predpoved(
-                self._pasmo(nast, m, v, pamet, skutecne, cas_s)),
-            "teplota_trend": self._trend(m, v, cas_s),
+                self._pasmo(nast, m, v, pamet, skutecne, cas_s,
+                            p.subentry_id)),
+            "teplota_trend": self._trend(p.subentry_id, v, cas_s),
             "pevna_pravidla": core.pevna_pravidla(
                 bool(m.klid),
                 core._je_noc(self._hodina_ted, nast, bool(m.klid)),
