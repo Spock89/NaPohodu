@@ -63,7 +63,7 @@
           "zpravy_kam": "Notify entity, například Telegram nebo mobilní aplikace. U Telegramu vytváří integrace jednu entitu na každý chat, takže příjemce vybereš tady, ne psaním čísla.",
           "souhrn_cas": "Kdy poslat souhrn dne: kolikrát se okno hýbalo, jak dlouho bylo otevřeno, nejvyšší CO2. Podle toho se pozná, jestli jsou prahy dobře.",
           "zpravy_druhy": "Zaškrtni, co tě zajímá. První dny se hodí i běžné otevírání, pak většinou stačí ochrana a souhrn.",
-          "narazove_vetrani": "Když je venku zima a jedna zóna potřebuje vzduch, otevřou se všechna okna naráz a krátce. Průvan vymění vzduch rychleji než dlouhé větrání jedním oknem a stěny se nestihnou vychladit. Kde tomu něco brání — vítr, déšť, noční mez — se prostě neotevře.",
+          "narazove_vetrani": "Když je venku zima a jedna zóna potřebuje vzduch, otevřou se všechna okna naráz a krátce. Průvan vymění vzduch rychleji než dlouhé větrání jedním oknem a stěny se nestihnou vychladit. Kde tomu něco brání — vítr, déšť, pojistky — se prostě neotevře.",
           "narazove_odstup": "O kolik se venkovní teplota musí lišit od cílové — nahoru nebo dolů — aby se přepnulo na nárazové větrání.\n\nV nárazovém režimu se neotvírá kvůli příjemnému počasí, protože venku žádné není. Větrá se jen z důvodu, tedy kvůli CO2, prachu nebo teplotě, a zavře se hned, jakmile důvod pomine — nečeká se na dojetí celého cyklu ani na „Nejkratší dobu držení polohy\".\n\nRežim se přepíná s půlstupňovou hysterezí, aby neposkakoval, když se teplota motá kolem prahu.",
           "pm25_venku": "Prach venku. Podle něj se pozná, jestli má větrání kvůli prachu vůbec smysl — když je venku horší, otevřením se to nezlepší a jen by se větralo dokola. Bez tohohle čidla se řídí jen příznakem smogu.",
           "pm10_venku": "Totéž pro větší částice. Nepovinné.",
@@ -159,7 +159,7 @@
           "zpravy_kam": "Notify entity, například Telegram nebo mobilní aplikace. U Telegramu vytváří integrace jednu entitu na každý chat, takže příjemce vybereš tady, ne psaním čísla.",
           "souhrn_cas": "Kdy poslat souhrn dne: kolikrát se okno hýbalo, jak dlouho bylo otevřeno, nejvyšší CO2. Podle toho se pozná, jestli jsou prahy dobře.",
           "zpravy_druhy": "Zaškrtni, co tě zajímá. První dny se hodí i běžné otevírání, pak většinou stačí ochrana a souhrn.",
-          "narazove_vetrani": "Když je venku zima a jedna zóna potřebuje vzduch, otevřou se všechna okna naráz a krátce. Průvan vymění vzduch rychleji než dlouhé větrání jedním oknem a stěny se nestihnou vychladit. Kde tomu něco brání — vítr, déšť, noční mez — se prostě neotevře.",
+          "narazove_vetrani": "Když je venku zima a jedna zóna potřebuje vzduch, otevřou se všechna okna naráz a krátce. Průvan vymění vzduch rychleji než dlouhé větrání jedním oknem a stěny se nestihnou vychladit. Kde tomu něco brání — vítr, déšť, pojistky — se prostě neotevře.",
           "narazove_odstup": "O kolik se venkovní teplota musí lišit od cílové — nahoru nebo dolů — aby se přepnulo na nárazové větrání.\n\nV nárazovém režimu se neotvírá kvůli příjemnému počasí, protože venku žádné není. Větrá se jen z důvodu, tedy kvůli CO2, prachu nebo teplotě, a zavře se hned, jakmile důvod pomine — nečeká se na dojetí celého cyklu ani na „Nejkratší dobu držení polohy\".\n\nRežim se přepíná s půlstupňovou hysterezí, aby neposkakoval, když se teplota motá kolem prahu.",
           "pm25_venku": "Prach venku. Podle něj se pozná, jestli má větrání kvůli prachu vůbec smysl — když je venku horší, otevřením se to nezlepší a jen by se větralo dokola. Bez tohohle čidla se řídí jen příznakem smogu.",
           "pm10_venku": "Totéž pro větší částice. Nepovinné.",
@@ -315,7 +315,11 @@
             "mez_horni": "Pojistka: nepřehřát nad",
             "pro_pohodu": "Otevírat i pro pohodu",
             "zvlhcovac_ve_spanku": "Zvlhčovat i ve spánku",
-            "rezerva_venku": "Venku musí být za dojezdem o"
+            "rezerva_venku": "Venku musí být za dojezdem o",
+            "prach_dosah": "Prach z tohoto zvlhčovače neberu vážně",
+            "prach_mistnosti": "   a to v těchto místnostech",
+            "vlhkost_dosah": "Nezvlhčovat při otevřeném okně",
+            "vlhkost_mistnosti": "   a to v těchto místnostech"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -340,7 +344,7 @@
             "vynuceno_okno": "Přepínače, kterými okno otevřeš natvrdo. Přebijí vzduch i teplotu, ale ne vítr a déšť.",
             "co2_otevrit": "Nad touto hodnotou se začne větrat. Bere se nejhorší hodnota z celé oblasti. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "co2_zavrit": "Pod touto hodnotou je vyvětráno. Mezi prahy se schválně nic neděje. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "co2_noc": "V noci je práh vyšší, aby se neotvíralo kvůli maličkosti. Ve spánku navíc platí jako hranice pro zavření: okno zůstane otevřené v pásmu mezi tímhle prahem a krizovým, a jakmile CO2 spadne pod něj, zavře se.",
+            "co2_noc": "V noci je práh pro otevření vyšší, aby se neotvíralo kvůli maličkosti. Ve spánku se neotvírá ani podle něj — tam rozhoduje až krizový práh.\n\nZavírá se po vyvětrání na „Zavřít pod CO2“, stejně jako ve dne; jedna hodnota na zavírání místo dvou.",
             "co2_noc_krize": "Nad tímhle se otevře i v noci a ve spánku, protože dusno už je horší než rámus okna. Ve spánku je to jediný důvod, proč se okno otevře.",
             "dest_prah": "Nad touto intenzitou deště se okno zavře. Nula znamená, že déšť vadí vždycky. Vysoká hodnota, že tomuhle oknu déšť nevadí — třeba když je pod stříškou.",
             "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené.",
@@ -376,7 +380,11 @@
             "mez_horni": "Absolutní horní mez proti přehřátí: nad ní se okno zavře, ať je otevřené z jakéhokoli důvodu.",
             "pro_pohodu": "Otevřít smí i tehdy, když k tomu není důvod — vzduch je v pořádku, teplota v pásmu a venku je příjemně.\n\nVypnutím se okno bude otevírat jen z důvodu: kvůli CO2, prachu, chlazení nebo ohřevu.",
             "zvlhcovac_ve_spanku": "Zvlhčovač smí běžet i při zapnutém spánku. Vypni, když ho v ložnici slyšíš.",
-            "rezerva_venku": "O kolik musí být venkovní vzduch za dojezdem pásma, aby se větrání vůbec spustilo — při chlazení o tolik pod dolní hranou, při ohřevu o tolik nad horní.\n\nBez té rezervy se cyklus doplazí k hraně a nikdy ji nepřejde, takže větrání dojezd nedokončí a jen vystydne."
+            "rezerva_venku": "O kolik musí být venkovní vzduch za dojezdem pásma, aby se větrání vůbec spustilo — při chlazení o tolik pod dolní hranou, při ohřevu o tolik nad horní.\n\nBez té rezervy se cyklus doplazí k hraně a nikdy ji nepřejde, takže větrání dojezd nedokončí a jen vystydne.",
+            "prach_dosah": "Ultrazvukový zvlhčovač rozprašuje minerály z vody a čidla je vidí jako prach. Kvůli tomu by se větralo a čistilo, přestože je to jeho vlastní aerosol — a ten se vyvětrat nedá.\n\nAerosol se nedrží zóny, protože zóna je definovaná sdílením vzduchu kvůli CO2. Proto se dosah nastavuje zvlášť; ve výchozím stavu platí pro celý byt.",
+            "prach_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“. Pro velký byt, kde je něco mezi zónou a celkem.",
+            "vlhkost_dosah": "Zvlhčovat při otevřeném okně znamená zvlhčovat ulici. Vlhkost se ale šíří dál než jen do vlastní místnosti, takže se dá určit, odkud se otevřené okno počítá.\n\nVe výchozím stavu je to jeho zóna — okno na druhém konci bytu by zvlhčovač v ložnici zastavovat nemělo.",
+            "vlhkost_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“."
           },
           "submit": "Další"
         },
@@ -491,7 +499,11 @@
             "mez_horni": "Pojistka: nepřehřát nad",
             "pro_pohodu": "Otevírat i pro pohodu",
             "zvlhcovac_ve_spanku": "Zvlhčovat i ve spánku",
-            "rezerva_venku": "Venku musí být za dojezdem o"
+            "rezerva_venku": "Venku musí být za dojezdem o",
+            "prach_dosah": "Prach z tohoto zvlhčovače neberu vážně",
+            "prach_mistnosti": "   a to v těchto místnostech",
+            "vlhkost_dosah": "Nezvlhčovat při otevřeném okně",
+            "vlhkost_mistnosti": "   a to v těchto místnostech"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -526,7 +538,7 @@
             "vynuceno_okno": "Přepínače, kterými okno otevřeš natvrdo. Přebijí vzduch i teplotu, ale ne vítr a déšť.",
             "co2_otevrit": "Nad touto hodnotou se začne větrat. Bere se nejhorší hodnota z celé oblasti. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
             "co2_zavrit": "Pod touto hodnotou je vyvětráno. Mezi prahy se schválně nic neděje. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "co2_noc": "V noci je práh vyšší, aby se neotvíralo kvůli maličkosti. Ve spánku navíc platí jako hranice pro zavření: okno zůstane otevřené v pásmu mezi tímhle prahem a krizovým, a jakmile CO2 spadne pod něj, zavře se.",
+            "co2_noc": "V noci je práh pro otevření vyšší, aby se neotvíralo kvůli maličkosti. Ve spánku se neotvírá ani podle něj — tam rozhoduje až krizový práh.\n\nZavírá se po vyvětrání na „Zavřít pod CO2“, stejně jako ve dne; jedna hodnota na zavírání místo dvou.",
             "co2_noc_krize": "Nad tímhle se otevře i v noci a ve spánku, protože dusno už je horší než rámus okna. Ve spánku je to jediný důvod, proč se okno otevře.",
             "dest_prah": "Nad touto intenzitou deště se okno zavře. Nula znamená, že déšť vadí vždycky. Vysoká hodnota, že tomuhle oknu déšť nevadí — třeba když je pod stříškou.",
             "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené.",
@@ -562,7 +574,11 @@
             "mez_horni": "Absolutní horní mez proti přehřátí: nad ní se okno zavře, ať je otevřené z jakéhokoli důvodu.",
             "pro_pohodu": "Otevřít smí i tehdy, když k tomu není důvod — vzduch je v pořádku, teplota v pásmu a venku je příjemně.\n\nVypnutím se okno bude otevírat jen z důvodu: kvůli CO2, prachu, chlazení nebo ohřevu.",
             "zvlhcovac_ve_spanku": "Zvlhčovač smí běžet i při zapnutém spánku. Vypni, když ho v ložnici slyšíš.",
-            "rezerva_venku": "O kolik musí být venkovní vzduch za dojezdem pásma, aby se větrání vůbec spustilo — při chlazení o tolik pod dolní hranou, při ohřevu o tolik nad horní.\n\nBez té rezervy se cyklus doplazí k hraně a nikdy ji nepřejde, takže větrání dojezd nedokončí a jen vystydne."
+            "rezerva_venku": "O kolik musí být venkovní vzduch za dojezdem pásma, aby se větrání vůbec spustilo — při chlazení o tolik pod dolní hranou, při ohřevu o tolik nad horní.\n\nBez té rezervy se cyklus doplazí k hraně a nikdy ji nepřejde, takže větrání dojezd nedokončí a jen vystydne.",
+            "prach_dosah": "Ultrazvukový zvlhčovač rozprašuje minerály z vody a čidla je vidí jako prach. Kvůli tomu by se větralo a čistilo, přestože je to jeho vlastní aerosol — a ten se vyvětrat nedá.\n\nAerosol se nedrží zóny, protože zóna je definovaná sdílením vzduchu kvůli CO2. Proto se dosah nastavuje zvlášť; ve výchozím stavu platí pro celý byt.",
+            "prach_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“. Pro velký byt, kde je něco mezi zónou a celkem.",
+            "vlhkost_dosah": "Zvlhčovat při otevřeném okně znamená zvlhčovat ulici. Vlhkost se ale šíří dál než jen do vlastní místnosti, takže se dá určit, odkud se otevřené okno počítá.\n\nVe výchozím stavu je to jeho zóna — okno na druhém konci bytu by zvlhčovač v ložnici zastavovat nemělo.",
+            "vlhkost_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“."
           },
           "submit": "Další"
         },
@@ -808,6 +824,14 @@
         "dvojsklo": "Dvojsklo",
         "starsi_dvojsklo": "Starší dvojsklo",
         "jednoduche": "Jednoduché zasklení"
+      }
+    },
+    "dosah": {
+      "options": {
+        "mistnost": "Jen v jeho místnosti",
+        "zona": "V jeho zóně",
+        "vybrane": "Ve vybraných místnostech",
+        "byt": "V celém bytě"
       }
     }
   },

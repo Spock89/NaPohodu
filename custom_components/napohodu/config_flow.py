@@ -445,7 +445,7 @@ def _stav_vyber(nazvy: list[str]):
     )
 
 
-def _schema_mistnost() -> vol.Schema:
+def _schema_mistnost(mistnosti: list[dict] | None = None) -> vol.Schema:
     return vol.Schema(
     {
         # --- Místnost a její čidla ---
@@ -493,6 +493,12 @@ def _schema_mistnost() -> vol.Schema:
             selector.BooleanSelector(),
         vol.Optional(c.CONF_ZVLHCOVAC_VE_SPANKU, default=True):
             selector.BooleanSelector(),
+        vol.Optional(c.CONF_PRACH_DOSAH, default="byt"): _volba(
+            c.DOSAHY, "dosah"),
+        vol.Optional(c.CONF_PRACH_MISTNOSTI): _vyber(mistnosti or []),
+        vol.Optional(c.CONF_VLHKOST_DOSAH, default="zona"): _volba(
+            c.DOSAHY, "dosah"),
+        vol.Optional(c.CONF_VLHKOST_MISTNOSTI): _vyber(mistnosti or []),
         vol.Optional(c.CONF_CHLAZENI_MIN_VENKU, default=7.0):
             _cislo(-20, 10, 0.5),
         vol.Optional(c.CONF_DEST_PRAH, default=0.3): _cislo(0, 20, 0.1, "mm/h"),
@@ -647,8 +653,17 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         return self.async_show_form(
             step_id="zaklad",
             data_schema=self.add_suggested_values_to_schema(
-                _schema_mistnost(), user_input or {}),
+                _schema_mistnost(self._ostatni_mistnosti()),
+                user_input or {}),
             errors=chyby)
+
+    def _ostatni_mistnosti(self) -> list[dict]:
+        """Místnosti k výběru dosahu. Ukládá se identifikátor, aby
+        přejmenování odkaz nerozbilo."""
+        vstup = self._get_entry()
+        return [{"value": pod.subentry_id, "label": pod.title}
+                for pod in vstup.subentries.values()
+                if pod.subentry_type == c.PODENTITA_MISTNOST]
 
     def _jmeno_zaluzie(self, eid: str, poradi: int) -> str:
         """Čitelné jméno žaluzie pro popisky polí."""
@@ -802,7 +817,7 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=self.add_suggested_values_to_schema(
-                _schema_mistnost()
+                _schema_mistnost(self._ostatni_mistnosti())
                 .extend(SCHEMA_PRITOMNOST.schema)
                 .extend(SCHEMA_INDICIE.schema),
                 {**self._platne(pod.subentry_id, self._data),

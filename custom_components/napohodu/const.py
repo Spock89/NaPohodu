@@ -29,6 +29,14 @@ CONF_MEZ_HORNI = "mez_horni"
 CONF_PRO_POHODU = "pro_pohodu"
 # Smí zvlhčovač běžet i ve spánku?
 CONF_ZVLHCOVAC_VE_SPANKU = "zvlhcovac_ve_spanku"
+# Kam až dosáhne aerosol ze zvlhčovače a kam až na něj působí otevřené
+# okno. Zóna je definovaná sdílením vzduchu kvůli CO2 a jemné kapičky
+# ani vlhkost se jí nedrží.
+CONF_PRACH_DOSAH = "prach_dosah"
+CONF_PRACH_MISTNOSTI = "prach_mistnosti"
+CONF_VLHKOST_DOSAH = "vlhkost_dosah"
+CONF_VLHKOST_MISTNOSTI = "vlhkost_mistnosti"
+DOSAHY = ["mistnost", "zona", "vybrane", "byt"]
 # Po marném větrání se čeká na změnu venkovních podmínek (celý byt).
 CONF_ZMENA_PODMINEK = "zmena_podminek"
 CONF_NEJDRIV_ZNOVU = "nejdriv_znovu_min"

@@ -40,24 +40,25 @@ from .const import (
     CONF_NOC_OD, CONF_NOC_PREDSTIH, CONF_NOC_UTLUM, CONF_OCHOTA,
     CONF_ODCHYLKA, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T, CONF_OKNA,
     CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU, CONF_PM_CISTO,
-    CONF_PM_PLATNY, CONF_PM_SPATNE, CONF_PRAH_VYKONU, CONF_PRITOMNOST,
-    CONF_PROJEZD_M, CONF_PRO_POHODU, CONF_PRYC_PO, CONF_PRYC_UTLUM,
-    CONF_REZERVA_VENKU, CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU,
-    CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_RUCNI_KLID,
-    CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SEZONA_REZIM,
-    CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG, CONF_SOUHRN_CAS,
-    CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_CHOVANI,
-    CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC,
-    CONF_STINENI_REZIM, CONF_TEPLOTY, CONF_TOPENI_OBNOVA,
-    CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
-    CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT, CONF_VITR, CONF_VITR_KLID,
-    CONF_VITR_PRAH, CONF_VYCHOZI_KDY, CONF_VYNUCENO_M, CONF_ZALUZIE,
-    CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZASKLENI, CONF_ZDROJ_OBSAZENOSTI,
-    CONF_ZIMA_NAJEZD, CONF_ZIMA_O_KOLIK, CONF_ZIMA_PRAH,
-    CONF_ZMENA_PODMINEK, CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY,
-    CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC, CONF_ZVLHCOVAC_KDY,
-    CONF_ZVLHCOVAC_VE_SPANKU, DOMAIN, INTERVAL_S, PODENTITA_KLIMA,
-    PODENTITA_MISTNOST, PODENTITA_ZONA, ZASKLENI_PODIL,
+    CONF_PM_PLATNY, CONF_PM_SPATNE, CONF_PRACH_DOSAH, CONF_PRACH_MISTNOSTI,
+    CONF_PRAH_VYKONU, CONF_PRITOMNOST, CONF_PROJEZD_M, CONF_PRO_POHODU,
+    CONF_PRYC_PO, CONF_PRYC_UTLUM, CONF_REZERVA_VENKU, CONF_RH_MAX,
+    CONF_RH_MIN, CONF_RH_VENKU, CONF_RH_VENKU_M, CONF_RH_VNITRNI,
+    CONF_RUCNI_KLID, CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH,
+    CONF_SEZONA_REZIM, CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG,
+    CONF_SOUHRN_CAS, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
+    CONF_STINENI_CHOVANI, CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH,
+    CONF_STINENI_PRYC, CONF_STINENI_REZIM, CONF_TEPLOTY,
+    CONF_TOPENI_OBNOVA, CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA,
+    CONF_T_VENKU, CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT, CONF_VITR,
+    CONF_VITR_KLID, CONF_VITR_PRAH, CONF_VLHKOST_DOSAH,
+    CONF_VLHKOST_MISTNOSTI, CONF_VYCHOZI_KDY, CONF_VYNUCENO_M,
+    CONF_ZALUZIE, CONF_ZALUZIE_STARE, CONF_ZARENI, CONF_ZASKLENI,
+    CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD, CONF_ZIMA_O_KOLIK,
+    CONF_ZIMA_PRAH, CONF_ZMENA_PODMINEK, CONF_ZNACKA_MIMO,
+    CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY, CONF_ZVLHCOVAC,
+    CONF_ZVLHCOVAC_KDY, CONF_ZVLHCOVAC_VE_SPANKU, DOMAIN, INTERVAL_S,
+    PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA, ZASKLENI_PODIL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -141,6 +142,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # kam se hýbe. Kratší odstup by blikal, protože menší posun než
         # desetina je šum čidla.
         self._t_in_drive: dict[str, tuple[float, float]] = {}
+        # popis okruhů z posledního cyklu, kvůli dosahu „v jeho zóně"
+        self._okruhy_popis: list[dict] = []
         self._rh_out_posledni: float | None = None
         self._hodina_ted: float = 12.0
         self._noc_od: float = 22.0
@@ -533,35 +536,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         }
         return self.vitr_blokuje
 
-    def _zvlhcuje_v_okruhu(self, okruh: dict, pod_id: str) -> bool:
-        """Běží v téhle místnosti nebo v zóně, se kterou dýchá, zvlhčovač?
-
-        Zóna s otevřenými dveřmi je ve skutečnosti jedna místnost
-        přepažená průchodem, takže se aerosol z jednoho zvlhčovače
-        objeví na čidlech obou.
-        """
-        if pod_id in self.zvlhcuje:
-            return True
-        if not okruh.get("dvere_otevrene", True):
-            return False
-        return any(x.subentry_id in self.zvlhcuje
-                   for x in okruh.get("cleni", []))
-
-    def _okno_v_okruhu(self, okruh: dict, pod_id: str) -> bool:
-        """Je otevřené okno tady, nebo vedle za otevřenými dveřmi?
-
-        Zvlhčovat při otevřeném okně vedle je totéž jako zvlhčovat
-        ulici — vzduch si zóna vyměňuje celá.
-        """
-        if not okruh.get("dvere_otevrene", True):
-            return False
-        for x in okruh.get("cleni", []):
-            if x.subentry_id == pod_id:
-                continue
-            if self.okna_stav.get(x.subentry_id) is True:
-                return True
-        return False
-
     def _pasmo(self, nast, m, v, pamet, otevreno: bool,
                cas_s: float = 0.0, pod_id: str = "") -> list[str]:
         """Stupnice teplotního pásma pro kartu."""
@@ -580,8 +554,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             int(max(0, pamet.rucni_do_s - cas_s) / 60) or None,
             self._trend(pod_id, v, cas_s), v.t_out)
 
-    TREND_ODSTUP_S = 5 * 60
-
     @staticmethod
     def _cislo_z(hodnota) -> float | None:
         """Číslo z atributu entity, nebo nic."""
@@ -589,6 +561,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return float(hodnota)
         except (TypeError, ValueError):
             return None
+
+    TREND_ODSTUP_S = 5 * 60
 
     def _trend(self, pod_id: str, v, cas_s: float) -> int:
         """Kam se teplota hýbe: +1 nahoru, -1 dolů, 0 stojí."""
@@ -602,6 +576,46 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if abs(v.t_in - teplota) < 0.1:
             return 0
         return 1 if v.t_in > teplota else -1
+
+    def _dosah(self, zdroj: str, klic_volby: str, klic_seznamu: str,
+               vychozi: str) -> set[str]:
+        """Kam až sahá vliv zvlhčovače z místnosti „zdroj".
+
+        Zóna je definovaná sdílením vzduchu kvůli CO2, jenže jemný
+        aerosol ani vlhkost se jí nedrží — proto se dosah nastavuje
+        zvlášť a zóna je jen jedna z možností.
+        """
+        pod = self.entry.subentries.get(zdroj)
+        data = pod.data if pod else {}
+        jak = data.get(klic_volby, vychozi)
+        if jak == "mistnost":
+            return {zdroj}
+        if jak == "vybrane":
+            return {zdroj, *(data.get(klic_seznamu) or [])}
+        if jak == "zona":
+            return self._zona_mistnosti(zdroj)
+        return set(self.mistnosti)          # celý byt
+
+    def _zona_mistnosti(self, pod_id: str) -> set[str]:
+        """Místnosti, se kterými tahle dýchá za otevřenými dveřmi."""
+        for o in self._okruhy_popis:
+            cleni = {x.subentry_id for x in o.get("cleni", [])}
+            if pod_id in cleni and o.get("dvere_otevrene", True):
+                return cleni
+        return {pod_id}
+
+    def _zvlhcuje_na(self, pod_id: str) -> bool:
+        """Dosáhne sem aerosol z nějakého běžícího zvlhčovače?"""
+        return any(pod_id in self._dosah(zdroj, CONF_PRACH_DOSAH,
+                                         CONF_PRACH_MISTNOSTI, "byt")
+                   for zdroj in self.zvlhcuje)
+
+    def _okno_brani_zvlhcovani(self, pod_id: str) -> bool:
+        """Je otevřené okno tam, odkud to na vlhkost tady dosáhne?"""
+        dosah = self._dosah(pod_id, CONF_VLHKOST_DOSAH,
+                            CONF_VLHKOST_MISTNOSTI, "zona")
+        return any(self.okna_stav.get(x) is True
+                   for x in dosah if x != pod_id)
 
     def _prehled_bytu(self, g: dict) -> list[str]:
         """Globální nastavení, ať je na dashboardu vidět, co platí."""
@@ -782,6 +796,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                                "pod": None, "cleni": [u["pod"]]})
 
         # sdílený vzduch: rozhoduje nejhorší hodnota v okruhu
+        # popis okruhů si schováme, dosah „v jeho zóně" ho potřebuje
+        self._okruhy_popis = okruhy
         for o in okruhy:
             co2, pm25, pm10, pm_platny, spanek = [], [], [], None, False
             for mp in o["cleni"]:
@@ -1113,9 +1129,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Zvlhčovač v jedné místnosti zóny zvedne prach i vedle,
             # pokud jsou dveře otevřené — vzduch je společný, takže
             # i ten vlastní aerosol se musí ignorovat společně.
-            pm25=0.0 if self._zvlhcuje_v_okruhu(okruh, p.subentry_id)
+            pm25=0.0 if self._zvlhcuje_na(p.subentry_id)
             else okruh["pm25"],
-            pm10=0.0 if self._zvlhcuje_v_okruhu(okruh, p.subentry_id)
+            pm10=0.0 if self._zvlhcuje_na(p.subentry_id)
             else okruh["pm10"],
             pm_platny=okruh["pm_platny"],
             pm25_venku=self._cislo(g.get(CONF_PM25_VENKU)),
@@ -1434,7 +1450,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             ((bool(okna) or bool(kontakty)) and skutecne)
             if (okna or kontakty) else None)
         okno_fakt = (self.okna_stav[p.subentry_id] is True
-                     or self._okno_v_okruhu(okruh, p.subentry_id))
+                     or self._okno_brani_zvlhcovani(p.subentry_id))
         await self._pomocnici_krok(p, d, m, okruh, v.t_in, t_out,
                                    okno_fakt, doma)
         await self._topeni_krok(p, d, m, cas_s)
@@ -1582,7 +1598,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if cisticka:
             # Totéž pro čističku: honit aerosol z vlastního zvlhčovače
             # znamená držet ji v jednom kole a nic tím nevyčistit.
-            zvlhcuje = p.subentry_id in self.zvlhcuje
+            zvlhcuje = self._zvlhcuje_na(p.subentry_id)
             pm = 0 if zvlhcuje else (okruh["pm25"] or 0)
             pm10 = 0 if zvlhcuje else (okruh["pm10"] or 0)
             # Vypíná se níž, než zapíná, aby nepřepínala na hraně.
@@ -1598,7 +1614,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             m.atributy["cisticka"] = await vyk.zarizeni(
                 cisticka, zapnout, "čistička")
         m.atributy["prach_ze_zvlhcovace"] = (
-            p.subentry_id in self.zvlhcuje or None)
+            self._zvlhcuje_na(p.subentry_id) or None)
         m.atributy["cisticka_bezi"] = self._stav_pomocnika(
             d.get(CONF_CISTICKA), vyk.stav.zarizeni.get("čistička"))
 

@@ -238,6 +238,7 @@ def test_vlhkost_se_ukazuje_i_bez_zarizeni(nahradni_ha):
         _stav_pomocnika = staticmethod(
             ko.NaPohoduCoordinator._stav_pomocnika)
         zvlhcuje: set = set()
+        _zvlhcuje_na = staticmethod(lambda pod_id: False)
         vykonavaci: dict = {}
         hass = None
 
@@ -936,6 +937,7 @@ def test_zvlhcovac_respektuje_okno_a_pritomnost(nahradni_ha):
             hodnota = staticmethod(lambda a, b, vych: vych)
             vykonavaci = {"id": Vyk()}
             zvlhcuje: set = set()
+            _zvlhcuje_na = staticmethod(lambda pod_id: False)
             hass = None
 
         m = Mistnost()
@@ -963,18 +965,6 @@ def test_zvlhcovac_respektuje_okno_a_pritomnost(nahradni_ha):
     assert "nikdo není doma" in m.atributy["zvlhcovac_proc"]
 
 
-def test_prach_ze_zvlhcovace_se_nepocita(nahradni_ha):
-    """Ultrazvukový zvlhčovač rozprašuje minerály a čidlo je vidí jako
-    prach. Větrat ani čistit kvůli tomu nemá smysl."""
-    import pathlib
-    ko = pathlib.Path(
-        "custom_components/napohodu/coordinator.py").read_text()
-    # prach se pro rozhodování vynuluje, a to v celé zóně
-    assert "pm25=0.0 if self._zvlhcuje_v_okruhu" in ko
-    assert "def _zvlhcuje_v_okruhu" in ko
-    # a čistička na vlastní aerosol taky nereaguje
-    assert "zvlhcuje = p.subentry_id in self.zvlhcuje" in ko
-    assert '"prach_ze_zvlhcovace"' in ko
 
 
 def test_cekani_po_marnem_je_videt(nahradni_ha):
@@ -1115,6 +1105,7 @@ def test_vynulovani_zrusi_i_cekani(nahradni_ha):
             pm_otevreno_od_s=999999.0)}
         hodnoty: dict = {}
         zvlhcuje: set = set()
+        _zvlhcuje_na = staticmethod(lambda pod_id: False)
         vykonavaci = {"id": Vyk()}
 
     k = Falesny()
@@ -1129,46 +1120,6 @@ def test_vynulovani_zrusi_i_cekani(nahradni_ha):
     assert k.vykonavaci["id"].stav.posledni_cas_s < 0
 
 
-def test_zona_se_chova_jako_jedna_mistnost(nahradni_ha):
-    """Kuchyň a obývák za otevřenými dveřmi mají společný vzduch:
-    zvlhčovač v jednom zvedne prach v druhém a otevřené okno v jednom
-    znamená, že druhý nemá co zvlhčovat."""
-    import importlib
-
-    ko = importlib.import_module("napohodu.coordinator")
-
-    class Pod:
-        def __init__(self, pid):
-            self.subentry_id = pid
-
-    class Stav:
-        def __init__(self, povel=None):
-            self.posledni_povel = povel
-
-    class Vyk:
-        def __init__(self, povel=None):
-            self.stav = Stav(povel)
-
-    class Falesny:
-        _zvlhcuje_v_okruhu = ko.NaPohoduCoordinator._zvlhcuje_v_okruhu
-        _okno_v_okruhu = ko.NaPohoduCoordinator._okno_v_okruhu
-        zvlhcuje = {"kuchyne"}
-        vykonavaci = {"kuchyne": Vyk("otevrit"), "obyvak": Vyk()}
-        # skutečný stav okna, jak si ho místnosti zapisují
-        okna_stav = {"kuchyne": True, "obyvak": False}
-
-    k = Falesny()
-    okruh = {"cleni": [Pod("kuchyne"), Pod("obyvak")],
-             "dvere_otevrene": True}
-
-    # obývák vidí zvlhčovač i okno kuchyně
-    assert k._zvlhcuje_v_okruhu(okruh, "obyvak") is True
-    assert k._okno_v_okruhu(okruh, "obyvak") is True
-
-    # se zavřenými dveřmi se neovlivňují
-    zavreno = {**okruh, "dvere_otevrene": False}
-    assert k._zvlhcuje_v_okruhu(zavreno, "obyvak") is False
-    assert k._okno_v_okruhu(zavreno, "obyvak") is False
 
 
 def test_kontakt_okna_plati_i_bez_ovladani(nahradni_ha):
@@ -1272,3 +1223,97 @@ def test_topeni_porovnava_s_hlavici_ne_s_pameti(nahradni_ha):
     asyncio.run(v.topeni(["climate.h"], povel, 10000))
 
     assert volani and volani[-1] == ("set_temperature", 22.9)
+
+
+def test_dosah_zvlhcovace_jde_nastavit(nahradni_ha):
+    """Aerosol se nedrží zóny, protože zóna je definovaná sdílením
+    vzduchu kvůli CO2. Proto má dosah vlastní volbu."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    c = importlib.import_module("napohodu.const")
+
+    class Pod:
+        def __init__(self, data):
+            self.data = data
+
+    class Vstup:
+        def __init__(self, data):
+            self.subentries = {"loznice": Pod(data)}
+
+    class Clen:
+        def __init__(self, pid):
+            self.subentry_id = pid
+
+    def postav(data):
+        class Falesny:
+            _dosah = ko.NaPohoduCoordinator._dosah
+            _zona_mistnosti = ko.NaPohoduCoordinator._zona_mistnosti
+            _zvlhcuje_na = ko.NaPohoduCoordinator._zvlhcuje_na
+            entry = Vstup(data)
+            mistnosti = {"loznice": None, "obyvak": None,
+                         "kuchyne": None, "dilna": None}
+            zvlhcuje = {"loznice"}
+            _okruhy_popis = [{"cleni": [Clen("loznice"), Clen("obyvak")],
+                              "dvere_otevrene": True}]
+        return Falesny()
+
+    jen = postav({c.CONF_PRACH_DOSAH: "mistnost"})
+    assert jen._zvlhcuje_na("loznice") is True
+    assert jen._zvlhcuje_na("obyvak") is False
+
+    zona = postav({c.CONF_PRACH_DOSAH: "zona"})
+    assert zona._zvlhcuje_na("obyvak") is True
+    assert zona._zvlhcuje_na("dilna") is False
+
+    vybrane = postav({c.CONF_PRACH_DOSAH: "vybrane",
+                      c.CONF_PRACH_MISTNOSTI: ["dilna"]})
+    assert vybrane._zvlhcuje_na("dilna") is True
+    assert vybrane._zvlhcuje_na("obyvak") is False
+
+    # výchozí je celý byt: prach putuje dál než vlhkost a vyvětrat ho
+    # stejně nejde
+    byt = postav({})
+    assert byt._zvlhcuje_na("kuchyne") is True
+
+
+def test_dosah_vlhkosti_ma_vlastni_vychozi(nahradni_ha):
+    """Okno na druhém konci bytu nemá zastavovat zvlhčovač v ložnici,
+    takže vlhkost má ve výchozím stavu jen zónu."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    c = importlib.import_module("napohodu.const")
+
+    class Pod:
+        def __init__(self, data):
+            self.data = data
+
+    class Clen:
+        def __init__(self, pid):
+            self.subentry_id = pid
+
+    def postav(data, okna):
+        class Falesny:
+            _dosah = ko.NaPohoduCoordinator._dosah
+            _zona_mistnosti = ko.NaPohoduCoordinator._zona_mistnosti
+            _okno_brani_zvlhcovani = (
+                ko.NaPohoduCoordinator._okno_brani_zvlhcovani)
+            entry = type("E", (), {"subentries": {"loznice": Pod(data)}})()
+            mistnosti = {"loznice": None, "obyvak": None, "dilna": None}
+            okna_stav = okna
+            _okruhy_popis = [{"cleni": [Clen("loznice"), Clen("obyvak")],
+                              "dvere_otevrene": True}]
+        return Falesny()
+
+    # výchozí zóna: okno v obýváku brání, v dílně ne
+    assert postav({}, {"obyvak": True})._okno_brani_zvlhcovani("loznice")
+    assert not postav({}, {"dilna": True})._okno_brani_zvlhcovani("loznice")
+
+    # na celý byt brání i dílna
+    cely = postav({c.CONF_VLHKOST_DOSAH: "byt"}, {"dilna": True})
+    assert cely._okno_brani_zvlhcovani("loznice")
+
+    # jen vlastní místnost: cizí okna nevadí
+    sam = postav({c.CONF_VLHKOST_DOSAH: "mistnost"}, {"obyvak": True})
+    assert not sam._okno_brani_zvlhcovani("loznice")

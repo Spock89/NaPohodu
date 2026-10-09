@@ -429,20 +429,25 @@ zvolenou dobu vysokou teplotu, aby ventil zůstal plně otevřený a rozvod
 se odvzdušnil sám. Přebíjí i otevřené okno, protože je to jednorázová
 věc. Nula hodin znamená neodvzdušňovat.
 
-### Zóna se chová jako jedna místnost
+### Kam až dosáhne zvlhčovač
 
-Místnosti, které spolu dýchají a nemají mezi sebou zavřené dveře, mají
-společný vzduch — a tak se s nimi i zachází:
+Ultrazvukový zvlhčovač rozprašuje minerály z vody a čidla je vidí jako
+prach. Kvůli tomu by se větralo a čistilo, přestože je to jeho vlastní
+aerosol — a ten se vyvětrat nedá. Naopak otevřené okno jinde v bytě
+hýbe vlhkostí v místnosti, kde zvlhčovač stojí.
 
-- **zvlhčovač se nezapne, když je otevřené okno kdekoli v zóně**, ne
-  jen v jeho místnosti; zvlhčovat při větrání vedle je totéž jako
-  zvlhčovat ulici. Platí to i pro okna, která neovládáme — stačí mít
-  u místnosti nastavený kontakt, a ten pak rozhoduje oběma směry, tedy
-  i o tom, že je zavřeno,
-- **prach z ultrazvukového zvlhčovače se ignoruje v celé zóně**, jinak
-  by aerosol z obýváku zavřel okno v kuchyni.
+Zóna na to nestačí, protože je definovaná sdílením vzduchu kvůli CO2 a
+ani aerosol, ani vlhkost se jí nedrží. Obojí má proto **vlastní volbu
+dosahu** se čtyřmi možnostmi: jen vlastní místnost, zóna, vyjmenované
+místnosti (pro velký byt, kde je něco mezi zónou a celkem) a celý byt.
 
-Zavřené dveře to ruší, protože pak si vzduch zóna nevyměňuje.
+Výchozí hodnoty jsou nesouměrné schválně:
+
+- **prach z tohoto zvlhčovače neberu vážně v celém bytě**, protože
+  aerosol putuje dál a falešné větrání kvůli němu je horší chyba než
+  zbytečně nezvlhčená ložnice,
+- **nezvlhčovat při otevřeném okně v jeho zóně**, aby okno na druhém
+  konci bytu nezastavovalo zvlhčovač v ložnici.
 
 ### Zvlhčovač a orosená okna
 

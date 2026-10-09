@@ -394,12 +394,21 @@ UI_POLE = {"CONF_KARTA_YAML", "CONF_NAZEV_STAVU", "CONF_SEKVENCE",
            "CONF_STAVY_TEXT", "CONF_TIMEOUT", "CONF_NAZEV", "CONF_DALSI",
            "CONF_PORADI", "CONF_MISTNOSTI", "CONF_SOUSEDI",
            "CONF_ZALUZIE", "CONF_STINENI_MAPA",
-           # ukládá krok se stavy žaluzií, ne pole ve formuláři
+           # ukládají se krokem se stavy žaluzií, ne polem ve formuláři
            "CONF_STINENI_CHOVANI"}
+# Chování žaluzií se ukládá krokem, ne polem ve formuláři: klíče se
+# zapisují do slovníku „chovani". Vyjmenovávat je ručně znamenalo
+# doplňovat seznam při každém novém.
+UI_POLE |= set(re.findall(r"chovani[^\n]*\[c\.(CONF_\w+)\]", cf_kod))
 CTENO_JINAK = set(re.findall(r"(?:nej|hodnota)\(\s*(?:\w+,\s*)?(CONF_\w+)",
                              kod_mimo_flow))
 ve_form = set(re.findall(r"vol\.\w+\(c\.(CONF_\w+)", cf_kod))
-cte = set(re.findall(r"\.get\((CONF_\w+)", kod_mimo_flow)) | CTENO_JINAK
+# Klíč se čte buď přímo přes .get(), nebo se předává jako argument
+# funkci, která to udělá za nás — obojí je čtení.
+cte = (set(re.findall(r"\.get\((CONF_\w+)", kod_mimo_flow))
+       | set(re.findall(r"[(,]\s*(CONF_\w+),", kod_mimo_flow))
+       | set(re.findall(r"[(,]\s*(CONF_\w+)\s*,\s*\"", kod_mimo_flow))
+       | CTENO_JINAK)
 for k in sorted(cte - ve_form):
     if k.endswith("_STARE") or k in UI_POLE:
         continue
