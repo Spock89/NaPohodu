@@ -1102,7 +1102,8 @@ def test_dve_desetiny_nad_cilem_neni_chlazeni():
 def test_bez_ucinku_se_zavre():
     """Marně otevřené okno v zimě stojí teplo a nic za to nevrací."""
     p = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz",
-              ucinek_od_s=100000 - 1800, ucinek_co2=1100, ucinek_t_in=21.0)
+              ucinek_od_s=100000 - 1800, ucinek_co2=1100,
+              ucinek_t_in=21.0, ucinek_bez_zlepseni=1)
     r = rozhodni(stary(co2=1100, t_in=21.0, t_in_max=21.2, t_out=12.0,
                        cil=22.0, hodina=14.0), p, N)
     assert r.akce is Akce.ZAVRIT and r.kod == "bez_ucinku"
@@ -1113,7 +1114,7 @@ def test_zlepseni_vetra_dal():
     for co2, t_in in ((900, 21.0), (1100, 21.5)):
         p = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz",
                   ucinek_od_s=100000 - 1800, ucinek_co2=1100,
-                  ucinek_t_in=21.0)
+                  ucinek_t_in=21.0, ucinek_bez_zlepseni=1)
         r = rozhodni(stary(co2=co2, t_in=t_in, t_in_max=t_in + 0.2,
                            t_out=12.0, cil=22.0, hodina=14.0), p, N)
         assert r.akce is not Akce.ZAVRIT, (co2, t_in)
@@ -1121,7 +1122,7 @@ def test_zlepseni_vetra_dal():
 
 def test_zhorseni_zavre_hned_po_dobe():
     p = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz",
-              ucinek_od_s=100000 - 1800, ucinek_co2=1100, ucinek_t_in=21.0)
+              ucinek_od_s=100000 - 1800, ucinek_co2=1100, ucinek_t_in=21.0, ucinek_bez_zlepseni=1)
     r = rozhodni(stary(co2=1200, t_in=20.8, t_in_max=21.0, t_out=12.0,
                        cil=22.0, hodina=14.0), p, N)
     assert r.akce is Akce.ZAVRIT and r.kod == "bez_ucinku"
@@ -1130,13 +1131,13 @@ def test_zhorseni_zavre_hned_po_dobe():
 def test_krize_a_rucni_zadost_kontrolu_prebiji():
     """Nad krizovým prahem se větrá, i když to zabírá málo."""
     p = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz",
-              ucinek_od_s=100000 - 1800, ucinek_co2=1100, ucinek_t_in=21.0)
+              ucinek_od_s=100000 - 1800, ucinek_co2=1100, ucinek_t_in=21.0, ucinek_bez_zlepseni=1)
     r = rozhodni(stary(co2=1300, t_in=21.0, t_in_max=21.2, t_out=12.0,
                        cil=22.0, hodina=14.0), p, N)
     assert r.kod != "bez_ucinku"
 
     p2 = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz",
-               ucinek_od_s=100000 - 1800, ucinek_co2=1100, ucinek_t_in=21.0)
+               ucinek_od_s=100000 - 1800, ucinek_co2=1100, ucinek_t_in=21.0, ucinek_bez_zlepseni=1)
     r2 = rozhodni(stary(co2=1100, t_in=21.0, t_in_max=21.2, t_out=12.0,
                         cil=22.0, hodina=14.0, vetrat=True), p2, N)
     assert r2.kod != "bez_ucinku"
@@ -1146,7 +1147,7 @@ def test_krize_a_rucni_zadost_kontrolu_prebiji():
 
 def test_kontrola_ceka_na_svou_dobu():
     p = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz",
-              ucinek_od_s=100000 - 600, ucinek_co2=1100, ucinek_t_in=21.0)
+              ucinek_od_s=100000 - 600, ucinek_co2=1100, ucinek_t_in=21.0, ucinek_bez_zlepseni=1)
     r = rozhodni(stary(co2=1100, t_in=21.0, t_in_max=21.2, t_out=12.0,
                        cil=22.0, hodina=14.0), p, N)
     assert r.kod != "bez_ucinku"
@@ -1200,7 +1201,7 @@ def test_ohrev_potrebuje_tepleji_venku():
 def test_kontrola_ucinku_plati_i_na_ohrev():
     p = Pamet(otevreno=True, cas_povelu_s=0, ohrivam=True, rezim="komfort",
               komfort_start=19.0, ucinek_od_s=100000 - 1800,
-              ucinek_co2=500, ucinek_t_in=19.0)
+              ucinek_co2=500, ucinek_t_in=19.0, ucinek_bez_zlepseni=1)
     r = rozhodni(stary(co2=500, t_in=19.0, t_in_max=19.2, t_out=24.5,
                        rh_out=50.0, cil=23.0, hodina=14.0), p, N)
     assert r.kod == "bez_ucinku"
@@ -1286,18 +1287,19 @@ def test_kontrola_ucinku_ceka_na_konec_drzeni():
 
     p = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz",
               ucinek_od_s=100000 - 15 * 60, ucinek_co2=1100,
-              ucinek_t_in=21.0)
+              ucinek_t_in=21.0, ucinek_bez_zlepseni=1)
     r = rozhodni(stary(co2=1100, t_in=21.0, t_in_max=21.2, t_out=12.0,
                        cil=22.0, hodina=14.0), p, nast)
     assert r.kod != "bez_ucinku"          # 15 min < 21 min držení
 
     p2 = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz",
                ucinek_od_s=100000 - 22 * 60, ucinek_co2=1100,
-               ucinek_t_in=21.0)
+               ucinek_t_in=21.0, ucinek_bez_zlepseni=1)
     r2 = rozhodni(stary(co2=1100, t_in=21.0, t_in_max=21.2, t_out=12.0,
                         cil=22.0, hodina=14.0), p2, nast)
     assert r2.kod == "bez_ucinku"
-    assert "za 21 min" in r2.duvod        # uvedena skutečná doba
+    # uvádí se skutečně uplynulá doba, ne ta nastavená
+    assert "za 22 min" in r2.duvod
 
 
 
@@ -1316,7 +1318,7 @@ def test_marne_vetrani_pocita_pokusy():
     """Jinak se za dvacet minut otevře znovu a zjistí se totéž."""
     p = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz",
               ucinek_od_s=100000 - 22 * 60, ucinek_co2=1100,
-              ucinek_t_in=21.0, pulzy_za_sebou=2)
+              ucinek_t_in=21.0, pulzy_za_sebou=2, ucinek_bez_zlepseni=1)
     r = rozhodni(stary(co2=1100, t_in=21.0, t_in_max=21.2, t_out=12.0,
                        cil=22.0, hodina=14.0), p, N)
     assert r.kod == "bez_ucinku"
@@ -1385,14 +1387,14 @@ def test_marny_pokus_si_pamatuje_podminky():
 def test_hlaska_rozlisi_zhorseni():
     """Nehýbe se to je něco jiného než zhoršuje se to."""
     p = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz",
-              ucinek_od_s=100000 - 1800, ucinek_co2=1100, ucinek_t_in=21.0)
+              ucinek_od_s=100000 - 1800, ucinek_co2=1100, ucinek_t_in=21.0, ucinek_bez_zlepseni=1)
     r = rozhodni(stary(co2=1200, t_in=20.8, t_in_max=21.0, t_out=12.0,
                        cil=22.0, hodina=14.0), p, N)
     assert "zhoršuje se to" in r.duvod
 
     p2 = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz",
                ucinek_od_s=100000 - 1800, ucinek_co2=1100,
-               ucinek_t_in=21.0)
+               ucinek_t_in=21.0, ucinek_bez_zlepseni=1)
     r2 = rozhodni(stary(co2=1100, t_in=21.0, t_in_max=21.2, t_out=12.0,
                         cil=22.0, hodina=14.0), p2, N)
     assert "nehýbe se to" in r2.duvod
@@ -2094,3 +2096,164 @@ def test_cizi_zadost_potrebuje_pouzitelny_vzduch():
                    rh_out=50.0, cil=22.0, hodina=14.0,
                    cizi_chlazeni=True), p, nast)
     assert p.chladi is False
+
+
+# ============ sledování účinku po úsecích ============
+
+def test_ucinek_se_posuzuje_po_usecich():
+    """Dřív se porovnávalo proti okamžiku otevření, takže větrání,
+    které zabralo na začátku a pak se zastavilo, prošlo navždycky."""
+    from core import Nastaveni as N_
+    nast = N_(min_drzeni_s=60 * 60)
+    Z = 100000
+    p = Pamet(otevreno=True, cas_povelu_s=Z, chladi=True, rezim="komfort",
+              komfort_start=26.0, ucinek_od_s=Z, ucinek_co2=600,
+              ucinek_t_in=26.0)
+
+    def krok_v(minuty, t):
+        return rozhodni(Vstup(co2=600, t_in=t, t_in_max=t + 0.2,
+                              t_out=16.0, rh_out=50.0, cil=22.0,
+                              hodina=14.0, cas_s=Z + minuty * 60), p, nast)
+
+    krok_v(30, 24.5)
+    krok_v(61, 23.0)                 # úsek dopadl dobře
+    assert p.ucinek_t_in == 23.0     # porovnávací bod se posunul
+    assert p.ucinek_kolikaty == 1
+
+    # a obrat se pozná proti novému bodu, ne proti dávným 26 °C
+    r = krok_v(78, 23.6)
+    assert r.akce is Akce.ZAVRIT and "zhoršuje se to" in r.duvod
+
+
+def test_zhorseni_neceka_na_konec_useku():
+    """Čekat na konec úseku znamená nechat okno dál tahat dovnitř,
+    co nechceme."""
+    from core import Nastaveni as N_
+    nast = N_(min_drzeni_s=60 * 60)
+    Z = 100000
+    p = Pamet(otevreno=True, cas_povelu_s=Z, rezim="pulz", vetra_se=True,
+              ucinek_od_s=Z, ucinek_co2=1100, ucinek_t_in=21.0, ucinek_bez_zlepseni=1)
+    # po čtvrt hodině CO2 stouplo: pozná se to hned, i když úsek běží
+    # hodinu — zavře se, jakmile to doba držení polohy dovolí
+    nast_bez = N_(min_drzeni_s=10 * 60)
+    r = rozhodni(Vstup(co2=1200, t_in=21.0, t_in_max=21.2, t_out=12.0,
+                       rh_out=50.0, cil=22.0, hodina=14.0,
+                       cas_s=Z + 15 * 60), p, nast_bez)
+    assert r.akce is Akce.ZAVRIT and "zhoršuje se to" in r.duvod
+
+
+def test_zastaveni_ceka_na_konec_useku():
+    """Pomalé větrání potřebuje čas, tak se zastavení pozná až na konci
+    úseku."""
+    from core import Nastaveni as N_
+    nast = N_(min_drzeni_s=60 * 60)
+    Z = 100000
+
+    def zkus(minuty):
+        p = Pamet(otevreno=True, cas_povelu_s=Z, rezim="pulz",
+                  vetra_se=True, ucinek_od_s=Z, ucinek_co2=1100,
+                  ucinek_t_in=21.0, ucinek_bez_zlepseni=1)
+        return rozhodni(Vstup(co2=1100, t_in=21.0, t_in_max=21.2,
+                              t_out=12.0, rh_out=50.0, cil=22.0,
+                              hodina=14.0, cas_s=Z + minuty * 60), p, nast)
+
+    assert zkus(30).akce is not Akce.ZAVRIT
+
+    # první úsek bez zlepšení dostane ještě jednu šanci
+    p = Pamet(otevreno=True, cas_povelu_s=Z, rezim="pulz",
+              vetra_se=True, ucinek_od_s=Z, ucinek_co2=1100,
+              ucinek_t_in=21.0)
+
+    def dal(minuty):
+        return rozhodni(Vstup(co2=1100, t_in=21.0, t_in_max=21.2,
+                              t_out=12.0, rh_out=50.0, cil=22.0,
+                              hodina=14.0, cas_s=Z + minuty * 60), p, nast)
+
+    r1 = dal(61)
+    assert r1.akce is not Akce.ZAVRIT and "ještě jeden úsek" in r1.duvod
+    r2 = dal(74)
+    assert r2.akce is Akce.ZAVRIT and "nehýbe se to" in r2.duvod
+
+
+def test_dalsi_useky_jsou_kratsi():
+    """První ověření čeká, až se vůbec smí zavřít; další na nic čekat
+    nemusí."""
+    from core import Nastaveni as N_
+    nast = N_(min_drzeni_s=60 * 60)
+    Z = 100000
+    p = Pamet(otevreno=True, cas_povelu_s=Z, rezim="pulz", vetra_se=True,
+              ucinek_od_s=Z, ucinek_co2=1100, ucinek_t_in=21.0, ucinek_bez_zlepseni=1)
+
+    # první úsek: v 61. minutě CO2 kleslo, úsek dopadl dobře
+    rozhodni(Vstup(co2=900, t_in=21.0, t_in_max=21.2, t_out=12.0,
+                   rh_out=50.0, cil=22.0, hodina=14.0,
+                   cas_s=Z + 61 * 60), p, nast)
+    assert p.ucinek_kolikaty == 1
+
+    # druhý úsek trvá dvanáct minut; po něm dostane ještě šanci
+    r = rozhodni(Vstup(co2=900, t_in=21.0, t_in_max=21.2, t_out=12.0,
+                       rh_out=50.0, cil=22.0, hodina=14.0,
+                       cas_s=Z + 74 * 60), p, nast)
+    assert "ještě jeden úsek" in r.duvod
+    # a po třetím se zavírá
+    r2 = rozhodni(Vstup(co2=900, t_in=21.0, t_in_max=21.2, t_out=12.0,
+                        rh_out=50.0, cil=22.0, hodina=14.0,
+                        cas_s=Z + 87 * 60), p, nast)
+    assert r2.akce is Akce.ZAVRIT and "nehýbe se to" in r2.duvod
+
+
+def test_nezlepsovani_dostane_jeste_sanci():
+    """Větrání se může rozjet pomalu, tak se po prvním úseku bez
+    zlepšení ještě nezavírá."""
+    from core import Nastaveni as N_
+    nast = N_(min_drzeni_s=20 * 60)
+    Z = 100000
+    p = Pamet(otevreno=True, cas_povelu_s=Z, rezim="pulz", vetra_se=True,
+              ucinek_od_s=Z, ucinek_co2=1100, ucinek_t_in=21.0)
+
+    def krok_v(minuty):
+        return rozhodni(Vstup(co2=1100, t_in=21.0, t_in_max=21.2,
+                              t_out=12.0, rh_out=50.0, cil=22.0,
+                              hodina=14.0, cas_s=Z + minuty * 60), p, nast)
+
+    r1 = krok_v(21)
+    assert r1.akce is not Akce.ZAVRIT
+    assert "ještě jeden úsek" in r1.duvod
+    assert p.ucinek_bez_zlepseni == 1
+
+    r2 = krok_v(27)
+    assert r2.akce is Akce.ZAVRIT and "nehýbe se to" in r2.duvod
+
+
+def test_zlepseni_sance_zase_vrati():
+    """Jedna slabá chvilka neznamená, že větrání nefunguje."""
+    from core import Nastaveni as N_
+    nast = N_(min_drzeni_s=20 * 60)
+    Z = 100000
+    p = Pamet(otevreno=True, cas_povelu_s=Z, rezim="pulz", vetra_se=True,
+              ucinek_od_s=Z, ucinek_co2=1100, ucinek_t_in=21.0)
+
+    rozhodni(Vstup(co2=1100, t_in=21.0, t_in_max=21.2, t_out=12.0,
+                   rh_out=50.0, cil=22.0, hodina=14.0,
+                   cas_s=Z + 21 * 60), p, nast)
+    assert p.ucinek_bez_zlepseni == 1
+
+    rozhodni(Vstup(co2=950, t_in=21.0, t_in_max=21.2, t_out=12.0,
+                   rh_out=50.0, cil=22.0, hodina=14.0,
+                   cas_s=Z + 27 * 60), p, nast)
+    assert p.ucinek_bez_zlepseni == 0
+
+
+def test_zhorseni_respektuje_drzeni_polohy():
+    """Nejkratší doba držení je od toho, aby okno nelítalo — obcházet
+    ji by znamenalo ji zrušit."""
+    from core import Nastaveni as N_
+    nast = N_(min_drzeni_s=60 * 60)
+    Z = 100000
+    p = Pamet(otevreno=True, cas_povelu_s=Z, rezim="pulz", vetra_se=True,
+              ucinek_od_s=Z, ucinek_co2=1100, ucinek_t_in=21.0)
+    r = rozhodni(Vstup(co2=1300, t_in=21.0, t_in_max=21.2, t_out=12.0,
+                       rh_out=50.0, cil=22.0, hodina=14.0,
+                       cas_s=Z + 15 * 60), p, nast)
+    # zavřít se nesmí, dokud doba držení neuplyne
+    assert r.akce is not Akce.ZAVRIT

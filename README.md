@@ -221,6 +221,18 @@ zabírá: když se CO2 nesnížilo aspoň o padesát ppm ani teplota
 nepřiblížila k cíli o tři desetiny, okno se zavře a chvíli se to
 nezkouší. Pauza se s každým dalším marným pokusem zdvojnásobí.
 
+Účinek se posuzuje **po úsecích, ne proti okamžiku otevření**. První
+úsek trvá nejkratší dobu držení polohy, další pětinu z ní a nejméně pět
+minut. Bez toho by větrání, které zabralo na začátku a pak se
+zastavilo, prošlo navždycky — stačilo mu být lepší než před hodinou.
+
+**Zastavení a zhoršení nejsou totéž.** Po prvním úseku bez zlepšení se
+dává ještě jedna šance, protože se větrání může rozjet pomalu; zavírá
+se až po druhém v řadě. Zhoršení se řeší hned, jak se pozná.
+
+Nejkratší doba držení polohy platí v obou případech — je od toho, aby
+okno nelítalo, a obcházet ji by znamenalo ji zrušit.
+
 Po marném pokusu se nečeká na hodiny, ale **na změnu venkovních
 podmínek**, a platí to na všechno větrání — i to kvůli CO2, protože
 jinak by se za dvacet minut zkusilo totéž, co minule nezabralo — čas je jen zástupná veličina, skutečný důvod, proč to
