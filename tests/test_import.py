@@ -1344,3 +1344,51 @@ def test_posuvniky_se_opravdu_ctou(nahradni_ha):
     cte |= set(re.findall(r"nej\((CONF_\w+)", ko))
     for klic in re.findall(r"Posuvnik\((CONF_\w+)", nb):
         assert klic in cte, klic
+
+
+def test_zadost_bez_okna_konci_na_cili(nahradni_ha):
+    """Hlavice v té místnosti míří na cíl, takže přetah pod něj by
+    znamenal topit proti otevřenému oknu vedle."""
+    import pathlib
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    kus = ko[ko.index("def _zadost_bez_okna"):ko.index("def _dosah")]
+    assert 'bezi == "chlazeni" and t_max > m.cil:' in kus
+    assert 'bezi == "ohrev" and t_in < m.cil:' in kus
+    # a hranice pro začátek zůstává pásmo
+    assert "m.cil + otevrit" in kus and "m.cil - otevrit" in kus
+
+
+def test_utlum_topeni_plati_i_pri_cizim_okne(nahradni_ha):
+    """Místnost bez vlastního okna by o větrání sousedem jinak nevěděla
+    a topila by proti němu."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    c = importlib.import_module("napohodu.const")
+
+    class Pod:
+        def __init__(self, data):
+            self.data = data
+
+    class Clen:
+        def __init__(self, pid):
+            self.subentry_id = pid
+
+    def postav(data, okna):
+        class Falesny:
+            _vetra_se_za = ko.NaPohoduCoordinator._vetra_se_za
+            entry = type("E", (), {"subentries": {"obyvak": Pod(data)}})()
+            _cizi_zadost = {"obyvak": "chlazeni"}
+            okna_stav = okna
+            _okruhy_popis = [{"cleni": [Clen("obyvak"), Clen("kuchyne")],
+                              "dvere_otevrene": True}]
+        return Falesny()
+
+    # obývák bez okna, kuchyně větrá → útlum platí
+    assert postav({}, {"kuchyne": True})._vetra_se_za("obyvak")
+    # kuchyně zavřená → netopí se proti ničemu
+    assert not postav({}, {"kuchyne": False})._vetra_se_za("obyvak")
+    # s vlastním oknem si místnost poradí sama
+    s_oknem = postav({c.CONF_OKNA: ["cover.o"]}, {"kuchyne": True})
+    assert not s_oknem._vetra_se_za("obyvak")

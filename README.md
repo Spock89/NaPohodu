@@ -448,8 +448,18 @@ nejhorší hodnota z nich a stačí jedno okno. U teploty to dlouho
 neplatilo — nebylo to rozhodnutí, byla to mezera.
 
 Místnost **bez ovládaného okna** si teď řekne sousedům v zóně
-o chlazení nebo ohřev. Hranice jsou její vlastní, včetně hystereze:
-žádost začne při odchylce od cíle a skončí až na protější hraně pásma.
+o chlazení nebo ohřev. Žádost začne při odchylce od cíle a **skončí na
+cíli** — ne na protější hraně pásma, jak to dělá větrání vlastním
+oknem.
+
+Důvod je topení: hlavice v té místnosti míří na cíl, takže přetah pod
+něj by znamenal topit proti otevřenému oknu vedle. Ochladí se tím
+o kus méně a o něco dřív se místnost ozve znovu, což je proti tomu
+konfliktu dobrá výměna.
+
+K tomu platí **útlum topení při otevřeném okně i tehdy, když větrá
+soused**. Používá se hodnota „Při otevřeném okně topit na“, kterou
+místnost už má; bez toho by o cizím větrání vůbec nevěděla.
 
 Soused ji obslouží **podle svých vlastních pojistek a mezí**, takže se
 kvůli cizímu horku nevymrazí a kvůli cizímu chladu nepřehřeje. Platí

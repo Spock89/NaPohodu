@@ -582,6 +582,26 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return 0
         return 1 if v.t_in > teplota else -1
 
+    def _vetra_se_za(self, pod_id: str) -> bool:
+        """Větrá za tuhle místnost soused v zóně?
+
+        Platí jen tam, kde okno neovládáme — kdo má vlastní, ten o svém
+        větrání ví sám.
+        """
+        pod = self.entry.subentries.get(pod_id)
+        if pod is not None and (pod.data.get(CONF_OKNA) or []):
+            return False
+        if not self._cizi_zadost.get(pod_id):
+            return False
+        for o in self._okruhy_popis:
+            cleni = {x.subentry_id for x in o.get("cleni", [])}
+            if pod_id not in cleni or not o.get("dvere_otevrene", True):
+                continue
+            if any(self.okna_stav.get(x) is True
+                   for x in cleni if x != pod_id):
+                return True
+        return False
+
     def _zadost_bez_okna(self, pod_id: str, d: dict) -> str:
         """Chce místnost bez okna chladit, ohřát, nebo nic?
 
@@ -603,15 +623,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             pod_id, CONF_HYST_NOC_OTEVRIT if noc else CONF_HYST_DEN_OTEVRIT,
             float(d.get(CONF_HYST_NOC_OTEVRIT if noc
                         else CONF_HYST_DEN_OTEVRIT, 2.5)))
-        zavrit = self.hodnota(
-            pod_id, CONF_HYST_NOC_ZAVRIT if noc else CONF_HYST_DEN_ZAVRIT,
-            float(d.get(CONF_HYST_NOC_ZAVRIT if noc
-                        else CONF_HYST_DEN_ZAVRIT, 1.0)))
 
+        # Končí se na cíli, ne na protější hraně pásma. Hlavice v téhle
+        # místnosti míří na cíl, takže přetah pod něj by znamenal topit
+        # proti otevřenému oknu vedle.
         bezi = self._cizi_zadost.get(pod_id, "")
-        if bezi == "chlazeni" and t_max > m.cil - zavrit:
+        if bezi == "chlazeni" and t_max > m.cil:
             return "chlazeni"
-        if bezi == "ohrev" and t_in < m.cil + zavrit:
+        if bezi == "ohrev" and t_in < m.cil:
             return "ohrev"
         jak = ""
         if t_max > m.cil + otevrit:
@@ -1544,8 +1563,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         odvzdusneni = (self._sezona_od is not None and odvzdusneni_h > 0
                        and cas_s - self._sezona_od < odvzdusneni_h * 3600)
 
+        # Hlavice nemá topit proti otevřenému oknu, a to ani tehdy,
+        # když větrá soused v zóně za nás — místnost bez vlastního okna
+        # by jinak o větrání vůbec nevěděla.
+        okno_v_zone = m.okno_otevreno or self._vetra_se_za(p.subentry_id)
         povel = vy.cil_topeni(
-            m.cil, m.okno_otevreno,
+            m.cil, okno_v_zone,
             self.hodnota(p.subentry_id, CONF_UTLUM,
                          float(d.get(CONF_UTLUM, 16.0))),
             self.topna_sezona,
