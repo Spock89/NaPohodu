@@ -209,6 +209,10 @@ class Pamet:
     posledni_akce: str = ""
     posledni_duvod: str = ""
     posledni_kdy_s: float = 0.0
+    # kdy se naposledy poslala obnova. Zvlášť od času povelu, protože
+    # obnova není pohyb okna — dřív restartovala dobu držení, takže se
+    # při delším držení na jeho konec nikdy nedošlo.
+    obnova_kdy_s: float = 0.0
     posledni_co2: float = 0.0
     posledni_t_in: float = 0.0
     pohyby: int = 0
@@ -668,8 +672,9 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # obnova povelu, kdyby se stav rozešel se skutečností (ne v noci)
         if (chci_otevreno is not None
                 and not _je_noc(v.hodina, n, v.spanek)
-                and v.cas_s - p.cas_povelu_s > n.obnova_s):
-            p.cas_povelu_s = v.cas_s
+                and v.cas_s - max(p.cas_povelu_s,
+                                  p.obnova_kdy_s) > n.obnova_s):
+            p.obnova_kdy_s = v.cas_s
             # Skutečný důvod se veze s sebou. Bez něj se v diagnostice
             # objevilo jen „obnova povelu" a nebylo poznat, proč je
             # okno vlastně otevřené.

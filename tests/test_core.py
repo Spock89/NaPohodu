@@ -2002,3 +2002,41 @@ def test_nocni_posun_umi_obe_strany():
     # náběh platí oběma směry
     assert nocni_utlum(21.5, 22.0, 6.5, -1.0) == -0.5
     assert nocni_utlum(14.0, 22.0, 6.5, -1.0) == 0.0
+
+
+def test_obnova_povelu_nerestartuje_drzeni():
+    """Obnova není pohyb okna. Dřív restartovala dobu držení, takže se
+    při delším držení na jeho konec nikdy nedošlo."""
+    from core import Nastaveni as N_
+    nast = N_(min_drzeni_s=60 * 60, obnova_s=30 * 60)
+    p = Pamet(otevreno=True, cas_povelu_s=0, chladi=True, rezim="komfort",
+              komfort_start=24.0, vetra_se=True)
+
+    def krok_v(minuty):
+        return rozhodni(Vstup(co2=470, t_in=20.6, t_in_max=20.8,
+                              t_out=14.0, rh_out=50.0, cil=22.0,
+                              hodina=14.0, cas_s=minuty * 60), p, nast)
+
+    krok_v(10)
+    krok_v(31)
+    krok_v(35)
+    assert p.cas_povelu_s == 0      # čas povelu se nepřepisuje
+    assert krok_v(61).akce is Akce.ZAVRIT    # hodina doběhla
+
+
+def test_obnova_ma_vlastni_zaznam():
+    """Při dusnu se povel opakuje, ať se stav nerozejde se skutečností
+    — ale doby držení se to netýká."""
+    from core import Nastaveni as N_
+    nast = N_(min_drzeni_s=60 * 60, obnova_s=30 * 60)
+    p = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz", vetra_se=True)
+
+    def krok_v(minuty):
+        return rozhodni(Vstup(co2=1200, t_in=21.0, t_in_max=21.2,
+                              t_out=14.0, rh_out=50.0, cil=22.0,
+                              hodina=14.0, cas_s=minuty * 60), p, nast)
+
+    assert krok_v(10).kod != "obnova"
+    assert krok_v(31).kod == "obnova"
+    assert p.cas_povelu_s == 0      # čas povelu zůstává
+    assert p.obnova_kdy_s > 0       # obnova si vede svůj
