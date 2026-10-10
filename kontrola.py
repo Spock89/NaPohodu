@@ -666,6 +666,21 @@ for p in d.glob("*.py"):
                 f"{p.name}:{u.lineno}: {u.value.id}.{u.attr} v "
                 f"{ALIASY[u.value.id]} neexistuje")
 
+# 1ae) posuvník, jehož hodnotu nikdo nečte přes hodnota(). Pak jde
+# šoupátkem hýbat a nic se neděje, protože platí jen formulář.
+nb_kod = (d / "number.py").read_text()
+# první argument bývá p.subentry_id nebo self.entry.entry_id, tedy
+# s tečkami — bez nich regulární výraz nenašel skoro nic
+pres_hodnotu = set(re.findall(
+    r"hodnota\(\s*(?:[\w.]+,\s*)?(CONF_\w+)", ko_kod))
+# „nej()" je obal nad hodnota(), takže klíče předané jemu se čtou taky
+pres_hodnotu |= set(re.findall(r"nej\((CONF_\w+)", ko_kod))
+for klic in re.findall(r"Posuvnik\((CONF_\w+)", nb_kod):
+    if klic not in pres_hodnotu:
+        chyby.append(
+            f"number.py: {klic} má posuvník, ale koordinátor ho nečte "
+            f"přes hodnota() — šoupátko by nic nedělalo")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

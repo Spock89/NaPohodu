@@ -1329,3 +1329,18 @@ def test_stary_utlum_se_prevede_na_posun(nahradni_ha):
         "custom_components/napohodu/coordinator.py").read_text()
     assert "-float(d.get(CONF_NOC_UTLUM, 0.0))" in ko
     assert "CONF_NOC_POSUN" in ko
+
+
+def test_posuvniky_se_opravdu_ctou(nahradni_ha):
+    """Šoupátko, jehož hodnotu nikdo nečte, jde posouvat a nic se
+    neděje — platí jen formulář."""
+    import pathlib
+    import re
+
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    nb = pathlib.Path("custom_components/napohodu/number.py").read_text()
+    cte = set(re.findall(r"hodnota\(\s*(?:[\w.]+,\s*)?(CONF_\w+)", ko))
+    cte |= set(re.findall(r"nej\((CONF_\w+)", ko))
+    for klic in re.findall(r"Posuvnik\((CONF_\w+)", nb):
+        assert klic in cte, klic

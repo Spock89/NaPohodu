@@ -1249,15 +1249,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             mez_horni=self.hodnota(p.subentry_id, CONF_MEZ_HORNI,
                                    float(d.get(CONF_MEZ_HORNI, 27.0))),
             noc_od=noc_od, noc_do=noc_do,
-            rucni_klid_s=float(d.get(CONF_RUCNI_KLID, 30)) * 60,
+            rucni_klid_s=self.hodnota(
+                p.subentry_id, CONF_RUCNI_KLID,
+                float(d.get(CONF_RUCNI_KLID, 30))) * 60,
         )
         # Dřív to byl posuvník nula až deset, u kterého nebylo poznat,
         # co dělá. Teď se rovnou zadává, o kolik stupňů smí teplota
         # při větrání klesnout.
         nast = replace(
             nast,
-            chlazeni_min_venku=float(
-                d.get(CONF_CHLAZENI_MIN_VENKU, 7.0)),
+            chlazeni_min_venku=self.hodnota(
+                p.subentry_id, CONF_CHLAZENI_MIN_VENKU,
+                float(d.get(CONF_CHLAZENI_MIN_VENKU, 7.0))),
             narazove_odstup=self.hodnota(
                 self.entry.entry_id, CONF_NARAZOVE_ODSTUP,
                 float(g.get(CONF_NARAZOVE_ODSTUP, 15.0))),
@@ -1267,8 +1270,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             nejdriv_znovu_s=self.hodnota(
                 self.entry.entry_id, CONF_NEJDRIV_ZNOVU,
                 float(g.get(CONF_NEJDRIV_ZNOVU, 60))) * 60,
-            pm_prah=float(d.get(CONF_PM_SPATNE, 35.0)),
-            pm_prah_cisto=float(d.get(CONF_PM_CISTO, 20.0)))
+            pm_prah=self.hodnota(p.subentry_id, CONF_PM_SPATNE,
+                                 float(d.get(CONF_PM_SPATNE, 35.0))),
+            pm_prah_cisto=self.hodnota(
+                p.subentry_id, CONF_PM_CISTO,
+                float(d.get(CONF_PM_CISTO, 20.0))))
 
         # Každá mez sama o sobě vypadá rozumně, konflikt s cílem je
         # vidět až dohromady. Bez tohohle by okno jen nefungovalo
