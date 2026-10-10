@@ -145,6 +145,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._t_in_drive: dict[str, tuple[float, float]] = {}
         # popis okruhů z posledního cyklu, kvůli dosahu „v jeho zóně"
         self._okruhy_popis: list[dict] = []
+        # žádosti o chlazení a ohřev od místností bez vlastního okna;
+        # drží se mezi cykly, aby měly hysterezi jako každé jiné větrání
+        self._cizi_zadost: dict[str, str] = {}
+        self._je_noc_ted: bool = False
         self._rh_out_posledni: float | None = None
         self._hodina_ted: float = 12.0
         self._noc_od: float = 22.0
@@ -578,6 +582,45 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return 0
         return 1 if v.t_in > teplota else -1
 
+    def _zadost_bez_okna(self, pod_id: str, d: dict) -> str:
+        """Chce místnost bez okna chladit, ohřát, nebo nic?
+
+        Hranice jsou její vlastní, včetně hystereze: začne se při
+        odchylce od cíle a skončí až na protější hraně pásma, aby
+        žádost nepodléhala každému zakolísání. Teploty jsou z minulého
+        kola, protože zóna se počítá dřív než místnosti — minuta
+        zpoždění u teploty nevadí.
+        """
+        m = self.mistnosti.get(pod_id)
+        if m is None:
+            return ""
+        t_in = m.atributy.get("uvnitr")
+        t_max = m.atributy.get("teplota_max") or t_in
+        if t_in is None:
+            return ""
+        noc = bool(m.klid) or self._je_noc_ted
+        otevrit = self.hodnota(
+            pod_id, CONF_HYST_NOC_OTEVRIT if noc else CONF_HYST_DEN_OTEVRIT,
+            float(d.get(CONF_HYST_NOC_OTEVRIT if noc
+                        else CONF_HYST_DEN_OTEVRIT, 2.5)))
+        zavrit = self.hodnota(
+            pod_id, CONF_HYST_NOC_ZAVRIT if noc else CONF_HYST_DEN_ZAVRIT,
+            float(d.get(CONF_HYST_NOC_ZAVRIT if noc
+                        else CONF_HYST_DEN_ZAVRIT, 1.0)))
+
+        bezi = self._cizi_zadost.get(pod_id, "")
+        if bezi == "chlazeni" and t_max > m.cil - zavrit:
+            return "chlazeni"
+        if bezi == "ohrev" and t_in < m.cil + zavrit:
+            return "ohrev"
+        jak = ""
+        if t_max > m.cil + otevrit:
+            jak = "chlazeni"
+        elif t_in < m.cil - otevrit:
+            jak = "ohrev"
+        self._cizi_zadost[pod_id] = jak
+        return jak
+
     def _dosah(self, zdroj: str, klic_volby: str, klic_seznamu: str,
                vychozi: str) -> set[str]:
         """Kam až sahá vliv zvlhčovače z místnosti „zdroj".
@@ -834,6 +877,20 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             s_okny = [x for x in o["cleni"]
                       if podklady[x.subentry_id]["d"].get(CONF_OKNA)]
 
+            # Místnost bez ovládaného okna si chladit ani ohřívat sama
+            # nemůže. Zóna sdílí vzduch, a tím pádem i teplo, takže
+            # žádost předá sousedům s oknem.
+            o["cizi_chlazeni"] = o["cizi_ohrev"] = False
+            o["cizi_za"] = []
+            for x in o["cleni"]:
+                if podklady[x.subentry_id]["d"].get(CONF_OKNA):
+                    continue
+                jak = self._zadost_bez_okna(
+                    x.subentry_id, podklady[x.subentry_id]["d"])
+                if jak:
+                    o[f"cizi_{jak}"] = True
+                    o["cizi_za"].append(x.title)
+
             # Drahé je větrání tam, kde se otevírá — místnost bez okna
             # k tomu nemá co říct. Bez oken se bere celá oblast.
             def pod(x):
@@ -974,6 +1031,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 "co2": o["co2"], "pm25": o["pm25"],
                 "spi_se": o["spanek"], "klid": o["klid"],
                 "zastupce": uprava.zastupce, "vetra_i_za": uprava.za_koho,
+                "teplo_za": o.get("cizi_za") or None,
                 "mistnosti": z.mistnosti,
             }
             self.zony[o["id"]] = z
@@ -1135,6 +1193,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             pm10=0.0 if self._zvlhcuje_na(p.subentry_id)
             else okruh["pm10"],
             pm_platny=okruh["pm_platny"],
+            # žádost od souseda v zóně, který okno nemá
+            cizi_chlazeni=bool(okruh.get("cizi_chlazeni")) and bool(okna),
+            cizi_ohrev=bool(okruh.get("cizi_ohrev")) and bool(okna),
             pm25_venku=self._cislo(g.get(CONF_PM25_VENKU)),
             pm10_venku=self._cislo(g.get(CONF_PM10_VENKU)),
             t_in=self._min(d.get(CONF_TEPLOTY), 21.0),

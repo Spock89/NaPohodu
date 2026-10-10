@@ -2040,3 +2040,57 @@ def test_obnova_ma_vlastni_zaznam():
     assert krok_v(31).kod == "obnova"
     assert p.cas_povelu_s == 0      # čas povelu zůstává
     assert p.obnova_kdy_s > 0       # obnova si vede svůj
+
+
+# ============ zóna sdílí i teplo ============
+
+def test_soused_bez_okna_si_rekne_o_chlazeni():
+    """Zóna sdílí vzduch, a tím i teplo — jedno okno má obsloužit obě
+    místnosti. U CO2 to platilo odjakživa, u teploty to chybělo."""
+    from core import Nastaveni as N_
+    nast = N_(hyst_den_otevrit=2.5, hyst_den_zavrit=1.0)
+
+    # kuchyně je na cíli, sama by nechladila
+    p = Pamet(cas_povelu_s=0)
+    rozhodni(stary(co2=500, t_in=22.0, t_in_max=22.2, t_out=17.0,
+                   rh_out=50.0, cil=22.0, hodina=14.0), p, nast)
+    assert p.chladi is False
+
+    # se žádostí od obýváku otevře
+    p2 = Pamet(cas_povelu_s=0)
+    r2 = rozhodni(stary(co2=500, t_in=22.0, t_in_max=22.2, t_out=17.0,
+                        rh_out=50.0, cil=22.0, hodina=14.0,
+                        cizi_chlazeni=True), p2, nast)
+    assert r2.akce is Akce.OTEVRIT and p2.chladi is True
+
+
+def test_zadost_plati_i_na_ohrev():
+    from core import Nastaveni as N_
+    nast = N_(hyst_den_otevrit=2.5, hyst_den_zavrit=1.0)
+    p = Pamet(cas_povelu_s=0)
+    r = rozhodni(stary(co2=500, t_in=22.0, t_in_max=22.2, t_out=26.0,
+                       rh_out=40.0, cil=22.0, hodina=14.0,
+                       cizi_ohrev=True), p, nast)
+    assert r.akce is Akce.OTEVRIT and p.ohrivam is True
+
+
+def test_cizi_zadost_nepremuze_pojistku():
+    """Soused si může říct o chlazení, ale vymrazit kuchyni ne."""
+    from core import Nastaveni as N_
+    nast = N_(mez_dolni=18.0)
+    p = Pamet(otevreno=True, cas_povelu_s=0, chladi=True)
+    r = rozhodni(stary(co2=500, t_in=17.5, t_in_max=17.7, t_out=5.0,
+                       rh_out=50.0, cil=22.0, hodina=14.0,
+                       cizi_chlazeni=True), p, nast)
+    assert r.akce is Akce.ZAVRIT and r.kod == "pojistka"
+
+
+def test_cizi_zadost_potrebuje_pouzitelny_vzduch():
+    """Venku musí být za dojezdem, jinak se otevře zbytečně."""
+    from core import Nastaveni as N_
+    nast = N_(hyst_den_zavrit=1.0, rezerva_venku=2.0)
+    p = Pamet(cas_povelu_s=0)
+    rozhodni(stary(co2=500, t_in=22.0, t_in_max=22.2, t_out=20.0,
+                   rh_out=50.0, cil=22.0, hodina=14.0,
+                   cizi_chlazeni=True), p, nast)
+    assert p.chladi is False

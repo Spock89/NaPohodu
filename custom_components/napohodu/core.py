@@ -160,6 +160,10 @@ class Vstup:
     zastupce: bool = False
     # společné nárazové větrání: v mrazu otevřít všude naráz a krátce
     narazove: bool = False
+    # Žádost od místnosti v zóně, která sama okno nemá. Zóna sdílí
+    # vzduch, a tím i teplo — jedno okno má obsloužit obě.
+    cizi_chlazeni: bool = False
+    cizi_ohrev: bool = False
 
 
 @dataclass
@@ -883,13 +887,16 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # Venkovní vzduch musí být na správné straně cíle, ne jen lepší než
     # v pokoji. Teplejší vzduch než cíl pokoj na cíl nikdy neochladí,
     # jen ho zastaví o kus výš — a totéž zrcadlově u ohřevu.
-    ohrev = (t_in < prah_ohrevu
+    ohrev = ((t_in < prah_ohrevu or v.cizi_ohrev)
              # nikde v pokoji se nesmí přehřívat; dojezd k horní hraně
              # tím zůstává možný
              and t_max < v.cil + h_zavrit
              and v.t_out > v.cil + h_zavrit + n.rezerva_venku
              and not v.smog)
-    chlazeni = (t_max > prah_chlazeni
+    # Soused bez okna si chladit sám nemůže, tak to udělá tahle
+    # místnost za něj — pořád ale podle svých pojistek, aby se kvůli
+    # cizímu horku nevymrazila.
+    chlazeni = ((t_max > prah_chlazeni or v.cizi_chlazeni)
                 and v.t_out < v.cil - h_zavrit - n.rezerva_venku
                 and v.t_out > n.chlazeni_min_venku
                 and not v.smog)

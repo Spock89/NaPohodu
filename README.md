@@ -441,6 +441,24 @@ zvolenou dobu vysokou teplotu, aby ventil zůstal plně otevřený a rozvod
 se odvzdušnil sám. Přebíjí i otevřené okno, protože je to jednorázová
 věc. Nula hodin znamená neodvzdušňovat.
 
+### Zóna sdílí i teplo
+
+Místnosti v jedné zóně sdílejí vzduch, takže se u CO2 a prachu bere
+nejhorší hodnota z nich a stačí jedno okno. U teploty to dlouho
+neplatilo — nebylo to rozhodnutí, byla to mezera.
+
+Místnost **bez ovládaného okna** si teď řekne sousedům v zóně
+o chlazení nebo ohřev. Hranice jsou její vlastní, včetně hystereze:
+žádost začne při odchylce od cíle a skončí až na protější hraně pásma.
+
+Soused ji obslouží **podle svých vlastních pojistek a mezí**, takže se
+kvůli cizímu horku nevymrazí a kvůli cizímu chladu nepřehřeje. Platí
+i to, že venkovní vzduch musí být za dojezdem — jinak se neotvírá tak
+jako tak.
+
+V kartě je u sdíleného vzduchu vidět, za koho se zrovna chladí nebo
+hřeje.
+
 ### Kam až dosáhne zvlhčovač
 
 Ultrazvukový zvlhčovač rozprašuje minerály z vody a čidla je vidí jako
