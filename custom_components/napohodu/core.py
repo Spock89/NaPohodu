@@ -190,6 +190,9 @@ class Pamet:
     # po ručním zásahu se čeká na nový podnět, ať se s člověkem
     # automatika nepřetahuje
     rucni_do_s: float = 0.0
+    # kdy se ruční klid nastavil. Bez toho se nepozná, jestli odpočet
+    # začal teď, nebo pokračuje z dřívějška.
+    rucni_od_s: float = 0.0
     # kolik pulzů po sobě skončilo, aniž by se vzduch dostal pod práh.
     # Když větrání nezabírá, nemá cenu zkoušet to pořád dokola stejně.
     pulzy_za_sebou: int = 0
@@ -616,6 +619,7 @@ def rucni_zasah(p: Pamet, n: Nastaveni, cas_s: float, otevreno: bool) -> None:
     p.vetra_se = otevreno
     p.cas_povelu_s = cas_s
     p.rucni_do_s = cas_s + n.rucni_klid_s
+    p.rucni_od_s = cas_s
 
 
 def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
@@ -730,10 +734,11 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # Ochrana výš už proběhla, takže vítr a déšť okno zavřou i tak.
     if v.cas_s < p.rucni_do_s:
         zbyva = int((p.rucni_do_s - v.cas_s) / 60)
+        bezi = int((v.cas_s - p.rucni_od_s) / 60) if p.rucni_od_s else -1
         return hotovo(Akce.NIC,
                       f"sáhl jsi na okno, nechávám to na tobě "
-                      f"(ještě {zbyva} z {int(n.rucni_klid_s / 60)} min)",
-                      kod="rucni_zasah")
+                      f"(ještě {zbyva} z {int(n.rucni_klid_s / 60)} min, "
+                      f"klid běží {bezi} min)", kod="rucni_zasah")
 
     # --- 3. ruční otevření -----------------------------------------
     if v.vynuceno:

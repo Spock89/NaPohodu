@@ -1440,3 +1440,15 @@ def test_zaskrtavatko_sleduje_formular_i_obnovu(nahradni_ha):
         "z_formulare")
     # a formulář vyhraje jen při skutečné změně
     assert "formular_zmenen" in kus
+
+
+def test_druhy_rucni_zasah_odpocet_restartuje(nahradni_ha):
+    """Dřív se druhé sáhnutí během klidu nezaznamenalo a odpočet běžel
+    dál z toho prvního."""
+    import pathlib
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    kus = ko[ko.index("# Po dojezdu se povel a skutečnost"):]
+    kus = kus[:kus.index("core.rucni_zasah")]
+    assert "cas_s >= pamet.rucni_do_s" not in kus
+    assert "pamet.otevreno != skutecne" in kus

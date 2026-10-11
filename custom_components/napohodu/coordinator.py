@@ -1349,11 +1349,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # na okno člověk — rozdělaná akce se ruší a čeká se na nový
         # podnět, ať se s ním automatika nepřetahuje. Ochrana proti
         # větru a dešti tím dotčená není, ta je v rozhodování výš.
+        # Dřív tu stálo „a jen když ruční klid doběhl". Druhé sáhnutí
+        # během klidu se tím nezaznamenalo a odpočet běžel dál z toho
+        # prvního — člověk otevřel okno a hned viděl, že mu zbývá
+        # o půl hodiny míň, než si nastavil.
         if (ovladat and okna and stav_znamy
                 and vyk.stav.posledni_povel is not None
                 and cas_s - pamet.cas_povelu_s > projezd * 2
-                and pamet.otevreno != skutecne
-                and cas_s >= pamet.rucni_do_s):
+                and pamet.otevreno != skutecne):
             _LOGGER.info(
                 "NaPohodu: %s — okno je %s, ale posílal jsem %s. "
                 "Ruční zásah, nechávám to na tobě.",
