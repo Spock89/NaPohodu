@@ -715,7 +715,8 @@ def pole(od, do):
 bloky = {
     "user": pole("SCHEMA_GLOBAL", "class NaPohoduConfigFlow"),
     "nastaveni": pole("SCHEMA_GLOBAL", "class NaPohoduConfigFlow"),
-    "zaklad": pole("def _schema_mistnost", "SCHEMA_PRITOMNOST"),
+    "zaklad": pole("def _schema_mistnost", "def _schema_chovani"),
+    "chovani": pole("def _schema_chovani", "SCHEMA_PRITOMNOST"),
     "pritomnost": pole("SCHEMA_PRITOMNOST", "SCHEMA_INDICIE"),
     "indicie": pole("SCHEMA_INDICIE", "class MistnostSubentryFlow"),
     "zona": pole("def _schema_zona", "class ZonaSubentryFlow"),
@@ -729,6 +730,7 @@ for jazyk in ("cs", "en"):
         # Když se doplní jen jedno, druhá obrazovka ukáže holé klíče.
         "nastaveni": t["options"]["step"]["nastaveni"],
         "zaklad": t["config_subentries"]["mistnost"]["step"]["zaklad"],
+        "chovani": t["config_subentries"]["mistnost"]["step"]["chovani"],
         "pritomnost": t["config_subentries"]["mistnost"]["step"]["pritomnost"],
         "indicie": t["config_subentries"]["mistnost"]["step"]["indicie"],
         "zona": t["config_subentries"]["zona"]["step"]["user"],
@@ -741,7 +743,8 @@ for jazyk in ("cs", "en"):
             if k not in mapa[jm].get("data_description", {}):
                 chyby.append(f"{jazyk}/{jm}: chybí popisek {k}")
     rec = t["config_subentries"]["mistnost"]["step"]["reconfigure"]
-    vse = bloky["zaklad"] | bloky["pritomnost"] | bloky["indicie"]
+    vse = (bloky["zaklad"] | bloky["chovani"] | bloky["pritomnost"]
+           | bloky["indicie"])
     for k in sorted(vse - set(rec.get("data", {}))):
         chyby.append(f"{jazyk}/reconfigure: chybí {k}")
 
@@ -751,6 +754,7 @@ for jazyk in ("cs", "en"):
     t2 = json.loads((d / "translations" / f"{jazyk}.json").read_text())
     kroky = {
         "zaklad": t2["config_subentries"]["mistnost"]["step"]["zaklad"],
+        "chovani": t2["config_subentries"]["mistnost"]["step"]["chovani"],
         "zona": t2["config_subentries"]["zona"]["step"]["user"],
         "klima": t2["config_subentries"]["klima"]["step"]["user"],
         "user": t2["config"]["step"]["user"],

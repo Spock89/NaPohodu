@@ -1504,3 +1504,24 @@ def test_nikdo_si_nestavi_vlastni_nastaveni(nahradni_ha):
         for i, radek in enumerate(p.read_text().splitlines(), 1):
             assert not re.search(r"\b(core\.)?Nastaveni\(", radek), \
                 f"{p.name}:{i}"
+
+
+def test_formular_mistnosti_ma_dva_kroky(nahradni_ha):
+    """Zařízení zvlášť od chování: při zakládání stačí první krok,
+    druhý se dá proklikat."""
+    import pathlib
+    import re
+
+    cf = pathlib.Path(
+        "custom_components/napohodu/config_flow.py").read_text()
+    assert "async def async_step_chovani" in cf
+
+    def pole(od, do):
+        kus = cf[cf.index(od):cf.index(do)]
+        return set(re.findall(r"vol\.\w+\(c\.(CONF_\w+)", kus))
+
+    zar = pole("def _schema_mistnost", "def _schema_chovani")
+    chov = pole("def _schema_chovani", "SCHEMA_PRITOMNOST")
+    assert not (zar & chov)          # nic se neptá dvakrát
+    assert "CONF_OKNA" in zar and "CONF_CLIMATE" in zar
+    assert "CONF_MIN_DRZENI" in chov and "CONF_MEZ_DOLNI" in chov

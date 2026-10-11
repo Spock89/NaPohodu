@@ -102,35 +102,53 @@ STARSI_POSUVNIKY = {
      'v_noci_otevrit_nad_co2': 'v_noci_otevrit_nad',
      'nouzove_otevrit_nad_co2': 'nouzove_otevrit_nad'}
 
+# Co je vidět pořád: stav, rozhodnutí a to, co se zrovna děje.
 ATRIBUTY_STAVU = [
     ("co2", "CO2", " ppm"),
     ("uvnitr", "Nejchladnější místo v pokoji", " °C"),
+    ("teplota_max", "Nejteplejší místo v pokoji", " °C"),
     ("venku", "Venku u tohoto okna", " °C"),
-    ("rosny_bod", "Rosný bod", " °C"),
-    ("zastupce", "Větrá za nás", None),
+    ("vlhkost", "Vlhkost v pokoji", " %"),
     ("provedeno", "Poslední povel", None),
-    ("ovladani", "Ovládání", None),
+    ("co_bylo", "Poslední rozhodnutí", None),
+    ("co_dal", "Co změnu spustí", None),
+    ("duvody", "Diagnostika", None),
     ("topeni", "Topení — posíláme", None),
+    ("zvlhcovac_bezi", "Zvlhčovač", None),
+    ("cisticka_bezi", "Čistička", None),
+]
+
+# Podrobnosti: zajímavé při ladění, ne při pohledu z chodby. Jdou na
+# konec karty místnosti, aby nad nimi bylo to podstatné.
+ATRIBUTY_PODROBNE = [
+    ("ovladani", "Ovládání", None),
+    ("rosny_bod", "Rosný bod", " °C"),
+    ("teplota_trend", "Kam se teplota hýbe", None),
+    ("je_noc", "Noční hodiny", None),
+    ("spi_se", "Spí se tu", None),
+    ("nocni_klid", "Noční klid", None),
+    ("rucni_zasah", "Sáhl jsi na okno", None),
+    ("kontakt_hlasi", "Kontakt hlásí otevřeno", None),
+    ("otevreno_min", "Otevřeno už", " min"),
+    ("zastupce", "Větrá za nás", None),
+    ("narazove_vetrani", "Nárazové větrání běží", None),
+    ("narazove_mozne", "Nárazový režim je možný", None),
+    ("ucinek", "Zabírá to? (od otevření)", None),
+    ("cekani_po_marnem", "Čekání po marném větrání", None),
+    ("pauza_po_pulzu_min", "Pauza po větrání", " min"),
+    ("vetrani_za_sebou", "Větrání po sobě bez vyvětrání", None),
+    ("prach_zvenci", "Prach se tahá zvenčí", None),
+    ("prach_ze_zvlhcovace", "Prach je ze zvlhčovače", None),
+    ("co2_vlastni", "CO2 z vlastního čidla", " ppm"),
+    ("co2_max", "CO2 nejhorší v oblasti", " ppm"),
+    ("prahy_z_oblasti", "Prahy bere z oblasti", None),
     ("topeni_rezim", "Topení — režim", None),
     ("topeni_utlum", "Topení — útlum", None),
     ("topeni_poslano", "Topení — poslední povel", None),
     ("topeni_hlavice", "Topení — hlásí hlavice", None),
     ("odvzdusneni", "Odvzdušnění", None),
-    ("zvlhcovac_bezi", "Zvlhčovač", None),
-    ("cisticka_bezi", "Čistička", None),
-    ("vlhkost", "Vlhkost v pokoji", " %"),
-    ("narazove_vetrani", "Nárazové větrání běží", None),
-    ("pauza_po_pulzu_min", "Pauza po větrání", " min"),
-    ("nocni_klid", "Noční klid", None),
-    ("rucni_zasah", "Sáhl jsi na okno", None),
-    ("kontakt_hlasi", "Kontakt hlásí otevřeno", None),
-    ("prach_zvenci", "Prach se tahá zvenčí", None),
+    ("nejnizsi_teplota", "Nejnižší teplota dneška", " °C"),
     ("dnes", "Souhrn dne", None),
-    ("co_bylo", "Poslední rozhodnutí", None),
-    ("ucinek", "Zabírá to? (od otevření)", None),
-    ("cekani_po_marnem", "Čekání po marném větrání", None),
-    ("co_dal", "Co změnu spustí", None),
-    ("duvody", "Diagnostika", None),
 ]
 
 
@@ -460,6 +478,19 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             c.append("")
 
         c += _karta(polozky, nazev=jm(m))
+
+        # Podrobnosti až za vším ostatním, ve sbalené kartě — při
+        # ladění se hodí, při běžném pohledu překáží.
+        drobne = []
+        for a, n, jed in ATRIBUTY_PODROBNE:
+            drobne += _atribut(stav, a, n, jed)
+        if drobne:
+            c.append("  - type: entities")
+            c.append(f'    title: "{jm(m)} — podrobnosti"')
+            c.append("    state_color: false")
+            c.append("    entities:")
+            c += drobne
+            c.append("")
         # Konflikt, stupnice a předpověď v jedné kartě. Stupnice patří
         # do bloku s pevnou šířkou kvůli zarovnání, věta naopak mimo —
         # v bloku se nezalomí a na mobilu se odřízne.

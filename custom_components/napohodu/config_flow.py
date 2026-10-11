@@ -445,22 +445,24 @@ def _stav_vyber(nazvy: list[str]):
     )
 
 
-def _schema_mistnost(mistnosti: list[dict] | None = None) -> vol.Schema:
+def _schema_mistnost() -> vol.Schema:
+    """Co místnost má: čidla a zařízení. Bez tohohle kroku integrace neví, co ovládat."""
     return vol.Schema(
     {
-        # --- Místnost a její čidla ---
+        # --- Místnost ---
         vol.Required(c.CONF_NAZEV): selector.TextSelector(),
         vol.Optional(c.CONF_PORADI, default=0): _cislo(0, 99, 1, ""),
+        # --- Čidla v místnosti ---
         vol.Optional(c.CONF_TEPLOTY): _ent(["sensor"], True, ["temperature"]),
         vol.Optional(c.CONF_CO2): _ent(["sensor"], True),
         vol.Optional(c.CONF_PM25): _ent(["sensor"], True),
         vol.Optional(c.CONF_PM10): _ent(["sensor"], True),
         vol.Optional(c.CONF_PM_PLATNY): _ent(["binary_sensor", "switch"]),
         vol.Optional(c.CONF_RH_VNITRNI): _ent(["sensor"], trida=["humidity"]),
+        # --- Venkovní čidla, když se liší od zbytku bytu ---
         vol.Optional(c.CONF_T_VENKU_M): _ent(["sensor"], trida=["temperature"]),
         vol.Optional(c.CONF_RH_VENKU_M): _ent(["sensor"], trida=["humidity"]),
-
-        # --- Okna: které a jak se chovají ---
+        # --- Okno ---
         vol.Optional(c.CONF_OKNA): _ent(["cover"], True),
         vol.Optional(c.CONF_KONTAKT_M): _ent(["binary_sensor"], True),
         vol.Optional(c.CONF_ZDROJ_OKENNIHO_M, default="nase_otevreni"): _volba(
@@ -469,15 +471,41 @@ def _schema_mistnost(mistnosti: list[dict] | None = None) -> vol.Schema:
             ["input_boolean", "switch", "binary_sensor"], True),
         vol.Optional(c.CONF_VETRAT): _ent(
             ["input_boolean", "switch", "binary_sensor"], True),
+        vol.Optional(c.CONF_ZASKLENI, default="dvojsklo"): _volba(
+            list(c.ZASKLENI_PODIL), "zaskleni"),
+        # --- Topení a stínění ---
+        vol.Optional(c.CONF_CLIMATE): _ent(["climate"], True),
+        vol.Optional(c.CONF_ZALUZIE): _ent(["cover"], True),
+        vol.Optional(c.CONF_AZIMUT, default=180): _cislo(0, 359, 1, "°"),
+        # --- Pomocníci ---
+        vol.Optional(c.CONF_CISTICKA): _ent(
+            ["fan", "switch", "input_boolean"], True),
+        vol.Optional(c.CONF_ZVLHCOVAC): _ent(
+            ["humidifier", "switch", "fan", "input_boolean"], True),
+    }
+)
+
+def _schema_chovani(mistnosti: list[dict] | None = None) -> vol.Schema:
+    """Jak se to má chovat. Všechno má rozumnou výchozí hodnotu, takže se tím dá při zakládání proklikat."""
+    return vol.Schema(
+    {
+        # --- Časování oken ---
         vol.Optional(c.CONF_PROJEZD_M, default=120): _cislo(10, 600, 10, "s"),
         vol.Optional(c.CONF_MIN_DRZENI, default=20): _cislo(1, 120, 1, "min"),
         vol.Optional(c.CONF_RUCNI_KLID, default=30): _cislo(0, 240, 5, "min"),
-
-        # --- Kdy větrat ---
+        # --- Vzduch: CO2 ---
         vol.Optional(c.CONF_CO2_OTEVRIT, default=800): _cislo(500, 2000, 25, "ppm"),
         vol.Optional(c.CONF_CO2_ZAVRIT, default=650): _cislo(400, 1500, 25, "ppm"),
         vol.Optional(c.CONF_CO2_NOC, default=1000): _cislo(600, 2000, 25, "ppm"),
         vol.Optional(c.CONF_CO2_NOC_KRIZE, default=1250): _cislo(800, 2500, 25, "ppm"),
+        # --- Vzduch: prach ---
+        vol.Optional(c.CONF_PM_SPATNE, default=35):
+            _cislo(10, 100, 1, "µg/m³"),
+        vol.Optional(c.CONF_PM_CISTO, default=20):
+            _cislo(5, 60, 1, "µg/m³"),
+        vol.Optional(c.CONF_CISTICKA_OD, default=35):
+            _cislo(5, 100, 1, "µg/m³"),
+        # --- Teplota: pásmo kolem cíle ---
         vol.Optional(c.CONF_HYST_DEN_OTEVRIT, default=2.5):
             _cislo(0, 8, 0.5),
         vol.Optional(c.CONF_HYST_DEN_ZAVRIT, default=1.0):
@@ -486,30 +514,22 @@ def _schema_mistnost(mistnosti: list[dict] | None = None) -> vol.Schema:
             _cislo(0, 8, 0.5),
         vol.Optional(c.CONF_HYST_NOC_ZAVRIT, default=1.0):
             _cislo(0, 8, 0.5),
+        vol.Optional(c.CONF_ODCHYLKA, default=0.0): _cislo(-5, 5, 0.5),
+        # --- Teplota: kdy má větrání smysl ---
         vol.Optional(c.CONF_REZERVA_VENKU, default=2.0): _cislo(0, 8, 0.5),
-        vol.Optional(c.CONF_MEZ_DOLNI, default=18.0): _cislo(10, 24, 0.5),
-        vol.Optional(c.CONF_MEZ_HORNI, default=27.0): _cislo(22, 35, 0.5),
-        vol.Optional(c.CONF_PRO_POHODU, default=True):
-            selector.BooleanSelector(),
-        vol.Optional(c.CONF_ZVLHCOVAC_VE_SPANKU, default=True):
-            selector.BooleanSelector(),
-        vol.Optional(c.CONF_PRACH_DOSAH, default="byt"): _volba(
-            c.DOSAHY, "dosah"),
-        vol.Optional(c.CONF_PRACH_MISTNOSTI): _vyber(mistnosti or []),
-        vol.Optional(c.CONF_VLHKOST_DOSAH, default="byt"): _volba(
-            c.DOSAHY, "dosah"),
-        vol.Optional(c.CONF_VLHKOST_MISTNOSTI): _vyber(mistnosti or []),
         vol.Optional(c.CONF_CHLAZENI_MIN_VENKU, default=7.0):
             _cislo(-20, 10, 0.5),
-        vol.Optional(c.CONF_DEST_PRAH, default=0.3): _cislo(0, 20, 0.1, "mm/h"),
+        vol.Optional(c.CONF_MEZ_DOLNI, default=18.0): _cislo(10, 24, 0.5),
+        vol.Optional(c.CONF_MEZ_HORNI, default=27.0): _cislo(22, 35, 0.5),
+        # --- Kdy se smí větrat ---
+        vol.Optional(c.CONF_PRO_POHODU, default=True):
+            selector.BooleanSelector(),
         vol.Optional(c.CONF_I_KDYZ_NIKDO, default=False):
             selector.BooleanSelector(),
         vol.Optional(c.CONF_OCHOTA, default="normalne"): _volba(
             c.OCHOTA_VETRAT, "ochota_vetrat"),
-
-        # --- Teplota a topení ---
-        vol.Optional(c.CONF_ODCHYLKA, default=0.0): _cislo(-5, 5, 0.5),
-        vol.Optional(c.CONF_CLIMATE): _ent(["climate"], True),
+        vol.Optional(c.CONF_DEST_PRAH, default=0.3): _cislo(0, 20, 0.1, "mm/h"),
+        # --- Topení ---
         vol.Optional(c.CONF_TOPIT_PRI_OKNU, default="nechat"): _volba(
             c.PRI_OKNU, "topit_pri_oknu"),
         vol.Optional(c.CONF_UTLUM, default=16.0): _cislo(5, 20),
@@ -520,34 +540,27 @@ def _schema_mistnost(mistnosti: list[dict] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_ZNACKA_MIMO, default=7.7): _cislo(4, 15, 0.1),
         vol.Optional(c.CONF_ODVZDUSNENI_H, default=24): _cislo(0, 96, 1, "h"),
         vol.Optional(c.CONF_ODVZDUSNENI_T, default=28.0): _cislo(22, 32),
-
-        # --- Žaluzie (chování se nastavuje u každé zvlášť v dalším kroku) ---
-        vol.Optional(c.CONF_ZALUZIE): _ent(["cover"], True),
-        vol.Optional(c.CONF_AZIMUT, default=180): _cislo(0, 359, 1, "°"),
+        # --- Stínění ---
         vol.Optional(c.CONF_STINENI_PREDSTIH, default=1.0):
             _cislo(0, 5, 0.5),
         vol.Optional(c.CONF_KLID_STINENI_MIN, default=15):
             _cislo(1, 120, 1, "min"),
-
-        # --- Pomocná zařízení ---
-        vol.Optional(c.CONF_CISTICKA): _ent(
-            ["fan", "switch", "input_boolean"], True),
-        vol.Optional(c.CONF_PM_SPATNE, default=35):
-            _cislo(10, 100, 1, "µg/m³"),
-        vol.Optional(c.CONF_PM_CISTO, default=20):
-            _cislo(5, 60, 1, "µg/m³"),
-        vol.Optional(c.CONF_CISTICKA_OD, default=35):
-            _cislo(5, 100, 1, "µg/m³"),
-        vol.Optional(c.CONF_ZVLHCOVAC): _ent(
-            ["humidifier", "switch", "fan", "input_boolean"], True),
+        # --- Zvlhčovač ---
         vol.Optional(c.CONF_RH_MIN, default=38.0): _cislo(20, 55, 1, "%"),
         vol.Optional(c.CONF_RH_MAX, default=60.0): _cislo(40, 80, 1, "%"),
         vol.Optional(c.CONF_ZVLHCOVAC_KDY, default="vzdy"): _volba(
             c.ZVLHCOVAC_KDY, "zvlhcovac_kdy"),
-        vol.Optional(c.CONF_ZASKLENI, default="dvojsklo"): _volba(
-            list(c.ZASKLENI_PODIL), "zaskleni"),
+        vol.Optional(c.CONF_ZVLHCOVAC_VE_SPANKU, default=True):
+            selector.BooleanSelector(),
+        vol.Optional(c.CONF_PRACH_DOSAH, default="byt"): _volba(
+            c.DOSAHY, "dosah"),
+        vol.Optional(c.CONF_PRACH_MISTNOSTI): _vyber(mistnosti or []),
+        vol.Optional(c.CONF_VLHKOST_DOSAH, default="byt"): _volba(
+            c.DOSAHY, "dosah"),
+        vol.Optional(c.CONF_VLHKOST_MISTNOSTI): _vyber(mistnosti or []),
     }
 )
+
 
 SCHEMA_PRITOMNOST = vol.Schema(
     {
@@ -649,11 +662,25 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
             chyby = _zkontroluj_prahy(user_input)
             if not chyby:
                 self._data.update(user_input)
-                return await self.async_step_stineni()
+                return await self.async_step_chovani()
         return self.async_show_form(
             step_id="zaklad",
             data_schema=self.add_suggested_values_to_schema(
-                _schema_mistnost(self._ostatni_mistnosti()),
+                _schema_mistnost(), user_input or {}),
+            errors=chyby)
+
+    async def async_step_chovani(self, user_input=None) -> SubentryFlowResult:
+        """Druhý krok: jak se to má chovat. Dá se proklikat."""
+        chyby = {}
+        if user_input is not None:
+            chyby = _zkontroluj_prahy({**self._data, **user_input})
+            if not chyby:
+                self._data.update(user_input)
+                return await self.async_step_stineni()
+        return self.async_show_form(
+            step_id="chovani",
+            data_schema=self.add_suggested_values_to_schema(
+                _schema_chovani(self._ostatni_mistnosti()),
                 user_input or {}),
             errors=chyby)
 
@@ -817,7 +844,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         return self.async_show_form(
             step_id="reconfigure",
             data_schema=self.add_suggested_values_to_schema(
-                _schema_mistnost(self._ostatni_mistnosti())
+                _schema_mistnost()
+                .extend(_schema_chovani(self._ostatni_mistnosti()).schema)
                 .extend(SCHEMA_PRITOMNOST.schema)
                 .extend(SCHEMA_INDICIE.schema),
                 {**self._platne(pod.subentry_id, self._data),

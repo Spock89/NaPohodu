@@ -538,3 +538,23 @@ def test_graf_zvlhcovacu_jen_kde_jsou():
     assert not [k for s in d2["sections"] for k in s["cards"]
                 if k.get("title") == "Zvlhčovače"
                 and k["type"] == "history-graph"]
+
+
+def test_karta_mistnosti_ma_podrobnosti_na_konci():
+    """Podstatné nahoře, ladicí údaje až za vším ostatním."""
+    import yaml
+    d = yaml.safe_load(dashboard(
+        ["obyvak"], [], vzdy, cidla={"obyvak": "sensor.a"},
+        podoba="stranka"))
+    karty = [k for s in d["sections"] for k in s["cards"]
+             if k.get("type") == "entities" and k.get("title")]
+    nazvy = [k["title"] for k in karty]
+    assert "Obyvak" in nazvy and "Obyvak — podrobnosti" in nazvy
+    assert nazvy.index("Obyvak") < nazvy.index("Obyvak — podrobnosti")
+
+    hlavni = next(k for k in karty if k["title"] == "Obyvak")
+    drobne = next(k for k in karty if k["title"].endswith("podrobnosti"))
+    # žádný údaj není na obou místech
+    a = {str(e) for e in hlavni["entities"]}
+    b = {str(e) for e in drobne["entities"]}
+    assert not (a & b)
