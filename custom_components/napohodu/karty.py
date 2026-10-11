@@ -105,13 +105,13 @@ STARSI_POSUVNIKY = {
 # Co je vidět pořád: stav, rozhodnutí a to, co se zrovna děje.
 ATRIBUTY_STAVU = [
     ("co2", "CO2", " ppm"),
-    ("uvnitr", "Nejchladnější místo v pokoji", " °C"),
-    ("teplota_max", "Nejteplejší místo v pokoji", " °C"),
+    ("teplota_rozhodna", "Teplota v pokoji", None),
     ("venku", "Venku u tohoto okna", " °C"),
     ("vlhkost", "Vlhkost v pokoji", " %"),
     ("provedeno", "Poslední povel", None),
     ("co_bylo", "Poslední rozhodnutí", None),
     ("co_dal", "Co změnu spustí", None),
+    ("ucinek", "Zabírá to? (od otevření)", None),
     ("duvody", "Diagnostika", None),
     ("topeni", "Topení — posíláme", None),
     ("zvlhcovac_bezi", "Zvlhčovač", None),
@@ -133,7 +133,6 @@ ATRIBUTY_PODROBNE = [
     ("zastupce", "Větrá za nás", None),
     ("narazove_vetrani", "Nárazové větrání běží", None),
     ("narazove_mozne", "Nárazový režim je možný", None),
-    ("ucinek", "Zabírá to? (od otevření)", None),
     ("cekani_po_marnem", "Čekání po marném větrání", None),
     ("pauza_po_pulzu_min", "Pauza po větrání", " min"),
     ("vetrani_za_sebou", "Větrání po sobě bez vyvětrání", None),
@@ -159,18 +158,32 @@ SEKCE = "#--SEKCE--"
 # Pořadí sekcí na stránce. Karty se staví v tom pořadí, v jakém je
 # pohodlné je poskládat v kódu, ale na stránce mají být jinak — tohle
 # je ta druhá věc a mění se přesunutím jednoho řádku.
+# Kde se Ladění rozdělí na kratší sekce a jak se nová jmenuje.
+ZLOMY_LADENI = {
+    "nejkratsi_doba_drzeni_polohy": "Ladění — časování",
+    "prach_je_spatny_od_pm2_5": "Ladění — prach",
+    "ve_dne_otevrit_pri_odchylce_od_cile_o": "Ladění — teplota",
+    "v_noci_posun_cilove_teploty": "Ladění — topení",
+    "otevrit_nad_co2": "Ladění — CO2",
+}
+
 PORADI_SEKCI = [
     "Cílová teplota",
     "#pokoj",                 # každá místnost se svými budíky
     "Ovládání oken",          # s ovládáním žaluzií v jedné sekci
     "Ladění",
-    "Otevřít nad CO2",
+    "Ladění — časování",
+    "Ladění — teplota",
+    "Ladění — prach",
+    "Ladění — topení",
+    "Ladění — CO2",
     "Zvlhčovače",             # se srovnáním v jedné sekci
     "Srovnat do žádané polohy",
     "Obsazenost a klid",      # se sdíleným vzduchem v jedné sekci
     "Základ výpočtu",         # s pravidly bez nastavení
     "Slunce a stínění",
     "Grafy",
+    "— podrobnosti",          # ladicí výpisy každé místnosti, úplně nakonec
 ]
 
 
@@ -260,7 +273,8 @@ def _klic_sekce(sekce: list[str]) -> tuple:
         # hledá se proto obojí.
         znacka = next((z for z in PORADI_SEKCI
                        if z != "#pokoj"
-                       and (f": {z}" in text or f': "{z}"' in text)), None)
+                       and (f": {z}" in text or f': "{z}"' in text
+                            or z in text)), None)
     try:
         return (PORADI_SEKCI.index(znacka), 0)
     except ValueError:
@@ -479,18 +493,6 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
 
         c += _karta(polozky, nazev=jm(m))
 
-        # Podrobnosti až za vším ostatním, ve sbalené kartě — při
-        # ladění se hodí, při běžném pohledu překáží.
-        drobne = []
-        for a, n, jed in ATRIBUTY_PODROBNE:
-            drobne += _atribut(stav, a, n, jed)
-        if drobne:
-            c.append("  - type: entities")
-            c.append(f'    title: "{jm(m)} — podrobnosti"')
-            c.append("    state_color: false")
-            c.append("    entities:")
-            c += drobne
-            c.append("")
         # Konflikt, stupnice a předpověď v jedné kartě. Stupnice patří
         # do bloku s pevnou šířkou kvůli zarovnání, věta naopak mimo —
         # v bloku se nezalomí a na mobilu se odřízne.
@@ -592,8 +594,11 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         # Přejmenovaná entita si v Home Assistantu drží původní
         # identifikátor, takže se zkouší všechny, pod kterými kdy byla.
         drive = (drive,) if isinstance(drive, str) else (drive or ())
-        if klic == "otevrit_nad_co2":
-            c.append(SEKCE)      # prahy CO2 do vlastní sekce
+        # Jedna sekce s třiceti kartami rozhodí rozvržení do sloupců,
+        # protože ostatní jsou krátké. Ladění se proto dělí po tématech.
+        if klic in ZLOMY_LADENI:
+            c.append(SEKCE)
+            c += _hlavicka(ZLOMY_LADENI[klic], "mdi:tune", "subtitle")
         polozky = []
         for m in mistnosti:
             eid = _prvni(existuje, f"number.napohodu_{m}_{klic}",
@@ -744,6 +749,24 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     zvlh = [(e, f"Zvlhčovač {jm(m)}")
             for m in mistnosti for e in (zvlhcovace or {}).get(m, [])]
     c += _graf("Zvlhčovače", 48, zvlh, existuje, min_radku=1)
+
+    # Podrobnosti každé místnosti zvlášť a úplně nakonec. Řádek, který
+    # nemá hodnotu, se vynechá — karta se seznamem to neumí, markdown
+    # ano, a prázdné „Neznámý" jen zabíralo místo.
+    for m in mistnosti:
+        stav = f"sensor.napohodu_{m}_stav"
+        if not existuje(stav):
+            continue
+        c.append(SEKCE)
+        c += _hlavicka(f"{jm(m)} — podrobnosti", "mdi:magnify", "subtitle")
+        c.append("  - type: markdown")
+        c.append("    content: |-")
+        for a, n, jed in ATRIBUTY_PODROBNE:
+            c.append(f"      {{% set x = state_attr('{stav}', '{a}') %}}")
+            c.append("      {% if x is not none and x != '' %}")
+            c.append(f"      - **{n}:** {{{{ x }}}}{jed or ''}")
+            c.append("      {% endif %}")
+        c.append("")
 
     karty = [x for x in c if x is not None]
 

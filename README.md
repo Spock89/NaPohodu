@@ -93,7 +93,7 @@ větrání jedním oknem — vzduch se vymění rychleji a stěny se nestihnou
 vychladit.
 
 Stačí, aby vzduch potřebovala jedna místnost, a otevřou se všechna okna,
-kterým v tom nic nebrání. Vítr, déšť, noční mez nebo prázdný byt
+kterým v tom nic nebrání. Vítr, déšť, pojistky nebo prázdný byt
 zůstávají v platnosti a okno tam prostě zavřené zůstane.
 
 Nárazové větrání smí jít pod běžnou spodní hranici třiceti minut, protože
@@ -655,8 +655,9 @@ přepínač, ne hodiny — dokud je zapnutý, otevře jen krizový práh.
 teplota okno neotvírá ani nezavírá. Rámus okna vzbudí spolehlivěji než
 oxid uhličitý.
 
-**Pojistka ve spánku jsou dva stupně pod noční mezí.** Bez ní by mráz
-ložnici vychladil, protože teplota okno ve spánku nezavírá.
+**Teplotu ve spánku drží obě pojistky**, stejně jako kdykoli jindy.
+Bez nich by mráz ložnici vychladil, protože teplota sama okno ve spánku
+nezavírá.
 
 **V noci se zavírá po vyvětrání** i tehdy, když teplota na mez
 neklesla.
@@ -664,8 +665,7 @@ neklesla.
 **Couvání po neúspěšném pulzu je patnáct minut** a s každým dalším se
 zdvojnásobí, nejvýš na hodinu. Spouští se, když větrání nezabírá na
 CO2 — typicky když jedna místnost větrá za druhou a svým oknem její
-vzduch skoro neovlivní. Teplotního kmitání se netýká, to řeší tloušťka
-smyčky.
+vzduch skoro neovlivní. Teplotního kmitání se netýká, to řeší pásmo.
 
 Pravidla pro celý byt jsou v kartě jednou, v samostatné sekci před
 grafy. Ta, která závisí na stavu místnosti, zůstávají u ní.
@@ -761,3 +761,160 @@ inspirací:
 **Pozor při přispívání:** Better Thermostat je pod AGPL-3.0. Do NaPohody
 se z něj nesmí kopírovat kód, jinak by celý projekt musel na AGPL přejít.
 Inspirovat se chováním je v pořádku, myšlenky autorské právo nechrání.
+
+---
+
+<img src="icon.png" alt="NaPohodu" width="96" align="right">
+
+# NaPohodu — English
+
+A Home Assistant integration that keeps a chosen temperature and
+decent air in every room. It decides which means to use and makes sure
+heating, ventilation and shading do not get in each other's way.
+
+The user interface is translated: Home Assistant picks the language
+from each user's profile. Decision texts that the integration composes
+at runtime — reasons, scales, card messages — are still Czech, because
+they are built from numbers and states as it goes.
+
+## What it does
+
+### Adaptive target temperature
+
+The target follows a one-week running average of the outdoor
+temperature, per EN 16798-1: lower in winter, higher in summer,
+because people acclimatise. You control a single offset slider, per
+room. The averages are computed by the integration itself, so no
+statistics sensors or history are needed.
+
+**Winter boost.** The adaptive standard is written for summer comfort
+and in winter it merely rests on its lower bound. But in frost the
+walls and windows get cold, the mean radiant temperature drops and the
+same air feels cooler, so a configurable boost is added below a
+threshold.
+
+### Temperature band and limits
+
+Temperature-driven ventilation stands on one idea with two clocks.
+Around the target there is a **hysteresis band**, separately for day
+and night, and above it two **absolute limits**:
+
+```
+target            adaptive, follows the season
+
+day band          open at a deviation of   2.5 °C
+                  close past the target by 1.0 °C
+night band        the same pair, own values
+
+limits            never cool below   18 °C
+                  never overheat above 27 °C
+```
+
+Both band values apply symmetrically: above the upper edge it cools
+with outdoor air, below the lower one it heats with it, and it runs to
+the **opposite side** of the target rather than to the target itself —
+otherwise the temperature starts coming back at once. The band may be
+asymmetric and the closing value may be zero.
+
+The outdoor air must also be **past the run-down by a configured
+margin**, otherwise the cycle crawls up to the edge and never crosses
+it.
+
+**The limits close the window whatever it is open for**, and they open
+nothing. They act only against air pushing the wrong way — a window
+that is cooling an overheated room is not closed by them. Only a
+manual request to air out gets past.
+
+### Air: CO2 and dust
+
+Ventilation for CO2 or dust **waits until the air is cleared**; the
+limits take care of the cold. Thresholds are per room, the worst value
+in a zone decides, and at night a higher threshold applies. While
+sleeping, only the emergency threshold opens the window.
+
+Dust is treated separately because it cannot always be ventilated
+away: if it is worse outside, opening only drags it in. With no
+outdoor dust sensor the integration learns this from how the dust
+reacts to an open window.
+
+### Does it even work?
+
+Effectiveness is judged **in intervals, not against the moment of
+opening**. The first interval is the shortest hold time, the following
+ones a fifth of it and at least five minutes.
+
+Stalling and worsening are not the same thing. After the first
+interval without improvement it gets one more chance, because
+ventilation can be slow to start. Worsening is acted on as soon as it
+is detected. The shortest hold time applies in both cases.
+
+After a futile attempt it waits for the **outdoor temperature to
+change** in the direction that would help, or at most for a configured
+ceiling.
+
+### Zones
+
+Rooms that breathe together form a zone. They share the worst CO2 and
+dust value, so one window can serve them all, and sleep in one of them
+counts for the whole zone unless the door is closed.
+
+A room **without a controlled window** asks its zone neighbours for
+cooling or heating. The request ends at the target rather than at the
+far edge of the band, so the valve in that room does not heat against
+a window open next door — and the setback for an open window applies
+there too.
+
+### Heating
+
+The target is sent to the valves, in cooperation with Better
+Thermostat. It is sent only on a real change and **compared with what
+the valve reports**, not with what we sent last, because Better
+Thermostat sometimes rewrites the target itself.
+
+There is a night shift of the target with a signed value, a setback
+for an open window, a setback for a long absence, bleeding at the
+start of the season and marker temperatures that reveal whose command
+a valve received.
+
+### Shading
+
+Solar gain is computed per window from its azimuth and the position of
+the sun, with cloud cover read from a radiation sensor. Each blind has
+named positions you can record and test, and roles assigned to them —
+shading, unshading, privacy, empty home, default.
+
+### Humidifier and purifier
+
+The purifier handles dust, which in winter and at night beats opening
+a window. The humidifier has lower and upper humidity limits, and the
+upper one **lowers itself in frost** so the glass does not fog up —
+computed from the glazing type.
+
+An ultrasonic humidifier sprays minerals that sensors see as dust. Its
+reach is configurable: its own room, its zone, selected rooms or the
+whole home. The same choice exists for which open windows stop it
+humidifying.
+
+### Dashboard
+
+The integration generates a card or a whole page from entities that
+really exist. Every room has a compact card with what matters, and a
+**details section at the very end** with the debugging values; rows
+without a value are left out.
+
+## What it does not do
+
+It does not invent sensor values. Where a reading is missing, it says
+so and does not decide on that input. It does not learn your habits
+and does not predict; every decision can be read from the current
+numbers and the settings.
+
+## Installation via HACS
+
+Add this repository as a custom repository of type Integration, then
+install NaPohodu and restart Home Assistant. Setup is in Settings →
+Devices & services → Add integration.
+
+## Licence
+
+MIT. See the LICENSE file.

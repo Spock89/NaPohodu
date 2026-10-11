@@ -1525,3 +1525,31 @@ def test_formular_mistnosti_ma_dva_kroky(nahradni_ha):
     assert not (zar & chov)          # nic se neptá dvakrát
     assert "CONF_OKNA" in zar and "CONF_CLIMATE" in zar
     assert "CONF_MIN_DRZENI" in chov and "CONF_MEZ_DOLNI" in chov
+
+
+def test_anglictina_je_opravdu_prelozena(nahradni_ha):
+    """Anglický soubor býval kopie češtiny — 688 ze 700 textů bylo
+    česky, takže přepnutí jazyka nic nedělalo."""
+    import json
+    import pathlib
+
+    d = pathlib.Path("custom_components/napohodu/translations")
+    en = json.loads((d / "en.json").read_text())
+
+    def chod(x):
+        if isinstance(x, dict):
+            for v in x.values():
+                yield from chod(v)
+        elif isinstance(x, str):
+            yield x
+
+    ceske = [t for t in chod(en)
+             if any(z in t.lower() for z in "áéěíóúůýčďňřšťž")]
+    assert not ceske, ceske[:3]
+
+
+def test_readme_ma_obe_jazykove_verze(nahradni_ha):
+    import pathlib
+    r = pathlib.Path("README.md").read_text()
+    assert "# NaPohodu — English" in r
+    assert r.index("# NaPohodu\n") < r.index("# NaPohodu — English")

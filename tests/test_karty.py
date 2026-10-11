@@ -228,7 +228,8 @@ def test_poradi_sekci_odpovida_nastavenemu():
              or sek["cards"][0]["type"] for sek in d["sections"]]
     assert prvni[0] == "Cílová teplota"
     assert prvni[1] == "horizontal-stack"       # místnosti hned za tím
-    assert prvni[-1] == "Grafy"                 # grafy nakonec
+    # grafy jsou poslední z přehledu, za nimi už jen podrobnosti
+    assert [x for x in prvni if "podrobnosti" not in x][-1] == "Grafy"
     assert "Ladění" in prvni
     assert len(PORADI_SEKCI) >= 8
 
@@ -328,7 +329,7 @@ def test_rozvrzeni_sekci():
     prvni = [sek["cards"][0].get("heading") or sek["cards"][0].get("title")
              or sek["cards"][0]["type"] for sek in d["sections"]]
     assert prvni[0] == "Cílová teplota"
-    assert prvni[-1] == "Grafy"
+    assert [x for x in prvni if "podrobnosti" not in x][-1] == "Grafy"
     assert prvni.index("Ovládání oken") < prvni.index("Ladění")
     assert prvni.index("Zvlhčovače") < prvni.index("Obsazenost a klid")
     # obsazenost a sdílený vzduch v jedné sekci, každé s nadpisem
@@ -540,21 +541,41 @@ def test_graf_zvlhcovacu_jen_kde_jsou():
                 and k["type"] == "history-graph"]
 
 
-def test_karta_mistnosti_ma_podrobnosti_na_konci():
-    """Podstatné nahoře, ladicí údaje až za vším ostatním."""
+def test_podrobnosti_jsou_vlastni_sekce_na_konci():
+    """Podstatné nahoře, ladicí výpisy úplně nakonec — a prázdné
+    řádky se vynechají, protože „Neznámý" jen zabíral místo."""
     import yaml
     d = yaml.safe_load(dashboard(
-        ["obyvak"], [], vzdy, cidla={"obyvak": "sensor.a"},
+        ["obyvak", "kuchyne"], [], vzdy,
+        cidla={"obyvak": "sensor.a", "kuchyne": "sensor.b"},
         podoba="stranka"))
-    karty = [k for s in d["sections"] for k in s["cards"]
-             if k.get("type") == "entities" and k.get("title")]
-    nazvy = [k["title"] for k in karty]
-    assert "Obyvak" in nazvy and "Obyvak — podrobnosti" in nazvy
-    assert nazvy.index("Obyvak") < nazvy.index("Obyvak — podrobnosti")
+    nadpisy = [s["cards"][0].get("heading") or s["cards"][0].get("title")
+               for s in d["sections"]]
+    assert nadpisy[-2:] == ["Obyvak — podrobnosti",
+                            "Kuchyne — podrobnosti"]
 
-    hlavni = next(k for k in karty if k["title"] == "Obyvak")
-    drobne = next(k for k in karty if k["title"].endswith("podrobnosti"))
-    # žádný údaj není na obou místech
-    a = {str(e) for e in hlavni["entities"]}
-    b = {str(e) for e in drobne["entities"]}
-    assert not (a & b)
+    md = d["sections"][-1]["cards"][1]
+    assert md["type"] == "markdown"
+    assert "is not none" in md["content"]   # prázdné se vynechá
+
+
+def test_ladeni_se_deli_na_kratsi_sekce():
+    """Jedna sekce s třiceti kartami rozhodí rozvržení do sloupců."""
+    import yaml
+    d = yaml.safe_load(dashboard(
+        ["obyvak", "kuchyne"], [], vzdy,
+        cidla={"obyvak": "sensor.a", "kuchyne": "sensor.b"},
+        podoba="stranka"))
+    nejvetsi = max(len(s["cards"]) for s in d["sections"])
+    assert nejvetsi <= 20, nejvetsi
+    nadpisy = [s["cards"][0].get("heading") for s in d["sections"]]
+    assert "Ladění — teplota" in nadpisy and "Ladění — CO2" in nadpisy
+
+
+def test_v_kartach_je_jen_jedna_teplota_v_pokoji():
+    """Nejteplejší a nejchladnější čidlo bývá totéž; ukazuje se to,
+    podle kterého se zrovna rozhoduje."""
+    from karty import ATRIBUTY_PODROBNE, ATRIBUTY_STAVU
+    vse = {a for a, _, _ in ATRIBUTY_STAVU + ATRIBUTY_PODROBNE}
+    assert "teplota_rozhodna" in vse
+    assert "teplota_max" not in vse and "uvnitr" not in vse

@@ -1535,6 +1535,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 self._pasmo(nast, m, v, pamet, skutecne, cas_s,
                             p.subentry_id)),
             "teplota_trend": self._trend(p.subentry_id, v, cas_s),
+            # Nejteplejší a nejchladnější čidlo bývá totéž. Ukazuje se
+            # to, podle kterého se zrovna rozhoduje: při chlazení a
+            # horku nejteplejší, jinak nejchladnější.
+            "teplota_rozhodna": (
+                f"{(m.atributy.get('teplota_max') or v.t_in):.1f} °C"
+                f" (nejteplejší)"
+                if (pamet.chladi
+                    or (m.atributy.get("teplota_max") or v.t_in) > m.cil)
+                else f"{v.t_in:.1f} °C (nejchladnější)"),
             "pevna_pravidla": core.pevna_pravidla(
                 bool(m.klid),
                 core._je_noc(self._hodina_ted, nast, bool(m.klid)),

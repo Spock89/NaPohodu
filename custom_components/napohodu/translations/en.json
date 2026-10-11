@@ -2,88 +2,88 @@
   "config": {
     "step": {
       "user": {
-        "description": "Společná čidla pro celý byt. Místnosti a zóny přidáš potom tlačítkem.",
+        "description": "Shared sensors for the whole home. You add rooms and zones afterwards with the button.",
         "data": {
-          "t_venku": "Venkovní teplota",
-          "rh_venku": "Venkovní vlhkost",
-          "zareni": "Sluneční záření (W/m2)",
-          "vitr": "Rychlost větru",
-          "naraz_vetru": "Náraz větru",
-          "dest": "Intenzita deště",
-          "doma": "Někdo je doma",
-          "cil_min": "Cíl nejméně",
-          "cil_max": "Cíl nejvíc",
-          "noc_od": "Noční klid od",
-          "noc_do": "Noční klid do",
-          "vitr_prah": "Vítr blokuje od (rychlost)",
-          "t_prumer": "Týdenní průměr (nepovinné)",
-          "t_sezona": "Třídenní průměr (nepovinné)",
-          "sezona_prah": "Topná sezóna pod",
-          "sezona_hystereze": "Hystereze sezóny",
-          "naraz_prah": "Vítr blokuje od (nárazy)",
-          "vitr_klid": "Vítr povolí pod",
-          "zpravy_kam": "Kam posílat zprávy",
-          "souhrn_cas": "Denní souhrn v",
-          "zpravy_druhy": "Co posílat",
-          "narazove_vetrani": "Nárazové větrání v zimě",
-          "narazove_odstup": "Nárazový režim od rozdílu",
-          "pm25_venku": "Venkovní PM2.5",
-          "pm10_venku": "Venkovní PM10",
-          "smog_venku": "Smog venku",
-          "sezona_rezim": "Topná sezóna",
-          "topeni_obnova_min": "Opakovat povel hlavicím po",
-          "zima_prah": "Přitápět, když venkovní průměr klesne pod",
-          "pryc_utlum_topeni": "Útlum topení, když nikdo není doma",
-          "pryc_utlum_po_hodinach": "Utlumit až po",
-          "noc_utlum_predstih": "Noční útlum nabíhat",
-          "zima_o_kolik": "Přitopit o",
-          "zima_najezd": "Plné hodnoty dosáhnout po",
-          "zmena_podminek": "Další pokus po změně venku o",
-          "nejdriv_znovu_min": "Nebo nejpozději za"
+          "t_venku": "Outdoor temperature",
+          "rh_venku": "Outdoor humidity",
+          "zareni": "Solar radiation (W/m2)",
+          "vitr": "Wind speed",
+          "naraz_vetru": "Wind gust",
+          "dest": "Rain intensity",
+          "doma": "Someone is home",
+          "cil_min": "Lowest target",
+          "cil_max": "Highest target",
+          "noc_od": "Quiet hours from",
+          "noc_do": "Quiet hours until",
+          "vitr_prah": "Wind blocks from (speed)",
+          "t_prumer": "Weekly average (optional)",
+          "t_sezona": "Three-day average (optional)",
+          "sezona_prah": "Heating season below",
+          "sezona_hystereze": "Season hysteresis",
+          "naraz_prah": "Wind blocks from (gusts)",
+          "vitr_klid": "Wind releases below",
+          "zpravy_kam": "Where to send messages",
+          "souhrn_cas": "Daily summary at",
+          "zpravy_druhy": "What to send",
+          "narazove_vetrani": "Burst ventilation in winter",
+          "narazove_odstup": "Burst mode from a difference of",
+          "pm25_venku": "Outdoor PM2.5",
+          "pm10_venku": "Outdoor PM10",
+          "smog_venku": "Smog outside",
+          "sezona_rezim": "Heating season",
+          "topeni_obnova_min": "Repeat the valve command every",
+          "pryc_utlum_topeni": "Heating setback when nobody is home",
+          "pryc_utlum_po_hodinach": "Apply the setback after",
+          "noc_utlum_predstih": "Ramp the night setback over",
+          "zima_o_kolik": "Boost heating by",
+          "zima_najezd": "Reach the full value after",
+          "zima_prah": "Add heat when the outdoor average drops below",
+          "zmena_podminek": "Retry after the outdoor change of",
+          "nejdriv_znovu_min": "Or at the latest in"
         },
         "data_description": {
-          "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
-          "rh_venku": "Venkovní vlhkost. Počítá se z ní rosný bod, aby se dovnitř netahalo vlhko.",
-          "zareni": "Čidlo slunečního záření ve W/m2. Podle něj se pozná oblačnost a nestíní se zbytečně.",
-          "vitr": "Průměrná rychlost větru. Nad prahem se okna zavřou.",
-          "naraz_vetru": "Nárazy větru. Mají přednost před průměrem, protože poškodí pohon dřív.",
-          "dest": "Intenzita deště. Zkracuje větrání a při silném dešti okna zavře.",
-          "doma": "Když je vypnuté, okna se zavřou a místnosti se považují za prázdné.",
-          "cil_min": "Pod tuto teplotu cíl neklesne ani v největším mrazu.",
-          "cil_max": "Nad tuto teplotu cíl nevystoupá ani v největším vedru.",
-          "noc_od": "Od kdy platí noční klid. Okna se pak otevírají méně a jen když je opravdu dusno.",
-          "noc_do": "Kdy noční pravidla končí. Do té doby platí vyšší práh CO2 a nevětrá se kvůli příjemnému počasí.\n\nSpánkový přepínač místnosti platí nezávisle na hodinách: dokud je zapnutý, rozhoduje jen CO2.",
-          "vitr_prah": "Ustálená rychlost větru, nad kterou se okna zavřou a nesmí otevřít. Meteostanice hlásí aktuální rychlost a k ní nárazy, žádný průměr se nepočítá.",
-          "t_prumer": "Nepovinné. Když máš vlastní statistický senzor týdenního průměru, zadej ho a bude se počítat podle něj. Bez něj si průměr integrace spočítá sama. Entita „Venkovní teplota, týdenní průměr“ pak ukazuje to, co se skutečně používá.",
-          "t_sezona": "Nepovinné. Vlastní senzor třídenního průměru pro topnou sezónu. Bez něj si ho integrace počítá sama.",
-          "sezona_prah": "Pod touhle průměrnou venkovní teplotou začíná topná sezóna. Vyhláška mluví o 13 °C ve dvou dnech po sobě a v praxi se topit začíná spíš až pod touhle hodnotou — patnáctka bývá v mnoha domech moc brzy.\n\nPočítá se z týdenního průměru, ne z okamžité teploty, takže jedno chladné ráno sezónu nespustí.",
-          "sezona_hystereze": "O kolik stupňů musí venkovní teplota vylézt nad práh, aby sezóna skončila. Sezóna začíná pod prahem, končí nad prahem plus tímhle číslem. Nula znamená bez hystereze, ale pak se může na hraně přepínat.",
-          "naraz_prah": "Nárazy poškodí pohon dřív než ustálená rychlost, proto vlastní práh. Stačí, aby jedna z obou hodnot práh překročila.",
-          "vitr_klid": "Blokace povolí, až když obě hodnoty klesnou pod tuhle. Musí být níž než oba prahy, jinak se to překlápí na hraně.",
-          "zpravy_kam": "Notify entity, například Telegram nebo mobilní aplikace. U Telegramu vytváří integrace jednu entitu na každý chat, takže příjemce vybereš tady, ne psaním čísla.",
-          "souhrn_cas": "Kdy poslat souhrn dne: kolikrát se okno hýbalo, jak dlouho bylo otevřeno, nejvyšší CO2. Podle toho se pozná, jestli jsou prahy dobře.",
-          "zpravy_druhy": "Zaškrtni, co tě zajímá. První dny se hodí i běžné otevírání, pak většinou stačí ochrana a souhrn.",
-          "narazove_vetrani": "Když je venku zima a jedna zóna potřebuje vzduch, otevřou se všechna okna naráz a krátce. Průvan vymění vzduch rychleji než dlouhé větrání jedním oknem a stěny se nestihnou vychladit. Kde tomu něco brání — vítr, déšť, pojistky — se prostě neotevře.",
-          "narazove_odstup": "O kolik se venkovní teplota musí lišit od cílové — nahoru nebo dolů — aby se přepnulo na nárazové větrání.\n\nV nárazovém režimu se neotvírá kvůli příjemnému počasí, protože venku žádné není. Větrá se jen z důvodu, tedy kvůli CO2, prachu nebo teplotě, a zavře se hned, jakmile důvod pomine — nečeká se na dojetí celého cyklu ani na „Nejkratší dobu držení polohy\".\n\nRežim se přepíná s půlstupňovou hysterezí, aby neposkakoval, když se teplota motá kolem prahu.",
-          "pm25_venku": "Prach venku. Podle něj se pozná, jestli má větrání kvůli prachu vůbec smysl — když je venku horší, otevřením se to nezlepší a jen by se větralo dokola. Bez tohohle čidla se řídí jen příznakem smogu.",
-          "pm10_venku": "Totéž pro větší částice. Nepovinné.",
-          "smog_venku": "Přepínač nebo čidlo, které říká, že venkovní vzduch nestojí za nadechnutí. Zapnutý znamená, že se kvůli prachu neotevírá — větráním by se to jen zhoršilo.",
-          "sezona_rezim": "Podle průměru se sezóna pozná z venkovní teploty za tři dny. Vždy znamená topit celoročně, nikdy vůbec — hodí se, když sezónu určuješ sám jinde.",
-          "topeni_obnova_min": "Zigbee hlavice povel občas ztratí a integrace se to nedozví. Po téhle době se poslední hodnota pošle znovu, i když se nic nezměnilo. Nula znamená posílat jen při změně.",
-          "zima_prah": "Adaptivní norma je psaná na letní komfort a v zimě se jen opře o dolní hranici. V mrazu ale chladnou stěny a okna, klesá radiační teplota a při stejném vzduchu je člověku chladněji. Nula znamená vypnuto.",
-          "pryc_utlum_topeni": "O kolik ubrat, když je byt prázdný. Nula znamená netlumit. Hlubší útlum se u zdiva nevyplatí: konstrukce chladne hodiny a stejně dlouho se natápí, takže se prototopí víc, než se ušetří.",
-          "pryc_utlum_po_hodinach": "Jak dlouho musí být prázdno, než se utlumí. Za krátkou nepřítomnost se útlum nezaplatí.",
-          "noc_utlum_predstih": "Jak dlouho před začátkem noci se začne klesat. Plynulý náběh je lepší než skok, protože hlavice i zdivo reagují pomalu. Nula znamená skokem.",
-          "zima_o_kolik": "O kolik stupňů přitopit, když je venku doopravdy zima. Dál se nepřidává — hlubší mrazy na tom nic nemění.",
-          "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C.",
-          "zmena_podminek": "Po marném větrání se čeká, až se venkovní teplota posune o tolik stupňů — a to jen tím směrem, který by pomohl: u chlazení chladněji, u ohřevu tepleji. Opačný posun situaci nezlepší.\n\nMěří se od teploty při posledním marném pokusu, ne od prvního; každý další pokus tedy začíná nové srovnání.\n\nNula vypne jen čekání na podmínky — strop „Nebo nejpozději za\" platí dál. Nouzové větrání a ruční žádost to obchází vždycky.",
-          "nejdriv_znovu_min": "Strop čekání: i když se venku nic nezmění, po téhle době se zkusí znovu. Když se venku změní dřív, zkusí se dřív — tahle doba nic nezdržuje."
+          "t_venku": "The outdoor temperature. It decides how long to ventilate and whether cooling makes sense at all.",
+          "rh_venku": "The outdoor humidity. The dew point is computed from it, so no damp is pulled inside.",
+          "zareni": "A solar radiation sensor in W/m2. It reveals cloud cover, so nothing is shaded needlessly.",
+          "vitr": "Average wind speed. Above the threshold windows close.",
+          "naraz_vetru": "Wind gusts. They take precedence over the average, because they damage the drive sooner.",
+          "dest": "Rain intensity. It shortens ventilation and closes the windows in heavy rain.",
+          "doma": "When this is off, the windows close and the rooms count as empty.",
+          "cil_min": "The target never drops below this, even in hard frost.",
+          "cil_max": "The target never rises above this, even in a heatwave.",
+          "noc_od": "When quiet hours begin. Windows then open less often and only when the air is really stale.",
+          "noc_do": "When the night rules end. Until then a higher CO2 threshold applies and nothing opens just because the weather is pleasant.\n\nThe room's sleep switch works regardless of the clock: while it is on, only CO2 decides.",
+          "vitr_prah": "The steady wind speed above which windows close and must not open. A weather station reports the current speed plus gusts; no average is computed.",
+          "t_prumer": "Optional. If you have your own statistics sensor for the weekly average, enter it and it will be used. Without it the integration computes the average itself. The “Outdoor temperature, weekly average” entity then shows what is actually in use.",
+          "t_sezona": "Optional. Your own three-day average sensor for the heating season. Without it the integration computes it itself.",
+          "sezona_prah": "Below this average outdoor temperature the heating season begins. The Czech regulation speaks of 13 °C on two consecutive days, and in practice heating tends to start only below that — fifteen is too early in many buildings.\n\nIt is computed from the weekly average, not the current temperature, so one cold morning does not start the season.",
+          "sezona_hystereze": "How many degrees the outdoor temperature has to climb above the threshold for the season to end. The season starts below the threshold and ends above the threshold plus this number. Zero means no hysteresis, but then it may flip at the edge.",
+          "naraz_prah": "Gusts damage the drive sooner than steady wind, hence a threshold of their own. It is enough for one of the two values to cross it.",
+          "vitr_klid": "The block is released only once both values drop below this. It must be lower than both thresholds, otherwise it flips at the edge.",
+          "zpravy_kam": "A notify entity, for instance Telegram or the mobile app. For Telegram the integration creates one entity per chat, so you pick the recipient here rather than typing a number.",
+          "souhrn_cas": "When to send the daily summary: how many times the window moved, how long it stayed open, the highest CO2. That is how you tell whether the thresholds are right.",
+          "zpravy_druhy": "Tick what interests you. In the first days ordinary openings are useful too; after that protection and the summary usually suffice.",
+          "narazove_vetrani": "When it is cold outside and one zone needs air, every window opens at once and briefly. A draught exchanges the air faster than long ventilation through a single window and the walls have no time to cool down. Where something is in the way — wind, rain, the limits — that window simply stays shut.",
+          "narazove_odstup": "How far the outdoor temperature has to differ from the target — either way — before burst ventilation takes over.\n\nIn burst mode nothing opens for pleasant weather, because there is none outside. It ventilates only for a reason, that is for CO2, dust or temperature, and closes the moment the reason is gone — it waits neither for the whole cycle nor for the “Shortest time to hold a position”.\n\nThe mode switches with half a degree of hysteresis, so it does not hop about when the temperature hovers at the threshold.",
+          "pm25_venku": "Dust outside. It tells us whether ventilating for dust makes any sense — when it is worse outside, opening will not improve anything and it would just ventilate in circles. Without this sensor only the smog flag is used.",
+          "pm10_venku": "The same for larger particles. Optional.",
+          "smog_venku": "A switch or sensor saying the outdoor air is not worth breathing. When it is on, nothing opens for dust — ventilating would only make it worse.",
+          "sezona_rezim": "By average means the season is read from the three-day outdoor temperature. Always means heat all year, never means not at all — useful when you decide the season elsewhere.",
+          "topeni_obnova_min": "A Zigbee valve occasionally loses a command and the integration never learns about it. After this time the last value is sent again even though nothing changed. Zero means send only on a change.",
+          "zima_prah": "The adaptive standard is written for summer comfort and in winter it simply rests on the lower bound. In frost, though, walls and windows get cold, the radiant temperature drops and the same air feels cooler. Zero means off.",
+          "pryc_utlum_topeni": "How much to take off when the home is empty. Zero means no setback. A deeper setback does not pay off in masonry: the structure cools for hours and takes just as long to warm up, so you burn more than you save.",
+          "pryc_utlum_po_hodinach": "How long the room must stay empty before the setback applies. A short absence does not pay for itself.",
+          "noc_utlum_predstih": "How long before night starts the drop begins. A gradual ramp beats a step, because both valves and masonry react slowly. Zero means in one step.",
+          "zima_o_kolik": "How many degrees to add when it is really cold outside. Nothing more is added beyond that — deeper frost changes nothing.",
+          "zima_najezd": "How many degrees below the threshold reach the full value. With a threshold of 7 and a ramp of 2.5 the full boost applies from 4.5 °C.",
+          "zmena_podminek": "After a futile attempt it waits for the outdoor temperature to move by this much — and only in the direction that would help: colder for cooling, warmer for heating. A move the other way improves nothing.\n\nIt is measured from the temperature at the last futile attempt, not the first; every further attempt therefore starts a fresh comparison.\n\nZero disables only the wait for conditions — the “Or at the latest in” ceiling still applies. Emergency ventilation and a manual request always get past it.",
+          "nejdriv_znovu_min": "The waiting ceiling: even if nothing changes outside, it tries again after this time. If things change outside sooner, it tries sooner — this time delays nothing."
         },
         "title": "NaPohodu"
       }
     },
     "abort": {
-      "already_configured": "NaPohodu už je nastavená."
+      "already_configured": "NaPohodu is already set up."
     }
   },
   "options": {
@@ -91,661 +91,661 @@
       "init": {
         "title": "NaPohodu",
         "menu_options": {
-          "nastaveni": "Společná nastavení",
-          "tester": "Tester žaluzií",
-          "stavy": "Stavy žaluzií",
-          "karta": "Karta na dashboard"
+          "nastaveni": "Shared settings",
+          "tester": "Blind tester",
+          "stavy": "Blind positions",
+          "karta": "Dashboard card"
         }
       },
       "nastaveni": {
-        "title": "Společná nastavení",
+        "title": "Shared settings",
         "data": {
-          "t_venku": "Venkovní teplota",
-          "rh_venku": "Venkovní vlhkost",
-          "zareni": "Sluneční záření (W/m2)",
-          "vitr": "Rychlost větru",
-          "naraz_vetru": "Náraz větru",
-          "dest": "Intenzita deště",
-          "doma": "Někdo je doma",
-          "cil_min": "Cíl nejméně",
-          "cil_max": "Cíl nejvíc",
-          "noc_od": "Noční klid od",
-          "noc_do": "Noční klid do",
-          "vitr_prah": "Vítr blokuje od (rychlost)",
-          "t_prumer": "Týdenní průměr (nepovinné)",
-          "t_sezona": "Třídenní průměr (nepovinné)",
-          "sezona_prah": "Topná sezóna pod",
-          "sezona_hystereze": "Hystereze sezóny",
-          "naraz_prah": "Vítr blokuje od (nárazy)",
-          "vitr_klid": "Vítr povolí pod",
-          "zpravy_kam": "Kam posílat zprávy",
-          "souhrn_cas": "Denní souhrn v",
-          "zpravy_druhy": "Co posílat",
-          "narazove_vetrani": "Nárazové větrání v zimě",
-          "narazove_odstup": "Nárazový režim od rozdílu",
-          "pm25_venku": "Venkovní PM2.5",
-          "pm10_venku": "Venkovní PM10",
-          "smog_venku": "Smog venku",
-          "sezona_rezim": "Topná sezóna",
-          "topeni_obnova_min": "Opakovat povel hlavicím po",
-          "zima_prah": "Přitápět, když venkovní průměr klesne pod",
-          "pryc_utlum_topeni": "Útlum topení, když nikdo není doma",
-          "pryc_utlum_po_hodinach": "Utlumit až po",
-          "noc_utlum_predstih": "Noční útlum nabíhat",
-          "zima_o_kolik": "Přitopit o",
-          "zima_najezd": "Plné hodnoty dosáhnout po",
-          "zmena_podminek": "Další pokus po změně venku o",
-          "nejdriv_znovu_min": "Nebo nejpozději za"
+          "t_venku": "Outdoor temperature",
+          "rh_venku": "Outdoor humidity",
+          "zareni": "Solar radiation (W/m2)",
+          "vitr": "Wind speed",
+          "naraz_vetru": "Wind gust",
+          "dest": "Rain intensity",
+          "doma": "Someone is home",
+          "cil_min": "Lowest target",
+          "cil_max": "Highest target",
+          "noc_od": "Quiet hours from",
+          "noc_do": "Quiet hours until",
+          "vitr_prah": "Wind blocks from (speed)",
+          "t_prumer": "Weekly average (optional)",
+          "t_sezona": "Three-day average (optional)",
+          "sezona_prah": "Heating season below",
+          "sezona_hystereze": "Season hysteresis",
+          "naraz_prah": "Wind blocks from (gusts)",
+          "vitr_klid": "Wind releases below",
+          "zpravy_kam": "Where to send messages",
+          "souhrn_cas": "Daily summary at",
+          "zpravy_druhy": "What to send",
+          "narazove_vetrani": "Burst ventilation in winter",
+          "narazove_odstup": "Burst mode from a difference of",
+          "pm25_venku": "Outdoor PM2.5",
+          "pm10_venku": "Outdoor PM10",
+          "smog_venku": "Smog outside",
+          "sezona_rezim": "Heating season",
+          "topeni_obnova_min": "Repeat the valve command every",
+          "pryc_utlum_topeni": "Heating setback when nobody is home",
+          "pryc_utlum_po_hodinach": "Apply the setback after",
+          "noc_utlum_predstih": "Ramp the night setback over",
+          "zima_o_kolik": "Boost heating by",
+          "zima_najezd": "Reach the full value after",
+          "zima_prah": "Add heat when the outdoor average drops below",
+          "zmena_podminek": "Retry after the outdoor change of",
+          "nejdriv_znovu_min": "Or at the latest in"
         },
         "data_description": {
-          "t_venku": "Venkovní teplota. Rozhoduje o délce větrání a o tom, jestli má smysl chladit.",
-          "rh_venku": "Venkovní vlhkost. Počítá se z ní rosný bod, aby se dovnitř netahalo vlhko.",
-          "zareni": "Čidlo slunečního záření ve W/m2. Podle něj se pozná oblačnost a nestíní se zbytečně.",
-          "vitr": "Průměrná rychlost větru. Nad prahem se okna zavřou.",
-          "naraz_vetru": "Nárazy větru. Mají přednost před průměrem, protože poškodí pohon dřív.",
-          "dest": "Intenzita deště. Zkracuje větrání a při silném dešti okna zavře.",
-          "doma": "Když je vypnuté, okna se zavřou a místnosti se považují za prázdné.",
-          "cil_min": "Pod tuto teplotu cíl neklesne ani v největším mrazu.",
-          "cil_max": "Nad tuto teplotu cíl nevystoupá ani v největším vedru.",
-          "noc_od": "Od kdy platí noční klid. Okna se pak otevírají méně a jen když je opravdu dusno.",
-          "noc_do": "Kdy noční pravidla končí. Do té doby platí vyšší práh CO2 a nevětrá se kvůli příjemnému počasí.\n\nSpánkový přepínač místnosti platí nezávisle na hodinách: dokud je zapnutý, rozhoduje jen CO2.",
-          "vitr_prah": "Ustálená rychlost větru, nad kterou se okna zavřou a nesmí otevřít. Meteostanice hlásí aktuální rychlost a k ní nárazy, žádný průměr se nepočítá.",
-          "t_prumer": "Nepovinné. Když máš vlastní statistický senzor týdenního průměru, zadej ho a bude se počítat podle něj. Bez něj si průměr integrace spočítá sama. Entita „Venkovní teplota, týdenní průměr“ pak ukazuje to, co se skutečně používá.",
-          "t_sezona": "Nepovinné. Vlastní senzor třídenního průměru pro topnou sezónu. Bez něj si ho integrace počítá sama.",
-          "sezona_prah": "Pod touhle průměrnou venkovní teplotou začíná topná sezóna. Vyhláška mluví o 13 °C ve dvou dnech po sobě a v praxi se topit začíná spíš až pod touhle hodnotou — patnáctka bývá v mnoha domech moc brzy.\n\nPočítá se z týdenního průměru, ne z okamžité teploty, takže jedno chladné ráno sezónu nespustí.",
-          "sezona_hystereze": "O kolik stupňů musí venkovní teplota vylézt nad práh, aby sezóna skončila. Sezóna začíná pod prahem, končí nad prahem plus tímhle číslem. Nula znamená bez hystereze, ale pak se může na hraně přepínat.",
-          "naraz_prah": "Nárazy poškodí pohon dřív než ustálená rychlost, proto vlastní práh. Stačí, aby jedna z obou hodnot práh překročila.",
-          "vitr_klid": "Blokace povolí, až když obě hodnoty klesnou pod tuhle. Musí být níž než oba prahy, jinak se to překlápí na hraně.",
-          "zpravy_kam": "Notify entity, například Telegram nebo mobilní aplikace. U Telegramu vytváří integrace jednu entitu na každý chat, takže příjemce vybereš tady, ne psaním čísla.",
-          "souhrn_cas": "Kdy poslat souhrn dne: kolikrát se okno hýbalo, jak dlouho bylo otevřeno, nejvyšší CO2. Podle toho se pozná, jestli jsou prahy dobře.",
-          "zpravy_druhy": "Zaškrtni, co tě zajímá. První dny se hodí i běžné otevírání, pak většinou stačí ochrana a souhrn.",
-          "narazove_vetrani": "Když je venku zima a jedna zóna potřebuje vzduch, otevřou se všechna okna naráz a krátce. Průvan vymění vzduch rychleji než dlouhé větrání jedním oknem a stěny se nestihnou vychladit. Kde tomu něco brání — vítr, déšť, pojistky — se prostě neotevře.",
-          "narazove_odstup": "O kolik se venkovní teplota musí lišit od cílové — nahoru nebo dolů — aby se přepnulo na nárazové větrání.\n\nV nárazovém režimu se neotvírá kvůli příjemnému počasí, protože venku žádné není. Větrá se jen z důvodu, tedy kvůli CO2, prachu nebo teplotě, a zavře se hned, jakmile důvod pomine — nečeká se na dojetí celého cyklu ani na „Nejkratší dobu držení polohy\".\n\nRežim se přepíná s půlstupňovou hysterezí, aby neposkakoval, když se teplota motá kolem prahu.",
-          "pm25_venku": "Prach venku. Podle něj se pozná, jestli má větrání kvůli prachu vůbec smysl — když je venku horší, otevřením se to nezlepší a jen by se větralo dokola. Bez tohohle čidla se řídí jen příznakem smogu.",
-          "pm10_venku": "Totéž pro větší částice. Nepovinné.",
-          "smog_venku": "Přepínač nebo čidlo, které říká, že venkovní vzduch nestojí za nadechnutí. Zapnutý znamená, že se kvůli prachu neotevírá — větráním by se to jen zhoršilo.",
-          "sezona_rezim": "Podle průměru se sezóna pozná z venkovní teploty za tři dny. Vždy znamená topit celoročně, nikdy vůbec — hodí se, když sezónu určuješ sám jinde.",
-          "topeni_obnova_min": "Zigbee hlavice povel občas ztratí a integrace se to nedozví. Po téhle době se poslední hodnota pošle znovu, i když se nic nezměnilo. Nula znamená posílat jen při změně.",
-          "zima_prah": "Adaptivní norma je psaná na letní komfort a v zimě se jen opře o dolní hranici. V mrazu ale chladnou stěny a okna, klesá radiační teplota a při stejném vzduchu je člověku chladněji. Nula znamená vypnuto.",
-          "pryc_utlum_topeni": "O kolik ubrat, když je byt prázdný. Nula znamená netlumit. Hlubší útlum se u zdiva nevyplatí: konstrukce chladne hodiny a stejně dlouho se natápí, takže se prototopí víc, než se ušetří.",
-          "pryc_utlum_po_hodinach": "Jak dlouho musí být prázdno, než se utlumí. Za krátkou nepřítomnost se útlum nezaplatí.",
-          "noc_utlum_predstih": "Jak dlouho před začátkem noci se začne klesat. Plynulý náběh je lepší než skok, protože hlavice i zdivo reagují pomalu. Nula znamená skokem.",
-          "zima_o_kolik": "O kolik stupňů přitopit, když je venku doopravdy zima. Dál se nepřidává — hlubší mrazy na tom nic nemění.",
-          "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C.",
-          "zmena_podminek": "Po marném větrání se čeká, až se venkovní teplota posune o tolik stupňů — a to jen tím směrem, který by pomohl: u chlazení chladněji, u ohřevu tepleji. Opačný posun situaci nezlepší.\n\nMěří se od teploty při posledním marném pokusu, ne od prvního; každý další pokus tedy začíná nové srovnání.\n\nNula vypne jen čekání na podmínky — strop „Nebo nejpozději za\" platí dál. Nouzové větrání a ruční žádost to obchází vždycky.",
-          "nejdriv_znovu_min": "Strop čekání: i když se venku nic nezmění, po téhle době se zkusí znovu. Když se venku změní dřív, zkusí se dřív — tahle doba nic nezdržuje."
+          "t_venku": "The outdoor temperature. It decides how long to ventilate and whether cooling makes sense at all.",
+          "rh_venku": "The outdoor humidity. The dew point is computed from it, so no damp is pulled inside.",
+          "zareni": "A solar radiation sensor in W/m2. It reveals cloud cover, so nothing is shaded needlessly.",
+          "vitr": "Average wind speed. Above the threshold windows close.",
+          "naraz_vetru": "Wind gusts. They take precedence over the average, because they damage the drive sooner.",
+          "dest": "Rain intensity. It shortens ventilation and closes the windows in heavy rain.",
+          "doma": "When this is off, the windows close and the rooms count as empty.",
+          "cil_min": "The target never drops below this, even in hard frost.",
+          "cil_max": "The target never rises above this, even in a heatwave.",
+          "noc_od": "When quiet hours begin. Windows then open less often and only when the air is really stale.",
+          "noc_do": "When the night rules end. Until then a higher CO2 threshold applies and nothing opens just because the weather is pleasant.\n\nThe room's sleep switch works regardless of the clock: while it is on, only CO2 decides.",
+          "vitr_prah": "The steady wind speed above which windows close and must not open. A weather station reports the current speed plus gusts; no average is computed.",
+          "t_prumer": "Optional. If you have your own statistics sensor for the weekly average, enter it and it will be used. Without it the integration computes the average itself. The “Outdoor temperature, weekly average” entity then shows what is actually in use.",
+          "t_sezona": "Optional. Your own three-day average sensor for the heating season. Without it the integration computes it itself.",
+          "sezona_prah": "Below this average outdoor temperature the heating season begins. The Czech regulation speaks of 13 °C on two consecutive days, and in practice heating tends to start only below that — fifteen is too early in many buildings.\n\nIt is computed from the weekly average, not the current temperature, so one cold morning does not start the season.",
+          "sezona_hystereze": "How many degrees the outdoor temperature has to climb above the threshold for the season to end. The season starts below the threshold and ends above the threshold plus this number. Zero means no hysteresis, but then it may flip at the edge.",
+          "naraz_prah": "Gusts damage the drive sooner than steady wind, hence a threshold of their own. It is enough for one of the two values to cross it.",
+          "vitr_klid": "The block is released only once both values drop below this. It must be lower than both thresholds, otherwise it flips at the edge.",
+          "zpravy_kam": "A notify entity, for instance Telegram or the mobile app. For Telegram the integration creates one entity per chat, so you pick the recipient here rather than typing a number.",
+          "souhrn_cas": "When to send the daily summary: how many times the window moved, how long it stayed open, the highest CO2. That is how you tell whether the thresholds are right.",
+          "zpravy_druhy": "Tick what interests you. In the first days ordinary openings are useful too; after that protection and the summary usually suffice.",
+          "narazove_vetrani": "When it is cold outside and one zone needs air, every window opens at once and briefly. A draught exchanges the air faster than long ventilation through a single window and the walls have no time to cool down. Where something is in the way — wind, rain, the limits — that window simply stays shut.",
+          "narazove_odstup": "How far the outdoor temperature has to differ from the target — either way — before burst ventilation takes over.\n\nIn burst mode nothing opens for pleasant weather, because there is none outside. It ventilates only for a reason, that is for CO2, dust or temperature, and closes the moment the reason is gone — it waits neither for the whole cycle nor for the “Shortest time to hold a position”.\n\nThe mode switches with half a degree of hysteresis, so it does not hop about when the temperature hovers at the threshold.",
+          "pm25_venku": "Dust outside. It tells us whether ventilating for dust makes any sense — when it is worse outside, opening will not improve anything and it would just ventilate in circles. Without this sensor only the smog flag is used.",
+          "pm10_venku": "The same for larger particles. Optional.",
+          "smog_venku": "A switch or sensor saying the outdoor air is not worth breathing. When it is on, nothing opens for dust — ventilating would only make it worse.",
+          "sezona_rezim": "By average means the season is read from the three-day outdoor temperature. Always means heat all year, never means not at all — useful when you decide the season elsewhere.",
+          "topeni_obnova_min": "A Zigbee valve occasionally loses a command and the integration never learns about it. After this time the last value is sent again even though nothing changed. Zero means send only on a change.",
+          "zima_prah": "The adaptive standard is written for summer comfort and in winter it simply rests on the lower bound. In frost, though, walls and windows get cold, the radiant temperature drops and the same air feels cooler. Zero means off.",
+          "pryc_utlum_topeni": "How much to take off when the home is empty. Zero means no setback. A deeper setback does not pay off in masonry: the structure cools for hours and takes just as long to warm up, so you burn more than you save.",
+          "pryc_utlum_po_hodinach": "How long the room must stay empty before the setback applies. A short absence does not pay for itself.",
+          "noc_utlum_predstih": "How long before night starts the drop begins. A gradual ramp beats a step, because both valves and masonry react slowly. Zero means in one step.",
+          "zima_o_kolik": "How many degrees to add when it is really cold outside. Nothing more is added beyond that — deeper frost changes nothing.",
+          "zima_najezd": "How many degrees below the threshold reach the full value. With a threshold of 7 and a ramp of 2.5 the full boost applies from 4.5 °C.",
+          "zmena_podminek": "After a futile attempt it waits for the outdoor temperature to move by this much — and only in the direction that would help: colder for cooling, warmer for heating. A move the other way improves nothing.\n\nIt is measured from the temperature at the last futile attempt, not the first; every further attempt therefore starts a fresh comparison.\n\nZero disables only the wait for conditions — the “Or at the latest in” ceiling still applies. Emergency ventilation and a manual request always get past it.",
+          "nejdriv_znovu_min": "The waiting ceiling: even if nothing changes outside, it tries again after this time. If things change outside sooner, it tries sooner — this time delays nothing."
         }
       },
       "tester": {
-        "title": "Tester žaluzií",
-        "description": "Vyzkoušej posloupnost na skutečné žaluzii. Uvidíš polohu před a po, a když sedí, uložíš ji pod jménem.\n\nČíslo je poloha v procentech, „3s\" je čekání, „=5\" počká, až pohon ohlásí 5 %, „stop\" zastaví za jízdy, „tilt 40\" naklopí lamely. Kroky odděl čárkou, desetinná čísla piš s tečkou.\n\nPříklad: 0, =0, 5",
+        "title": "Blind tester",
+        "description": "Try the sequence on a real blind. You will see the position before and after, and if it fits, you save it under a name.\n\nA number is a position in percent, “3s” is a wait, “=5” waits until the drive reports 5 %, “stop” halts it mid-travel, “tilt 40” angles the slats. Separate steps with commas and write decimals with a dot.\n\nExample: 0, =0, 5",
         "data": {
-          "zaluzie": "Žaluzie",
-          "sekvence": "Posloupnost",
-          "timeout_polohy_s": "Čekat na polohu nejdéle"
+          "zaluzie": "Blinds",
+          "sekvence": "Sequence",
+          "timeout_polohy_s": "Wait for the position at most"
         },
         "data_description": {
-          "sekvence": "Například 10, 5s, 14, 3s, 10",
-          "timeout_polohy_s": "Platí pro kroky typu „=5\". Když pohon polohu nehlásí, čekání vyprší a dostaneš chybu."
+          "sekvence": "For example 10, 5s, 14, 3s, 10",
+          "timeout_polohy_s": "Applies to steps like “=5”. If the drive does not report its position, the wait times out and you get an error."
         }
       },
       "vysledek": {
-        "title": "Výsledek",
+        "title": "Result",
         "description": "{shrnuti}",
         "menu_options": {
-          "ulozit": "Uložit jako stav",
-          "znovu": "Zkusit jinou posloupnost",
-          "hotovo": "Hotovo"
+          "ulozit": "Save as a position",
+          "znovu": "Try another sequence",
+          "hotovo": "Done"
         }
       },
       "stavy": {
-        "title": "Stavy žaluzií",
-        "description": "Vyber žaluzii, jejíž pojmenované polohy chceš upravit.",
+        "title": "Blind positions",
+        "description": "Pick the blind whose named positions you want to edit.",
         "data": {
-          "zaluzie": "Žaluzie"
+          "zaluzie": "Blinds"
         }
       },
       "stavy_text": {
-        "title": "Stavy žaluzie",
-        "description": "Jeden stav na řádek ve tvaru „název = posloupnost\".\n\nČíslo je poloha v procentech, „3s\" je čekání, „=5\" počká na potvrzení polohy, „stop\" zastaví za jízdy, „tilt 40\" naklopí lamely. Desetinná čísla piš s tečkou.\n\nPříklad:\nzastíněno = 0, 2s, 5\nodstíněno = 4, 3s, 2\nškvírka = 0, 5s, 2.9, 1.25s, stop\n\nUložením se nahradí všechny stavy této žaluzie. Prázdné pole je smaže.",
+        "title": "Blind positions",
+        "description": "One position per line in the form “name = sequence”.\n\nA number is a position in percent, “3s” is a wait, “=5” waits for the position to be confirmed, “stop” halts it mid-travel, “tilt 40” angles the slats. Write decimals with a dot.\n\nExample:\nshaded = 0, 2s, 5\nunshaded = 4, 3s, 2\nslit = 0, 5s, 2.9, 1.25s, stop\n\nSaving replaces every position of this blind. An empty field deletes them.",
         "data": {
-          "stavy_text": "Stavy"
+          "stavy_text": "Positions"
         },
-        "submit": "Uložit"
+        "submit": "Save"
       },
       "ulozit": {
-        "title": "Uložit stav",
-        "description": "Posloupnost {sekvence} se uloží pod tímto jménem. Stejné jméno přepíše starý stav.",
+        "title": "Save the position",
+        "description": "The sequence {sekvence} will be saved under this name. The same name overwrites the old position.",
         "data": {
-          "nazev_stavu": "Název stavu"
+          "nazev_stavu": "Position name"
         },
-        "submit": "Uložit"
+        "submit": "Save"
       },
       "karta": {
-        "title": "Karta na dashboard",
-        "description": "Jedna karta se vloží rychle, celá stránka se líp přeskládává a vyplní šířku obrazovky.",
+        "title": "Dashboard card",
+        "description": "A single card is quick to paste; a full page rearranges better and fills the width of the screen.",
         "menu_options": {
-          "karta_jedna": "Jedna karta (Manuální karta)",
-          "karta_stranka": "Celá stránka (editor YAML)"
+          "karta_jedna": "Single card (Manual card)",
+          "karta_stranka": "Full page (YAML editor)"
         }
       },
       "karta_jedna": {
-        "title": "Jedna karta",
-        "description": "Karta pro {pocet} místností a {oblasti} oblastí, poskládaná z entit, které opravdu existují.\n\nOznač text a zkopíruj. Pak na dashboardu: tužka → Přidat kartu → úplně dole Manuální → smazat obsah → vložit.",
+        "title": "Single card",
+        "description": "A card for {pocet} rooms and {oblasti} zones, built from entities that really exist.\n\nSelect the text and copy it. Then on the dashboard: pencil → Add card → Manual at the very bottom → clear the content → paste.",
         "data": {
           "karta_yaml": "YAML"
         },
-        "submit": "Zpět"
+        "submit": "Back"
       },
       "karta_stranka": {
-        "title": "Celá stránka",
-        "description": "Stránka pro {pocet} místností a {oblasti} oblastí, rozdělená do sekcí, které se dají chytat a přesouvat.\n\nOznač text a zkopíruj. Pak na dashboardu: tužka → tři tečky → Nezpracovaný editor konfigurace → vlož blok do seznamu views jako další položku.",
+        "title": "Full page",
+        "description": "A page for {pocet} rooms and {oblasti} zones, split into sections you can grab and move.\n\nSelect the text and copy it. Then on the dashboard: pencil → three dots → Raw configuration editor → paste the block into the views list as another item.",
         "data": {
           "karta_yaml": "YAML"
         },
-        "submit": "Zpět"
+        "submit": "Back"
       }
     },
     "error": {
-      "sekvence": "V zápisu je chyba: {chyba}"
+      "sekvence": "The entry has an error: {chyba}"
     }
   },
   "config_subentries": {
     "mistnost": {
-      "title": "Místnost",
+      "title": "Room",
       "step": {
         "zaklad": {
-          "title": "Místnost a zařízení",
-          "description": "Co místnost má: čidla a zařízení. Bez tohohle integrace neví, co ovládat.",
+          "title": "Room and devices",
+          "description": "What the room has: sensors and devices. Without this the integration does not know what to control.",
           "data": {
-            "nazev": "Název",
-            "teploty": "Teplotní čidla",
-            "co2": "Čidla CO2 (rozhoduje nejvyšší)",
+            "nazev": "Name",
+            "teploty": "Temperature sensors",
+            "co2": "CO2 sensors (the highest one decides)",
             "pm25": "PM2.5",
             "pm10": "PM10",
-            "pm_platny": "Kdy platí údaj o prachu",
-            "climate": "Topení (jen topí)",
-            "cisticka": "Čistička vzduchu",
-            "rh_vnitrni": "Čidlo vlhkosti",
-            "azimut": "Azimut oken",
-            "zaluzie": "Žaluzie",
-            "okna": "Okna",
-            "kontakt_okna": "Kontakt okna",
-            "zdroj_okenniho": "Okenní senzor pro topení podle",
-            "vynuceno_okno": "Vynucené otevření",
-            "t_venku_mistni": "Vlastní venkovní teplota",
-            "rh_venku_mistni": "Vlastní venkovní vlhkost",
-            "zvlhcovac": "Zvlhčovač",
-            "vetrat": "Ruční žádost o vyvětrání",
-            "poradi": "Pořadí na kartě",
-            "zaskleni": "Zasklení okna"
+            "pm_platny": "When the dust reading is valid",
+            "climate": "Heating (heat only)",
+            "cisticka": "Air purifier",
+            "rh_vnitrni": "Humidity sensor",
+            "azimut": "Window azimuth",
+            "zaluzie": "Blinds",
+            "okna": "Windows",
+            "kontakt_okna": "Window contact",
+            "zdroj_okenniho": "Window sensor for heating based on",
+            "vynuceno_okno": "Forced opening",
+            "t_venku_mistni": "Own outdoor temperature",
+            "rh_venku_mistni": "Own outdoor humidity",
+            "zvlhcovac": "Humidifier",
+            "vetrat": "Manual request to air out",
+            "poradi": "Order on the card",
+            "zaskleni": "Window glazing"
           },
           "data_description": {
-            "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
-            "teploty": "Můžeš vybrat víc čidel. V chladu rozhoduje nejnižší kvůli kondenzaci, v horku nejvyšší, aby se do přehřáté místnosti nepouštělo vedro.",
-            "co2": "Můžeš vybrat víc čidel. Rozhoduje nejvyšší, tedy nejvydýchanější vzduch.",
-            "pm25": "Prachové částice. Skok nahoru spustí nárazové větrání, typicky při smažení.",
-            "pm10": "Hrubší prach. Nechej prázdné, pokud ho čidlo neměří.",
-            "pm_platny": "Prachové čidlo potřebuje proudící vzduch. Když má ventilátor, vyber jeho spínač — při stojícím ventilátoru se naměřeným hodnotám nevěří. Nemáš-li ventilátor, nech prázdné.",
-            "climate": "Hlavice místnosti — virtuální z Better Thermostatu i skutečná. Integrace jim posílá cílovou teplotu a režim, když je zapnutý přepínač Ovládat topení.",
-            "cisticka": "Čistička vzduchu. Umí prach, ne CO2. V zimě a v noci je lepší než otevřít okno.",
-            "rh_vnitrni": "Čidlo vlhkosti v místnosti. Bez něj se odtah neřídí.",
-            "azimut": "Kam okna směřují. 0 sever, 90 východ, 180 jih, 270 západ. Podle toho se pozná, kdy do místnosti svítí.",
-            "zaluzie": "Žaluzie této místnosti. Můžeš vybrat víc — v dalším kroku pak každé přiřadíš, který její uložený stav plní kterou roli.",
-            "okna": "Okna této místnosti. Můžeš vybrat víc, budou se ovládat společně.",
-            "kontakt_okna": "Fyzické čidlo otevření. Pozná i okno otevřené rukou, o kterém pohon nic neví — integrace pak neotvírá podruhé a topení ví, že je otevřeno.",
-            "zdroj_okenniho": "Podle čeho se topení dozví, že je otevřeno. Když okno kontakt nemá a ruční otevření topení vypínat nechceš, vyber jen automatiku.",
-            "vynuceno_okno": "Přepínače, kterými okno otevřeš natvrdo. Přebijí vzduch i teplotu, ale ne vítr a déšť.",
-            "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
-            "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
-            "zvlhcovac": "Zvlhčovač, spínač nebo pomocník. V zimě vysychá vzduch a klesá pod třicet procent, což už vysušuje sliznice.",
-            "dvere": "Kontakt dveří mezi místnostmi oblasti. Zavřené dveře znamenají, že se vzduch nevymění a rámus okna se nepřenese — spánek v jedné místnosti pak druhé nebrání větrat.",
-            "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
-            "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
-            "zaskleni": "Podle zasklení se počítá, jak chladné je sklo, a z toho nejvyšší vlhkost, při které se ještě neorosí. V mrazu má sklo okolo pěti stupňů a při dvaadvaceti v pokoji a šedesáti procentech je rosný bod kolem čtrnácti — okno se tedy orosí, přestože vlhkost sama o sobě vypadá rozumně.\n\nHorní mez vlhkosti se tím v mrazu sama sníží. Při dvaadvaceti stupních a venkovních minus pěti vyjde pro dvojsklo 67 %, pro starší 53 %."
+            "nazev": "What the room is called. You use this name to assign it to a zone.",
+            "teploty": "You can pick several sensors. In the cold the lowest decides because of condensation, in the heat the highest, so no hot air is let into an overheated room.",
+            "co2": "You can pick several sensors. The highest one decides, that is the most stale air.",
+            "pm25": "Dust particles. A jump upwards triggers burst ventilation, typically while frying.",
+            "pm10": "Coarser dust. Leave empty if the sensor does not measure it.",
+            "pm_platny": "A dust sensor needs moving air. If it has a fan, pick its switch — with the fan still, the readings are not trusted. If you have no fan, leave it empty.",
+            "climate": "The room's valves — both a virtual one from Better Thermostat and a real one. The integration sends them the target temperature and mode while the Control heating switch is on.",
+            "cisticka": "An air purifier. It handles dust, not CO2. In winter and at night it beats opening a window.",
+            "rh_vnitrni": "Humidity sensor in the room. Without it the extraction is not controlled.",
+            "azimut": "Which way the windows face. 0 north, 90 east, 180 south, 270 west. That is how we know when the sun reaches the room.",
+            "zaluzie": "This room's blinds. You can pick several — in the next step you assign which saved position plays which role for each of them.",
+            "okna": "This room's windows. You can pick several; they will be controlled together.",
+            "kontakt_okna": "A physical opening sensor. It also catches a window opened by hand that the drive knows nothing about — the integration then does not open it a second time and the heating knows it is open.",
+            "zdroj_okenniho": "How the heating learns the window is open. If the window has no contact and you do not want a manual opening to switch the heating off, pick the automation only.",
+            "vynuceno_okno": "Switches that force the window open. They override air and temperature, but not wind and rain.",
+            "t_venku_mistni": "When the window opens onto a balcony or a conservatory, the air behind it differs from the one at the façade. Enter a sensor from there and it overrides the global outdoor temperature.",
+            "rh_venku_mistni": "Humidity from the same spot, for the dew point.",
+            "zvlhcovac": "A humidifier, a switch or a helper. In winter the air dries out and drops below thirty percent, which already dries your airways.",
+            "dvere": "The door contact between rooms of a zone. A closed door means the air is not exchanged and window noise does not carry — sleep in one room then does not stop the other from ventilating.",
+            "vetrat": "Switches that say you want the room aired out even though the sensors report nothing. Unlike a forced opening, the usual rules hold — wind, rain and the temperature limits still apply, the room is merely treated as stale until you switch it off.",
+            "poradi": "Where the room belongs on the generated card. A lower number goes higher. With equal numbers they follow the order in which the rooms were created.",
+            "zaskleni": "The glazing tells us how cold the glass is, and from that the highest humidity at which it still does not fog up. In frost the glass sits around five degrees, and with twenty-two in the room and sixty percent the dew point is about fourteen — so the window fogs up even though the humidity itself looks reasonable.\n\nThe upper humidity limit therefore lowers itself in frost. At twenty-two degrees and minus five outside it comes out at 67 % for double glazing and 53 % for older glazing."
           },
-          "submit": "Další"
+          "submit": "Next"
         },
         "pritomnost": {
-          "title": "Kdy je obsazená",
-          "description": "Obsazeno znamená starat se. Klid znamená nehlučet.",
+          "title": "When it counts as occupied",
+          "description": "Occupied means take care of it. Quiet means stay silent.",
           "data": {
-            "zdroj_obsazenosti": "Obsazenost podle",
-            "zdroj_klidu": "Klid podle",
-            "spanek": "Spánkový přepínač",
-            "pritomnost": "Čidlo pohybu",
-            "dobeh_min": "Doběh po pohybu",
-            "max_stari_h": "Nevěřit čidlu starším než",
-            "stineni_pryc": "Stínění, když nikdo není doma"
+            "zdroj_obsazenosti": "Occupancy based on",
+            "zdroj_klidu": "Quiet based on",
+            "spanek": "Sleep switch",
+            "pritomnost": "Motion sensor",
+            "dobeh_min": "Run-on after motion",
+            "max_stari_h": "Distrust readings older than",
+            "stineni_pryc": "Shading when nobody is home"
           },
           "data_description": {
-            "zdroj_obsazenosti": "Obsazená místnost se udržuje na cíli. Prázdná se nechá být.",
-            "zdroj_klidu": "V klidu se okny hýbe co nejméně, aby nerušila.",
-            "spanek": "Přepínač, kterým dáváš najevo, že se v místnosti spí.",
-            "pritomnost": "Čidlo pohybu. Samo o sobě nestačí, protože nevidí sedícího člověka.",
-            "dobeh_min": "Jak dlouho po posledním pohybu se místnost ještě považuje za obsazenou.",
-            "max_stari_h": "Když se čidlo tak dlouho neozve, nejspíš mu došla baterie a přestane se mu věřit.",
-            "stineni_pryc": "Co se má stát se žaluziemi, když nikdo není doma."
+            "zdroj_obsazenosti": "An occupied room is kept at the target. An empty one is left be.",
+            "zdroj_klidu": "During quiet hours windows move as little as possible.",
+            "spanek": "A switch you use to say that someone is sleeping in the room.",
+            "pritomnost": "A motion sensor. On its own it is not enough, because it does not see a person sitting still.",
+            "dobeh_min": "How long after the last motion the room still counts as occupied.",
+            "max_stari_h": "If a sensor stays silent for this long, its battery has most likely died and it stops being trusted.",
+            "stineni_pryc": "What the blinds should do when nobody is home."
           },
-          "submit": "Další"
+          "submit": "Next"
         },
         "indicie": {
-          "title": "Vedlejší důkazy",
-          "description": "Televize, světla nebo odběr napoví, že tam někdo je, i když se nehýbe.",
+          "title": "Supporting evidence",
+          "description": "A TV, lights or power draw hint that somebody is there even when they do not move.",
           "data": {
-            "indicie_stav": "Zapnuto znamená obsazeno",
-            "indicie_vykon": "Čidla odběru",
-            "prah_vykonu": "Odběr nad",
-            "indicie_dobeh_min": "Doběh"
+            "indicie_stav": "On means occupied",
+            "indicie_vykon": "Power draw sensors",
+            "prah_vykonu": "Power draw above",
+            "indicie_dobeh_min": "Run-on"
           },
           "data_description": {
-            "indicie_stav": "Entity, u kterých zapnuto znamená, že tam někdo je. Televize, světla, přehrávač.",
-            "indicie_vykon": "Čidla odběru. Nad prahem se místnost považuje za obsazenou.",
-            "prah_vykonu": "Nad tímto odběrem to není jen pohotovostní režim. U televize obvykle 15 až 30 W.",
-            "indicie_dobeh_min": "Jak dlouho po vypnutí ještě platí. Kdo právě zhasl, ještě neodešel."
+            "indicie_stav": "Entities where being on means somebody is there. A TV, lights, a media player.",
+            "indicie_vykon": "Power draw sensors. Above the threshold the room counts as occupied.",
+            "prah_vykonu": "Above this draw it is more than standby. For a TV usually 15 to 30 W.",
+            "indicie_dobeh_min": "How long it still counts after switching off. Someone who just turned the light off has not left yet."
           },
-          "submit": "Uložit místnost"
+          "submit": "Save the room"
         },
         "reconfigure": {
-          "title": "Úprava místnosti",
-          "description": "Všechna nastavení místnosti pohromadě.",
+          "title": "Editing the room",
+          "description": "All room settings in one place.",
           "data": {
-            "nazev": "Název",
-            "teploty": "Teplotní čidla",
-            "co2": "Čidla CO2 (rozhoduje nejvyšší)",
+            "nazev": "Name",
+            "teploty": "Temperature sensors",
+            "co2": "CO2 sensors (the highest one decides)",
             "pm25": "PM2.5",
             "pm10": "PM10",
-            "pm_platny": "Kdy platí údaj o prachu",
-            "climate": "Topení (jen topí)",
-            "odchylka": "Moje odchylka teploty",
-            "utlum": "Při otevřeném okně topit na",
-            "zdroj_obsazenosti": "Obsazenost podle",
-            "spanek": "Spánkový přepínač",
-            "pritomnost": "Čidlo pohybu",
-            "dobeh_min": "Doběh po pohybu",
-            "max_stari_h": "Nevěřit čidlu starším než",
-            "stineni_pryc": "Stínění, když nikdo není doma",
-            "indicie_stav": "Zapnuto znamená obsazeno",
-            "indicie_vykon": "Čidla odběru",
-            "prah_vykonu": "Odběr nad",
-            "indicie_dobeh_min": "Doběh",
-            "cisticka": "Čistička vzduchu",
-            "rh_vnitrni": "Čidlo vlhkosti",
-            "rh_max": "Vypnout zvlhčovač nad",
-            "azimut": "Azimut oken",
-            "klid_stineni_min": "Nejčastěji hýbat jednou za",
-            "zaluzie": "Žaluzie",
-            "okna": "Okna",
-            "projezd_okna_s": "Doba projezdu okna",
-            "kontakt_okna": "Kontakt okna",
-            "zdroj_okenniho": "Okenní senzor pro topení podle",
-            "vynuceno_okno": "Vynucené otevření",
-            "co2_otevrit": "Otevřít nad CO2",
-            "co2_zavrit": "Zavřít pod CO2",
-            "co2_noc": "V noci otevřít nad CO2",
-            "co2_noc_krize": "Nouzově otevřít nad CO2",
-            "dest_prah": "Déšť vadí od",
-            "i_kdyz_nikdo_doma": "Větrat i když nikdo není doma",
-            "t_venku_mistni": "Vlastní venkovní teplota",
-            "rh_venku_mistni": "Vlastní venkovní vlhkost",
-            "min_drzeni_min": "Nejkratší doba držení polohy",
-            "odvzdusneni_h": "Odvzdušnění na začátku sezóny",
-            "odvzdusneni_t": "Teplota při odvzdušnění",
-            "stineni_predstih": "Předstih stínění",
-            "zvlhcovac": "Zvlhčovač",
-            "rh_min": "Zvlhčovat pod vlhkostí",
-            "topit_pri_oknu": "Při otevřeném okně",
-            "sezonu_ridi_hlavice": "Zapnutí topení řídí hlavice",
-            "znacka_okno": "Značka pro otevřené okno",
-            "znacka_mimo_sezonu": "Značka mimo sezónu",
-            "vetrat": "Ruční žádost o vyvětrání",
-            "rucni_klid_min": "Po ručním zásahu nechat být",
-            "ochota_vetrat": "Ochota větrat",
-            "poradi": "Pořadí na kartě",
-            "cisticka_od_pm": "Čističku zapnout od PM2.5",
-            "zvlhcovac_kdy": "Zvlhčovat",
-            "zaskleni": "Zasklení okna",
-            "chlazeni_min_venku": "Chladit jen při venkovní teplotě nad",
-            "pm_spatne_od": "Prach je špatný od PM2.5",
-            "pm_cisto_pod": "Prach je čistý pod PM2.5",
-            "hyst_den_otevrit": "Ve dne otevřít při odchylce od cíle o",
-            "hyst_den_zavrit": "Ve dne zavřít až za cílem o",
-            "hyst_noc_otevrit": "V noci otevřít při odchylce od cíle o",
-            "hyst_noc_zavrit": "V noci zavřít až za cílem o",
-            "mez_dolni": "Pojistka: nevychladit pod",
-            "mez_horni": "Pojistka: nepřehřát nad",
-            "pro_pohodu": "Otevírat i pro pohodu",
-            "zvlhcovac_ve_spanku": "Zvlhčovat i ve spánku",
-            "rezerva_venku": "Venku musí být za dojezdem o",
-            "prach_dosah": "Prach z tohoto zvlhčovače neberu vážně",
-            "prach_mistnosti": "   a to v těchto místnostech",
-            "vlhkost_dosah": "Nezvlhčovat při otevřeném okně",
-            "vlhkost_mistnosti": "   a to v těchto místnostech",
-            "noc_posun": "V noci posun cílové teploty"
+            "pm_platny": "When the dust reading is valid",
+            "climate": "Heating (heat only)",
+            "odchylka": "My temperature offset",
+            "utlum": "With a window open, heat to",
+            "zdroj_obsazenosti": "Occupancy based on",
+            "spanek": "Sleep switch",
+            "pritomnost": "Motion sensor",
+            "dobeh_min": "Run-on after motion",
+            "max_stari_h": "Distrust readings older than",
+            "stineni_pryc": "Shading when nobody is home",
+            "indicie_stav": "On means occupied",
+            "indicie_vykon": "Power draw sensors",
+            "prah_vykonu": "Power draw above",
+            "indicie_dobeh_min": "Run-on",
+            "cisticka": "Air purifier",
+            "rh_vnitrni": "Humidity sensor",
+            "rh_max": "Turn the humidifier off above",
+            "azimut": "Window azimuth",
+            "klid_stineni_min": "Move at most once per",
+            "zaluzie": "Blinds",
+            "okna": "Windows",
+            "projezd_okna_s": "Window travel time",
+            "kontakt_okna": "Window contact",
+            "zdroj_okenniho": "Window sensor for heating based on",
+            "vynuceno_okno": "Forced opening",
+            "co2_otevrit": "Open above CO2",
+            "co2_zavrit": "Close below CO2",
+            "co2_noc": "At night open above CO2",
+            "co2_noc_krize": "Emergency opening above CO2",
+            "dest_prah": "Rain matters from",
+            "i_kdyz_nikdo_doma": "Ventilate even when nobody is home",
+            "t_venku_mistni": "Own outdoor temperature",
+            "rh_venku_mistni": "Own outdoor humidity",
+            "min_drzeni_min": "Shortest time to hold a position",
+            "odvzdusneni_h": "Bleeding at the start of the season",
+            "odvzdusneni_t": "Temperature while bleeding",
+            "stineni_predstih": "Shading lead time",
+            "zvlhcovac": "Humidifier",
+            "rh_min": "Humidify below humidity",
+            "topit_pri_oknu": "With the window open",
+            "sezonu_ridi_hlavice": "The valve decides when to heat",
+            "znacka_okno": "Marker for an open window",
+            "znacka_mimo_sezonu": "Marker outside the season",
+            "vetrat": "Manual request to air out",
+            "rucni_klid_min": "After a manual change, leave alone for",
+            "ochota_vetrat": "Willingness to ventilate",
+            "poradi": "Order on the card",
+            "cisticka_od_pm": "Turn the purifier on from PM2.5",
+            "zvlhcovac_kdy": "Humidify",
+            "zaskleni": "Window glazing",
+            "chlazeni_min_venku": "Only cool when outdoor temperature is above",
+            "pm_spatne_od": "Dust is bad from PM2.5",
+            "pm_cisto_pod": "Dust is clean below PM2.5",
+            "hyst_den_otevrit": "By day open at a deviation from the target of",
+            "hyst_den_zavrit": "By day close past the target by",
+            "hyst_noc_otevrit": "At night open at a deviation from the target of",
+            "hyst_noc_zavrit": "At night close past the target by",
+            "mez_dolni": "Limit: never cool below",
+            "mez_horni": "Limit: never overheat above",
+            "pro_pohodu": "Open for comfort as well",
+            "zvlhcovac_ve_spanku": "Humidify during sleep as well",
+            "rezerva_venku": "Outside must be past the run-down by",
+            "prach_dosah": "Ignore dust from this humidifier",
+            "prach_mistnosti": "   in these rooms",
+            "vlhkost_dosah": "Do not humidify with a window open",
+            "vlhkost_mistnosti": "   in these rooms",
+            "noc_posun": "Night shift of the target temperature"
           },
           "data_description": {
-            "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
-            "teploty": "Můžeš vybrat víc čidel. V chladu rozhoduje nejnižší kvůli kondenzaci, v horku nejvyšší, aby se do přehřáté místnosti nepouštělo vedro.",
-            "co2": "Můžeš vybrat víc čidel. Rozhoduje nejvyšší, tedy nejvydýchanější vzduch.",
-            "pm25": "Prachové částice. Skok nahoru spustí nárazové větrání, typicky při smažení.",
-            "pm10": "Hrubší prach. Nechej prázdné, pokud ho čidlo neměří.",
-            "pm_platny": "Prachové čidlo potřebuje proudící vzduch. Když má ventilátor, vyber jeho spínač — při stojícím ventilátoru se naměřeným hodnotám nevěří. Nemáš-li ventilátor, nech prázdné.",
-            "climate": "Hlavice místnosti — virtuální z Better Thermostatu i skutečná. Integrace jim posílá cílovou teplotu a režim, když je zapnutý přepínač Ovládat topení.",
-            "odchylka": "Cílová teplota se počítá pro celý byt. Tady ji pro tuto místnost posuneš. Plus znamená tepleji. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "utlum": "Teplota, na kterou se hlavice stáhnou, když je okno otevřené. Je to celá teplota, ne odečet od cíle.",
-            "zdroj_obsazenosti": "Obsazená místnost se udržuje na cíli. Prázdná se nechá být.",
-            "spanek": "Přepínač, kterým dáváš najevo, že se v místnosti spí.",
-            "pritomnost": "Čidlo pohybu. Samo o sobě nestačí, protože nevidí sedícího člověka.",
-            "dobeh_min": "Jak dlouho po posledním pohybu se místnost ještě považuje za obsazenou.",
-            "max_stari_h": "Když se čidlo tak dlouho neozve, nejspíš mu došla baterie a přestane se mu věřit.",
-            "stineni_pryc": "Co se má stát se žaluziemi, když nikdo není doma.",
-            "indicie_stav": "Entity, u kterých zapnuto znamená, že tam někdo je. Televize, světla, přehrávač.",
-            "indicie_vykon": "Čidla odběru. Nad prahem se místnost považuje za obsazenou.",
-            "prah_vykonu": "Nad tímto odběrem to není jen pohotovostní režim. U televize obvykle 15 až 30 W.",
-            "indicie_dobeh_min": "Jak dlouho po vypnutí ještě platí. Kdo právě zhasl, ještě neodešel.",
-            "cisticka": "Čistička vzduchu. Umí prach, ne CO2. V zimě a v noci je lepší než otevřít okno.",
-            "rh_vnitrni": "Čidlo vlhkosti v místnosti. Bez něj se odtah neřídí.",
-            "rh_max": "Nad touhle vlhkostí se zvlhčovač vypne. Mezi dolní a horní mezí se nesahá, aby nepřepínal pořád dokola.",
-            "azimut": "Kam okna směřují. 0 sever, 90 východ, 180 jih, 270 západ. Podle toho se pozná, kdy do místnosti svítí.",
-            "klid_stineni_min": "Minimální odstup mezi pohyby žaluzií, aby se lamely nehoupaly při každém mráčku.",
-            "zaluzie": "Žaluzie této místnosti. Můžeš vybrat víc — v dalším kroku pak každé přiřadíš, který její uložený stav plní kterou roli.",
-            "okna": "Okna této místnosti. Můžeš vybrat víc, budou se ovládat společně.",
-            "projezd_okna_s": "Jak dlouho pohon jede z jedné krajní polohy do druhé. Během jízdy se věří vlastnímu povelu, ne stavu entity.",
-            "kontakt_okna": "Fyzické čidlo otevření. Pozná i okno otevřené rukou, o kterém pohon nic neví — integrace pak neotvírá podruhé a topení ví, že je otevřeno.",
-            "zdroj_okenniho": "Podle čeho se topení dozví, že je otevřeno. Když okno kontakt nemá a ruční otevření topení vypínat nechceš, vyber jen automatiku.",
-            "vynuceno_okno": "Přepínače, kterými okno otevřeš natvrdo. Přebijí vzduch i teplotu, ale ne vítr a déšť.",
-            "co2_otevrit": "Nad touto hodnotou se začne větrat. Bere se nejhorší hodnota z celé oblasti. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "co2_zavrit": "Pod touto hodnotou je vyvětráno. Mezi prahy se schválně nic neděje. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "co2_noc": "V noci je práh pro otevření vyšší, aby se neotvíralo kvůli maličkosti. Ve spánku se neotvírá ani podle něj — tam rozhoduje až krizový práh.\n\nZavírá se po vyvětrání na „Zavřít pod CO2“, stejně jako ve dne; jedna hodnota na zavírání místo dvou.",
-            "co2_noc_krize": "Nad tímhle se otevře i v noci a ve spánku, protože dusno už je horší než rámus okna. Ve spánku je to jediný důvod, proč se okno otevře.",
-            "dest_prah": "Nad touto intenzitou deště se okno zavře. Nula znamená, že déšť vadí vždycky. Vysoká hodnota, že tomuhle oknu déšť nevadí — třeba když je pod stříškou.",
-            "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené.",
-            "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
-            "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
-            "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam.\n\nPo téhle době se zároveň ověří, že větrání vůbec zabírá: když se ani CO2, ani teplota neposunuly k lepšímu, okno se zavře a pauza se s každým dalším marným pokusem zdvojnásobí. Nouzové větrání a ruční žádost tím neprochází.",
-            "odvzdusneni_h": "Po začátku sezóny se tuhle dobu drží vysoká teplota, aby ventil zůstal otevřený a rozvod se sám odvzdušnil. Nula znamená neodvzdušňovat.",
-            "odvzdusneni_t": "Teplota, která zaručí plně otevřený ventil. Nemá topit doopravdy, jen otevřít.",
-            "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24.",
-            "zvlhcovac": "Zvlhčovač, spínač nebo pomocník. V zimě vysychá vzduch a klesá pod třicet procent, což už vysušuje sliznice.",
-            "rh_min": "Pod touhle vlhkostí se zvlhčovač zapne. V zimě v paneláku běžně klesne pod třicet procent, což už vysušuje sliznice.",
-            "dvere": "Kontakt dveří mezi místnostmi oblasti. Zavřené dveře znamenají, že se vzduch nevymění a rámus okna se nepřenese — spánek v jedné místnosti pak druhé nebrání větrat.",
-            "topit_pri_oknu": "Hlavici posíláme okenní senzor, takže si otevřené okno umí ošetřit sama — to je výchozí volba Nechat na hlavici. Útlum nebo vypnuto použij jen u hlavice, která okenní senzor neumí, jinak jí posíláš dvě informace o téže věci.",
-            "sezonu_ridi_hlavice": "Better Thermostat si podle počasí sám určuje, kdy topit. Se zaškrtnutým polem mu integrace posílá jen cílovou teplotu a jeho rozhodnutí o zapnutí respektuje — když usoudí, že topit nemá, integrace ho nezapne.\n\nOdškrtni, když chceš, aby o topné sezóně rozhodovala integrace: v sezóně pošle režim heat, mimo ni off, a hlavici zbude kalibrace ventilu, v čem je nejlepší.",
-            "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
-            "znacka_mimo_sezonu": "Teplota, kterou hlavice dostane mimo topnou sezónu. Používá se jen tehdy, když sezónu neřídí hlavice sama. Zvláštní číslo místo kulatého prozradí, že povel přišel od integrace.",
-            "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
-            "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
-            "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
-            "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
-            "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "zvlhcovac_kdy": "Kdy smí zvlhčovač běžet. V ložnici má smysl „jen při spánku\", v obýváku spíš „jen když je někdo v pokoji\" — zvlhčovat prázdný pokoj je plýtvání.\n\nPři otevřeném okně se nezvlhčuje nikdy, to by znamenalo zvlhčovat ulici.",
-            "zaskleni": "Podle zasklení se počítá, jak chladné je sklo, a z toho nejvyšší vlhkost, při které se ještě neorosí. V mrazu má sklo okolo pěti stupňů a při dvaadvaceti v pokoji a šedesáti procentech je rosný bod kolem čtrnácti — okno se tedy orosí, přestože vlhkost sama o sobě vypadá rozumně.\n\nHorní mez vlhkosti se tím v mrazu sama sníží. Při dvaadvaceti stupních a venkovních minus pěti vyjde pro dvojsklo 67 %, pro starší 53 %.",
-            "chlazeni_min_venku": "Pod touhle venkovní teplotou se chlazení větráním nespustí.\n\nDolní hrana hysterezního pásma by pokoj zastavila sama, jenže zavření není okamžité — drží se „Nejkratší doba držení polohy\" — a chlazení se řídí nejteplejším čidlem, takže u okna je mezitím výrazně chladněji. Čím studenější vzduch, tím větší ten rozdíl je.",
-            "pm_spatne_od": "Od téhle úrovně se vzduch bere za zaprášený a větrá se kvůli němu. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "pm_cisto_pod": "Pod touhle úrovní se vzduch bere za čistý. Mezera mezi oběma prahy brání tomu, aby se na hraně přepínalo.",
-            "hyst_den_otevrit": "O kolik se teplota musí odchýlit od cíle, aby se kvůli ní otevřelo — nad cílem se chladí venkovním vzduchem, pod cílem se jím ohřívá. Platí souměrně na obě strany.",
-            "hyst_den_zavrit": "Jak daleko za cíl se dojede, než se zavře: při chlazení pod cíl, při ohřevu nad cíl. Zavírat přesně na cíli znamená, že se teplota hned začne vracet.\n\nJe to zároveň tolerance pro větrání kvůli teplotě. Větrání kvůli CO2 nebo prachu čeká na vyvětrání a drží ho jen pojistky.",
-            "hyst_noc_otevrit": "Totéž pro noční hodiny a spánek. V noci se obvykle nastavuje širší pásmo, aby okno nejezdilo.",
-            "hyst_noc_zavrit": "Totéž pro noční hodiny a spánek.",
-            "mez_dolni": "Absolutní spodní mez: pod ní se okno zavře, ať je otevřené z jakéhokoli důvodu. Obchází ji jen ruční žádost o vyvětrání.\n\nNahradila dřívější noční mez i pojistku ve spánku, které dělaly totéž na třech místech.",
-            "mez_horni": "Absolutní horní mez proti přehřátí: nad ní se okno zavře, ať je otevřené z jakéhokoli důvodu.",
-            "pro_pohodu": "Otevřít smí i tehdy, když k tomu není důvod — vzduch je v pořádku, teplota v pásmu a venku je příjemně.\n\nVypnutím se okno bude otevírat jen z důvodu: kvůli CO2, prachu, chlazení nebo ohřevu.",
-            "zvlhcovac_ve_spanku": "Zvlhčovač smí běžet i při zapnutém spánku. Vypni, když ho v ložnici slyšíš.",
-            "rezerva_venku": "O kolik musí být venkovní vzduch za dojezdem pásma, aby se větrání vůbec spustilo — při chlazení o tolik pod dolní hranou, při ohřevu o tolik nad horní.\n\nBez té rezervy se cyklus doplazí k hraně a nikdy ji nepřejde, takže větrání dojezd nedokončí a jen vystydne.",
-            "prach_dosah": "Ultrazvukový zvlhčovač rozprašuje minerály z vody a čidla je vidí jako prach. Kvůli tomu by se větralo a čistilo, přestože je to jeho vlastní aerosol — a ten se vyvětrat nedá.\n\nAerosol se nedrží zóny, protože zóna je definovaná sdílením vzduchu kvůli CO2. Proto se dosah nastavuje zvlášť; ve výchozím stavu platí pro celý byt.",
-            "prach_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“. Pro velký byt, kde je něco mezi zónou a celkem.",
-            "vlhkost_dosah": "Zvlhčovat při otevřeném okně znamená zvlhčovat ulici. Vlhkost se šíří dál než jen do vlastní místnosti, takže se dá určit, odkud se otevřené okno počítá.\n\nVe výchozím stavu platí celý byt; v jeho zóně nebo ve vybraných místnostech, pokud ti to stačí.",
-            "vlhkost_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“.",
-            "noc_posun": "O kolik se v noci posune cílová teplota. Záporné číslo znamená topit míň, kladné víc, nula nechává cíl být.\n\nKlesá se s předstihem před začátkem noci, aby to nebyl skok; zapnutý spánek platí hned, bez ohledu na hodinu."
+            "nazev": "What the room is called. You use this name to assign it to a zone.",
+            "teploty": "You can pick several sensors. In the cold the lowest decides because of condensation, in the heat the highest, so no hot air is let into an overheated room.",
+            "co2": "You can pick several sensors. The highest one decides, that is the most stale air.",
+            "pm25": "Dust particles. A jump upwards triggers burst ventilation, typically while frying.",
+            "pm10": "Coarser dust. Leave empty if the sensor does not measure it.",
+            "pm_platny": "A dust sensor needs moving air. If it has a fan, pick its switch — with the fan still, the readings are not trusted. If you have no fan, leave it empty.",
+            "climate": "The room's valves — both a virtual one from Better Thermostat and a real one. The integration sends them the target temperature and mode while the Control heating switch is on.",
+            "odchylka": "The target temperature is computed for the whole home. Here you shift it for this room. Plus means warmer. It can also be changed with the slider on the dashboard — it is the same value. A change here moves the slider, because we treat it as an explicit instruction.",
+            "utlum": "The temperature the valves drop to while a window is open. It is a whole temperature, not a subtraction from the target.",
+            "zdroj_obsazenosti": "An occupied room is kept at the target. An empty one is left be.",
+            "spanek": "A switch you use to say that someone is sleeping in the room.",
+            "pritomnost": "A motion sensor. On its own it is not enough, because it does not see a person sitting still.",
+            "dobeh_min": "How long after the last motion the room still counts as occupied.",
+            "max_stari_h": "If a sensor stays silent for this long, its battery has most likely died and it stops being trusted.",
+            "stineni_pryc": "What the blinds should do when nobody is home.",
+            "indicie_stav": "Entities where being on means somebody is there. A TV, lights, a media player.",
+            "indicie_vykon": "Power draw sensors. Above the threshold the room counts as occupied.",
+            "prah_vykonu": "Above this draw it is more than standby. For a TV usually 15 to 30 W.",
+            "indicie_dobeh_min": "How long it still counts after switching off. Someone who just turned the light off has not left yet.",
+            "cisticka": "An air purifier. It handles dust, not CO2. In winter and at night it beats opening a window.",
+            "rh_vnitrni": "Humidity sensor in the room. Without it the extraction is not controlled.",
+            "rh_max": "Above this humidity the humidifier switches off. Between the lower and upper limit nothing happens, so it does not keep toggling.",
+            "azimut": "Which way the windows face. 0 north, 90 east, 180 south, 270 west. That is how we know when the sun reaches the room.",
+            "klid_stineni_min": "The minimum gap between blind movements, so the slats do not sway with every passing cloud.",
+            "zaluzie": "This room's blinds. You can pick several — in the next step you assign which saved position plays which role for each of them.",
+            "okna": "This room's windows. You can pick several; they will be controlled together.",
+            "projezd_okna_s": "How long the drive takes from one end position to the other. While it travels we trust our own command, not the entity state.",
+            "kontakt_okna": "A physical opening sensor. It also catches a window opened by hand that the drive knows nothing about — the integration then does not open it a second time and the heating knows it is open.",
+            "zdroj_okenniho": "How the heating learns the window is open. If the window has no contact and you do not want a manual opening to switch the heating off, pick the automation only.",
+            "vynuceno_okno": "Switches that force the window open. They override air and temperature, but not wind and rain.",
+            "co2_otevrit": "Above this value ventilation starts. The worst value in the whole zone is used. It can also be changed with the slider on the dashboard — it is the same value. A change here moves the slider, because we treat it as an explicit instruction.",
+            "co2_zavrit": "Below this value the air is cleared. Between the thresholds nothing happens on purpose. It can also be changed with the slider on the dashboard — it is the same value. A change here moves the slider, because we treat it as an explicit instruction.",
+            "co2_noc": "At night the opening threshold is higher, so nothing opens over a trifle. While sleeping not even this one opens the window — there only the emergency threshold decides.\n\nIt closes once the air is cleared at “Close below CO2”, just like during the day; one closing value instead of two.",
+            "co2_noc_krize": "Above this it opens even at night and during sleep, because stale air is by then worse than window noise. While sleeping it is the only reason the window opens at all.",
+            "dest_prah": "Above this rain intensity the window closes. Zero means rain always matters. A high value means rain does not bother this window — for instance when it sits under an eave.",
+            "i_kdyz_nikdo_doma": "By default windows close when the home is empty. Turn this on if this particular window is safe to leave open.",
+            "t_venku_mistni": "When the window opens onto a balcony or a conservatory, the air behind it differs from the one at the façade. Enter a sensor from there and it overrides the global outdoor temperature.",
+            "rh_venku_mistni": "Humidity from the same spot, for the dew point.",
+            "min_drzeni_min": "The shortest time the window stays in the position it reached. It keeps it from flying back and forth.\n\nAfter this time it is also checked that the ventilation works at all: if neither CO2 nor the temperature moved for the better, the window closes and the pause doubles with every further futile attempt. Emergency ventilation and a manual request are not held by this.",
+            "odvzdusneni_h": "After the season starts, a high temperature is held for this long so the valve stays open and the pipework bleeds itself. Zero means do not bleed.",
+            "odvzdusneni_t": "A temperature that guarantees a fully open valve. It is not meant to heat, only to open.",
+            "stineni_predstih": "Shading should come before the room overheats. The lead time says how far below the target shading already starts. One degree means: target 25, shade from 24.",
+            "zvlhcovac": "A humidifier, a switch or a helper. In winter the air dries out and drops below thirty percent, which already dries your airways.",
+            "rh_min": "Below this humidity the humidifier switches on. In a winter flat it commonly drops under thirty percent, which already dries out your airways.",
+            "dvere": "The door contact between rooms of a zone. A closed door means the air is not exchanged and window noise does not carry — sleep in one room then does not stop the other from ventilating.",
+            "topit_pri_oknu": "We give the valve a window sensor, so it can handle an open window itself — that is the default, Leave it to the valve. Use setback or off only with a valve that has no window sensor, otherwise you are telling it the same thing twice.",
+            "sezonu_ridi_hlavice": "Better Thermostat decides for itself when to heat, based on the weather. With this ticked, the integration sends it only the target temperature and respects its decision to switch on — when it judges that it should not heat, the integration will not start it.\n\nUntick it if you want the integration to decide the heating season: in season it sends heat, outside it off, and the valve is left with valve calibration, which it does best.",
+            "znacka_okno": "The temperature the valve is given when a window is open and it cannot read a window sensor itself. Better Thermostat sends 5.0, so the default here is 5.5 — the value then tells you whose command it was.",
+            "znacka_mimo_sezonu": "The temperature the valve is given outside the heating season. It is used only when the valve does not decide the season itself. An odd number instead of a round one reveals that the command came from the integration.",
+            "vetrat": "Switches that say you want the room aired out even though the sensors report nothing. Unlike a forced opening, the usual rules hold — wind, rain and the temperature limits still apply, the room is merely treated as stale until you switch it off.",
+            "rucni_klid_min": "When you open or close the window by hand, any ventilation in progress is dropped and for this long nothing interferes with the window. Wind and rain will still close it. Zero means the automation carries on at once.",
+            "ochota_vetrat": "In some places an open window is unpleasant even when the temperature is fine — a kitchen window draughts on whoever stands at the counter. Elsewhere it can stay open all day and nobody minds. That is how we decide which room ventilates for which. Sleep overrides it: where someone sleeps, nothing ventilates anyway.",
+            "poradi": "Where the room belongs on the generated card. A lower number goes higher. With equal numbers they follow the order in which the rooms were created.",
+            "cisticka_od_pm": "The dust level at which the purifier should run. It switches off once the value drops to three fifths of the threshold, so it does not toggle at the edge. PM10 is derived from the same number and is usually about one and a half times higher.",
+            "zvlhcovac_kdy": "When the humidifier may run. In a bedroom “only while sleeping” makes sense, in a living room rather “only when someone is in the room” — humidifying an empty room is a waste.\n\nWith a window open it never humidifies; that would mean humidifying the street.",
+            "zaskleni": "The glazing tells us how cold the glass is, and from that the highest humidity at which it still does not fog up. In frost the glass sits around five degrees, and with twenty-two in the room and sixty percent the dew point is about fourteen — so the window fogs up even though the humidity itself looks reasonable.\n\nThe upper humidity limit therefore lowers itself in frost. At twenty-two degrees and minus five outside it comes out at 67 % for double glazing and 53 % for older glazing.",
+            "chlazeni_min_venku": "Below this outdoor temperature, cooling by ventilation will not start.\n\nThe lower edge of the hysteresis band would stop the room by itself, but closing is not instant — the “Shortest time to hold a position” applies — and cooling follows the warmest sensor, so it gets markedly colder by the window in the meantime. The colder the air, the bigger that difference.",
+            "pm_spatne_od": "From this level the air counts as dusty and gets ventilated. PM10 is derived from the same number and is usually about one and a half times higher.",
+            "pm_cisto_pod": "Below this level the air counts as clean. The gap between the two thresholds keeps it from toggling at the edge.",
+            "hyst_den_otevrit": "How far the temperature has to drift from the target before it opens the window — above the target it cools with outdoor air, below it heats with it. It applies symmetrically on both sides.",
+            "hyst_den_zavrit": "How far past the target it runs before closing: below the target when cooling, above it when heating. Closing exactly at the target means the temperature starts coming back at once.\n\nIt is also the tolerance for temperature-driven ventilation. Ventilation for CO2 or dust waits until the air is cleared and is held only by the limits.",
+            "hyst_noc_otevrit": "The same for night hours and sleep. At night a wider band is usually set, so the window stays put.",
+            "hyst_noc_zavrit": "The same for night hours and sleep.",
+            "mez_dolni": "An absolute lower limit: below it the window closes, whatever it is open for. Only a manual request to air out gets past it.\n\nIt replaced the former night limit and the sleep limit, which did the same job in three places.",
+            "mez_horni": "An absolute upper limit against overheating: above it the window closes, whatever it is open for.",
+            "pro_pohodu": "It may open even when there is no reason to — the air is fine, the temperature is inside the band and the weather is pleasant.\n\nTurn it off and the window will open only for a reason: CO2, dust, cooling or heating.",
+            "zvlhcovac_ve_spanku": "The humidifier may run with the sleep switch on as well. Turn this off if you can hear it in the bedroom.",
+            "rezerva_venku": "How far past the band's run-down the outdoor air has to be before ventilation starts at all — that much below the lower edge when cooling, that much above the upper one when heating.\n\nWithout that margin the cycle crawls up to the edge and never crosses it, so the ventilation never finishes its run and the room just cools down.",
+            "prach_dosah": "An ultrasonic humidifier sprays minerals from the water and sensors see them as dust. That would trigger ventilating and purifying even though it is the humidifier's own aerosol — and that cannot be ventilated away.\n\nThe aerosol does not respect the zone, because a zone is defined by shared air for CO2. The reach is therefore set separately; by default it covers the whole home.",
+            "prach_mistnosti": "Applies only with “In selected rooms”. For a large home, where something sits between the zone and the whole place.",
+            "vlhkost_dosah": "Humidifying with a window open means humidifying the street. Humidity spreads further than its own room, so you can decide which open windows count.\n\nBy default the whole home does; its zone or selected rooms if that is enough for you.",
+            "vlhkost_mistnosti": "Applies only with “In selected rooms”.",
+            "noc_posun": "How far the target temperature shifts at night. A negative number means heat less, a positive one more, zero leaves the target alone.\n\nThe drop begins before night starts so it is not a step; the sleep switch applies at once, whatever the hour."
           },
-          "submit": "Další"
+          "submit": "Next"
         },
         "stineni": {
-          "title": "Stavy žaluzií",
-          "description": "Pro každou žaluzii se nastavuje, který její uložený stav plní kterou roli, a jak se má chovat. Nabízejí se jen stavy, které ta konkrétní žaluzie má.\n\n**zastínění** — svítí slunce a je horko\n**odclonění** — je chladno, slunce se hodí dovnitř\n**soukromí** — po setmění, aby nebylo vidět dovnitř\n**prázdný byt** — když nikdo není doma\n**výchozí stav** — kam se má vrátit\n\nVolby začínající „kdy\" se dají nastavit každé žaluzii zvlášť; „jako celá místnost\" znamená, že platí nastavení z předchozího kroku. Co necháš prázdné, se v té situaci nehne.",
-          "submit": "Další"
+          "title": "Blind positions",
+          "description": "For each blind you set which of its saved positions plays which role, and how it should behave. Only the positions that particular blind has are offered.\n\n**shading** — the sun is out and it is hot\n**unshading** — it is cold and the sun is welcome inside\n**privacy** — after dark, so nobody can see in\n**empty home** — when nobody is home\n**default position** — where it should return\n\nThe options starting with “when” can be set per blind; “same as the room” means the setting from the previous step applies. Whatever you leave empty will not move in that situation.",
+          "submit": "Next"
         },
         "chovani": {
-          "title": "Chování místnosti",
-          "description": "Jak se má místnost chovat. Všechno má rozumnou výchozí hodnotu, takže se tím dá při zakládání proklikat a doladit později.",
+          "title": "Room behaviour",
+          "description": "How the room should behave. Everything has a sensible default, so you can click through it while setting up and tune it later.",
           "data": {
-            "projezd_okna_s": "Doba projezdu okna",
-            "min_drzeni_min": "Nejkratší doba držení polohy",
-            "rucni_klid_min": "Po ručním zásahu nechat být",
-            "co2_otevrit": "Otevřít nad CO2",
-            "co2_zavrit": "Zavřít pod CO2",
-            "co2_noc": "V noci otevřít nad CO2",
-            "co2_noc_krize": "Nouzově otevřít nad CO2",
-            "pm_spatne_od": "Prach je špatný od PM2.5",
-            "pm_cisto_pod": "Prach je čistý pod PM2.5",
-            "cisticka_od_pm": "Čističku zapnout od PM2.5",
-            "hyst_den_otevrit": "Ve dne otevřít při odchylce od cíle o",
-            "hyst_den_zavrit": "Ve dne zavřít až za cílem o",
-            "hyst_noc_otevrit": "V noci otevřít při odchylce od cíle o",
-            "hyst_noc_zavrit": "V noci zavřít až za cílem o",
-            "odchylka": "Moje odchylka teploty",
-            "rezerva_venku": "Venku musí být za dojezdem o",
-            "chlazeni_min_venku": "Chladit jen při venkovní teplotě nad",
-            "mez_dolni": "Pojistka: nevychladit pod",
-            "mez_horni": "Pojistka: nepřehřát nad",
-            "pro_pohodu": "Otevírat i pro pohodu",
-            "i_kdyz_nikdo_doma": "Větrat i když nikdo není doma",
-            "ochota_vetrat": "Ochota větrat",
-            "dest_prah": "Déšť vadí od",
-            "topit_pri_oknu": "Při otevřeném okně",
-            "utlum": "Při otevřeném okně topit na",
-            "noc_posun": "V noci posun cílové teploty",
-            "sezonu_ridi_hlavice": "Zapnutí topení řídí hlavice",
-            "znacka_okno": "Značka pro otevřené okno",
-            "znacka_mimo_sezonu": "Značka mimo sezónu",
-            "odvzdusneni_h": "Odvzdušnění na začátku sezóny",
-            "odvzdusneni_t": "Teplota při odvzdušnění",
-            "stineni_predstih": "Předstih stínění",
-            "klid_stineni_min": "Nejčastěji hýbat jednou za",
-            "rh_min": "Zvlhčovat pod vlhkostí",
-            "rh_max": "Vypnout zvlhčovač nad",
-            "zvlhcovac_kdy": "Zvlhčovat",
-            "zvlhcovac_ve_spanku": "Zvlhčovat i ve spánku",
-            "prach_dosah": "Prach z tohoto zvlhčovače neberu vážně",
-            "prach_mistnosti": "   a to v těchto místnostech",
-            "vlhkost_dosah": "Nezvlhčovat při otevřeném okně",
-            "vlhkost_mistnosti": "   a to v těchto místnostech",
-            "zdroj_obsazenosti": "Obsazenost podle",
-            "spanek": "Spánkový přepínač",
-            "pritomnost": "Čidlo pohybu",
-            "dobeh_min": "Doběh po pohybu",
-            "max_stari_h": "Nevěřit čidlu starším než",
-            "stineni_pryc": "Stínění, když nikdo není doma",
-            "indicie_stav": "Zapnuto znamená obsazeno",
-            "indicie_vykon": "Čidla odběru",
-            "prah_vykonu": "Odběr nad",
-            "indicie_dobeh_min": "Doběh"
+            "projezd_okna_s": "Window travel time",
+            "min_drzeni_min": "Shortest time to hold a position",
+            "rucni_klid_min": "After a manual change, leave alone for",
+            "co2_otevrit": "Open above CO2",
+            "co2_zavrit": "Close below CO2",
+            "co2_noc": "At night open above CO2",
+            "co2_noc_krize": "Emergency opening above CO2",
+            "pm_spatne_od": "Dust is bad from PM2.5",
+            "pm_cisto_pod": "Dust is clean below PM2.5",
+            "cisticka_od_pm": "Turn the purifier on from PM2.5",
+            "hyst_den_otevrit": "By day open at a deviation from the target of",
+            "hyst_den_zavrit": "By day close past the target by",
+            "hyst_noc_otevrit": "At night open at a deviation from the target of",
+            "hyst_noc_zavrit": "At night close past the target by",
+            "odchylka": "My temperature offset",
+            "rezerva_venku": "Outside must be past the run-down by",
+            "chlazeni_min_venku": "Only cool when outdoor temperature is above",
+            "mez_dolni": "Limit: never cool below",
+            "mez_horni": "Limit: never overheat above",
+            "pro_pohodu": "Open for comfort as well",
+            "i_kdyz_nikdo_doma": "Ventilate even when nobody is home",
+            "ochota_vetrat": "Willingness to ventilate",
+            "dest_prah": "Rain matters from",
+            "topit_pri_oknu": "With the window open",
+            "utlum": "With a window open, heat to",
+            "noc_posun": "Night shift of the target temperature",
+            "sezonu_ridi_hlavice": "The valve decides when to heat",
+            "znacka_okno": "Marker for an open window",
+            "znacka_mimo_sezonu": "Marker outside the season",
+            "odvzdusneni_h": "Bleeding at the start of the season",
+            "odvzdusneni_t": "Temperature while bleeding",
+            "stineni_predstih": "Shading lead time",
+            "klid_stineni_min": "Move at most once per",
+            "rh_min": "Humidify below humidity",
+            "rh_max": "Turn the humidifier off above",
+            "zvlhcovac_kdy": "Humidify",
+            "zvlhcovac_ve_spanku": "Humidify during sleep as well",
+            "prach_dosah": "Ignore dust from this humidifier",
+            "prach_mistnosti": "   in these rooms",
+            "vlhkost_dosah": "Do not humidify with a window open",
+            "vlhkost_mistnosti": "   in these rooms",
+            "zdroj_obsazenosti": "Occupancy based on",
+            "spanek": "Sleep switch",
+            "pritomnost": "Motion sensor",
+            "dobeh_min": "Run-on after motion",
+            "max_stari_h": "Distrust readings older than",
+            "stineni_pryc": "Shading when nobody is home",
+            "indicie_stav": "On means occupied",
+            "indicie_vykon": "Power draw sensors",
+            "prah_vykonu": "Power draw above",
+            "indicie_dobeh_min": "Run-on"
           },
           "data_description": {
-            "projezd_okna_s": "Jak dlouho pohon jede z jedné krajní polohy do druhé. Během jízdy se věří vlastnímu povelu, ne stavu entity.",
-            "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam.\n\nPo téhle době se zároveň ověří, že větrání vůbec zabírá: když se ani CO2, ani teplota neposunuly k lepšímu, okno se zavře a pauza se s každým dalším marným pokusem zdvojnásobí. Nouzové větrání a ruční žádost tím neprochází.",
-            "rucni_klid_min": "Když okno otevřeš nebo zavřeš rukou, rozdělané větrání se zruší a tuhle dobu se do okna nemluví. Vítr a déšť ho zavřou i tak. Nula znamená hned pokračovat v automatice.",
-            "co2_otevrit": "Nad touto hodnotou se začne větrat. Bere se nejhorší hodnota z celé oblasti. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "co2_zavrit": "Pod touto hodnotou je vyvětráno. Mezi prahy se schválně nic neděje. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "co2_noc": "V noci je práh pro otevření vyšší, aby se neotvíralo kvůli maličkosti. Ve spánku se neotvírá ani podle něj — tam rozhoduje až krizový práh.\n\nZavírá se po vyvětrání na „Zavřít pod CO2“, stejně jako ve dne; jedna hodnota na zavírání místo dvou.",
-            "co2_noc_krize": "Nad tímhle se otevře i v noci a ve spánku, protože dusno už je horší než rámus okna. Ve spánku je to jediný důvod, proč se okno otevře.",
-            "pm_spatne_od": "Od téhle úrovně se vzduch bere za zaprášený a větrá se kvůli němu. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "pm_cisto_pod": "Pod touhle úrovní se vzduch bere za čistý. Mezera mezi oběma prahy brání tomu, aby se na hraně přepínalo.",
-            "cisticka_od_pm": "Od jaké úrovně prachu má čistička běžet. Vypne se, až hodnota klesne na tři pětiny prahu, aby nepřepínala na hraně. PM10 se odvozuje z téhož čísla, běžně bývá zhruba jedenapůlkrát vyšší.",
-            "hyst_den_otevrit": "O kolik se teplota musí odchýlit od cíle, aby se kvůli ní otevřelo — nad cílem se chladí venkovním vzduchem, pod cílem se jím ohřívá. Platí souměrně na obě strany.",
-            "hyst_den_zavrit": "Jak daleko za cíl se dojede, než se zavře: při chlazení pod cíl, při ohřevu nad cíl. Zavírat přesně na cíli znamená, že se teplota hned začne vracet.\n\nJe to zároveň tolerance pro větrání kvůli teplotě. Větrání kvůli CO2 nebo prachu čeká na vyvětrání a drží ho jen pojistky.",
-            "hyst_noc_otevrit": "Totéž pro noční hodiny a spánek. V noci se obvykle nastavuje širší pásmo, aby okno nejezdilo.",
-            "hyst_noc_zavrit": "Totéž pro noční hodiny a spánek.",
-            "odchylka": "Cílová teplota se počítá pro celý byt. Tady ji pro tuto místnost posuneš. Plus znamená tepleji. Dá se měnit i šoupátkem na dashboardu — je to tatáž hodnota. Změna tady šoupátko posune, protože ji bereme za výslovný pokyn.",
-            "rezerva_venku": "O kolik musí být venkovní vzduch za dojezdem pásma, aby se větrání vůbec spustilo — při chlazení o tolik pod dolní hranou, při ohřevu o tolik nad horní.\n\nBez té rezervy se cyklus doplazí k hraně a nikdy ji nepřejde, takže větrání dojezd nedokončí a jen vystydne.",
-            "chlazeni_min_venku": "Pod touhle venkovní teplotou se chlazení větráním nespustí.\n\nDolní hrana hysterezního pásma by pokoj zastavila sama, jenže zavření není okamžité — drží se „Nejkratší doba držení polohy\" — a chlazení se řídí nejteplejším čidlem, takže u okna je mezitím výrazně chladněji. Čím studenější vzduch, tím větší ten rozdíl je.",
-            "mez_dolni": "Absolutní spodní mez: pod ní se okno zavře, ať je otevřené z jakéhokoli důvodu. Obchází ji jen ruční žádost o vyvětrání.\n\nNahradila dřívější noční mez i pojistku ve spánku, které dělaly totéž na třech místech.",
-            "mez_horni": "Absolutní horní mez proti přehřátí: nad ní se okno zavře, ať je otevřené z jakéhokoli důvodu.",
-            "pro_pohodu": "Otevřít smí i tehdy, když k tomu není důvod — vzduch je v pořádku, teplota v pásmu a venku je příjemně.\n\nVypnutím se okno bude otevírat jen z důvodu: kvůli CO2, prachu, chlazení nebo ohřevu.",
-            "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené.",
-            "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
-            "dest_prah": "Nad touto intenzitou deště se okno zavře. Nula znamená, že déšť vadí vždycky. Vysoká hodnota, že tomuhle oknu déšť nevadí — třeba když je pod stříškou.",
-            "topit_pri_oknu": "Hlavici posíláme okenní senzor, takže si otevřené okno umí ošetřit sama — to je výchozí volba Nechat na hlavici. Útlum nebo vypnuto použij jen u hlavice, která okenní senzor neumí, jinak jí posíláš dvě informace o téže věci.",
-            "utlum": "Teplota, na kterou se hlavice stáhnou, když je okno otevřené. Je to celá teplota, ne odečet od cíle.",
-            "noc_posun": "O kolik se v noci posune cílová teplota. Záporné číslo znamená topit míň, kladné víc, nula nechává cíl být.\n\nKlesá se s předstihem před začátkem noci, aby to nebyl skok; zapnutý spánek platí hned, bez ohledu na hodinu.",
-            "sezonu_ridi_hlavice": "Better Thermostat si podle počasí sám určuje, kdy topit. Se zaškrtnutým polem mu integrace posílá jen cílovou teplotu a jeho rozhodnutí o zapnutí respektuje — když usoudí, že topit nemá, integrace ho nezapne.\n\nOdškrtni, když chceš, aby o topné sezóně rozhodovala integrace: v sezóně pošle režim heat, mimo ni off, a hlavici zbude kalibrace ventilu, v čem je nejlepší.",
-            "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
-            "znacka_mimo_sezonu": "Teplota, kterou hlavice dostane mimo topnou sezónu. Používá se jen tehdy, když sezónu neřídí hlavice sama. Zvláštní číslo místo kulatého prozradí, že povel přišel od integrace.",
-            "odvzdusneni_h": "Po začátku sezóny se tuhle dobu drží vysoká teplota, aby ventil zůstal otevřený a rozvod se sám odvzdušnil. Nula znamená neodvzdušňovat.",
-            "odvzdusneni_t": "Teplota, která zaručí plně otevřený ventil. Nemá topit doopravdy, jen otevřít.",
-            "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24.",
-            "klid_stineni_min": "Minimální odstup mezi pohyby žaluzií, aby se lamely nehoupaly při každém mráčku.",
-            "rh_min": "Pod touhle vlhkostí se zvlhčovač zapne. V zimě v paneláku běžně klesne pod třicet procent, což už vysušuje sliznice.",
-            "rh_max": "Nad touhle vlhkostí se zvlhčovač vypne. Mezi dolní a horní mezí se nesahá, aby nepřepínal pořád dokola.",
-            "zvlhcovac_kdy": "Kdy smí zvlhčovač běžet. V ložnici má smysl „jen při spánku\", v obýváku spíš „jen když je někdo v pokoji\" — zvlhčovat prázdný pokoj je plýtvání.\n\nPři otevřeném okně se nezvlhčuje nikdy, to by znamenalo zvlhčovat ulici.",
-            "zvlhcovac_ve_spanku": "Zvlhčovač smí běžet i při zapnutém spánku. Vypni, když ho v ložnici slyšíš.",
-            "prach_dosah": "Ultrazvukový zvlhčovač rozprašuje minerály z vody a čidla je vidí jako prach. Kvůli tomu by se větralo a čistilo, přestože je to jeho vlastní aerosol — a ten se vyvětrat nedá.\n\nAerosol se nedrží zóny, protože zóna je definovaná sdílením vzduchu kvůli CO2. Proto se dosah nastavuje zvlášť; ve výchozím stavu platí pro celý byt.",
-            "prach_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“. Pro velký byt, kde je něco mezi zónou a celkem.",
-            "vlhkost_dosah": "Zvlhčovat při otevřeném okně znamená zvlhčovat ulici. Vlhkost se šíří dál než jen do vlastní místnosti, takže se dá určit, odkud se otevřené okno počítá.\n\nVe výchozím stavu platí celý byt; v jeho zóně nebo ve vybraných místnostech, pokud ti to stačí.",
-            "vlhkost_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“.",
-            "zdroj_obsazenosti": "Obsazená místnost se udržuje na cíli. Prázdná se nechá být.",
-            "spanek": "Přepínač, kterým dáváš najevo, že se v místnosti spí.",
-            "pritomnost": "Čidlo pohybu. Samo o sobě nestačí, protože nevidí sedícího člověka.",
-            "dobeh_min": "Jak dlouho po posledním pohybu se místnost ještě považuje za obsazenou.",
-            "max_stari_h": "Když se čidlo tak dlouho neozve, nejspíš mu došla baterie a přestane se mu věřit.",
-            "stineni_pryc": "Co se má stát se žaluziemi, když nikdo není doma.",
-            "indicie_stav": "Entity, u kterých zapnuto znamená, že tam někdo je. Televize, světla, přehrávač.",
-            "indicie_vykon": "Čidla odběru. Nad prahem se místnost považuje za obsazenou.",
-            "prah_vykonu": "Nad tímto odběrem to není jen pohotovostní režim. U televize obvykle 15 až 30 W.",
-            "indicie_dobeh_min": "Jak dlouho po vypnutí ještě platí. Kdo právě zhasl, ještě neodešel."
+            "projezd_okna_s": "How long the drive takes from one end position to the other. While it travels we trust our own command, not the entity state.",
+            "min_drzeni_min": "The shortest time the window stays in the position it reached. It keeps it from flying back and forth.\n\nAfter this time it is also checked that the ventilation works at all: if neither CO2 nor the temperature moved for the better, the window closes and the pause doubles with every further futile attempt. Emergency ventilation and a manual request are not held by this.",
+            "rucni_klid_min": "When you open or close the window by hand, any ventilation in progress is dropped and for this long nothing interferes with the window. Wind and rain will still close it. Zero means the automation carries on at once.",
+            "co2_otevrit": "Above this value ventilation starts. The worst value in the whole zone is used. It can also be changed with the slider on the dashboard — it is the same value. A change here moves the slider, because we treat it as an explicit instruction.",
+            "co2_zavrit": "Below this value the air is cleared. Between the thresholds nothing happens on purpose. It can also be changed with the slider on the dashboard — it is the same value. A change here moves the slider, because we treat it as an explicit instruction.",
+            "co2_noc": "At night the opening threshold is higher, so nothing opens over a trifle. While sleeping not even this one opens the window — there only the emergency threshold decides.\n\nIt closes once the air is cleared at “Close below CO2”, just like during the day; one closing value instead of two.",
+            "co2_noc_krize": "Above this it opens even at night and during sleep, because stale air is by then worse than window noise. While sleeping it is the only reason the window opens at all.",
+            "pm_spatne_od": "From this level the air counts as dusty and gets ventilated. PM10 is derived from the same number and is usually about one and a half times higher.",
+            "pm_cisto_pod": "Below this level the air counts as clean. The gap between the two thresholds keeps it from toggling at the edge.",
+            "cisticka_od_pm": "The dust level at which the purifier should run. It switches off once the value drops to three fifths of the threshold, so it does not toggle at the edge. PM10 is derived from the same number and is usually about one and a half times higher.",
+            "hyst_den_otevrit": "How far the temperature has to drift from the target before it opens the window — above the target it cools with outdoor air, below it heats with it. It applies symmetrically on both sides.",
+            "hyst_den_zavrit": "How far past the target it runs before closing: below the target when cooling, above it when heating. Closing exactly at the target means the temperature starts coming back at once.\n\nIt is also the tolerance for temperature-driven ventilation. Ventilation for CO2 or dust waits until the air is cleared and is held only by the limits.",
+            "hyst_noc_otevrit": "The same for night hours and sleep. At night a wider band is usually set, so the window stays put.",
+            "hyst_noc_zavrit": "The same for night hours and sleep.",
+            "odchylka": "The target temperature is computed for the whole home. Here you shift it for this room. Plus means warmer. It can also be changed with the slider on the dashboard — it is the same value. A change here moves the slider, because we treat it as an explicit instruction.",
+            "rezerva_venku": "How far past the band's run-down the outdoor air has to be before ventilation starts at all — that much below the lower edge when cooling, that much above the upper one when heating.\n\nWithout that margin the cycle crawls up to the edge and never crosses it, so the ventilation never finishes its run and the room just cools down.",
+            "chlazeni_min_venku": "Below this outdoor temperature, cooling by ventilation will not start.\n\nThe lower edge of the hysteresis band would stop the room by itself, but closing is not instant — the “Shortest time to hold a position” applies — and cooling follows the warmest sensor, so it gets markedly colder by the window in the meantime. The colder the air, the bigger that difference.",
+            "mez_dolni": "An absolute lower limit: below it the window closes, whatever it is open for. Only a manual request to air out gets past it.\n\nIt replaced the former night limit and the sleep limit, which did the same job in three places.",
+            "mez_horni": "An absolute upper limit against overheating: above it the window closes, whatever it is open for.",
+            "pro_pohodu": "It may open even when there is no reason to — the air is fine, the temperature is inside the band and the weather is pleasant.\n\nTurn it off and the window will open only for a reason: CO2, dust, cooling or heating.",
+            "i_kdyz_nikdo_doma": "By default windows close when the home is empty. Turn this on if this particular window is safe to leave open.",
+            "ochota_vetrat": "In some places an open window is unpleasant even when the temperature is fine — a kitchen window draughts on whoever stands at the counter. Elsewhere it can stay open all day and nobody minds. That is how we decide which room ventilates for which. Sleep overrides it: where someone sleeps, nothing ventilates anyway.",
+            "dest_prah": "Above this rain intensity the window closes. Zero means rain always matters. A high value means rain does not bother this window — for instance when it sits under an eave.",
+            "topit_pri_oknu": "We give the valve a window sensor, so it can handle an open window itself — that is the default, Leave it to the valve. Use setback or off only with a valve that has no window sensor, otherwise you are telling it the same thing twice.",
+            "utlum": "The temperature the valves drop to while a window is open. It is a whole temperature, not a subtraction from the target.",
+            "noc_posun": "How far the target temperature shifts at night. A negative number means heat less, a positive one more, zero leaves the target alone.\n\nThe drop begins before night starts so it is not a step; the sleep switch applies at once, whatever the hour.",
+            "sezonu_ridi_hlavice": "Better Thermostat decides for itself when to heat, based on the weather. With this ticked, the integration sends it only the target temperature and respects its decision to switch on — when it judges that it should not heat, the integration will not start it.\n\nUntick it if you want the integration to decide the heating season: in season it sends heat, outside it off, and the valve is left with valve calibration, which it does best.",
+            "znacka_okno": "The temperature the valve is given when a window is open and it cannot read a window sensor itself. Better Thermostat sends 5.0, so the default here is 5.5 — the value then tells you whose command it was.",
+            "znacka_mimo_sezonu": "The temperature the valve is given outside the heating season. It is used only when the valve does not decide the season itself. An odd number instead of a round one reveals that the command came from the integration.",
+            "odvzdusneni_h": "After the season starts, a high temperature is held for this long so the valve stays open and the pipework bleeds itself. Zero means do not bleed.",
+            "odvzdusneni_t": "A temperature that guarantees a fully open valve. It is not meant to heat, only to open.",
+            "stineni_predstih": "Shading should come before the room overheats. The lead time says how far below the target shading already starts. One degree means: target 25, shade from 24.",
+            "klid_stineni_min": "The minimum gap between blind movements, so the slats do not sway with every passing cloud.",
+            "rh_min": "Below this humidity the humidifier switches on. In a winter flat it commonly drops under thirty percent, which already dries out your airways.",
+            "rh_max": "Above this humidity the humidifier switches off. Between the lower and upper limit nothing happens, so it does not keep toggling.",
+            "zvlhcovac_kdy": "When the humidifier may run. In a bedroom “only while sleeping” makes sense, in a living room rather “only when someone is in the room” — humidifying an empty room is a waste.\n\nWith a window open it never humidifies; that would mean humidifying the street.",
+            "zvlhcovac_ve_spanku": "The humidifier may run with the sleep switch on as well. Turn this off if you can hear it in the bedroom.",
+            "prach_dosah": "An ultrasonic humidifier sprays minerals from the water and sensors see them as dust. That would trigger ventilating and purifying even though it is the humidifier's own aerosol — and that cannot be ventilated away.\n\nThe aerosol does not respect the zone, because a zone is defined by shared air for CO2. The reach is therefore set separately; by default it covers the whole home.",
+            "prach_mistnosti": "Applies only with “In selected rooms”. For a large home, where something sits between the zone and the whole place.",
+            "vlhkost_dosah": "Humidifying with a window open means humidifying the street. Humidity spreads further than its own room, so you can decide which open windows count.\n\nBy default the whole home does; its zone or selected rooms if that is enough for you.",
+            "vlhkost_mistnosti": "Applies only with “In selected rooms”.",
+            "zdroj_obsazenosti": "An occupied room is kept at the target. An empty one is left be.",
+            "spanek": "A switch you use to say that someone is sleeping in the room.",
+            "pritomnost": "A motion sensor. On its own it is not enough, because it does not see a person sitting still.",
+            "dobeh_min": "How long after the last motion the room still counts as occupied.",
+            "max_stari_h": "If a sensor stays silent for this long, its battery has most likely died and it stops being trusted.",
+            "stineni_pryc": "What the blinds should do when nobody is home.",
+            "indicie_stav": "Entities where being on means somebody is there. A TV, lights, a media player.",
+            "indicie_vykon": "Power draw sensors. Above the threshold the room counts as occupied.",
+            "prah_vykonu": "Above this draw it is more than standby. For a TV usually 15 to 30 W.",
+            "indicie_dobeh_min": "How long it still counts after switching off. Someone who just turned the light off has not left yet."
           }
         }
       },
-      "entry_type": "Místnost",
+      "entry_type": "Room",
       "initiate_flow": {
-        "user": "místnost",
-        "reconfigure": "Upravit místnost"
+        "user": "room",
+        "reconfigure": "Edit the room"
       },
       "error": {
-        "zavrit_nad_otevrit": "Zavírací práh musí být nižší než otevírací, jinak se okno otevře a hned zavře.",
-        "noc_pod_dnem": "Noční práh nemá být nižší než denní — v noci se má větrat později, ne dřív.",
-        "krize_pod_noci": "Nouzový práh musí být vyšší než noční, jinak nemá co přebít."
+        "zavrit_nad_otevrit": "The closing threshold must be lower than the opening one, otherwise the window opens and closes straight away.",
+        "noc_pod_dnem": "The night threshold should not be lower than the daytime one — at night ventilation should start later, not sooner.",
+        "krize_pod_noci": "The emergency level must be above the night one, otherwise it has nothing to override."
       }
     },
     "zona": {
-      "title": "Oblast",
+      "title": "Zone",
       "step": {
         "user": {
-          "title": "Oblast propojených místností",
-          "description": "Oblast jsou místnosti, které spolu dýchají — otevřené dveře, průchozí prostor. Vzduch se v nich míchá, takže se počítá s nejhorší hodnotou z celé oblasti a větrat může kterékoli okno.\n\nOkna, žaluzie i prahy patří místnostem. Oblast sama nic neovládá, jen říká, co spolu souvisí.\n\nMístnost, která s ničím nesousedí, oblast nepotřebuje — rozhoduje se sama za sebe.\n\nPříklad: kuchyň a obývák jsou průchozí, takže tvoří oblast. Ložnice za dveřmi je samostatná, ale obě oblasti si nastavíš jako sousední, aby se v noci mohly zastoupit.",
+          "title": "Zone of connected rooms",
+          "description": "A zone is rooms that breathe together — an open door, a walk-through space. Their air mixes, so the worst value in the zone counts and any window may do the ventilating.\n\nWindows, blinds and thresholds belong to rooms. The zone itself controls nothing, it only says what goes together.\n\nA room that adjoins nothing needs no zone — it decides for itself.\n\nExample: the kitchen and the living room are walk-through, so they form a zone. The bedroom behind a door stands alone, but you set the two zones as neighbours so they can stand in for each other at night.",
           "data": {
-            "nazev": "Název",
-            "mistnosti": "Místnosti",
-            "sousedi": "Sousední oblasti",
-            "dvere": "Dveře mezi oblastmi"
+            "nazev": "Name",
+            "mistnosti": "Rooms",
+            "sousedi": "Neighbouring zones",
+            "dvere": "Door between zones"
           },
           "data_description": {
-            "nazev": "Jak se oblast jmenuje, například Obývák a kuchyně.",
-            "mistnosti": "Místnosti, které spolu dýchají. Každá smí být jen v jedné oblasti.",
-            "sousedi": "Oblasti za dveřmi. Když se v této oblasti spí, vyvětrá ji raději soused, aby ti nefoukalo na hlavu. Uplatní se jen v noci.",
-            "dvere": "Čidla dveří mezi oblastmi, může jich být víc. Zastupování se použije jen tehdy, když jsou všechna otevřená. Bez čidla se předpokládá otevřeno."
+            "nazev": "What the zone is called, for example Living room and kitchen.",
+            "mistnosti": "Rooms that breathe together. Each may belong to one zone only.",
+            "sousedi": "Zones behind a door. When someone sleeps in this zone, a neighbour does the ventilating so nothing blows on your head. It applies at night only.",
+            "dvere": "Door sensors between zones; there can be several. Standing in for each other is used only when all of them are open. Without a sensor open is assumed."
           },
-          "submit": "Uložit zónu"
+          "submit": "Save the zone"
         },
         "reconfigure": {
-          "title": "Oblast propojených místností",
-          "description": "Oblast jsou místnosti, které spolu dýchají — otevřené dveře, průchozí prostor. Vzduch se v nich míchá, takže se počítá s nejhorší hodnotou z celé oblasti a větrat může kterékoli okno.\n\nOkna, žaluzie i prahy patří místnostem. Oblast sama nic neovládá, jen říká, co spolu souvisí.\n\nMístnost, která s ničím nesousedí, oblast nepotřebuje — rozhoduje se sama za sebe.\n\nPříklad: kuchyň a obývák jsou průchozí, takže tvoří oblast. Ložnice za dveřmi je samostatná, ale obě oblasti si nastavíš jako sousední, aby se v noci mohly zastoupit.",
+          "title": "Zone of connected rooms",
+          "description": "A zone is rooms that breathe together — an open door, a walk-through space. Their air mixes, so the worst value in the zone counts and any window may do the ventilating.\n\nWindows, blinds and thresholds belong to rooms. The zone itself controls nothing, it only says what goes together.\n\nA room that adjoins nothing needs no zone — it decides for itself.\n\nExample: the kitchen and the living room are walk-through, so they form a zone. The bedroom behind a door stands alone, but you set the two zones as neighbours so they can stand in for each other at night.",
           "data": {
-            "nazev": "Název",
-            "mistnosti": "Místnosti",
-            "sousedi": "Sousední oblasti",
-            "dvere": "Dveře mezi oblastmi"
+            "nazev": "Name",
+            "mistnosti": "Rooms",
+            "sousedi": "Neighbouring zones",
+            "dvere": "Door between zones"
           },
           "data_description": {
-            "nazev": "Jak se oblast jmenuje, například Obývák a kuchyně.",
-            "mistnosti": "Místnosti, které spolu dýchají. Každá smí být jen v jedné oblasti.",
-            "sousedi": "Oblasti za dveřmi. Když se v této oblasti spí, vyvětrá ji raději soused, aby ti nefoukalo na hlavu. Uplatní se jen v noci.",
-            "dvere": "Čidla dveří mezi oblastmi, může jich být víc. Zastupování se použije jen tehdy, když jsou všechna otevřená. Bez čidla se předpokládá otevřeno."
+            "nazev": "What the zone is called, for example Living room and kitchen.",
+            "mistnosti": "Rooms that breathe together. Each may belong to one zone only.",
+            "sousedi": "Zones behind a door. When someone sleeps in this zone, a neighbour does the ventilating so nothing blows on your head. It applies at night only.",
+            "dvere": "Door sensors between zones; there can be several. Standing in for each other is used only when all of them are open. Without a sensor open is assumed."
           },
-          "submit": "Uložit"
+          "submit": "Save"
         }
       },
-      "entry_type": "Oblast",
+      "entry_type": "Zone",
       "initiate_flow": {
-        "user": "oblast",
-        "reconfigure": "Upravit oblast"
+        "user": "zone",
+        "reconfigure": "Edit the zone"
       },
       "error": {
-        "mistnost_uz_ma_zonu": "Některá z vybraných místností už patří jiné zóně. Každá místnost smí být jen v jedné."
+        "mistnost_uz_ma_zonu": "One of the selected rooms already belongs to another zone. Each room may be in one zone only."
       }
     },
     "klima": {
-      "title": "Sdílená klimatizace",
-      "entry_type": "Klimatizace",
+      "title": "Shared air conditioning",
+      "entry_type": "Air conditioning",
       "initiate_flow": {
-        "user": "klima",
-        "reconfigure": "Upravit klimatizaci"
+        "user": "air conditioning",
+        "reconfigure": "Edit air conditioning"
       },
       "step": {
         "user": {
-          "title": "Sdílená klimatizace",
-          "description": "Jednotka, která obsluhuje víc místností a musí se rozhodnout, komu vyhoví.\\n\\nCíl se počítá ve stupnici místnosti, kde jednotka stojí, a dotlačí se podle toho, o kolik jsou ostatní nad cílem — nejvýš o dva stupně, aby ta s jednotkou nezmrzla.\\n\\nOtevřené okno jednotku nevypne, když je venku tepleji než cíl. Okno je tehdy otevřené kvůli vzduchu a tahá dovnitř teplo, takže chladit je potřeba právě teď.",
+          "title": "Shared air conditioning",
+          "description": "A unit serving several rooms, which has to decide whom to please.\\n\\nThe target is computed on the scale of the room the unit stands in, then pushed further by how far the others are above their targets — by two degrees at most, so the room with the unit does not freeze.\\n\\nAn open window does not switch the unit off when it is warmer outside than the target. The window is then open for air and pulls heat in, so cooling is needed exactly now.",
           "data": {
-            "klima_entita": "Klimatizační jednotka",
-            "klima_umi": "Co umí",
-            "klima_v_pokoji": "Stojí v místnosti",
-            "klima_pokoje": "Obsluhuje místnosti",
-            "chladit_od": "Chladit od překročení",
-            "topit_od": "Topit od nedostatku",
-            "utlum_chlazeni": "Útlum při dlouhé nepřítomnosti (chlazení)",
-            "utlum_topeni": "Útlum při dlouhé nepřítomnosti (topení)",
-            "susit_od": "Sušit od vlhkosti",
-            "dlouha_nepritomnost": "Přepínač dlouhé nepřítomnosti",
-            "dlouha_nepritomnost_h": "Nebo automaticky po",
-            "nazev": "Název"
+            "klima_entita": "Air conditioning unit",
+            "klima_umi": "Capabilities",
+            "klima_v_pokoji": "Stands in the room",
+            "klima_pokoje": "Serves rooms",
+            "chladit_od": "Start cooling above",
+            "topit_od": "Start heating below",
+            "utlum_chlazeni": "Setback during a long absence (cooling)",
+            "utlum_topeni": "Setback during a long absence (heating)",
+            "susit_od": "Dry above humidity",
+            "dlouha_nepritomnost": "Extended absence switch",
+            "dlouha_nepritomnost_h": "Or automatically after",
+            "nazev": "Name"
           },
           "data_description": {
-            "klima_entita": "Jednotka, která obsluhuje víc místností. Vnitřní jednotku v jedné místnosti sem nedávej — tu zadáš u té místnosti a řídí se sama.",
-            "klima_umi": "Jednotka, která umí topit, se mimo topnou sezónu použije místo radiátorů. V sezóně topit nebude, aby si nelezly do cesty.",
-            "klima_v_pokoji": "Kde jednotka fyzicky stojí. Měří především tuhle místnost, takže se v její stupnici počítá cíl — do ostatních se chlad dotlačí nejvýš o dva stupně.",
-            "klima_pokoje": "Místnosti, které se do rozhodování počítají. Dílnu nebo spíž vynech, jinak by tahaly cíl.",
-            "chladit_od": "O kolik stupňů musí být v místnosti nad cílem, než se začne chladit. Jeden stupeň znamená: cíl 24, chladit od 25.",
-            "topit_od": "O kolik stupňů musí být pod cílem, než se začne topit. Jeden stupeň znamená: cíl 22, topit od 21.",
-            "utlum_chlazeni": "Při dlouhé nepřítomnosti se nevypíná úplně, jen se drží tahle teplota. Rozhoupat byt zpátky je dražší než ho udržet.",
-            "utlum_topeni": "Totéž v topné sezóně.",
-            "susit_od": "Klimatizace umí odvlhčovat. Nula znamená nesušit — je to spotřeba za komfort, který nemusí být potřeba.",
-            "dlouha_nepritomnost": "Přepínač, kterým dáš najevo, že jste na dovolené.",
-            "dlouha_nepritomnost_h": "Když přepínač nemáš, po téhle době prázdného bytu se přejde na útlum sám.",
-            "nazev": "Jak se jednotka jmenuje, například Klimatizace obývák."
+            "klima_entita": "A unit serving several rooms. Do not put a single-room indoor unit here — set that one up with its room and it runs on its own.",
+            "klima_umi": "A unit that can heat is used instead of radiators outside the heating season. During the season it will not heat, so the two do not get in each other's way.",
+            "klima_v_pokoji": "Where the unit physically stands. It mainly measures this room, so the target is computed on its scale — the cold is pushed into the others by two degrees at most.",
+            "klima_pokoje": "Rooms that count towards the decision. Leave out a workshop or a pantry, otherwise they would drag the target.",
+            "chladit_od": "How many degrees above the target the room has to be before cooling starts. One degree means: target 24, cool from 25.",
+            "topit_od": "How many degrees below the target before heating starts. One degree means: target 22, heat from 21.",
+            "utlum_chlazeni": "During a long absence nothing is switched off completely, this temperature is simply held. Bringing the home back up costs more than keeping it there.",
+            "utlum_topeni": "The same during the heating season.",
+            "susit_od": "Air conditioning can dehumidify. Zero means do not dry — it costs energy for comfort you may not need.",
+            "dlouha_nepritomnost": "A switch you use to say that you are away on holiday.",
+            "dlouha_nepritomnost_h": "If you have no switch, the setback starts on its own after the home has been empty for this long.",
+            "nazev": "What the unit is called, for example Living room AC."
           },
-          "submit": "Uložit"
+          "submit": "Save"
         },
         "reconfigure": {
-          "title": "Úprava klimatizace",
+          "title": "Editing air conditioning",
           "data": {
-            "klima_entita": "Klimatizační jednotka",
-            "klima_umi": "Co umí",
-            "klima_v_pokoji": "Stojí v místnosti",
-            "klima_pokoje": "Obsluhuje místnosti",
-            "chladit_od": "Chladit od překročení",
-            "topit_od": "Topit od nedostatku",
-            "utlum_chlazeni": "Útlum při dlouhé nepřítomnosti (chlazení)",
-            "utlum_topeni": "Útlum při dlouhé nepřítomnosti (topení)",
-            "susit_od": "Sušit od vlhkosti",
-            "dlouha_nepritomnost": "Přepínač dlouhé nepřítomnosti",
-            "dlouha_nepritomnost_h": "Nebo automaticky po",
-            "nazev": "Název"
+            "klima_entita": "Air conditioning unit",
+            "klima_umi": "Capabilities",
+            "klima_v_pokoji": "Stands in the room",
+            "klima_pokoje": "Serves rooms",
+            "chladit_od": "Start cooling above",
+            "topit_od": "Start heating below",
+            "utlum_chlazeni": "Setback during a long absence (cooling)",
+            "utlum_topeni": "Setback during a long absence (heating)",
+            "susit_od": "Dry above humidity",
+            "dlouha_nepritomnost": "Extended absence switch",
+            "dlouha_nepritomnost_h": "Or automatically after",
+            "nazev": "Name"
           },
           "data_description": {
-            "klima_entita": "Jednotka, která obsluhuje víc místností. Vnitřní jednotku v jedné místnosti sem nedávej — tu zadáš u té místnosti a řídí se sama.",
-            "klima_umi": "Jednotka, která umí topit, se mimo topnou sezónu použije místo radiátorů. V sezóně topit nebude, aby si nelezly do cesty.",
-            "klima_v_pokoji": "Kde jednotka fyzicky stojí. Měří především tuhle místnost, takže se v její stupnici počítá cíl — do ostatních se chlad dotlačí nejvýš o dva stupně.",
-            "klima_pokoje": "Místnosti, které se do rozhodování počítají. Dílnu nebo spíž vynech, jinak by tahaly cíl.",
-            "chladit_od": "O kolik stupňů musí být v místnosti nad cílem, než se začne chladit. Jeden stupeň znamená: cíl 24, chladit od 25.",
-            "topit_od": "O kolik stupňů musí být pod cílem, než se začne topit. Jeden stupeň znamená: cíl 22, topit od 21.",
-            "utlum_chlazeni": "Při dlouhé nepřítomnosti se nevypíná úplně, jen se drží tahle teplota. Rozhoupat byt zpátky je dražší než ho udržet.",
-            "utlum_topeni": "Totéž v topné sezóně.",
-            "susit_od": "Klimatizace umí odvlhčovat. Nula znamená nesušit — je to spotřeba za komfort, který nemusí být potřeba.",
-            "dlouha_nepritomnost": "Přepínač, kterým dáš najevo, že jste na dovolené.",
-            "dlouha_nepritomnost_h": "Když přepínač nemáš, po téhle době prázdného bytu se přejde na útlum sám.",
-            "nazev": "Jak se jednotka jmenuje, například Klimatizace obývák."
+            "klima_entita": "A unit serving several rooms. Do not put a single-room indoor unit here — set that one up with its room and it runs on its own.",
+            "klima_umi": "A unit that can heat is used instead of radiators outside the heating season. During the season it will not heat, so the two do not get in each other's way.",
+            "klima_v_pokoji": "Where the unit physically stands. It mainly measures this room, so the target is computed on its scale — the cold is pushed into the others by two degrees at most.",
+            "klima_pokoje": "Rooms that count towards the decision. Leave out a workshop or a pantry, otherwise they would drag the target.",
+            "chladit_od": "How many degrees above the target the room has to be before cooling starts. One degree means: target 24, cool from 25.",
+            "topit_od": "How many degrees below the target before heating starts. One degree means: target 22, heat from 21.",
+            "utlum_chlazeni": "During a long absence nothing is switched off completely, this temperature is simply held. Bringing the home back up costs more than keeping it there.",
+            "utlum_topeni": "The same during the heating season.",
+            "susit_od": "Air conditioning can dehumidify. Zero means do not dry — it costs energy for comfort you may not need.",
+            "dlouha_nepritomnost": "A switch you use to say that you are away on holiday.",
+            "dlouha_nepritomnost_h": "If you have no switch, the setback starts on its own after the home has been empty for this long.",
+            "nazev": "What the unit is called, for example Living room AC."
           },
-          "submit": "Uložit"
+          "submit": "Save"
         }
       }
     }
@@ -753,113 +753,113 @@
   "selector": {
     "zdroj_obsazenosti": {
       "options": {
-        "vzdy": "Vždy obsazená",
-        "cidlo": "Podle čidla pohybu",
-        "spanek": "Jen když se v ní spí",
-        "cidlo_nebo_spanek": "Čidlo nebo spánek",
-        "nikdy": "Nikdy (sklad, chodba)"
+        "vzdy": "Always occupied",
+        "cidlo": "By motion sensor",
+        "spanek": "Only when someone sleeps there",
+        "cidlo_nebo_spanek": "Sensor or sleep",
+        "nikdy": "Never (storage, hallway)"
       }
     },
     "stineni_pryc": {
       "options": {
-        "nic": "Nechat být",
-        "roztahnout": "Roztáhnout",
-        "zatahnout": "Zatáhnout"
+        "nic": "Leave alone",
+        "roztahnout": "Open",
+        "zatahnout": "Close"
       }
     },
     "zdroj_okenniho": {
       "options": {
-        "fyzicke": "Fyzický kontakt",
-        "nase_otevreni": "Jen když otevře automatika",
-        "nikdy": "Nikdy nehlásit otevřeno",
-        "oboji": "Obojí"
+        "fyzicke": "Physical contact",
+        "nase_otevreni": "Only when the automation opens it",
+        "nikdy": "Never report open",
+        "oboji": "Both"
       }
     },
     "stineni_rezim": {
       "options": {
-        "vzdy": "Vždy",
-        "prazdna": "Doma jen když v pokoji nikdo není",
-        "jen_pryc": "Jen když nikdo není doma",
-        "nikdy": "Nikdy, řídím je sám"
+        "vzdy": "Always",
+        "prazdna": "Home only when the room is empty",
+        "jen_pryc": "Only when nobody is home",
+        "nikdy": "Never, I control them myself"
       }
     },
     "soukromi_kdy": {
       "options": {
-        "nikdy": "Nezatahovat",
-        "hned": "Hned po západu slunce",
-        "pri_pohybu": "Až když někdo přijde do místnosti"
+        "nikdy": "Do not close",
+        "hned": "Right after sunset",
+        "pri_pohybu": "Only once someone enters the room"
       }
     },
     "zpravy_druhy": {
       "options": {
-        "vitr": "Zavření kvůli větru",
-        "dest": "Zavření kvůli dešti",
-        "nouzove": "Nouzové noční provětrání",
-        "vetrani": "Otevření okna",
-        "zavirani": "Zavření okna",
-        "chyba": "Chyba pohonu",
-        "souhrn": "Denní souhrn",
-        "obnova": "Opakovaný povel (chodí pravidelně)",
-        "zaluzie": "Pohyb žaluzií"
+        "vitr": "Closing because of wind",
+        "dest": "Closing because of rain",
+        "nouzove": "Emergency night airing",
+        "vetrani": "Window opening",
+        "zavirani": "Window closing",
+        "chyba": "Drive error",
+        "souhrn": "Daily summary",
+        "obnova": "Repeated command (sent regularly)",
+        "zaluzie": "Blind movement"
       }
     },
     "klima_umi": {
       "options": {
-        "chlazeni": "Jen chladí",
-        "topeni": "Jen topí",
-        "oboji": "Chladí i topí"
+        "chlazeni": "Cooling only",
+        "topeni": "Heating only",
+        "oboji": "Heats and cools"
       }
     },
     "topit_pri_oknu": {
       "options": {
-        "nechat": "Nechat na hlavici (doporučeno)",
-        "znacka": "Poslat značkovou teplotu",
-        "utlum": "Srazit na útlum",
-        "vypnout": "Vypnout"
+        "nechat": "Leave it to the valve (recommended)",
+        "znacka": "Send a marker temperature",
+        "utlum": "Drop to setback",
+        "vypnout": "Turn off"
       }
     },
     "ochota_vetrat": {
       "options": {
-        "ochotna": "Tady větrání nevadí — vyvětrám i za sousedy",
-        "normalne": "Normálně",
-        "nerada": "Tady je větrání nepříjemné — ať vyvětrá soused"
+        "ochotna": "Ventilating here is fine — I will do it for neighbours too",
+        "normalne": "Normal",
+        "nerada": "Ventilating here is unpleasant — let a neighbour do it"
       }
     },
     "sezona_rezim": {
       "options": {
-        "podle_prumeru": "Podle venkovní teploty",
-        "vzdy": "Topit celoročně",
-        "nikdy": "Netopit vůbec"
+        "podle_prumeru": "By outdoor temperature",
+        "vzdy": "Heat all year round",
+        "nikdy": "Do not heat at all"
       }
     },
     "vychozi_kdy": {
       "options": {
-        "konec_klidu": "Když skončí klid (konec spánku)",
-        "rozednilo": "Když se rozední"
+        "konec_klidu": "When quiet hours end (sleep ends)",
+        "rozednilo": "At daybreak"
       }
     },
     "zvlhcovac_kdy": {
       "options": {
-        "vzdy": "Vždy",
-        "doma": "Jen když je někdo doma",
-        "v_pokoji": "Jen když je někdo v pokoji",
-        "pri_klidu": "Jen při spánku v této místnosti"
+        "vzdy": "Always",
+        "doma": "Only when someone is home",
+        "v_pokoji": "Only when someone is in the room",
+        "pri_klidu": "Only while sleeping in this room"
       }
     },
     "zaskleni": {
       "options": {
-        "trojsklo": "Trojsklo",
-        "dvojsklo": "Dvojsklo",
-        "starsi_dvojsklo": "Starší dvojsklo",
-        "jednoduche": "Jednoduché zasklení"
+        "trojsklo": "Triple glazing",
+        "dvojsklo": "Double glazing",
+        "starsi_dvojsklo": "Older double glazing",
+        "jednoduche": "Single glazing"
       }
     },
     "dosah": {
       "options": {
-        "mistnost": "Jen v jeho místnosti",
-        "zona": "V jeho zóně",
-        "vybrane": "Ve vybraných místnostech",
-        "byt": "V celém bytě"
+        "mistnost": "Only in its own room",
+        "zona": "In its zone",
+        "vybrane": "In selected rooms",
+        "byt": "In the whole home"
       }
     }
   },
@@ -867,185 +867,185 @@
   "entity": {
     "sensor": {
       "stav": {
-        "name": "Stav"
+        "name": "State"
       },
       "cil": {
-        "name": "Cílová teplota"
+        "name": "Target temperature"
       },
       "slunce": {
-        "name": "Slunce na oknech"
+        "name": "Sun on the windows"
       },
       "prumer_tyden": {
-        "name": "Venku ⌀ za týden"
+        "name": "Outside, weekly average"
       },
       "prumer_tri_dny": {
-        "name": "Venku ⌀ za tři dny"
+        "name": "Outside, three-day average"
       },
       "stav_oblasti": {
-        "name": "Sdílený vzduch"
+        "name": "Shared air"
       },
       "stav_klimy": {
-        "name": "Stav"
+        "name": "State"
       },
       "vitr": {
-        "name": "Vítr v nárazech"
+        "name": "Wind in gusts"
       },
       "stineni": {
-        "name": "Žaluzie"
+        "name": "Blinds"
       }
     },
     "binary_sensor": {
       "okno_otevreno": {
-        "name": "Okno pro topení"
+        "name": "Window for heating"
       },
       "obsazeno": {
-        "name": "Obsazeno"
+        "name": "Occupied"
       },
       "klid": {
-        "name": "Klid"
+        "name": "Quiet"
       },
       "topna_sezona": {
-        "name": "Topná sezóna"
+        "name": "Heating season"
       },
       "okno": {
-        "name": "Okno"
+        "name": "Window"
       }
     },
     "number": {
       "odchylka": {
-        "name": "Moje odchylka teploty"
+        "name": "My temperature offset"
       },
       "utlum": {
-        "name": "Při otevřeném okně topit na"
+        "name": "With a window open, heat to"
       },
       "co2_otevrit": {
-        "name": "Otevřít nad CO2"
+        "name": "Open above CO2"
       },
       "co2_zavrit": {
-        "name": "Zavřít pod CO2"
+        "name": "Close below CO2"
       },
       "co2_noc": {
-        "name": "V noci otevřít nad CO2"
+        "name": "At night open above CO2"
       },
       "co2_noc_krize": {
-        "name": "Nouzově otevřít nad CO2"
+        "name": "Emergency opening above CO2"
       },
       "rh_min": {
-        "name": "Zvlhčovat pod vlhkostí"
+        "name": "Humidify below humidity"
       },
       "rh_max": {
-        "name": "Vypnout zvlhčovač nad"
+        "name": "Turn the humidifier off above"
       },
       "chlazeni_min_venku": {
-        "name": "Chladit jen při venkovní teplotě nad"
+        "name": "Only cool when outdoor temperature is above"
       },
       "pm_spatne_od": {
-        "name": "Prach je špatný od PM2.5"
+        "name": "Dust is bad from PM2.5"
       },
       "pm_cisto_pod": {
-        "name": "Prach je čistý pod PM2.5"
+        "name": "Dust is clean below PM2.5"
       },
       "narazove_odstup": {
-        "name": "Nárazový režim od rozdílu"
+        "name": "Burst mode from a difference of"
       },
       "zmena_podminek": {
-        "name": "Další pokus po změně venku o"
+        "name": "Retry after the outdoor change of"
       },
       "nejdriv_znovu_min": {
-        "name": "Nebo nejpozději za"
+        "name": "Or at the latest in"
       },
       "min_drzeni_min": {
-        "name": "Nejkratší doba držení polohy"
+        "name": "Shortest time to hold a position"
       },
       "rucni_klid_min": {
-        "name": "Po ručním zásahu nechat být"
+        "name": "After a manual change, leave alone for"
       },
       "hyst_den_otevrit": {
-        "name": "Ve dne otevřít při odchylce od cíle o"
+        "name": "By day open at a deviation from the target of"
       },
       "hyst_den_zavrit": {
-        "name": "Ve dne zavřít až za cílem o"
+        "name": "By day close past the target by"
       },
       "hyst_noc_otevrit": {
-        "name": "V noci otevřít při odchylce od cíle o"
+        "name": "At night open at a deviation from the target of"
       },
       "hyst_noc_zavrit": {
-        "name": "V noci zavřít až za cílem o"
+        "name": "At night close past the target by"
       },
       "mez_dolni": {
-        "name": "Pojistka: nevychladit pod"
+        "name": "Limit: never cool below"
       },
       "mez_horni": {
-        "name": "Pojistka: nepřehřát nad"
+        "name": "Limit: never overheat above"
       },
       "rezerva_venku": {
-        "name": "Venku musí být za dojezdem o"
+        "name": "Outside must be past the run-down by"
       },
       "noc_posun": {
-        "name": "V noci posun cílové teploty"
+        "name": "Night shift of the target temperature"
       }
     },
     "switch": {
       "ovladat_okno": {
-        "name": "Ovládat okno"
+        "name": "Control the window"
       },
       "ovladat_stineni": {
-        "name": "Ovládat stínění"
+        "name": "Control shading"
       },
       "ovladat_klimu": {
-        "name": "Ovládat klimatizaci"
+        "name": "Control air conditioning"
       },
       "ovladat_topeni": {
-        "name": "Ovládat topení"
+        "name": "Control heating"
       },
       "otevirat_i_pro_pohodu": {
-        "name": "Otevírat i pro pohodu"
+        "name": "Open for comfort as well"
       },
       "zvlhcovat_i_ve_spanku": {
-        "name": "Zvlhčovat i ve spánku"
+        "name": "Humidify during sleep as well"
       }
     },
     "button": {
       "srovnat_okno": {
-        "name": "Srovnat okno"
+        "name": "Re-align the window"
       },
       "srovnat_stineni": {
-        "name": "Srovnat žaluzie"
+        "name": "Re-align the blinds"
       },
       "srovnat_vse": {
-        "name": "Srovnat vše"
+        "name": "Re-align everything"
       },
       "zastinit": {
-        "name": "Zastínit"
+        "name": "Shade"
       },
       "odstinit": {
-        "name": "Odclonit"
+        "name": "Shade"
       },
       "soukromi": {
-        "name": "Zatáhnout kvůli soukromí"
+        "name": "Close for privacy"
       },
       "stineni_pryc": {
-        "name": "Nastavit jako když nikdo není doma"
+        "name": "Set as if nobody were home"
       },
       "stineni_vychozi": {
-        "name": "Výchozí stav žaluzií"
+        "name": "Default blind position"
       },
       "srovnat_topeni": {
-        "name": "Srovnat topení"
+        "name": "Re-align heating"
       },
       "otevrit_okno": {
-        "name": "Otevřít okno"
+        "name": "Open the window"
       },
       "zavrit_okno": {
-        "name": "Zavřít okno"
+        "name": "Close the window"
       },
       "vynulovat_stavy": {
-        "name": "Vynulovat vnitřní stavy"
+        "name": "Reset internal state"
       }
     },
     "select": {
       "stav_zaluzie": {
-        "name": "Žaluzie {cislo} — stav"
+        "name": "Blind {cislo} — position"
       }
     }
   }
