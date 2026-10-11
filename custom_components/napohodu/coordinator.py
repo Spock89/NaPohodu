@@ -399,7 +399,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         Když ano, má přednost před hodnotou šoupátka — uživatel ji právě
         vědomě přepsal. Když ne, platí šoupátko, protože s ním se ladí.
         """
-        zmena = self._formular.get(klic) != hodnota
+        # Klíč, který vidíme poprvé, není přepsání — jen jsme o něm
+        # dosud nevěděli. Dřív se po přidání nového posuvníku bralo
+        # první spuštění jako změnu ve formuláři a přepsalo hodnotu,
+        # kterou měl uživatel nastavenou na dashboardu.
+        prvni = klic not in self._formular
+        zmena = not prvni and self._formular[klic] != hodnota
         self._formular[klic] = hodnota
         return zmena
 
@@ -1473,13 +1478,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "narazove_mozne": self.narazove,
             # jak dlouho je otevřeno a jestli to zabírá
             # jak dlouho se ještě čeká, než se zkusí znovu
-            "cekani_po_marnem": (
+            # Jen když se opravdu čeká: u otevřeného okna je ten řádek
+            # zbytečný a mátl, protože ukazoval nulu hned po zavření.
+            "cekani_po_marnem": None if (skutecne or not pamet.marne_od_s)
+            else (
                 f"od marného pokusu {int((cas_s - pamet.marne_od_s) / 60)} "
                 f"min, zkusím po změně venku o "
                 f"{nast.zmena_podminek:.1f} °C, nejpozději za "
                 f"{int((nast.nejdriv_znovu_s - (cas_s - pamet.marne_od_s)) / 60)}"
-                f" min"
-                if pamet.marne_od_s else None),
+                f" min"),
             "ucinek": (
                 f"CO2 {pamet.ucinek_co2:.0f} → {v.co2:.0f}, teplota "
                 f"{pamet.ucinek_t_in:.1f} → {v.t_in:.1f} °C za "

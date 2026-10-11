@@ -784,7 +784,11 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         horsi_co2 = v.co2 >= p.ucinek_co2 + UCINEK_CO2_PPM
         dal = (abs(t_in - v.cil)
                >= abs(p.ucinek_t_in - v.cil) + UCINEK_TEPLOTA)
-        zhorseni = horsi_co2 or dal
+        # Za zhoršení se bere jen stav, kdy se nezlepšilo vůbec nic.
+        # V zimě teplota při větrání klesá vždycky, takže sama o sobě
+        # zhoršení neznamená — jinak by se zavřelo i větrání, které
+        # zrovna úspěšně snižuje CO2.
+        zhorseni = (horsi_co2 or dal) and not lepsi_co2 and not blize
         konec_useku = uplynulo >= ucinek_po
 
         if zhorseni and uplynulo >= max(n.min_drzeni_s / UCINEK_DILU,

@@ -408,9 +408,11 @@ def test_zmena_ve_formulari_prepise_soupatko(nahradni_ha):
     c = importlib.import_module("napohodu.const")
     k = _koordinator()
 
-    # první cyklus: hodnota z formuláře se zapamatuje
+    # První cyklus hodnotu jen zapamatuje. Přepsat šoupátko by bylo
+    # špatně — uživatel ve formuláři nic nezměnil, jen jsme ten klíč
+    # viděli poprvé.
     k._srovnej_posuvniky("m1", {c.CONF_CO2_OTEVRIT: 800.0})
-    assert k.hodnoty[("m1", c.CONF_CO2_OTEVRIT)] == 800.0
+    assert ("m1", c.CONF_CO2_OTEVRIT) not in k.hodnoty
 
     # člověk pohne šoupátkem
     k.hodnoty[("m1", c.CONF_CO2_OTEVRIT)] = 900.0
@@ -439,14 +441,19 @@ def test_prepsane_klice_maji_prednost_pred_obnovou(nahradni_ha):
     import importlib
     c = importlib.import_module("napohodu.const")
     k = _koordinator()
+    # první vidění klíč jen zapamatuje, přepsání je až skutečná změna
     k._srovnej_posuvniky("m1", {c.CONF_CO2_OTEVRIT: 800.0})
+    assert k.prepsano_formularem(("m1", c.CONF_CO2_OTEVRIT)) is False
+    k._srovnej_posuvniky("m1", {c.CONF_CO2_OTEVRIT: 900.0})
     assert k.prepsano_formularem(("m1", c.CONF_CO2_OTEVRIT)) is True
     assert k.prepsano_formularem(("m1", c.CONF_MEZ_DOLNI)) is False
 
 
 def test_formular_zmenen_hlasi_jen_zmenu(nahradni_ha):
     k = _koordinator()
-    assert k.formular_zmenen(("m", "x"), 1.0) is True     # poprvé
+    # poprvé jen zapamatuje: uživatel nic nezměnil, jen jsme ten klíč
+    # viděli poprvé
+    assert k.formular_zmenen(("m", "x"), 1.0) is False
     assert k.formular_zmenen(("m", "x"), 1.0) is False
     assert k.formular_zmenen(("m", "x"), 2.0) is True
 
@@ -1392,3 +1399,34 @@ def test_utlum_topeni_plati_i_pri_cizim_okne(nahradni_ha):
     # s vlastním oknem si místnost poradí sama
     s_oknem = postav({c.CONF_OKNA: ["cover.o"]}, {"kuchyne": True})
     assert not s_oknem._vetra_se_za("obyvak")
+
+
+def test_novy_posuvnik_neprepise_nastavenou_hodnotu(nahradni_ha):
+    """Po přidání nového posuvníku se první spuštění bralo jako změna
+    ve formuláři a přepsalo hodnotu z dashboardu."""
+    import importlib
+
+    c = importlib.import_module("napohodu.const")
+    k = _koordinator()
+
+    # uživatel má na šoupátku 135, ve formuláři zůstala výchozí 30
+    k.hodnoty[("m1", c.CONF_RUCNI_KLID)] = 135.0
+    k._srovnej_posuvniky("m1", {c.CONF_RUCNI_KLID: 30.0})
+    assert k.hodnoty[("m1", c.CONF_RUCNI_KLID)] == 135.0
+
+    # a skutečná změna ve formuláři přednost má
+    k._srovnej_posuvniky("m1", {c.CONF_RUCNI_KLID: 45.0})
+    assert k.hodnoty[("m1", c.CONF_RUCNI_KLID)] == 45.0
+
+
+def test_zaskrtavatko_sleduje_formular_i_obnovu(nahradni_ha):
+    """Dřív obnova formulář vždycky přepsala, takže se změna
+    v nastavení integrace neprojevila."""
+    import pathlib
+    sw = pathlib.Path("custom_components/napohodu/switch.py").read_text()
+    kus = sw[sw.index("class ZVolbyMistnosti"):sw.index("class OvladatOkno")]
+    # pořadí: nejdřív obnova, pak formulář
+    assert kus.index("await super().async_added_to_hass()") < kus.index(
+        "z_formulare")
+    # a formulář vyhraje jen při skutečné změně
+    assert "formular_zmenen" in kus

@@ -77,9 +77,15 @@ class ZVolbyMistnosti(NaPohoduPrepinac):
     _vychozi_klic = ""
 
     async def async_added_to_hass(self) -> None:
-        data = {**self.pod.data}
-        self._zap = bool(data.get(self._vychozi_klic, True))
+        # Nejdřív obnova, pak formulář — a ten vyhraje jen tehdy, když
+        # ho člověk opravdu změnil. Opačné pořadí znamenalo, že obnova
+        # formulář vždycky přepsala a nastavení se neprojevilo.
         await super().async_added_to_hass()
+        z_formulare = bool(self.pod.data.get(self._vychozi_klic, True))
+        klic = (self.pod_id, self._klic_hodnoty)
+        if self.coordinator.formular_zmenen(klic, float(z_formulare)):
+            self._zap = z_formulare
+        self.coordinator.hodnoty[klic] = float(self._zap)
 
 
 class OtevritProPohodu(ZVolbyMistnosti):

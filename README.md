@@ -253,6 +253,16 @@ Nouzové větrání a ruční žádost o vyvětrání tím neprochází. V kart�
 řádek, který ukazuje, od jakých hodnot se otevřelo a jak dlouho už je
 otevřeno; pozorování začíná každým otevřením a zavřením končí.
 
+### Formulář a dashboard
+
+Tatáž hodnota jde měnit v nastavení integrace i šoupátkem na
+dashboardu. Platí jednoduché pravidlo: **šoupátko se používá na ladění,
+formulář vyhraje jen tehdy, když ho člověk opravdu přepsal.** Klíč,
+který integrace vidí poprvé — třeba po přidání nového posuvníku — se
+jen zapamatuje a nastavenou hodnotu nepřepíše.
+
+Totéž platí pro zaškrtávátka, která mají protějšek ve formuláři.
+
 ### Teplotní pásmo a pojistky
 
 Teplotní větrání stojí na jedné myšlence se dvěma časy. Kolem cílové
