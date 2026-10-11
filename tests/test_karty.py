@@ -228,8 +228,8 @@ def test_poradi_sekci_odpovida_nastavenemu():
              or sek["cards"][0]["type"] for sek in d["sections"]]
     assert prvni[0] == "Cílová teplota"
     assert prvni[1] == "horizontal-stack"       # místnosti hned za tím
-    # grafy jsou poslední z přehledu, za nimi už jen podrobnosti
-    assert [x for x in prvni if "podrobnosti" not in x][-1] == "Grafy"
+    # podrobnosti jsou vždycky až za vším ostatním
+    assert all("podrobnosti" in x for x in prvni[-1:])
     assert "Ladění" in prvni
     assert len(PORADI_SEKCI) >= 8
 
@@ -329,7 +329,7 @@ def test_rozvrzeni_sekci():
     prvni = [sek["cards"][0].get("heading") or sek["cards"][0].get("title")
              or sek["cards"][0]["type"] for sek in d["sections"]]
     assert prvni[0] == "Cílová teplota"
-    assert [x for x in prvni if "podrobnosti" not in x][-1] == "Grafy"
+    assert "podrobnosti" in prvni[-1]
     assert prvni.index("Ovládání oken") < prvni.index("Ladění")
     assert prvni.index("Zvlhčovače") < prvni.index("Obsazenost a klid")
     # obsazenost a sdílený vzduch v jedné sekci, každé s nadpisem
@@ -569,7 +569,7 @@ def test_ladeni_se_deli_na_kratsi_sekce():
     nejvetsi = max(len(s["cards"]) for s in d["sections"])
     assert nejvetsi <= 20, nejvetsi
     nadpisy = [s["cards"][0].get("heading") for s in d["sections"]]
-    assert "Ladění — teplota" in nadpisy and "Ladění — CO2" in nadpisy
+    assert "Ladění — pásmo" in nadpisy and "Ladění — CO2" in nadpisy
 
 
 def test_v_kartach_je_jen_jedna_teplota_v_pokoji():
@@ -579,3 +579,26 @@ def test_v_kartach_je_jen_jedna_teplota_v_pokoji():
     vse = {a for a, _, _ in ATRIBUTY_STAVU + ATRIBUTY_PODROBNE}
     assert "teplota_rozhodna" in vse
     assert "teplota_max" not in vse and "uvnitr" not in vse
+
+
+def test_sekce_jsou_serazene_podle_vysky():
+    """Mřížka zarovnává řádky: pod krátkou sekcí vedle vysoké zůstane
+    díra přes půl obrazovky."""
+    import yaml
+    d = yaml.safe_load(dashboard(
+        ["obyvak", "kuchyne", "loznice"], ["zona"], vzdy,
+        cidla={m: f"sensor.{m}" for m in ("obyvak", "kuchyne", "loznice")},
+        podoba="stranka"))
+
+    def vyska(sek):
+        return sum({"heading": 1,
+                    "entities": 2 + len(k.get("entities", [])),
+                    "markdown": 3 + k.get("content", "").count("\n") // 2,
+                    "history-graph": 8, "gauge": 6,
+                    "horizontal-stack": 7}.get(k.get("type"), 3)
+                   for k in sek["cards"])
+
+    v = [vyska(s) for s in d["sections"]]
+    ztrata = sum(sum(max(v[r:r + 4]) - x for x in v[r:r + 4])
+                 for r in range(0, len(v), 4))
+    assert ztrata < 120, ztrata

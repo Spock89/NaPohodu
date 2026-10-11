@@ -160,30 +160,36 @@ SEKCE = "#--SEKCE--"
 # je ta druhá věc a mění se přesunutím jednoho řádku.
 # Kde se Ladění rozdělí na kratší sekce a jak se nová jmenuje.
 ZLOMY_LADENI = {
-    "nejkratsi_doba_drzeni_polohy": "Ladění — časování",
     "prach_je_spatny_od_pm2_5": "Ladění — prach",
-    "ve_dne_otevrit_pri_odchylce_od_cile_o": "Ladění — teplota",
+    "ve_dne_otevrit_pri_odchylce_od_cile_o": "Ladění — pásmo",
+    "pojistka_nevychladit_pod": "Ladění — meze",
     "v_noci_posun_cilove_teploty": "Ladění — topení",
     "otevrit_nad_co2": "Ladění — CO2",
 }
 
+# Home Assistant skládá sekce do mřížky po řádcích a řádek je vysoký
+# jako jeho nejvyšší sekce — pod krátkou tedy zůstane díra. Pořadí je
+# proto seřazené tak, aby vedle sebe stály podobně vysoké sekce.
 PORADI_SEKCI = [
     "Cílová teplota",
     "#pokoj",                 # každá místnost se svými budíky
-    "Ovládání oken",          # s ovládáním žaluzií v jedné sekci
-    "Ladění",
-    "Ladění — časování",
-    "Ladění — teplota",
-    "Ladění — prach",
-    "Ladění — topení",
+    # Dál sestupně podle výšky: mřížka zarovnává řádky, takže vedle
+    # sebe mají stát podobně vysoké sekce, jinak pod tou krátkou
+    # zůstane díra přes půl obrazovky.
+    "Základ výpočtu",         # s pravidly bez nastavení
+    "Ladění — pásmo",
+    "Ladění — meze",
     "Ladění — CO2",
+    "Slunce a stínění",
+    "Ovládání oken",          # s ovládáním žaluzií v jedné sekci
+    "Grafy",
     "Zvlhčovače",             # se srovnáním v jedné sekci
     "Srovnat do žádané polohy",
     "Obsazenost a klid",      # se sdíleným vzduchem v jedné sekci
-    "Základ výpočtu",         # s pravidly bez nastavení
-    "Slunce a stínění",
-    "Grafy",
-    "— podrobnosti",          # ladicí výpisy každé místnosti, úplně nakonec
+    "Ladění — topení",
+    "Ladění — prach",
+    "Ladění",                 # odchylka a časování oken
+    "— podrobnosti",          # ladicí výpisy místností, úplně nakonec
 ]
 
 
