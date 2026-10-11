@@ -2275,3 +2275,27 @@ def test_novy_zasah_nastavi_odpocet_znovu():
     assert p.rucni_do_s == 100000 + 1200 + 120 * 60
 
 
+
+
+def test_prach_zvenci_zavira_pod_vlastnim_jmenem():
+    """Dřív se na to přišlo, okno se zavřelo, ale v kartě stálo
+    „vyvětráno" — podle toho se nedalo poznat, co se vlastně stalo."""
+    from core import Nastaveni as N_
+    nast = N_(min_drzeni_s=60 * 60)
+    Z = 100000
+    p = Pamet(otevreno=True, cas_povelu_s=Z, rezim="pulz", vetra_se=True,
+              pm_pri_otevreni=39.0, pm_otevreno_od_s=Z)
+
+    def krok_v(minuty, pm):
+        return rozhodni(Vstup(co2=600, pm25=pm, t_in=21.5, t_in_max=21.7,
+                              t_out=12.0, rh_out=60.0, cil=22.0,
+                              hodina=14.0, cas_s=Z + minuty * 60), p, nast)
+
+    assert krok_v(5, 44).akce is not Akce.ZAVRIT     # krátce, ještě se učí
+    assert krok_v(12, 48).akce is not Akce.ZAVRIT    # drží se poloha
+    assert p.pm_venku_horsi_do_s > Z                 # ale poznatek je
+
+    # zavře se, jakmile to nejkratší doba držení dovolí
+    r = krok_v(61, 48)
+    assert r.akce is Akce.ZAVRIT and r.kod == "prach_zvenci"
+    assert "tahá zvenčí" in r.duvod and "39 → 48" in r.duvod

@@ -187,6 +187,8 @@ class Pamet:
     pm_pri_otevreni: float | None = None
     pm_otevreno_od_s: float | None = None
     pm_venku_horsi_do_s: float = 0.0
+    # zrovna se zjistilo, že se prach tahá zvenčí
+    pm_tahne_zvenci: bool = False
     # po ručním zásahu se čeká na nový podnět, ať se s člověkem
     # automatika nepřetahuje
     rucni_do_s: float = 0.0
@@ -914,6 +916,9 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                     and v.cas_s - p.pm_otevreno_od_s >= n.pm_uceni_s
                     and v.pm25 > p.pm_pri_otevreni + n.pm_rozdil):
                 p.pm_venku_horsi_do_s = v.cas_s + n.pm_poznatek_s
+                # Ať je to v kartě poznat: zavírá se proto, že se prach
+                # tahá zvenčí, ne proto, že je vyvětráno.
+                p.pm_tahne_zvenci = True
         else:
             p.pm_pri_otevreni = None
             p.pm_otevreno_od_s = None
@@ -1139,6 +1144,17 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         return beze_zmeny(f"noc: klid, CO2 {v.co2:.0f}", False)
 
     # --- 7. spánek nebo vyvětráno ------------------------------------
+    # Prach tažený zvenčí se zavírá hned a pod vlastním jménem. Dřív
+    # se na to přišlo, okno se zavřelo, ale v kartě stálo „vyvětráno".
+    if p.otevreno and p.pm_tahne_zvenci:
+        p.pm_tahne_zvenci = False
+        p.narazove_pulz = False
+        # Nejkratší doba držení polohy platí i tady. Obcházet ji smí
+        # jen ochrana pohonu — vítr a déšť — a odchod z bytu.
+        return zavri(f"prach se tahá zvenčí: PM2.5 "
+                     f"{(p.pm_pri_otevreni or 0):.0f} → {v.pm25:.0f}",
+                     kod="prach_zvenci")
+
     if cisto:
         if not p.otevreno:
             return beze_zmeny(f"čisto, CO2 {v.co2:.0f}", False)
