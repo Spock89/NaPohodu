@@ -239,6 +239,8 @@ def test_vlhkost_se_ukazuje_i_bez_zarizeni(nahradni_ha):
             ko.NaPohoduCoordinator._stav_pomocnika)
         zvlhcuje: set = set()
         _zvlhcuje_na = staticmethod(lambda pod_id: False)
+        _cizi_zadost: dict = {}
+        _t_in_drive: dict = {}
         vykonavaci: dict = {}
         hass = None
 
@@ -689,6 +691,8 @@ def test_odeslany_souhrn_prezije_znovunacteni(nahradni_ha):
         _formular: dict = {}
         _souhrn_odeslan = "2026-01-15"
         pameti: dict = {}
+        _cizi_zadost: dict = {}
+        _t_in_drive: dict = {}
         vykonavaci: dict = {}
         _uloz_pameti = ko.NaPohoduCoordinator._uloz_pameti
 
@@ -1068,6 +1072,8 @@ def test_vynulovani_nesahne_na_nastaveni(nahradni_ha):
             ucinek_od_s=500.0, cas_povelu_s=12345.0)}
         hodnoty = {("id", "odchylka_teploty"): 1.5}
         zvlhcuje = {"id"}
+        _cizi_zadost: dict = {}
+        _t_in_drive: dict = {}
         vykonavaci: dict = {}
 
     k = Falesny()
@@ -1113,6 +1119,8 @@ def test_vynulovani_zrusi_i_cekani(nahradni_ha):
         hodnoty: dict = {}
         zvlhcuje: set = set()
         _zvlhcuje_na = staticmethod(lambda pod_id: False)
+        _cizi_zadost: dict = {}
+        _t_in_drive: dict = {}
         vykonavaci = {"id": Vyk()}
 
     k = Falesny()
@@ -1125,6 +1133,8 @@ def test_vynulovani_zrusi_i_cekani(nahradni_ha):
     assert p.marne_od_s == 0.0
     assert k.vykonavaci["id"].stav.pulz_do_s is None
     assert k.vykonavaci["id"].stav.posledni_cas_s < 0
+    # i stavy, které si koordinátor vede mimo paměť místností
+    assert not k._cizi_zadost and not k._t_in_drive
 
 
 

@@ -193,6 +193,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # cas_povelu_s daleko v minulosti znamená, že žádné držení
             # neběží a další povel se smí poslat hned
             pamet.cas_povelu_s = -1e9
+        # Stavy, které si koordinátor vede mimo paměť místností.
+        # Žádost souseda i trend teploty patří mezi vnitřní stavy, takže
+        # bez nich by „bod nula" nebyl nula.
+        self._cizi_zadost.clear()
+        self._t_in_drive.clear()
         for vyk in self.vykonavaci.values():
             vyk.stav.pulz_do_s = None          # dojezd pulzu
             vyk.stav.posledni_cas_s = -1e9     # a odstup mezi povely
