@@ -507,7 +507,9 @@ Výchozí hodnoty jsou nesouměrné schválně:
 
 - **prach z tohoto zvlhčovače neberu vážně v celém bytě**, protože
   aerosol putuje dál a falešné větrání kvůli němu je horší chyba než
-  zbytečně nezvlhčená ložnice,
+  zbytečně nezvlhčená ložnice. Platí to i chvíli po vypnutí: aerosol
+  v pokoji zůstává, takže se prachu věří teprve tehdy, až klesne do
+  čistého pásma, nejdéle ale dvě hodiny,
 - **nezvlhčovat při otevřeném okně kdekoli v bytě**, protože vlhkost
   se šíří dál než jen do vlastní místnosti; pro menší dosah je tu zóna
   nebo výběr místností.
@@ -894,6 +896,11 @@ An ultrasonic humidifier sprays minerals that sensors see as dust. Its
 reach is configurable: its own room, its zone, selected rooms or the
 whole home. The same choice exists for which open windows stop it
 humidifying.
+
+The aerosol lingers after the humidifier stops, so dust is trusted
+again only once it falls into the clean band, and at most for two
+hours. Without that, a window opened right after the run for dust that
+cannot be ventilated away.
 
 ### Dashboard
 

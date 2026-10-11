@@ -238,6 +238,9 @@ def test_vlhkost_se_ukazuje_i_bez_zarizeni(nahradni_ha):
         _stav_pomocnika = staticmethod(
             ko.NaPohoduCoordinator._stav_pomocnika)
         zvlhcuje: set = set()
+        _dozvuk: dict = {}
+        _pm_syrovy: dict = {}
+        _uklid_dozvuku = staticmethod(lambda cas_s: None)
         _zvlhcuje_na = staticmethod(lambda pod_id: False)
         _cizi_zadost: dict = {}
         _t_in_drive: dict = {}
@@ -249,7 +252,7 @@ def test_vlhkost_se_ukazuje_i_bez_zarizeni(nahradni_ha):
     m.atributy = {}
     d = {c.CONF_RH_VNITRNI: "sensor.vlhkost"}      # žádný odtah, žádný zvlhčovač
     asyncio.run(k._pomocnici_krok(_Pod(), d, m, {"pm25": 0, "pm10": 0},
-                                  21.0, 5.0, False, True))
+                                  0.0, 21.0, 5.0, False, True))
     assert m.atributy["vlhkost"] == 43.5
     assert m.atributy["zvlhcovac_bezi"] == "nenastaveno"
 
@@ -949,6 +952,9 @@ def test_zvlhcovac_respektuje_okno_a_pritomnost(nahradni_ha):
             hodnota = staticmethod(lambda a, b, vych: vych)
             vykonavaci = {"id": Vyk()}
             zvlhcuje: set = set()
+            _dozvuk: dict = {}
+            _pm_syrovy: dict = {}
+            _uklid_dozvuku = staticmethod(lambda cas_s: None)
             _zvlhcuje_na = staticmethod(lambda pod_id: False)
             hass = None
 
@@ -958,7 +964,8 @@ def test_zvlhcovac_respektuje_okno_a_pritomnost(nahradni_ha):
              c.CONF_ZVLHCOVAC: ["input_boolean.z"],
              c.CONF_ZVLHCOVAC_KDY: kdy}
         asyncio.run(Falesny()._pomocnici_krok(
-            _Pod(), d, m, {"pm25": 0, "pm10": 0}, 21.0, 5.0, otevreno, doma))
+            _Pod(), d, m, {"pm25": 0, "pm10": 0}, 0.0, 21.0, 5.0,
+        otevreno, doma))
         return m
 
     # vlhkost 30 % je pod dolní mezí, takže by se normálně zapnul
@@ -1119,6 +1126,9 @@ def test_vynulovani_zrusi_i_cekani(nahradni_ha):
             pm_otevreno_od_s=999999.0)}
         hodnoty: dict = {}
         zvlhcuje: set = set()
+        _dozvuk: dict = {}
+        _pm_syrovy: dict = {}
+        _uklid_dozvuku = staticmethod(lambda cas_s: None)
         _zvlhcuje_na = staticmethod(lambda pod_id: False)
         _cizi_zadost: dict = {}
         _t_in_drive: dict = {}
@@ -1272,6 +1282,7 @@ def test_dosah_zvlhcovace_jde_nastavit(nahradni_ha):
             mistnosti = {"loznice": None, "obyvak": None,
                          "kuchyne": None, "dilna": None}
             zvlhcuje = {"loznice"}
+            _dozvuk: dict = {}
             _okruhy_popis = [{"cleni": [Clen("loznice"), Clen("obyvak")],
                               "dvere_otevrene": True}]
         return Falesny()
@@ -1553,3 +1564,46 @@ def test_readme_ma_obe_jazykove_verze(nahradni_ha):
     r = pathlib.Path("README.md").read_text()
     assert "# NaPohodu — English" in r
     assert r.index("# NaPohodu\n") < r.index("# NaPohodu — English")
+
+
+def test_prach_po_zvlhcovaci_doznívá(nahradni_ha):
+    """Aerosol v pokoji zůstává i potom, co zvlhčovač vypne — jinak se
+    hned po doběhu otevřelo okno kvůli prachu, který se nedá vyvětrat."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    c = importlib.import_module("napohodu.const")
+
+    class Pod:
+        data = {c.CONF_PRACH_DOSAH: "mistnost", c.CONF_PM_CISTO: 20.0}
+
+    class Falesny:
+        _dosah = ko.NaPohoduCoordinator._dosah
+        _zona_mistnosti = ko.NaPohoduCoordinator._zona_mistnosti
+        _zvlhcuje_na = ko.NaPohoduCoordinator._zvlhcuje_na
+        _uklid_dozvuku = ko.NaPohoduCoordinator._uklid_dozvuku
+        DOZVUK_NEJDELE_S = ko.NaPohoduCoordinator.DOZVUK_NEJDELE_S
+        hodnota = staticmethod(lambda pod_id, klic, vych: vych)
+        entry = type("E", (), {"subentries": {"loznice": Pod()}})()
+        mistnosti = {"loznice": None}
+        zvlhcuje: set = set()
+        _okruhy_popis: list = []
+
+    k = Falesny()
+    k._dozvuk = {"loznice": 1000.0}
+
+    # prach pořád vysoko: doznívání trvá, prachu se nevěří
+    k._pm_syrovy = {"loznice": 40.0}
+    k._uklid_dozvuku(1200.0)
+    assert k._zvlhcuje_na("loznice") is True
+
+    # spadl do čistého pásma: doznívání končí
+    k._pm_syrovy = {"loznice": 12.0}
+    k._uklid_dozvuku(1300.0)
+    assert k._zvlhcuje_na("loznice") is False
+
+    # a strop platí, i kdyby čidlo zůstalo nahoře
+    k._dozvuk = {"loznice": 1000.0}
+    k._pm_syrovy = {"loznice": 40.0}
+    k._uklid_dozvuku(1000.0 + k.DOZVUK_NEJDELE_S + 1)
+    assert k._zvlhcuje_na("loznice") is False

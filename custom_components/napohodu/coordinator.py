@@ -148,6 +148,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # žádosti o chlazení a ohřev od místností bez vlastního okna;
         # drží se mezi cykly, aby měly hysterezi jako každé jiné větrání
         self._cizi_zadost: dict[str, str] = {}
+        # doznívání aerosolu po vypnutí zvlhčovače: kdy přestal
+        self._dozvuk: dict[str, float] = {}
+        # poslední naměřený prach místnosti, kvůli ukončení doznívání
+        self._pm_syrovy: dict[str, float] = {}
         self._je_noc_ted: bool = False
         self._rh_out_posledni: float | None = None
         self._hodina_ted: float = 12.0
@@ -677,11 +681,37 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 return cleni
         return {pod_id}
 
+    # Jak dlouho se nejdéle čeká, než prach po zvlhčovači klesne.
+    # Bez stropu by stačilo zaseknuté čidlo a prach by se neřešil nikdy.
+    DOZVUK_NEJDELE_S = 2 * 3600
+
     def _zvlhcuje_na(self, pod_id: str) -> bool:
-        """Dosáhne sem aerosol z nějakého běžícího zvlhčovače?"""
+        """Dosáhne sem aerosol z běžícího nebo doznívajícího zvlhčovače?"""
+        zdroje = set(self.zvlhcuje) | set(self._dozvuk)
         return any(pod_id in self._dosah(zdroj, CONF_PRACH_DOSAH,
                                          CONF_PRACH_MISTNOSTI, "byt")
-                   for zdroj in self.zvlhcuje)
+                   for zdroj in zdroje)
+
+    def _uklid_dozvuku(self, cas_s: float) -> None:
+        """Doznívání končí, až prach spadne do čistého pásma.
+
+        Teprve pak se prachu zase věří. Strop je od toho, aby jedno
+        zaseknuté čidlo neumlčelo reakci na prach napořád.
+        """
+        for zdroj, od in list(self._dozvuk.items()):
+            if cas_s - od > self.DOZVUK_NEJDELE_S:
+                del self._dozvuk[zdroj]
+                continue
+            dosah = self._dosah(zdroj, CONF_PRACH_DOSAH,
+                                CONF_PRACH_MISTNOSTI, "byt")
+            mereno = [self._pm_syrovy[x] for x in dosah
+                      if x in self._pm_syrovy]
+            if mereno and max(mereno) < self.hodnota(
+                    zdroj, CONF_PM_CISTO,
+                    float((self.entry.subentries[zdroj].data
+                           if zdroj in self.entry.subentries else {})
+                          .get(CONF_PM_CISTO, 20.0))):
+                del self._dozvuk[zdroj]
 
     def _okno_brani_zvlhcovani(self, pod_id: str) -> bool:
         """Je otevřené okno tam, odkud to na vlhkost tady dosáhne?"""
@@ -1376,6 +1406,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             vyk.stav.pulz_do_s = None
 
         pamet.otevreno = skutecne
+        # syrová hodnota prachu kvůli ukončení doznívání po zvlhčovači
+        self._pm_syrovy[p.subentry_id] = float(okruh["pm25"] or 0.0)
+        self._uklid_dozvuku(cas_s)
         m.atributy["rucni_zasah"] = cas_s < pamet.rucni_do_s
 
         if ovladat and okna:
@@ -1572,8 +1605,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             if (okna or kontakty) else None)
         okno_fakt = (self.okna_stav[p.subentry_id] is True
                      or self._okno_brani_zvlhcovani(p.subentry_id))
-        await self._pomocnici_krok(p, d, m, okruh, v.t_in, t_out,
-                                   okno_fakt, doma)
+        await self._pomocnici_krok(p, d, m, okruh, cas_s, v.t_in, t_out,
+                                   okno_fakt, doma, cas_s)
         await self._topeni_krok(p, d, m, cas_s)
 
     async def _topeni_krok(self, p, d, m, cas_s: float) -> None:
@@ -1712,7 +1745,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return "zatím bez povelu"
         return "běží" if bezi else "stojí"
 
-    async def _pomocnici_krok(self, p, d, m, okruh, t_in: float,
+    async def _pomocnici_krok(self, p, d, m, okruh, cas_s: float,
+                              t_in: float,
                               t_out: float | None, otevreno: bool,
                               doma: bool) -> None:
         """Čistička řeší prach, zvlhčovač vlhkost. Okno na to nemusí.
@@ -1816,8 +1850,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             if self._stav_pomocnika(zvlhcovac,
                                     vyk.stav.zarizeni.get("zvlhčovač")):
                 self.zvlhcuje.add(p.subentry_id)
-            else:
+                self._dozvuk.pop(p.subentry_id, None)
+            elif p.subentry_id in self.zvlhcuje:
+                # Aerosol v pokoji zůstává i potom, co zvlhčovač vypne.
+                # Dokud prach neklesne do čistého pásma, bere se pořád
+                # za jeho — jinak se hned po doběhu otevřelo okno kvůli
+                # prachu, který se vyvětrat nedá.
                 self.zvlhcuje.discard(p.subentry_id)
+                self._dozvuk[p.subentry_id] = cas_s
         m.atributy["zvlhcovac_bezi"] = self._stav_pomocnika(
             d.get(CONF_ZVLHCOVAC), vyk.stav.zarizeni.get("zvlhčovač"))
 
