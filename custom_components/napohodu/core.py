@@ -538,9 +538,8 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         # Dokud platí ruční zásah, automatika do okna nemluví — další
         # řádky o zavírání by slibovaly něco, co se nestane. Nouzové
         # větrání je jediné, co to obchází, takže patří k tomu.
-        return [f"sáhl jsi na okno, čekám na nový podnět (ještě "
-                f"{int((p.rucni_do_s - v.cas_s) / 60)} z "
-                f"{int(n.rucni_klid_s / 60)} min)",
+        return [f"sáhl jsi na okno, čekám na nový podnět "
+                f"(ještě {int((p.rucni_do_s - v.cas_s) / 60)} min)",
                 f"dřív jen při nouzovém větrání nad "
                 f"{n.co2_noc_krize:.0f} ppm (teď {v.co2:.0f})"]
 
@@ -738,11 +737,9 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # Ochrana výš už proběhla, takže vítr a déšť okno zavřou i tak.
     if v.cas_s < p.rucni_do_s:
         zbyva = int((p.rucni_do_s - v.cas_s) / 60)
-        bezi = int((v.cas_s - p.rucni_od_s) / 60) if p.rucni_od_s else -1
         return hotovo(Akce.NIC,
                       f"sáhl jsi na okno, nechávám to na tobě "
-                      f"(ještě {zbyva} z {int(n.rucni_klid_s / 60)} min, "
-                      f"klid běží {bezi} min)", kod="rucni_zasah")
+                      f"(ještě {zbyva} min)", kod="rucni_zasah")
 
     # --- 3. ruční otevření -----------------------------------------
     if v.vynuceno:

@@ -2259,16 +2259,6 @@ def test_zhorseni_respektuje_drzeni_polohy():
     assert r.akce is not Akce.ZAVRIT
 
 
-def test_rucni_klid_ukazuje_i_nastavenou_hodnotu():
-    """Bez ní se nepozná, jestli se počítá s tím, co je na šoupátku."""
-    from core import Nastaveni as N_, rucni_zasah
-    nast = N_(rucni_klid_s=120 * 60)
-    p = Pamet(otevreno=True, cas_povelu_s=0)
-    rucni_zasah(p, nast, 100000, True)
-    r = rozhodni(Vstup(co2=600, t_in=21.0, t_in_max=21.2, t_out=12.0,
-                       rh_out=50.0, cil=22.0, hodina=14.0,
-                       cas_s=100060), p, nast)
-    assert "119 z 120 min" in r.duvod
 
 
 def test_novy_zasah_nastavi_odpocet_znovu():
@@ -2285,19 +2275,3 @@ def test_novy_zasah_nastavi_odpocet_znovu():
     assert p.rucni_do_s == 100000 + 1200 + 120 * 60
 
 
-def test_hlaska_rekne_jak_dlouho_klid_bezi():
-    """Bez toho se nepozná, jestli odpočet začal teď, nebo pokračuje
-    z dřívějška."""
-    from core import Nastaveni as N_, rucni_zasah
-    nast = N_(rucni_klid_s=120 * 60)
-    p = Pamet(otevreno=True, cas_povelu_s=0)
-    rucni_zasah(p, nast, 100000, True)
-
-    def po(vterin):
-        return rozhodni(Vstup(co2=600, t_in=21.0, t_in_max=21.2,
-                              t_out=12.0, rh_out=50.0, cil=22.0,
-                              hodina=14.0, cas_s=100000 + vterin),
-                        p, nast).duvod
-
-    assert "119 z 120 min, klid běží 1 min" in po(60)
-    assert "99 z 120 min, klid běží 21 min" in po(1260)
