@@ -250,11 +250,24 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 zaznam["_topeni_cil"] = vyk.stav.topeni_cil
                 zaznam["_topeni_rezim"] = vyk.stav.topeni_rezim
             out[pid] = zaznam
+        # Běžící zvlhčovač a doznívání jeho aerosolu. Bez nich se po
+        # restartu vzal prach za vzduch a okno se otevřelo kvůli tomu,
+        # co se vyvětrat nedá.
+        out["_zvlhcuje"] = sorted(self.zvlhcuje)
+        out["_dozvuk"] = dict(self._dozvuk)
         return out
 
     async def _nacti_pameti(self) -> None:
         ulozene = await self._uloziste_pameti.async_load() or {}
         self._souhrn_odeslan = ulozene.pop("_souhrn_odeslan", "") or ""
+        self.zvlhcuje = set(ulozene.pop("_zvlhcuje", None) or [])
+        self._dozvuk = dict(ulozene.pop("_dozvuk", None) or {})
+        # Restart je pro aerosol totéž co vypnutí: dokud prach neklesne
+        # do čistého pásma, bere se pořád za zvlhčovačův. Skutečný stav
+        # zařízení se doplní v prvním cyklu.
+        ted = dt_util.utcnow().timestamp()
+        for pid in self.zvlhcuje:
+            self._dozvuk.setdefault(pid, ted)
         for klic, v in (ulozene.pop("_formular", None) or {}).items():
             a, _, b = klic.partition("|")
             self._formular[(a, b)] = v
@@ -1549,10 +1562,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 f"{nast.zmena_podminek:.1f} °C, nejpozději za "
                 f"{int((nast.nejdriv_znovu_s - (cas_s - pamet.marne_od_s)) / 60)}"
                 f" min"),
+            # Prach se uvádí jen tehdy, když se kvůli němu větrá —
+            # jinak by u každého větrání svítila nula, která nic neříká.
             "ucinek": (
                 f"CO2 {pamet.ucinek_co2:.0f} → {v.co2:.0f}, teplota "
-                f"{pamet.ucinek_t_in:.1f} → {v.t_in:.1f} °C za "
-                f"{int((cas_s - pamet.ucinek_od_s) / 60)} min"
+                f"{pamet.ucinek_t_in:.1f} → {v.t_in:.1f} °C"
+                + (f", PM2.5 {pamet.pm_pri_otevreni:.0f} → {v.pm25:.0f}"
+                   if "PM" in (pamet.posledni_duvod or "")
+                   and pamet.pm_pri_otevreni is not None else "")
+                + f" za {int((cas_s - pamet.ucinek_od_s) / 60)} min"
                 if skutecne and pamet.ucinek_od_s else None),
             # pravidla pro celý byt, aby nebyla pod každou místností
             "pevna_pravidla_bytu": core.pevna_pravidla_bytu(),

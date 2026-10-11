@@ -694,6 +694,8 @@ def test_odeslany_souhrn_prezije_znovunacteni(nahradni_ha):
         _formular: dict = {}
         _souhrn_odeslan = "2026-01-15"
         pameti: dict = {}
+        zvlhcuje: set = set()
+        _dozvuk: dict = {}
         _cizi_zadost: dict = {}
         _t_in_drive: dict = {}
         vykonavaci: dict = {}
@@ -1699,3 +1701,43 @@ def test_zadost_vznikne_z_cerstvych_cidel(nahradni_ha):
         _je_noc_ted = False
 
     assert Falesny()._zadost_bez_okna("obyvak", {}) == "chlazeni"
+
+
+def test_zvlhcovac_prezije_restart(nahradni_ha):
+    """Po restartu se vzal prach za vzduch a okno se otevřelo kvůli
+    tomu, co se vyvětrat nedá."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+
+    class Falesny:
+        _uloz_pameti = ko.NaPohoduCoordinator._uloz_pameti
+        pameti: dict = {}
+        vykonavaci: dict = {}
+        _formular: dict = {}
+        _souhrn_odeslan = ""
+        zvlhcuje = {"loznice"}
+        _dozvuk = {"obyvak": 1000.0}
+
+    snimek = Falesny()._uloz_pameti()
+    assert snimek["_zvlhcuje"] == ["loznice"]
+    assert snimek["_dozvuk"] == {"obyvak": 1000.0}
+
+    # a po načtení se z běžícího zvlhčovače rovnou stane doznívání
+    ko_text = __import__("pathlib").Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    kus = ko_text[ko_text.index("async def _nacti_pameti"):]
+    kus = kus[:kus.index("\n    def ")]
+    assert '_zvlhcuje' in kus and "_dozvuk.setdefault" in kus
+
+
+def test_ucinek_uvadi_prach_jen_kdyz_se_kvuli_nemu_vetra(nahradni_ha):
+    """Jinak by u každého větrání svítila nula, která nic neříká."""
+    import pathlib
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    kus = ko[ko.index('"ucinek": ('):]
+    kus = kus[:kus.index('"pevna_pravidla_bytu"')]
+    assert "PM2.5" in kus
+    assert '"PM" in (pamet.posledni_duvod' in kus
+    assert "pm_pri_otevreni is not None" in kus
