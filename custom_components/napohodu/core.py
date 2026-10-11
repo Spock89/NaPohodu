@@ -605,7 +605,8 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     return seznam
 
 
-def rucni_zasah(p: Pamet, n: Nastaveni, cas_s: float, otevreno: bool) -> None:
+def rucni_zasah(p: Pamet, n: Nastaveni | None, cas_s: float,
+                otevreno: bool, klid_s: float | None = None) -> None:
     """Někdo sáhl na okno rukou. Rozdělaná akce se ruší.
 
     Bez tohohle by automatika po uplynutí doby držení stavu poslala
@@ -618,7 +619,10 @@ def rucni_zasah(p: Pamet, n: Nastaveni, cas_s: float, otevreno: bool) -> None:
     p.komfort_start = None
     p.vetra_se = otevreno
     p.cas_povelu_s = cas_s
-    p.rucni_do_s = cas_s + n.rucni_klid_s
+    # Délka klidu se dá předat rovnou, aby si kvůli ní nikdo nemusel
+    # skládat celé nastavení — tak vznikl odpočet, který neodpovídal
+    # šoupátku na dashboardu.
+    p.rucni_do_s = cas_s + (n.rucni_klid_s if klid_s is None else klid_s)
     p.rucni_od_s = cas_s
 
 

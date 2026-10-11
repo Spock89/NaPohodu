@@ -1363,6 +1363,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 m.nazev, "otevřené" if skutecne else "zavřené",
                 "otevřít" if pamet.otevreno else "zavřít")
             core.rucni_zasah(pamet, nast, cas_s, skutecne)
+            # Čísla do protokolu, ať se dá ověřit, s čím se počítalo:
+            # odpočet se má rovnat nastavení, jinak je chyba mezi
+            # šoupátkem a rozhodováním.
+            _LOGGER.info(
+                "NaPohodu: %s — ruční klid %.0f min, od %.0f do %.0f "
+                "(teď %.0f), šoupátko %s, formulář %s",
+                m.nazev, nast.rucni_klid_s / 60, pamet.rucni_od_s,
+                pamet.rucni_do_s, cas_s,
+                self.hodnoty.get((p.subentry_id, CONF_RUCNI_KLID)),
+                d.get(CONF_RUCNI_KLID))
             vyk.stav.pulz_do_s = None
 
         pamet.otevreno = skutecne

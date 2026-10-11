@@ -794,6 +794,7 @@ def test_tlacitka_oken(nahradni_ha):
 
     class K:
         pameti = {"m1": pamet}
+        hodnota = staticmethod(lambda pod_id, klic, vych: vych)
 
     e = b.Okno.__new__(b.Okno)
     e._otevrit = True
@@ -1452,3 +1453,54 @@ def test_druhy_rucni_zasah_odpocet_restartuje(nahradni_ha):
     kus = kus[:kus.index("core.rucni_zasah")]
     assert "cas_s >= pamet.rucni_do_s" not in kus
     assert "pamet.otevreno != skutecne" in kus
+
+
+def test_tlacitko_okna_bere_hodnotu_ze_soupatka(nahradni_ha):
+    """Dřív si tlačítko bralo jen formulář, takže odpočet neodpovídal
+    tomu, co bylo na dashboardu."""
+    import asyncio
+    import importlib
+
+    b = importlib.import_module("napohodu.button")
+    core = importlib.import_module("napohodu.core")
+    c = importlib.import_module("napohodu.const")
+
+    pamet = core.Pamet()
+
+    class Sluzby:
+        async def async_call(self, *a, **k):
+            pass
+
+    class Hass:
+        services = Sluzby()
+
+    class K:
+        pameti = {"m1": pamet}
+        # šoupátko říká 120, formulář 99
+        hodnota = staticmethod(lambda pod_id, klic, vych: 120.0)
+
+    e = b.Okno.__new__(b.Okno)
+    e._otevrit = True
+    e.pod = type("P", (), {"data": {"okna": ["cover.k"],
+                                    c.CONF_RUCNI_KLID: 99.0}})()
+    e.pod_id = "m1"
+    e.hass = Hass()
+    e.coordinator = K()
+    asyncio.run(e.async_press())
+
+    assert pamet.rucni_do_s - pamet.rucni_od_s == 120 * 60
+
+
+def test_nikdo_si_nestavi_vlastni_nastaveni(nahradni_ha):
+    """Kdo si Nastaveni poskládá sám, obvykle zapomene na šoupátka
+    a použije jen formulář."""
+    import pathlib
+    import re
+
+    d = pathlib.Path("custom_components/napohodu")
+    for p in d.glob("*.py"):
+        if p.name in ("core.py", "coordinator.py", "klima.py"):
+            continue
+        for i, radek in enumerate(p.read_text().splitlines(), 1):
+            assert not re.search(r"\b(core\.)?Nastaveni\(", radek), \
+                f"{p.name}:{i}"

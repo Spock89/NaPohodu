@@ -159,6 +159,11 @@ class Okno(NaPohoduEntity, ButtonEntity):
 
         pamet = self.coordinator.pameti.get(self.pod_id)
         if pamet is not None:
-            klid = float(self.pod.data.get(CONF_RUCNI_KLID, 30)) * 60
-            core.rucni_zasah(pamet, core.Nastaveni(rucni_klid_s=klid),
-                             dt_util.utcnow().timestamp(), self._otevrit)
+            # Tatáž hodnota jako v rozhodování: nejdřív šoupátko,
+            # teprve pak formulář. Dřív si tlačítko bralo jen formulář,
+            # takže odpočet neodpovídal tomu, co bylo na dashboardu.
+            klid = self.coordinator.hodnota(
+                self.pod_id, CONF_RUCNI_KLID,
+                float(self.pod.data.get(CONF_RUCNI_KLID, 30))) * 60
+            core.rucni_zasah(pamet, None, dt_util.utcnow().timestamp(),
+                             self._otevrit, klid_s=klid)

@@ -681,6 +681,18 @@ for klic in re.findall(r"Posuvnik\((CONF_\w+)", nb_kod):
             f"number.py: {klic} má posuvník, ale koordinátor ho nečte "
             f"přes hodnota() — šoupátko by nic nedělalo")
 
+# 1af) nastavení si staví jen koordinátor. Kdo si ho poskládá sám,
+# obvykle zapomene na šoupátka a použije jen formulář — přesně tak
+# vznikl ruční klid, který neodpovídal dashboardu.
+for p in d.glob("*.py"):
+    if p.name in ("core.py", "coordinator.py", "klima.py"):
+        continue
+    for i, radek in enumerate(p.read_text().splitlines(), 1):
+        if re.search(r"\b(core\.)?Nastaveni\(", radek):
+            chyby.append(
+                f"{p.name}:{i}: staví si vlastní Nastaveni — hodnoty "
+                f"ber přes koordinátor, jinak minou šoupátka")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):
