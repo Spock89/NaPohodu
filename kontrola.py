@@ -726,6 +726,23 @@ for p in d.glob("*.py"):
                 f"{p.name}:{u.lineno}: self.{volana}() dostává {kolik} "
                 f"argumentů, metoda jich bere {nejmene} až {nejvice}")
 
+# 1ah) zóna se počítá dřív než místnosti, takže v té chvíli má
+# VysledekMistnosti jen atributy nastavené při jeho vzniku. Sáhnout
+# jinam znamená číst None a tiše nic neudělat.
+_zac = ko_kod.index("m = VysledekMistnosti(")
+_kon = ko_kod.index("podklady[p.subentry_id] = {", _zac)
+RANE_ATRIBUTY = set(re.findall(r'"(\w+)":', ko_kod[_zac:_kon]))
+for jm in ("_zadost_bez_okna", "_zona_mistnosti"):
+    if f"def {jm}" not in ko_kod:
+        continue
+    telo = ko_kod[ko_kod.index(f"def {jm}"):]
+    telo = telo[:telo.index("\n    def ")]
+    for a in re.findall(r'atributy\.get\("(\w+)"', telo):
+        if a not in RANE_ATRIBUTY:
+            chyby.append(
+                f"coordinator.py: {jm}() čte atribut {a}, který v době "
+                f"výpočtu zóny ještě neexistuje")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

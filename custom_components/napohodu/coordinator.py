@@ -626,12 +626,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         zpoždění u teploty nevadí.
         """
         m = self.mistnosti.get(pod_id)
-        if m is None:
+        if m is None or m.cil is None:
             return ""
-        t_in = m.atributy.get("uvnitr")
-        t_max = m.atributy.get("teplota_max") or t_in
+        # Výsledek místnosti se každý cyklus staví znovu a v době, kdy
+        # se počítá zóna, má teprve čerstvě načtená čidla. „uvnitr" se
+        # doplní až v kroku místnosti, takže se bere přímo z nich —
+        # dřív tu bylo None a žádost nevznikla nikdy.
+        t_min = m.atributy.get("teplota_min")
+        t_max = m.atributy.get("teplota_max")
+        t_in = t_min if t_min is not None else t_max
         if t_in is None:
             return ""
+        t_max = t_max if t_max is not None else t_in
         noc = bool(m.klid) or self._je_noc_ted
         otevrit = self.hodnota(
             pod_id, CONF_HYST_NOC_OTEVRIT if noc else CONF_HYST_DEN_OTEVRIT,
@@ -942,7 +948,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             o["cizi_chlazeni"] = o["cizi_ohrev"] = False
             o["cizi_za"] = []
             for x in o["cleni"]:
-                if podklady[x.subentry_id]["d"].get(CONF_OKNA):
+                # Vyvětrat si sama neumí ani místnost, která okno má,
+                # ale má vypnutý přepínač Ovládat okno — dřív se dívalo
+                # jen na seznam oken a taková místnost o nic nepožádala.
+                if (podklady[x.subentry_id]["d"].get(CONF_OKNA)
+                        and self.hodnoty.get(
+                            (x.subentry_id, "ovladat_okno"), 1.0) > 0):
                     continue
                 jak = self._zadost_bez_okna(
                     x.subentry_id, podklady[x.subentry_id]["d"])
@@ -1568,6 +1579,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 self._pasmo(nast, m, v, pamet, skutecne, cas_s,
                             p.subentry_id)),
             "teplota_trend": self._trend(p.subentry_id, v, cas_s),
+            # co si tahle místnost vyžádala od sousedů v zóně
+            "zadost_sousedum": self._cizi_zadost.get(p.subentry_id) or None,
             # Nejteplejší a nejchladnější čidlo bývá totéž. Ukazuje se
             # to, podle kterého se zrovna rozhoduje: při chlazení a
             # horku nejteplejší, jinak nejchladnější.

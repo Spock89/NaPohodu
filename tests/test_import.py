@@ -1640,3 +1640,62 @@ def test_volani_vlastnich_metod_sedi(nahradni_ha):
             assert len(u.args) <= nejvice, f"{p.name}:{u.lineno}"
             assert len(u.args) + len(u.keywords) >= nejmene, \
                 f"{p.name}:{u.lineno}"
+
+
+def test_zadost_posle_i_mistnost_s_vypnutym_oknem(nahradni_ha):
+    """Vyvětrat si sama neumí ani místnost, která okno má, ale má
+    vypnutý přepínač Ovládat okno."""
+    import pathlib
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    kus = ko[ko.index("o[\"cizi_chlazeni\"]"):ko.index("# Drahé je větrání")]
+    assert '"ovladat_okno"' in kus
+    assert "CONF_OKNA" in kus
+
+
+def test_zadost_je_videt_v_karte(nahradni_ha):
+    """Bez toho nebylo poznat, jestli žádost vůbec vznikla."""
+    import pathlib
+    ka = pathlib.Path("custom_components/napohodu/karty.py").read_text()
+    assert '"zadost_sousedum"' in ka      # u místnosti
+    assert '"teplo_za"' in ka             # u sdíleného vzduchu
+
+
+def test_zadost_cte_jen_rane_atributy(nahradni_ha):
+    """Zóna se počítá dřív než místnosti, takže v té chvíli má výsledek
+    místnosti jen atributy ze svého vzniku. Čtení jiného znamená None
+    a žádost nevznikne nikdy."""
+    import pathlib
+    import re
+
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    zac = ko.index("m = VysledekMistnosti(")
+    rane = set(re.findall(r'"(\w+)":',
+                          ko[zac:ko.index("podklady[p.subentry_id] = {",
+                                          zac)]))
+    telo = ko[ko.index("def _zadost_bez_okna"):]
+    telo = telo[:telo.index("\n    def ")]
+    for a in re.findall(r'atributy\.get\("(\w+)"', telo):
+        assert a in rane, a
+
+
+def test_zadost_vznikne_z_cerstvych_cidel(nahradni_ha):
+    """Obývák 23,1 při cíli 20,5 má sousedy požádat o chlazení."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+
+    class M:
+        cil = 20.5
+        klid = False
+        atributy = {"teplota_min": 23.1, "teplota_max": 23.1}
+
+    class Falesny:
+        _zadost_bez_okna = ko.NaPohoduCoordinator._zadost_bez_okna
+        hodnota = staticmethod(lambda pod_id, klic, vych: vych)
+        mistnosti = {"obyvak": M()}
+        _cizi_zadost: dict = {}
+        _je_noc_ted = False
+
+    assert Falesny()._zadost_bez_okna("obyvak", {}) == "chlazeni"

@@ -131,6 +131,7 @@ ATRIBUTY_PODROBNE = [
     ("kontakt_hlasi", "Kontakt hlásí otevřeno", None),
     ("otevreno_min", "Otevřeno už", " min"),
     ("zastupce", "Větrá za nás", None),
+    ("zadost_sousedum", "Žádám sousedy o", None),
     ("narazove_vetrani", "Nárazové větrání běží", None),
     ("narazove_mozne", "Nárazový režim je možný", None),
     ("cekani_po_marnem", "Čekání po marném větrání", None),
@@ -584,6 +585,9 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         polozky += _atribut(eid, "mistnosti", "   místnosti")
         polozky += _atribut(eid, "zastupce", "   větrá za nás")
         polozky += _atribut(eid, "vetra_i_za", "   větráme i za")
+        # bez tohohle nebylo poznat, že si místnost bez okna řekla
+        # sousedům o chlazení nebo ohřev
+        polozky += _atribut(eid, "teplo_za", "   chladíme a hřejeme i za")
         polozky += _atribut(eid, "klid", "   je klid")
     if polozky:
         c += _hlavicka("Sdílený vzduch", "mdi:home-group", "subtitle")
