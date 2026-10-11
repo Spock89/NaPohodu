@@ -1607,3 +1607,36 @@ def test_prach_po_zvlhcovaci_doznívá(nahradni_ha):
     k._pm_syrovy = {"loznice": 40.0}
     k._uklid_dozvuku(1000.0 + k.DOZVUK_NEJDELE_S + 1)
     assert k._zvlhcuje_na("loznice") is False
+
+
+def test_volani_vlastnich_metod_sedi(nahradni_ha):
+    """Špatný počet argumentů se projeví až při běhu — Python to
+    dopředu nekontroluje a integrace se nenačte."""
+    import ast
+    import pathlib
+
+    for p in pathlib.Path("custom_components/napohodu").glob("*.py"):
+        strom = ast.parse(p.read_text())
+        metody = {}
+        for u in ast.walk(strom):
+            if isinstance(u, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                a = u.args
+                staticka = any(isinstance(x, ast.Name)
+                               and x.id == "staticmethod"
+                               for x in u.decorator_list)
+                bez = 0 if staticka else 1
+                metody[u.name] = (len(a.args) - len(a.defaults) - bez,
+                                  len(a.args) - bez, a.vararg is not None)
+        for u in ast.walk(strom):
+            if not (isinstance(u, ast.Call)
+                    and isinstance(u.func, ast.Attribute)
+                    and isinstance(u.func.value, ast.Name)
+                    and u.func.value.id == "self"
+                    and u.func.attr in metody):
+                continue
+            nejmene, nejvice, hvezda = metody[u.func.attr]
+            if hvezda or any(isinstance(x, ast.Starred) for x in u.args):
+                continue
+            assert len(u.args) <= nejvice, f"{p.name}:{u.lineno}"
+            assert len(u.args) + len(u.keywords) >= nejmene, \
+                f"{p.name}:{u.lineno}"

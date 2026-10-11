@@ -1606,7 +1606,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         okno_fakt = (self.okna_stav[p.subentry_id] is True
                      or self._okno_brani_zvlhcovani(p.subentry_id))
         await self._pomocnici_krok(p, d, m, okruh, cas_s, v.t_in, t_out,
-                                   okno_fakt, doma, cas_s)
+                                   okno_fakt, doma)
         await self._topeni_krok(p, d, m, cas_s)
 
     async def _topeni_krok(self, p, d, m, cas_s: float) -> None:

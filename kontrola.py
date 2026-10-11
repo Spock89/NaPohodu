@@ -693,6 +693,39 @@ for p in d.glob("*.py"):
                 f"{p.name}:{i}: staví si vlastní Nastaveni — hodnoty "
                 f"ber přes koordinátor, jinak minou šoupátka")
 
+# 1ag) volání vlastní metody se špatným počtem argumentů. Projeví se
+# až při běhu, protože Python to nekontroluje dopředu.
+for p in d.glob("*.py"):
+    strom = ast.parse(p.read_text())
+    metody = {}
+    for u in ast.walk(strom):
+        if isinstance(u, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            a = u.args
+            # u statické metody se self nepočítá, u ostatních ano
+            staticka = any(isinstance(x, ast.Name)
+                           and x.id == "staticmethod"
+                           for x in u.decorator_list)
+            bez_self = 0 if staticka else 1
+            povinne = len(a.args) - len(a.defaults) - bez_self
+            metody[u.name] = (povinne, len(a.args) - bez_self,
+                              a.vararg is not None)
+    for u in ast.walk(strom):
+        volana = None
+        if isinstance(u, ast.Call) and isinstance(u.func, ast.Attribute):
+            if (isinstance(u.func.value, ast.Name)
+                    and u.func.value.id == "self"):
+                volana = u.func.attr
+        if volana is None or volana not in metody:
+            continue
+        nejmene, nejvice, hvezda = metody[volana]
+        kolik = len(u.args)
+        if any(isinstance(x, ast.Starred) for x in u.args) or hvezda:
+            continue
+        if kolik > nejvice or kolik + len(u.keywords) < nejmene:
+            chyby.append(
+                f"{p.name}:{u.lineno}: self.{volana}() dostává {kolik} "
+                f"argumentů, metoda jich bere {nejmene} až {nejvice}")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):
