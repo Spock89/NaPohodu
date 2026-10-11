@@ -2257,3 +2257,15 @@ def test_zhorseni_respektuje_drzeni_polohy():
                        cas_s=Z + 15 * 60), p, nast)
     # zavřít se nesmí, dokud doba držení neuplyne
     assert r.akce is not Akce.ZAVRIT
+
+
+def test_rucni_klid_ukazuje_i_nastavenou_hodnotu():
+    """Bez ní se nepozná, jestli se počítá s tím, co je na šoupátku."""
+    from core import Nastaveni as N_, rucni_zasah
+    nast = N_(rucni_klid_s=120 * 60)
+    p = Pamet(otevreno=True, cas_povelu_s=0)
+    rucni_zasah(p, nast, 100000, True)
+    r = rozhodni(Vstup(co2=600, t_in=21.0, t_in_max=21.2, t_out=12.0,
+                       rh_out=50.0, cil=22.0, hodina=14.0,
+                       cas_s=100060), p, nast)
+    assert "119 z 120 min" in r.duvod
