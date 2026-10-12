@@ -743,6 +743,23 @@ for jm in ("_zadost_bez_okna", "_zona_mistnosti"):
                 f"coordinator.py: {jm}() čte atribut {a}, který v době "
                 f"výpočtu zóny ještě neexistuje")
 
+# 1aj) důvod marného pokusu se zapisuje na jednom místě a čte na
+# několika. Překlep v jedné z hodnot — "ohřev" místo "ohrev" — projde
+# syntaxí i testy, které tu větev netrefí, a jen tiše vypne celé
+# zapomínání nebo čekání na změnu venku.
+_zac = jadro_text.index("def _marne_proc(")
+_telo = jadro_text[_zac:jadro_text.index("\ndef ", _zac + 10)]
+DUVODY_MARNEHO = set(re.findall(r'return "(\w*)"', _telo))
+if len(DUVODY_MARNEHO) < 3:
+    chyby.append("core.py: _marne_proc() nevrací očekávané důvody")
+for hodnota in set(
+        re.findall(r'marne_proc == "(\w*)"', jadro_text)) | set(
+        re.findall(r'\{"(\w+)": " s ', jadro_text)):
+    if hodnota and hodnota not in DUVODY_MARNEHO:
+        chyby.append(
+            f"core.py: marné větrání se porovnává s důvodem "
+            f"{hodnota!r}, který _marne_proc() nikdy nevrátí")
+
 # 1ai) funkce, která vrací jen text, použitá jako podmínka. Text je
 # pravdivý vždycky, takže se taková podmínka nikdy nevyhodnotí jako
 # nepravda a celá větev kódu běží naslepo. Projde to syntaxí i testy,

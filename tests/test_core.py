@@ -1544,6 +1544,107 @@ def test_nula_vypne_jen_cekani_na_podminky():
     assert "ještě" in zkus(22).duvod
 
 
+# --------------- marný pokus se zapomene, když jeho důvod zmizel
+
+def _po_marnem(proc, **kw):
+    """Paměť po marném pokusu: zavřeno, čeká se na změnu venku."""
+    p = Pamet(otevreno=False, cas_povelu_s=0, marne_od_s=100000,
+              marne_t_out=20.0, marne_proc=proc, pulzy_za_sebou=3,
+              pauza_do_s=100000 + 3600)
+    for k, val in kw.items():
+        setattr(p, k, val)
+    return p
+
+
+def _krok_po_marnem(p, **kw):
+    from core import Nastaveni as N_
+    nast = N_(zmena_podminek=2.0, nejdriv_znovu_s=3600)
+    vstup = dict(co2=500, t_in=22.0, t_in_max=22.2, t_out=20.0,
+                 rh_out=50.0, cil=22.0, hodina=14.0, cas_s=100000 + 600)
+    vstup.update(kw)
+    return rozhodni(Vstup(**vstup), p, nast)
+
+
+def test_marny_pokus_se_zapomene_kdyz_dojde_do_pasma():
+    """Teplota u cíle znamená, že není co odkládat — karta jinak
+    slibovala pokus, ke kterému nedojde, a žebřík pauz zůstával
+    nahoře."""
+    p = _po_marnem("chlazeni")
+    r = _krok_po_marnem(p)
+    assert "nepomohlo, čekám" not in r.duvod
+    assert p.marne_od_s == 0.0 and p.marne_proc == ""
+    assert p.pulzy_za_sebou == 0 and p.pauza_do_s == 0.0
+
+
+def test_nad_pasmem_se_marny_pokus_drzi():
+    """Případ, pro který couvání vzniklo: pokoj je dál nad pásmem, takže
+    zapomenout by znamenalo zkusit totéž, co nepomohlo."""
+    # venku je dál čím chladit a venkovní teplota se skoro nezměnila
+    p = _po_marnem("chlazeni", marne_t_out=16.0)
+    r = _krok_po_marnem(p, t_in=25.0, t_in_max=25.5, t_out=15.5)
+    assert "nepomohlo, čekám" in r.duvod
+    # a je vidět, co se nepovedlo — jinak se nepozná, čím čekání skončí
+    assert "s chlazením" in r.duvod
+    assert p.marne_od_s == 100000 and p.pulzy_za_sebou == 3
+
+
+def test_vzduch_nestacici_venku_neni_zmizely_duvod():
+    """Venkovní vzduch, který zrovna nestačí, je překážka dočasná —
+    na jeho změnu se čeká dál."""
+    p = _po_marnem("chlazeni")
+    r = _krok_po_marnem(p, t_in=25.0, t_in_max=25.5, t_out=20.0)
+    assert "nepomohlo, čekám" in r.duvod
+    assert p.marne_od_s == 100000
+
+
+def test_marne_vetrani_pro_pohodu_se_nezapomina():
+    """Pohoda žádný důvod nemá, takže by nebylo co zmizet — a bez téhle
+    výjimky by se okno v příjemném dni otevíralo a zavíralo dokola."""
+    p = _po_marnem("pohoda")
+    r = _krok_po_marnem(p)
+    assert "nepomohlo, čekám" in r.duvod
+    assert p.marne_od_s == 100000
+
+
+def test_marny_pokus_kvuli_vzduchu_se_zapomene_po_vycisteni():
+    p = _po_marnem("vzduch")
+    _krok_po_marnem(p, co2=500)
+    assert p.marne_od_s == 0.0
+
+    p2 = _po_marnem("vzduch")
+    r2 = _krok_po_marnem(p2, co2=1000)
+    assert "nepomohlo, čekám" in r2.duvod
+    assert p2.marne_od_s == 100000
+
+
+def test_zadost_souseda_zapomenuti_zdrzi():
+    """Soused bez okna chce dál chladit, tak tu potřeba nezmizela."""
+    p = _po_marnem("chlazeni")
+    r = _krok_po_marnem(p, cizi_chlazeni=True)
+    assert "nepomohlo, čekám" in r.duvod
+    assert p.marne_od_s == 100000
+
+
+def test_duvod_marneho_pokusu_se_bere_z_rezimu():
+    """Větrání kvůli CO2 v teplém pokoji není marné chlazení a čekat
+    kvůli němu na chladnější vzduch nemá smysl."""
+    from core import Nastaveni as N_, _marne_proc
+    nast = N_(min_drzeni_s=20 * 60)
+    Z = 100000
+    p = Pamet(otevreno=True, cas_povelu_s=Z, rezim="pulz", vetra_se=True,
+              ucinek_od_s=Z, ucinek_co2=1100, ucinek_t_in=23.0,
+              ucinek_bez_zlepseni=1)
+    r = rozhodni(Vstup(co2=1100, t_in=23.0, t_in_max=23.2, t_out=12.0,
+                       rh_out=50.0, cil=22.0, hodina=14.0,
+                       cas_s=Z + 21 * 60), p, nast)
+    assert r.akce is Akce.ZAVRIT
+    assert p.marne_proc == "vzduch"      # ne „chlazeni" podle teploty
+
+    assert _marne_proc(Pamet(chladi=True)) == "chlazeni"
+    assert _marne_proc(Pamet(ohrivam=True)) == "ohrev"
+    assert _marne_proc(Pamet(rezim="komfort")) == "pohoda"
+
+
 # --------------- vzduch musí dosáhnout tam, kam větrání dojede
 
 
@@ -1558,7 +1659,7 @@ def test_zmena_venku_plati_jen_spravnym_smerem():
 
     def zkus(smer, t_out):
         p = Pamet(otevreno=False, cas_povelu_s=0, marne_od_s=100000,
-                  marne_t_out=20.0, marne_smer=smer)
+                  marne_t_out=20.0, marne_proc=smer)
         return rozhodni(Vstup(co2=500, t_in=25.0, t_in_max=25.5,
                               t_out=t_out, rh_out=50.0, cil=22.0,
                               hodina=14.0, cas_s=100000 + 1200), p, nast)

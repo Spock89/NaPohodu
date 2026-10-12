@@ -215,9 +215,16 @@ class Pamet:
     pauza_do_s: float = 0.0
     marne_od_s: float = 0.0
     marne_t_out: float = 0.0
-    # co selhalo: "chlazeni" nebo "ohrev". Podle toho platí změna venku
-    # jen tím směrem, který by pomohl.
-    marne_smer: str = ""
+    # Kvůli čemu bylo okno marně otevřené: "chlazeni", "ohrev",
+    # "vzduch" (CO2 nebo prach), "pohoda" (nic nevadilo, jen bylo venku
+    # příjemně). Prázdno je stav ze starší verze — neznámý důvod.
+    #
+    # Rozhoduje dvě věci. Změna venku pomůže jen tím směrem, který by
+    # ten důvod zachránil: chlazení chladnější vzduch, ohřev teplejší.
+    # A zapomíná se podle toho, jestli ten konkrétní důvod zmizel;
+    # u pohody není co zmizet, tak se nezapomíná vůbec — jinak by si
+    # okno v příjemném dni otevíralo a zavíralo pořád dokola.
+    marne_proc: str = ""
     ucinek_co2: float = 0.0
     ucinek_t_in: float = 0.0
     # kolikátý úsek sledování běží; první čeká na dobu držení, další
@@ -630,6 +637,23 @@ def rucni_zasah(p: Pamet, n: Nastaveni | None, cas_s: float,
     p.rucni_od_s = cas_s
 
 
+def _marne_proc(p: Pamet) -> str:
+    """Kvůli čemu bylo okno otevřené, když se pokus ukázal marný.
+
+    Bere se z příznaků, kterými se otevíralo, ne z toho, na které straně
+    cíle teplota zrovna je: větrání kvůli CO2 v teplém pokoji není marné
+    chlazení a čekat kvůli němu na chladnější vzduch nemá smysl.
+
+    Kontrola účinku běží před sekcí komfortu, takže příznaky ještě drží
+    hodnoty z chvíle, kdy se otevíralo.
+    """
+    if p.chladi:
+        return "chlazeni"
+    if p.ohrivam:
+        return "ohrev"
+    return "vzduch" if p.rezim == "pulz" else "pohoda"
+
+
 def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     """Vrátí, co se má s oknem stát. Paměť se upravuje na místě."""
 
@@ -813,8 +837,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             p.pulzy_za_sebou += 1
             p.marne_od_s = v.cas_s
             p.marne_t_out = v.t_out
-            p.marne_smer = ("chlazeni" if t_in > v.cil
-                            else "ohrev" if t_in < v.cil else "")
+            p.marne_proc = _marne_proc(p)
             # Zavírá se hned, jak se zhoršení pozná — nejkratší doba
             # držení polohy ale platí dál, ta je od toho, aby okno
             # nelítalo, a obcházet ji by znamenalo ji zrušit.
@@ -840,8 +863,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             p.pulzy_za_sebou += 1
             p.marne_od_s = v.cas_s
             p.marne_t_out = v.t_out
-            p.marne_smer = ("chlazeni" if t_in > v.cil
-                            else "ohrev" if t_in < v.cil else "")
+            p.marne_proc = _marne_proc(p)
             return zavri(
                 f"nehýbe se to: za {int(uplynulo / 60)} min CO2 "
                 f"{p.ucinek_co2:.0f} → {v.co2:.0f}, teplota "
@@ -982,6 +1004,34 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                 and v.t_out > n.chlazeni_min_venku
                 and not v.smog)
 
+    # Důvod, kvůli kterému se marně větralo, může zmizet sám: teplota se
+    # vrátí do pásma, vzduch se vyčistí i bez okna. Pak není co odkládat
+    # — couvání je od toho, aby se nezkoušelo totéž, co minule
+    # nepomohlo, ne aby mlčelo nad pokojem, který nic nechce. Dřív
+    # zůstalo zapsané: karta slibovala pokus, ke kterému nedojde,
+    # blokovalo to i novou potřebu a žebřík pauz zůstával nahoře.
+    #
+    # Ptá se to na ten konkrétní důvod, ne na to, jestli by se teď
+    # otevřelo. Venkovní vzduch, který zrovna nestačí, je překážka
+    # dočasná, ne zmizelý důvod — na jeho změnu se čeká dál. A pohoda
+    # žádný důvod nemá, tam se nezapomíná vůbec: větrání „protože je
+    # venku příjemně" nic nezlepšuje, kontrola účinku ho zavře jako
+    # marné, a bez téhle výjimky by se okno pořád dokola otevíralo.
+    #
+    # Teplotu zpátky do pásma musí vrátit celá odchylka otevření, takže
+    # o poskakování se stará tatáž hystereze jako jinde.
+    zmizel = (
+        t_max <= v.cil + h_otevrit if p.marne_proc == "chlazeni"
+        else t_in >= v.cil - h_otevrit if p.marne_proc == "ohrev"
+        else True if p.marne_proc == "vzduch"
+        else False)                   # pohoda nebo neznámo z dřívějška
+    if (p.marne_od_s > 0 and not p.otevreno and zmizel
+            and not potreba and not v.cizi_chlazeni and not v.cizi_ohrev):
+        p.marne_od_s = 0.0
+        p.marne_proc = ""
+        p.pulzy_za_sebou = 0
+        p.pauza_do_s = 0.0
+
     # Po marném pokusu se čeká na změnu venkovních podmínek, ne na
     # hodiny. Když se venku nic nezmění, nemá smysl zkoušet totéž —
     # nouzové CO2 a ruční žádost to obchází dál.
@@ -1001,8 +1051,8 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         chladneji = v.t_out <= p.marne_t_out - n.zmena_podminek
         tepleji = v.t_out >= p.marne_t_out + n.zmena_podminek
         zmenilo_se = n.zmena_podminek > 0 and (
-            chladneji if p.marne_smer == "chlazeni"
-            else tepleji if p.marne_smer == "ohrev"
+            chladneji if p.marne_proc == "chlazeni"
+            else tepleji if p.marne_proc == "ohrev"
             else chladneji or tepleji)
         cas_vyprsel = v.cas_s - p.marne_od_s >= n.nejdriv_znovu_s
         if not zmenilo_se and not cas_vyprsel:
@@ -1014,7 +1064,14 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             cim = (f"na změnu venku o {n.zmena_podminek:.1f} °C, "
                    f"nejpozději {zbyva} min" if n.zmena_podminek > 0
                    else f"ještě {zbyva} min")
-            return beze_zmeny(f"minule to nepomohlo, čekám {cim}", False)
+            # Je vidět, co se nepovedlo. Bez toho se z hlášky nepoznalo,
+            # jestli se čeká kvůli teplotě, nebo kvůli vzduchu — a tím
+            # ani to, čím čekání skončí.
+            proc = {"chlazeni": " s chlazením", "ohrev": " s ohřevem",
+                    "vzduch": " se vzduchem",
+                    "pohoda": " s větráním pro pohodu"}.get(p.marne_proc, "")
+            return beze_zmeny(f"minule to{proc} nepomohlo, čekám {cim}",
+                              False)
         else:
             p.marne_od_s = 0.0        # zkusíme to znovu
 
@@ -1260,6 +1317,9 @@ def pevna_pravidla_bytu() -> list[str]:
         f"{PAUZA_PO_PULZU_S // 60:.0f} min a pauza se s každým dalším "
         f"zdvojnásobí, nejvýš na hodinu. Po marném větrání kvůli teplotě "
         f"se místo toho čeká na změnu venkovních podmínek.",
+        "Čekání i pauza skončí samy, jakmile zmizí důvod, kvůli kterému "
+        "se větralo — teplota se vrátí do pásma, vzduch se vyčistí i bez "
+        "okna. Větrání pro pohodu je výjimka, tam žádný důvod nebyl.",
     ]
 
 

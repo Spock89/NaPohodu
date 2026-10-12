@@ -247,6 +247,22 @@ posledním marném pokusu, ne od prvního. Když se venku nic nehne,
 zkusí se to tak jako tak po nastavené době, ve výchozím stavu po hodině
 — ta doba je strop, ne zdržení.
 
+**Čekání ale skončí samo, jakmile zmizí důvod, kvůli kterému se
+větralo.** Teplota se vrátí do pásma, nebo se vzduch vyčistí i bez
+okna — pak není co odkládat a nečeká se ani na strop. Dřív zůstal marný
+pokus zapsaný i nad pokojem, který už nic nechtěl: karta slibovala
+pokus, ke kterému nedojde, blokovalo to i novou potřebu a žebřík pauz
+zůstával nahoře.
+
+Ptá se to na ten konkrétní důvod, ne na to, jestli by se teď otevřelo.
+Venkovní vzduch, který zrovna nestačí, je překážka dočasná, ne zmizelý
+důvod — na jeho změnu se čeká dál. A větrání **pro pohodu** je výjimka:
+žádný důvod nemá, takže by nebylo co zmizet. Kontrola účinku ho dřív
+nebo později zavře jako marné, protože nic nezlepšuje, a bez téhle
+výjimky by se okno v příjemném dni otevíralo a zavíralo pořád dokola.
+Teplotu zpátky do pásma musí vrátit celá odchylka otevření, takže
+o poskakování se stará tatáž hystereze jako jinde.
+
 Slunce do toho záměrně nevstupuje: čidlo nemá každý a při proměnlivé
 oblačnosti by to spíš mátlo.
 
@@ -862,6 +878,18 @@ is detected. The shortest hold time applies in both cases.
 After a futile attempt it waits for the **outdoor temperature to
 change** in the direction that would help, or at most for a configured
 ceiling.
+
+The wait also **ends on its own as soon as the reason for ventilating
+disappears**: the temperature comes back inside the band, or the air
+clears without the window. There is then nothing left to postpone, not
+even the ceiling. It asks about that particular reason, not about
+whether the window would open right now — outdoor air that is
+currently not good enough is a temporary obstacle, not a vanished
+reason, so the wait for it to change stays. Ventilation **for comfort**
+is the exception: it has no reason to vanish, the effectiveness check
+closes it as futile sooner or later because it improves nothing, and
+without this exception the window would keep opening and closing on a
+pleasant day.
 
 ### Zones
 
