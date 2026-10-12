@@ -153,6 +153,10 @@ CONF_ZALUZIE_STARE = "zaluzie_zony"   # dřívější název, kvůli starším v
 CONF_STINENI_MAPA = "stineni_mapa"   # {"cover.o1|zastinit": "zastíněno"}
 CONF_KLID_STINENI_MIN = "klid_stineni_min"
 CONF_STINENI_PREDSTIH = "stineni_predstih"
+# Po ručním přestavení žaluzií se s nimi chvíli nehýbe. Obdoba
+# ručního klidu u okna, jen vlastní číslo: s žaluziemi si člověk
+# polohu vybírá vědomě a automatika mu do ní nemá hned sahat.
+CONF_RUCNI_KLID_ZALUZIE = "rucni_klid_zaluzie_min"
 
 # --- okna místnosti ---
 CONF_OKNA = "okna"

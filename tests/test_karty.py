@@ -87,13 +87,101 @@ def test_posuvniky_jsou_pojmenovane_cesky():
 
 # ---------------------------------------------------------------- grafy
 
+PRAH = {"cil": 22.0, "mez_dolni": 18.0, "mez_horni": 27.0,
+        "pasmo_den": 2.5, "pasmo_noc": 3.5, "co2_otevrit": 1000,
+        "co2_noc": 1200, "co2_krize": 1400, "pm_cisto": 20.0,
+        "pm_spatne": 35.0}
+
+
+def budiky(s):
+    return [k for k in vsechny_karty(s) if k.get("type") == "gauge"]
+
+
 def test_budiky_u_kazde_mistnosti():
-    """Cíl vedle skutečnosti, ať je rozdíl vidět hned."""
+    """Cíl a odchylka u každé místnosti, ať je rozdíl vidět hned."""
     s = dashboard(["kuchyne", "obyvak"], [], vzdy,
                   cidla={"kuchyne": "sensor.t_kuchyne",
                          "obyvak": "sensor.t_obyvak"})
     assert s.count("type: gauge") == 4          # dvě místnosti po dvou
     assert "sensor.t_kuchyne" in s
+
+
+def test_ctyri_budiky_s_cidly():
+    """Hlavní sledované veličiny vedle sebe: cíl, odchylka, CO2, prach."""
+    s = dashboard(["kuchyne"], [], vzdy,
+                  cidla={"kuchyne": "sensor.t"},
+                  co2_cidla={"kuchyne": "sensor.co2"},
+                  pm_cidla={"kuchyne": "sensor.pm"},
+                  prahy={"kuchyne": PRAH})
+    jmena = [b["name"] for b in budiky(s)]
+    assert jmena == ["Cíl", "Od cíle", "CO2", "Prach"]
+
+
+def test_budik_bez_cidla_se_nevyrobi():
+    """Ručička bez čidla by jen svítila Neznámý; řada se zúží."""
+    s = dashboard(["kuchyne"], [], vzdy, cidla={"kuchyne": "sensor.t"},
+                  prahy={"kuchyne": PRAH})
+    assert [b["name"] for b in budiky(s)] == ["Cíl", "Od cíle"]
+
+
+def test_pasma_budiku_z_nastaveni():
+    """Hrany barev mají odpovídat skutečným zónám, ne pevným číslům."""
+    s = dashboard(["kuchyne"], [], vzdy, cidla={"kuchyne": "sensor.t"},
+                  co2_cidla={"kuchyne": "sensor.co2"},
+                  pm_cidla={"kuchyne": "sensor.pm"},
+                  prahy={"kuchyne": PRAH})
+    podle = {b["name"]: b for b in budiky(s)}
+
+    # cíl: modrá pod pojistkou, zelená mezi, červená nad
+    assert [x["from"] for x in podle["Cíl"]["segments"]] == [16, 18.0, 27.0]
+
+    # odchylka: zelená je hystereze, širší noční pásmo svou barvou
+    od = podle["Od cíle"]
+    assert [x["from"] for x in od["segments"]] == [-8, -3.5, -2.5, 2.5,
+                                                   3.5, 7.0]
+    assert od["min"] == -8 and od["max"] == 8
+
+    assert [x["from"] for x in podle["CO2"]["segments"]] == [400, 1000.0,
+                                                             1400.0]
+    assert podle["CO2"]["max"] == 1600
+    assert [x["from"] for x in podle["Prach"]["segments"]] == [0, 20.0,
+                                                               35.0]
+
+
+def test_pasma_budiku_bez_nastaveni_jen_bez_barev():
+    """Bez běžící integrace se hrany počítat nedají, ručička ale zbyde —
+    stupnice beze zvýraznění je lepší než chybějící ukazatel."""
+    s = dashboard(["kuchyne"], [], vzdy, cidla={"kuchyne": "sensor.t"},
+                  co2_cidla={"kuchyne": "sensor.co2"})
+    podle = {b["name"]: b for b in budiky(s)}
+    assert "segments" not in podle["CO2"]
+    assert "segments" not in podle["Od cíle"]
+
+
+def test_pod_budiky_je_skutecna_teplota_a_soupatko():
+    """Ručička „Od cíle" ukazuje odchylku, takže skutečná teplota patří
+    hned pod ni — gauge umí vypsat jen hodnotu, na které stojí jehla."""
+    s = dashboard(["kuchyne"], [], vzdy, cidla={"kuchyne": "sensor.t"},
+                  prahy={"kuchyne": PRAH})
+    jmena = [e.get("name") for k in vsechny_karty(s)
+             for e in (k.get("entities") or []) if isinstance(e, dict)]
+    assert "Teď v místnosti" in jmena
+    assert "Posun cíle v místnosti" in jmena
+
+
+def test_segmenty_sjednoti_a_seradi():
+    """Stejná denní a noční odchylka dá dvě hrany na témž čísle.
+    Lovelace by z toho nakreslil pásmo nulové šířky a barvy by se
+    posunuly o jednu."""
+    from karty import _segmenty, NAD, POD, V_PASMU
+
+    radky = _segmenty([(2.5, NAD), (-2.5, POD), (2.5, V_PASMU),
+                       (-9, POD)], -5)
+    hrany = [r for r in radky if "from:" in r]
+    assert hrany == ["          - from: -5", "          - from: -2.5",
+                     "          - from: 2.5"]
+    # na společné hraně vyhrává to, co je v seznamu dál
+    assert radky[-1] == f'            color: "{V_PASMU}"'
 
 
 def test_graf_teplot_je_jeden_pro_vsechny():

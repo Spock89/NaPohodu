@@ -10,6 +10,8 @@ dashboard, který sis nakreslil sám.
 
 from __future__ import annotations
 
+import math
+
 # pořadí a názvy, aby karta dávala smysl a nebyla jen výpisem
 # Pořadí, názvy a jedna řádka, co to dělá — bez ní člověk za měsíc
 # neví, co která hodnota znamená, a nastavuje naslepo.
@@ -58,6 +60,11 @@ POSUVNIKY = [
     ("po_rucnim_zasahu_nechat_byt", "Po ručním zásahu nechat být",
      "Když sáhneš na okno rukou, automatika se do něj tak dlouho "
      "neplete."),
+    ("po_rucnim_prestaveni_zaluzii_nechat_byt",
+     "Po ručním přestavení žaluzií nechat být",
+     "Totéž pro žaluzie. Polohu si u nich člověk vybírá vědomě, tak "
+     "bývá tahle doba delší než u okna. Nula znamená, že automatika "
+     "pokračuje hned."),
     ("chladit_jen_pri_venkovni_teplote_nad",
      "Chladit jen při venkovní teplotě nad",
      "Pod touhle venkovní teplotou se chlazení větráním nespustí — "
@@ -242,19 +249,110 @@ def _graf(nadpis: str, hodin: int, polozky: list[tuple[str, str]],
     return r + [""]
 
 
+# Barvy pásem. Modrá pod, zelená v pásmu, žlutá nad, červená tam, kde
+# zasahují pojistky. Světlejší zelená je pásmo, které platí jen v noci —
+# když je noční odchylka jiná než denní, jinak se s tou zelenou slije.
+POD = "#4a90d9"
+V_PASMU = "#5cb85c"
+V_PASMU_NOC = "#9acd32"
+NAD = "#f0ad4e"
+KRAJ = "#d9534f"
+
+
+def _segmenty(pasma: list[tuple[float, str]], min_: float) -> list[str]:
+    """Hrany pásem do YAML: vzestupně, bez duplicit, od minima stupnice.
+
+    Dvě hrany na témž čísle vzniknou, kdykoli se denní a noční
+    odchylka rovnají. Lovelace by z toho nakreslil pásmo nulové
+    šířky a barvy by se posunuly o jednu.
+    """
+    out, videne = [], {}
+    for od, barva in sorted(pasma, key=lambda x: x[0]):
+        if od <= min_:
+            videne[min_] = barva       # vše pod stupnicí má barvu dna
+            continue
+        videne[round(od, 1)] = barva
+    if min_ not in videne:
+        videne[min_] = pasma[0][1] if pasma else POD
+    for od in sorted(videne):
+        out += [f"          - from: {od}",
+                f'            color: "{videne[od]}"']
+    return ["        segments:"] + out
+
+
 def _budik(eid: str, nazev: str, min_: float, max_: float,
-           pasma: bool = True) -> list[str]:
-    """Malý ručičkový ukazatel."""
+           pasma: list[tuple[float, str]] | bool = True) -> list[str]:
+    """Malý ručičkový ukazatel.
+
+    Hrany pásem se počítají z nastavení místnosti, ne z pevných čísel.
+    Lovelace šablony v konfiguraci karty nevyhodnocuje, takže se do
+    YAML zapíšou jako čísla — a proto se hodnoty, které se během dne
+    hýbou, nevážou na absolutní stupně. Tomu slouží odchylka od cíle.
+    """
     r = ["      - type: gauge", f"        entity: {eid}",
          f'        name: "{nazev}"', f"        min: {min_}",
          f"        max: {max_}", "        needle: true"]
+    if pasma is True:
+        # Nouzová varianta: bez nastavení z běžící integrace zbyde
+        # jen obecná teplotní stupnice.
+        pasma = [(15, POD), (20, V_PASMU), (26, NAD), (28, KRAJ)]
     if pasma:
-        r += ["        segments:",
-              '          - from: 15', '            color: "#4a90d9"',
-              '          - from: 20', '            color: "#5cb85c"',
-              '          - from: 26', '            color: "#f0ad4e"',
-              '          - from: 28', '            color: "#d9534f"']
+        r += _segmenty(pasma, min_)
     return r
+
+
+def _budiky_mistnosti(prah: dict | None, existuje, cil: str,
+                      odchylka: str, co2: str, prach: str) -> list[str]:
+    """Čtyři hlavní veličiny vedle sebe: cíl, odchylka, CO2, prach.
+
+    Hrany pásem počítá integrace z toho, podle čeho se rozhoduje; sem
+    přijdou hotové. Bez nich se ručičky postaví bez barev — stupnice
+    beze zvýraznění je pořád lepší než chybějící ukazatel a barvy se
+    doplní, až se karta vygeneruje nad běžící integrací.
+
+    Ručička, která v místnosti nemá čidlo, se nevyrobí — řada se jen
+    zúží.
+    """
+    dolni = float(prah["mez_dolni"]) if prah else 18.0
+    horni = float(prah["mez_horni"]) if prah else 27.0
+    pasmo = (max(float(prah["pasmo_den"]), float(prah["pasmo_noc"]))
+             if prah else 2.5)
+    uzsi = (min(float(prah["pasmo_den"]), float(prah["pasmo_noc"]))
+            if prah else 2.5)
+    krize = float(prah["co2_krize"]) if prah else 1400.0
+    spatne = float(prah["pm_spatne"]) if prah else 35.0
+
+    karty = []
+    if cil and existuje(cil):
+        # U cíle stačí pojistky: ty se během dne nehýbou, takže je
+        # vidět, jestli cíl vůbec leží tam, kde se s ním dá pracovat.
+        karty += _budik(cil, "Cíl", math.floor(dolni - 2),
+                        math.ceil(horni + 2),
+                        [(math.floor(dolni - 2), POD), (dolni, V_PASMU),
+                         (horni, KRAJ)] if prah else [])
+    if odchylka and existuje(odchylka):
+        # Souměrně kolem cíle. Červená začíná na dvojnásobku pásma:
+        # pojistky jsou v absolutních stupních, takže jejich odstup od
+        # cíle se během dne mění a do pevné stupnice se zapsat nedá.
+        rozsah = max(5, math.ceil(2 * pasmo + 1))
+        karty += _budik(
+            odchylka, "Od cíle", -rozsah, rozsah,
+            [(-rozsah, POD), (-pasmo, V_PASMU_NOC), (-uzsi, V_PASMU),
+             (uzsi, V_PASMU_NOC), (pasmo, NAD), (2 * pasmo, KRAJ)]
+            if prah else [])
+    if co2 and existuje(co2):
+        karty += _budik(
+            co2, "CO2", 400, int(math.ceil((krize + 200) / 100) * 100),
+            [(400, V_PASMU), (float(prah["co2_otevrit"]), NAD),
+             (krize, KRAJ)] if prah else [])
+    if prach and existuje(prach):
+        karty += _budik(
+            prach, "Prach", 0, max(50, int(math.ceil(2 * spatne))),
+            [(0, V_PASMU), (float(prah["pm_cisto"]), NAD),
+             (spatne, KRAJ)] if prah else [])
+    if not karty:
+        return []
+    return ["  - type: horizontal-stack", "    cards:"] + karty + [""]
 
 
 def _jako_pohled(radky: list[str]) -> list[str]:
@@ -327,6 +425,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
               se_zvlhcovacem: set | None = None,
               zvlhcovace: dict | None = None,
               s_cistickou: set | None = None,
+              pm_cidla: dict | None = None,
+              prahy: dict | None = None,
               venku: str | None = None,
               co2_cidla: dict | None = None,
               rh_cidla: dict | None = None, s_okny: set | None = None,
@@ -352,6 +452,10 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         return nazvy.get(m) or m.capitalize()
 
     co2_cidla = co2_cidla or {}
+    pm_cidla = pm_cidla or {}
+    # Hrany barevných pásem pro ručičky. Počítá je integrace z toho,
+    # podle čeho se rozhoduje; karta je jen přepíše do YAML.
+    prahy = prahy or {}
     rh_cidla = rh_cidla or {}
     zaluzie = zaluzie or {}
     s_okny = s_okny if s_okny is not None else set(mistnosti)
@@ -498,14 +602,29 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
                 continue
             polozky += _atribut(stav, a, n, s)
 
-        # ručičky nahoře: cíl vedle skutečnosti, ať je rozdíl vidět hned
+        # Ručičky nahoře: hlavní čtyři veličiny vedle sebe a pod nimi
+        # šoupátko odchylky, aby se kvůli jednomu stupni nemuselo
+        # překlikávat jinam.
         cil = f"sensor.napohodu_{m}_cilova_teplota"
         cidlo = cidla.get(m, "")
-        if existuje(cil) and existuje(cidlo):
-            c += ["  - type: horizontal-stack", "    cards:"]
-            c += _budik(cil, "Cíl", 15, 30)
-            c += _budik(cidlo, jm(m), 15, 30)
-            c.append("")
+        budiky = _budiky_mistnosti(
+            prahy.get(m), existuje, cil,
+            f"sensor.napohodu_{m}_odchylka_od_cile",
+            co2_cidla.get(m, ""), pm_cidla.get(m, ""))
+        if budiky:
+            c += budiky
+            # Ručička „Od cíle" ukazuje odchylku, takže skutečná
+            # teplota patří hned pod ni — karta typu gauge umí
+            # vypsat jen tu hodnotu, na které stojí jehla.
+            polozky_pod = []
+            if existuje(cidlo):
+                polozky_pod += _radek(cidlo, "Teď v místnosti")
+            posun = f"number.napohodu_{m}_odchylka_teploty"
+            if existuje(posun):
+                polozky_pod += _radek(posun, "Posun cíle v místnosti")
+            if polozky_pod:
+                c += _karta(polozky_pod)
+                c.append("")
 
         c += _karta(polozky, nazev=jm(m))
 
@@ -553,6 +672,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         polozky += _atribut(eid, "stineni_stav", "   nastavený stav")
         polozky += _atribut(eid, "zaluzie_poloha", "   skutečná poloha")
         polozky += _atribut(eid, "prestaveno_rukou", "   přestaveno rukou")
+        polozky += _atribut(eid, "zaluzie_rucni_klid", "   ruční klid")
         polozky += _atribut(eid, "zaluzie_chybi", "   chybějící entita")
         polozky += _atribut(eid, "stineni_duvody", "   proč je tam, kde je")
         polozky += _atribut(eid, "stineni_co_dal", "   co pohyb spustí")

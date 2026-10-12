@@ -743,6 +743,37 @@ for jm in ("_zadost_bez_okna", "_zona_mistnosti"):
                 f"coordinator.py: {jm}() čte atribut {a}, který v době "
                 f"výpočtu zóny ještě neexistuje")
 
+# 1ak) hrany pásem v ručičce musí ležet uvnitř stupnice. Minimum,
+# maximum i hrany se počítají každé jinde, takže se umí rozejít —
+# a Lovelace takovou kartu nenahlásí, jen tiše nenakreslí barvu, která
+# se mimo stupnici nevejde. Pořadí hran kontroluje test _segmenty().
+try:
+    import karty as _k2
+
+    _prah = {"cil": 22.0, "mez_dolni": 18.0, "mez_horni": 27.0,
+             "pasmo_den": 2.5, "pasmo_noc": 3.5, "co2_otevrit": 1000,
+             "co2_noc": 1200, "co2_krize": 1400, "pm_cisto": 20.0,
+             "pm_spatne": 35.0}
+    import yaml as _yaml
+
+    _txt = _k2.dashboard(
+        ["pokoj"], [], lambda e: True, cidla={"pokoj": "sensor.t"},
+        co2_cidla={"pokoj": "sensor.co2"}, pm_cidla={"pokoj": "sensor.pm"},
+        prahy={"pokoj": _prah}, podoba="stranka")
+    for _sek in _yaml.safe_load(_txt)["sections"]:
+        for _karta_ in _sek["cards"]:
+            for _g in (_karta_.get("cards") or [_karta_]):
+                if _g.get("type") != "gauge":
+                    continue
+                _hrany = [s["from"] for s in _g.get("segments") or []]
+                if _hrany and not (_g["min"] <= _hrany[0]
+                                   and _hrany[-1] < _g["max"]):
+                    chyby.append(
+                        f"karty.py: ručička {_g.get('name')!r} má hrany "
+                        f"pásem mimo stupnici {_g['min']}–{_g['max']}")
+except Exception as e:      # pragma: no cover
+    chyby.append(f"kontrola pásem v ručičkách selhala: {e}")
+
 # 1aj) důvod marného pokusu se zapisuje na jednom místě a čte na
 # několika. Překlep v jedné z hodnot — "ohřev" místo "ohrev" — projde
 # syntaxí i testy, které tu větev netrefí, a jen tiše vypne celé

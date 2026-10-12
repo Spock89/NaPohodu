@@ -20,7 +20,8 @@ from .const import (
     CONF_MEZ_DOLNI, CONF_MEZ_HORNI, CONF_MIN_DRZENI, CONF_NARAZOVE_ODSTUP,
     CONF_NEJDRIV_ZNOVU, CONF_NOC_POSUN, CONF_ODCHYLKA, CONF_PM_CISTO,
     CONF_PM_SPATNE, CONF_REZERVA_VENKU, CONF_RH_MAX, CONF_RH_MIN,
-    CONF_RUCNI_KLID, CONF_UTLUM, CONF_ZMENA_PODMINEK, DOMAIN,
+    CONF_RUCNI_KLID, CONF_RUCNI_KLID_ZALUZIE, CONF_UTLUM,
+    CONF_ZMENA_PODMINEK, DOMAIN,
     PODENTITA_MISTNOST,
 )
 from .entity import NaPohoduEntity
@@ -71,6 +72,8 @@ MISTNOST = [
              UnitOfTemperature.CELSIUS, 7.0, "mdi:snowflake-alert"),
     Posuvnik(CONF_MIN_DRZENI, 1, 120, 1, "min", 20.0, "mdi:timer-lock"),
     Posuvnik(CONF_RUCNI_KLID, 0, 240, 5, "min", 30.0, "mdi:hand-back-right"),
+    Posuvnik(CONF_RUCNI_KLID_ZALUZIE, 0, 480, 5, "min", 120.0,
+             "mdi:hand-back-left"),
     Posuvnik(CONF_PM_SPATNE, 10, 100, 1, "µg/m³", 35.0, "mdi:blur"),
     Posuvnik(CONF_PM_CISTO, 5, 60, 1, "µg/m³", 20.0, "mdi:blur-off"),
     Posuvnik(CONF_RH_MIN, 20, 55, 1, PERCENTAGE, 38.0,

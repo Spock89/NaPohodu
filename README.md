@@ -387,6 +387,22 @@ vybere, při kterých událostech k tomu má dojít — konec klidu, rozednění
 odchod nebo příchod. Bez toho zůstane tam, kam ji naposledy poslalo
 slunce, soukromí nebo ruka.
 
+**Ruční přestavení se pozná** a automatika pak **nechá žaluzie být** po
+dobu, která se nastaví u místnosti (šoupátko *Po ručním přestavení
+žaluzií nechat být*, výchozí dvě hodiny). Je to obdoba ručního klidu
+u okna, jen s vlastním číslem: polohu žaluzií si člověk vybírá vědomě,
+tak bývá ta doba delší. Nula znamená, že automatika pokračuje hned.
+
+Pozná se to tak, že se skutečná poloha rozejde s tou, kterou jsme
+poslali. Tři pojistky brání falešnému poplachu: za jízdy se nekontroluje
+vůbec, chvíli po povelu taky ne, protože pohon dojíždí a hlásí polohu
+se zpožděním, a rozejití se musí potvrdit dvakrát za sebou — jednorázový
+přeskok je skoro vždycky dojezd, ne ruka.
+
+Klid přežije restart, protože restart není důvod sahat do polohy, kterou
+si někdo nastavil pět minut předtím. Obejde ho jen tlačítko **Srovnat
+žaluzie**, protože to je výslovný pokyn, a reset vnitřních stavů.
+
 ### Sdílená klimatizace
 
 Vnitřní jednotka v jedné místnosti patří té místnosti a řídí se sama.
@@ -600,6 +616,27 @@ kterou vložíš jako Manuální kartu, nebo celá stránka rozdělená do sekc�
 které se dají na dashboardu chytat a přesouvat.
 
 Po přidání místnosti si přijdeš pro novou verzi.
+
+U každé místnosti jsou nahoře **čtyři ručičky**: cíl, odchylka od cíle,
+CO2 a prach. Hrany barev nejsou pevná čísla — počítají se z toho, podle
+čeho se rozhoduje, takže zelená končí přesně tam, kde se okno kvůli té
+veličině začne hýbat. Pod nimi je skutečná teplota v místnosti
+a šoupátko posunu cíle, aby se kvůli jednomu stupni nemuselo
+překlikávat jinam.
+
+Proč odchylka a ne absolutní teplota: Lovelace v konfiguraci karty
+nevyhodnocuje šablony, takže hrany pásem jsou v YAML napsané jako čísla.
+Cíl se ale během dne hýbe — adaptivní normou i nočním posunem — a zelené
+hysterezní pásmo kolem něj by se každou takovou změnou rozešlo
+s pravdou. Když se cíl odečte už v senzoru, zůstanou hrany pásem
+konstanty a platí v každou hodinu. Ručička tak ukazuje, jak daleko od
+cíle jsme, a skutečné stupně jsou v řádku hned pod ní. U cíle, CO2
+a prachu ten problém není, protože jejich prahy se během dne nemění, a
+tak jsou tyhle tři v absolutních hodnotách.
+
+Prahy se do karty zapíšou ve chvíli generování. Když potom pohneš
+šoupátkem, které nějakou hranu určuje — třeba odchylkou otevření —
+vygeneruj kartu znovu, jinak budou barvy platit pro staré nastavení.
 
 ### Diagnostika
 
@@ -922,6 +959,20 @@ the sun, with cloud cover read from a radiation sensor. Each blind has
 named positions you can record and test, and roles assigned to them —
 shading, unshading, privacy, empty home, default.
 
+A **manual reposition is detected** and the automation then **leaves the
+blinds alone** for a time set per room (the *After a manual change of the
+blinds, leave them alone for* slider, two hours by default). It mirrors
+the manual hold for windows but has a number of its own, because a blind
+position is chosen deliberately and the hold is usually longer. Zero
+means the automation carries on at once.
+
+It is detected by the real position drifting from the one we sent, with
+three safeguards against a false alarm: never while the blind is moving,
+not shortly after a command (the drive coasts and reports its position
+late), and the drift must be confirmed twice in a row. The hold survives
+a restart; only the **Line up blinds** button and the internal-state
+reset get past it.
+
 ### Humidifier and purifier
 
 The purifier handles dust, which in winter and at night beats opening
@@ -946,6 +997,25 @@ The integration generates a card or a whole page from entities that
 really exist. Every room has a compact card with what matters, and a
 **details section at the very end** with the debugging values; rows
 without a value are left out.
+
+Each room opens with **four gauges**: the target, the deviation from
+it, CO2 and dust. The colour edges are not fixed numbers — they are
+computed from the values the decisions are made with, so green ends
+exactly where the window starts moving because of that quantity. The
+real room temperature and the target-shift slider sit right below them.
+
+The deviation gauge exists because Lovelace does not evaluate
+templates in card config: the band edges end up in the YAML as plain
+numbers. The target itself moves during the day (adaptive standard,
+night shift), so a green hysteresis band written around it in absolute
+degrees would stop telling the truth at the first such change.
+Subtracting the target inside the sensor turns those edges into
+constants that hold at any hour. The target, CO2 and dust gauges have
+no such problem — their thresholds do not move during the day — so
+those three stay in absolute values.
+
+The thresholds are baked in when the card is generated. After moving a
+slider that defines one of the edges, generate the card again.
 
 ## What it does not do
 

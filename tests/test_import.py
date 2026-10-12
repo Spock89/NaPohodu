@@ -244,6 +244,7 @@ def test_vlhkost_se_ukazuje_i_bez_zarizeni(nahradni_ha):
         _zvlhcuje_na = staticmethod(lambda pod_id: False)
         _cizi_zadost: dict = {}
         _t_in_drive: dict = {}
+        _zaluzie_rukou: dict = {}
         vykonavaci: dict = {}
         hass = None
 
@@ -698,6 +699,7 @@ def test_odeslany_souhrn_prezije_znovunacteni(nahradni_ha):
         _dozvuk: dict = {}
         _cizi_zadost: dict = {}
         _t_in_drive: dict = {}
+        _zaluzie_rukou: dict = {}
         vykonavaci: dict = {}
         _uloz_pameti = ko.NaPohoduCoordinator._uloz_pameti
 
@@ -1084,6 +1086,7 @@ def test_vynulovani_nesahne_na_nastaveni(nahradni_ha):
         zvlhcuje = {"id"}
         _cizi_zadost: dict = {}
         _t_in_drive: dict = {}
+        _zaluzie_rukou: dict = {}
         vykonavaci: dict = {}
 
     k = Falesny()
@@ -1134,6 +1137,7 @@ def test_vynulovani_zrusi_i_cekani(nahradni_ha):
         _zvlhcuje_na = staticmethod(lambda pod_id: False)
         _cizi_zadost: dict = {}
         _t_in_drive: dict = {}
+        _zaluzie_rukou: dict = {}
         vykonavaci = {"id": Vyk()}
 
     k = Falesny()
@@ -1148,6 +1152,77 @@ def test_vynulovani_zrusi_i_cekani(nahradni_ha):
     assert k.vykonavaci["id"].stav.posledni_cas_s < 0
     # i stavy, které si koordinátor vede mimo paměť místností
     assert not k._cizi_zadost and not k._t_in_drive
+    assert not k._zaluzie_rukou          # ani ruční klid žaluzií
+
+
+def test_rucni_klid_zaluzii_zastavi_povel(nahradni_ha):
+    """Brána musí stát před posíláním povelu, jinak by se žaluzie
+    pohnuly a klid by jen svítil v kartě."""
+    import pathlib
+
+    ko = pathlib.Path(
+        "custom_components/napohodu/coordinator.py").read_text()
+    blok = ko[ko.index("async def _stineni_krok"):]
+    blok = blok[:blok.index("await vyk_m.stineni(")]
+    # klid se vyhodnotí dřív, než se vůbec dojde k posílání
+    assert blok.index("rukou_zbyva =") < blok.index("elif rukou_zbyva:")
+    assert "elif rukou_zbyva:" in blok
+
+
+def test_srovnat_zaluzie_zrusi_rucni_klid(nahradni_ha):
+    """Tlačítko je výslovný pokyn. Bez tohohle by stisk nic neudělal
+    a nebylo by poznat proč."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+
+    class Vyk:
+        zapomenuto = False
+
+        def zapomen(self):
+            Vyk.zapomenuto = True
+
+    class Falesny:
+        srovnej = ko.NaPohoduCoordinator.srovnej
+        vykonavaci = {"id": Vyk()}
+        _zaluzie_rukou = {"id": 100000.0}
+
+    k = Falesny()
+    k.srovnej()
+    assert Vyk.zapomenuto and not k._zaluzie_rukou
+
+
+def test_rucni_klid_zaluzii_prezije_restart(nahradni_ha):
+    """Člověk si polohu nastavil pět minut předtím a restart není
+    důvod mu do ní sáhnout."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+
+    class Stav:
+        def __init__(self):
+            self.posledni_stineni = {}
+            self.stineni_poloha = {}
+
+    class Vyk:
+        def __init__(self):
+            self.stav = Stav()
+
+    class Falesny:
+        _uloz_stineni = ko.NaPohoduCoordinator._uloz_stineni
+
+        def __init__(self):
+            self.vykonavaci = {"id": Vyk()}
+            self._zaluzie_rukou = {"id": 100000.0}
+
+    k = Falesny()
+    # Ruční přestavení pojmenovaný stav zapomene, takže záznam musí
+    # vzniknout i s prázdnou mapou stavů — jinak se klid ztratí.
+    snimek = k._uloz_stineni()
+    assert snimek["id"]["rukou_s"] == 100000.0
+
+    k._zaluzie_rukou.clear()
+    assert k._uloz_stineni() == {}
 
 
 

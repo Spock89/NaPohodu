@@ -45,6 +45,7 @@ from .const import (
     CONF_PROJEZD_M, CONF_PRO_POHODU, CONF_PRYC_PO, CONF_PRYC_UTLUM,
     CONF_REZERVA_VENKU, CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU,
     CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_RUCNI_KLID,
+    CONF_RUCNI_KLID_ZALUZIE,
     CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SEZONA_REZIM,
     CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG, CONF_SOUHRN_CAS,
     CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_CHOVANI,
@@ -150,6 +151,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._cizi_zadost: dict[str, str] = {}
         # doznívání aerosolu po vypnutí zvlhčovače: kdy přestal
         self._dozvuk: dict[str, float] = {}
+        # kdy někdo naposledy přestavil žaluzie rukou. Po tu dobu se
+        # s nimi nehýbe, stejně jako u okna po ručním zásahu.
+        self._zaluzie_rukou: dict[str, float] = {}
         # poslední naměřený prach místnosti, kvůli ukončení doznívání
         self._pm_syrovy: dict[str, float] = {}
         self._je_noc_ted: bool = False
@@ -202,6 +206,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # bez nich by „bod nula" nebyl nula.
         self._cizi_zadost.clear()
         self._t_in_drive.clear()
+        self._zaluzie_rukou.clear()      # i ruční klid žaluzií
         for vyk in self.vykonavaci.values():
             vyk.stav.pulz_do_s = None          # dojezd pulzu
             vyk.stav.posledni_cas_s = -1e9     # a odstup mezi povely
@@ -216,6 +221,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         for klic, vyk in self.vykonavaci.items():
             if pod_id is None or klic == pod_id:
                 vyk.zapomen()
+                # Tlačítko je výslovný pokyn, takže ruší i ruční klid
+                # žaluzií. Bez toho by stisk nic neudělal a nebylo by
+                # poznat proč.
+                self._zaluzie_rukou.pop(klic, None)
 
     async def async_nacti(self) -> None:
         """Obnoví průměry i polohy žaluzií, ať se nezačíná od nuly."""
@@ -232,6 +241,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     {k: float(x) for k, x in (data.get("polohy") or {}).items()})
             else:
                 vyk.stav.posledni_stineni.update(data)
+            # Ruční klid žaluzií přežije restart. Člověk si polohu
+            # nastavil pět minut předtím a restart není důvod mu do ní
+            # sáhnout.
+            if isinstance(data, dict) and data.get("rukou_s") is not None:
+                self._zaluzie_rukou[pod_id] = float(data["rukou_s"])
             # polohy známe z disku, ochrana po startu už netřeba
             vyk.stav.prvni_beh = False
 
@@ -285,10 +299,20 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("NaPohodu: obnoveno %d pamětí", len(ulozene))
 
     def _uloz_stineni(self) -> dict:
-        return {k: {"stavy": dict(v.stav.posledni_stineni),
-                    "polohy": dict(v.stav.stineni_poloha)}
-                for k, v in self.vykonavaci.items()
-                if v.stav.posledni_stineni}
+        # Ruční klid se ukládá taky, a proto se záznam zakládá i tam,
+        # kde pojmenovaný stav není: ruční přestavení ten stav právě
+        # zapomene, takže by se po restartu klid ztratil a žaluzie by
+        # se hned po něm rozjely.
+        out = {}
+        for k, v in self.vykonavaci.items():
+            rukou = self._zaluzie_rukou.get(k)
+            if not v.stav.posledni_stineni and rukou is None:
+                continue
+            out[k] = {"stavy": dict(v.stav.posledni_stineni),
+                      "polohy": dict(v.stav.stineni_poloha)}
+            if rukou is not None:
+                out[k]["rukou_s"] = rukou
+        return out
 
     # ------------------------------------------------------------ čtení
 
@@ -1521,6 +1545,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
         m.rozhodnuti = r
         m.okno_otevreno = skutecne
+        # Která teplota zrovna rozhoduje. Vyjmenuje se jednou: text
+        # v kartě, číslo pro ručičku i odchylka od cíle musí ukazovat
+        # tutéž hodnotu, jinak si tři řádky protiřečí.
+        t_max_cidlo = m.atributy.get("teplota_max") or v.t_in
+        nejteplejsi = pamet.chladi or t_max_cidlo > m.cil
+        t_rozhodna = t_max_cidlo if nejteplejsi else v.t_in
+        popis_rozhodne = "nejteplejší" if nejteplejsi else "nejchladnější"
         m.atributy.update({
             "co2": v.co2, "uvnitr": r.t_in_korig,
             "venku": t_ven, "rosny_bod": r.rosny_bod, "rezim": pamet.rezim,
@@ -1602,12 +1633,27 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Nejteplejší a nejchladnější čidlo bývá totéž. Ukazuje se
             # to, podle kterého se zrovna rozhoduje: při chlazení a
             # horku nejteplejší, jinak nejchladnější.
-            "teplota_rozhodna": (
-                f"{(m.atributy.get('teplota_max') or v.t_in):.1f} °C"
-                f" (nejteplejší)"
-                if (pamet.chladi
-                    or (m.atributy.get("teplota_max") or v.t_in) > m.cil)
-                else f"{v.t_in:.1f} °C (nejchladnější)"),
+            "teplota_rozhodna": f"{t_rozhodna:.1f} °C ({popis_rozhodne})",
+            # Totéž jako číslo a vůči cíli. Ručička v kartě potřebuje
+            # entitu, ne text, a odchylka se barví pevnými pásmy —
+            # v absolutních stupních by se zelené pásmo hýbalo s cílem
+            # a v noci by ukazovalo jinde, než kde doopravdy je.
+            "odchylka_od_cile": round(t_rozhodna - m.cil, 1),
+            # Hrany barevných pásem pro ručičky. Karta je jen přepíše
+            # do YAML, počítat se mají tam, kde se podle nich i
+            # rozhoduje — jinak by to byla druhá pravda.
+            "pasma_ukazatelu": {
+                "cil": round(m.cil, 1),
+                "mez_dolni": nast.mez_dolni,
+                "mez_horni": nast.mez_horni,
+                "pasmo_den": nast.hyst_den_otevrit,
+                "pasmo_noc": nast.hyst_noc_otevrit,
+                "co2_otevrit": nast.co2_otevrit,
+                "co2_noc": nast.co2_noc,
+                "co2_krize": nast.co2_noc_krize,
+                "pm_cisto": nast.pm_prah_cisto,
+                "pm_spatne": nast.pm_prah,
+            },
             "pevna_pravidla": core.pevna_pravidla(
                 bool(m.klid),
                 core._je_noc(self._hodina_ted, nast, bool(m.klid)),
@@ -1913,7 +1959,29 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 prestaveno.append(f"{z}: bylo {byval}")
         m.atributy["prestaveno_rukou"] = prestaveno or None
         if prestaveno:
+            # Polohu si člověk u žaluzií vybírá vědomě, takže se jí
+            # chvíli nesahá. Ukládá se okamžik, ne hotový termín: když
+            # se šoupátkem pohne, odpočet se přepočítá a neukazuje čas
+            # podle hodnoty, která už neplatí.
+            self._zaluzie_rukou[p.subentry_id] = cas_s
             self._uloziste_stineni.async_delay_save(self._uloz_stineni, 10)
+
+        klid_rukou = self.hodnota(
+            p.subentry_id, CONF_RUCNI_KLID_ZALUZIE,
+            float(d.get(CONF_RUCNI_KLID_ZALUZIE, 120))) * 60
+        rukou_od = self._zaluzie_rukou.get(p.subentry_id)
+        rukou_zbyva = (int((klid_rukou - (cas_s - rukou_od)) / 60) + 1
+                       if rukou_od is not None and klid_rukou > 0
+                       and cas_s - rukou_od < klid_rukou else 0)
+        if rukou_od is not None and not rukou_zbyva:
+            # Doběhlo to; záznam se zahodí, aby se na disku nedržel
+            # okamžik, který už nic neznamená.
+            self._zaluzie_rukou.pop(p.subentry_id, None)
+            self._uloziste_stineni.async_delay_save(self._uloz_stineni, 10)
+        # V řádku karty stojí za popiskem „ruční klid", takže stačí
+        # zbytek času; celá věta je ve stavu stínění.
+        m.atributy["zaluzie_rucni_klid"] = (
+            f"ještě {rukou_zbyva} min" if rukou_zbyva else None)
 
         # Role se počítá vždycky, i když se žaluzie neovládají — jinak
         # by karta neměla co ukázat a graf by hlásil neznámo. Povel se
@@ -2009,6 +2077,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             m.atributy["zadana_poloha"] = {}
         elif self.hodnoty.get((p.subentry_id, "ovladat_stineni"), 0.0) <= 0:
             m.atributy["stineni"] = "neovládám, přepínač je vypnutý"
+        elif rukou_zbyva:
+            # Stejná dohoda jako u okna: po ručním zásahu se automatika
+            # nepřetahuje. Tlačítko Srovnat žaluzie to obejde, protože
+            # to je výslovný pokyn.
+            m.atributy["stineni"] = (
+                f"sáhl jsi na žaluzie, nechávám to na tobě "
+                f"(ještě {rukou_zbyva} min)")
         elif cas_s - self._start_s < 600:
             # Po startu se žaluziemi deset minut nehýbe. Entity v té době
             # teprve naskakují a některé hlásí nesmysly — přítomnost třeba

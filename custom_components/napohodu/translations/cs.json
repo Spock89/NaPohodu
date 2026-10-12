@@ -374,6 +374,7 @@
             "rh_max": "Vypnout zvlhčovač nad",
             "azimut": "Azimut oken",
             "klid_stineni_min": "Nejčastěji hýbat jednou za",
+            "rucni_klid_zaluzie_min": "Po ručním přestavení žaluzií nechat být",
             "zaluzie": "Žaluzie",
             "okna": "Okna",
             "projezd_okna_s": "Doba projezdu okna",
@@ -496,7 +497,8 @@
             "prach_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“. Pro velký byt, kde je něco mezi zónou a celkem.",
             "vlhkost_dosah": "Zvlhčovat při otevřeném okně znamená zvlhčovat ulici. Vlhkost se šíří dál než jen do vlastní místnosti, takže se dá určit, odkud se otevřené okno počítá.\n\nVe výchozím stavu platí celý byt; v jeho zóně nebo ve vybraných místnostech, pokud ti to stačí.",
             "vlhkost_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“.",
-            "noc_posun": "O kolik se v noci posune cílová teplota. Záporné číslo znamená topit míň, kladné víc, nula nechává cíl být.\n\nKlesá se s předstihem před začátkem noci, aby to nebyl skok; zapnutý spánek platí hned, bez ohledu na hodinu."
+            "noc_posun": "O kolik se v noci posune cílová teplota. Záporné číslo znamená topit míň, kladné víc, nula nechává cíl být.\n\nKlesá se s předstihem před začátkem noci, aby to nebyl skok; zapnutý spánek platí hned, bez ohledu na hodinu.",
+            "rucni_klid_zaluzie_min": "Když si žaluzie přestavíš rukou, automatika se do nich tak dlouho nemontuje. Poznáme to tak, že se skutečná poloha rozejde s tou, kterou jsme poslali — a musí se to potvrdit dvakrát za sebou, aby dojezd pohonu nevypadal jako ruka.\n\nBývá to delší než u okna: polohu žaluzií si člověk vybírá vědomě. Nula znamená, že automatika pokračuje hned. Tlačítko Srovnat žaluzie klid zruší, protože to je výslovný pokyn."
           },
           "submit": "Další"
         },
@@ -542,6 +544,7 @@
             "odvzdusneni_t": "Teplota při odvzdušnění",
             "stineni_predstih": "Předstih stínění",
             "klid_stineni_min": "Nejčastěji hýbat jednou za",
+            "rucni_klid_zaluzie_min": "Po ručním přestavení žaluzií nechat být",
             "rh_min": "Zvlhčovat pod vlhkostí",
             "rh_max": "Vypnout zvlhčovač nad",
             "zvlhcovac_kdy": "Zvlhčovat",
@@ -612,7 +615,8 @@
             "indicie_stav": "Entity, u kterých zapnuto znamená, že tam někdo je. Televize, světla, přehrávač.",
             "indicie_vykon": "Čidla odběru. Nad prahem se místnost považuje za obsazenou.",
             "prah_vykonu": "Nad tímto odběrem to není jen pohotovostní režim. U televize obvykle 15 až 30 W.",
-            "indicie_dobeh_min": "Jak dlouho po vypnutí ještě platí. Kdo právě zhasl, ještě neodešel."
+            "indicie_dobeh_min": "Jak dlouho po vypnutí ještě platí. Kdo právě zhasl, ještě neodešel.",
+            "rucni_klid_zaluzie_min": "Když si žaluzie přestavíš rukou, automatika se do nich tak dlouho nemontuje. Poznáme to tak, že se skutečná poloha rozejde s tou, kterou jsme poslali — a musí se to potvrdit dvakrát za sebou, aby dojezd pohonu nevypadal jako ruka.\n\nBývá to delší než u okna: polohu žaluzií si člověk vybírá vědomě. Nula znamená, že automatika pokračuje hned. Tlačítko Srovnat žaluzie klid zruší, protože to je výslovný pokyn."
           }
         }
       },
@@ -872,6 +876,9 @@
       "cil": {
         "name": "Cílová teplota"
       },
+      "odchylka_od_cile": {
+        "name": "Odchylka od cíle"
+      },
       "slunce": {
         "name": "Slunce na oknech"
       },
@@ -959,6 +966,9 @@
       },
       "rucni_klid_min": {
         "name": "Po ručním zásahu nechat být"
+      },
+      "rucni_klid_zaluzie_min": {
+        "name": "Po ručním přestavení žaluzií nechat být"
       },
       "hyst_den_otevrit": {
         "name": "Ve dne otevřít při odchylce od cíle o"

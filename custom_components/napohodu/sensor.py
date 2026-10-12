@@ -26,7 +26,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             pridat([StavKlimy(k, pod)], config_subentry_id=pod.subentry_id)
         elif pod.subentry_type == PODENTITA_MISTNOST:
             pridat([StavMistnosti(k, pod), CilMistnosti(k, pod),
-                    SlunceMistnosti(k, pod), StineniMistnosti(k, pod)],
+                    OdchylkaOdCile(k, pod), SlunceMistnosti(k, pod),
+                    StineniMistnosti(k, pod)],
                    config_subentry_id=pod.subentry_id)
     pridat([Prumer(k, entry, "prumer_tyden", "tyden"),
             Prumer(k, entry, "prumer_tri_dny", "tri_dny"),
@@ -96,6 +97,39 @@ class CilMistnosti(NaPohoduEntity, SensorEntity):
         return m.atributy if m else {}
 
 
+class OdchylkaOdCile(NaPohoduEntity, SensorEntity):
+    """O kolik je v místnosti dál od cíle, plus znamená tepleji.
+
+    Existuje kvůli ručičce na dashboardu. Karta typu gauge umí jen
+    entitu a pevná čísla pásem, takže v absolutních stupních by se
+    zelené hysterezní pásmo muselo zapsat kolem aktuálního cíle — a ten
+    se během dne hýbe. Když se cíl odečte tady, hrany pásem jsou
+    konstanty a platí v každou hodinu.
+    """
+
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_suggested_display_precision = 1
+    _attr_icon = "mdi:thermometer-minus"
+
+    def __init__(self, k, pod):
+        super().__init__(k, pod, "odchylka_od_cile")
+
+    @property
+    def native_value(self):
+        m = self.mistnost
+        return m.atributy.get("odchylka_od_cile") if m else None
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        m = self.mistnost
+        if not m:
+            return {}
+        return {k: v for k, v in m.atributy.items()
+                if k in ("teplota_rozhodna", "teplota_trend",
+                         "pasma_ukazatelu", "teplotni_pasmo")}
+
+
 class SlunceMistnosti(NaPohoduEntity, SensorEntity):
     """Kolik slunce právě dopadá na okna místnosti."""
 
@@ -118,6 +152,7 @@ class SlunceMistnosti(NaPohoduEntity, SensorEntity):
         return {k: v for k, v in m.atributy.items()
                 if k in ("role_stineni", "zadana_poloha", "stineni_stav",
                          "zaluzie_poloha", "prestaveno_rukou",
+                         "zaluzie_rucni_klid",
                          "zaluzie_chybi", "stineni_mapa", "stineni",
                          "stineni_duvody", "stineni_co_dal",
                          "vraceni_vychoziho")}
@@ -251,6 +286,7 @@ class StineniMistnosti(NaPohoduEntity, SensorEntity):
         return {k: v for k, v in m.atributy.items()
                 if k in ("role_stineni", "zadana_poloha", "stineni_stav",
                          "zaluzie_poloha", "prestaveno_rukou",
+                         "zaluzie_rucni_klid",
                          "zaluzie_chybi", "stineni_mapa", "stineni",
                          "stineni_duvody", "stineni_co_dal",
                          "vraceni_vychoziho")}

@@ -374,6 +374,7 @@
             "rh_max": "Turn the humidifier off above",
             "azimut": "Window azimuth",
             "klid_stineni_min": "Move at most once per",
+            "rucni_klid_zaluzie_min": "After a manual change of the blinds, leave them alone for",
             "zaluzie": "Blinds",
             "okna": "Windows",
             "projezd_okna_s": "Window travel time",
@@ -496,7 +497,8 @@
             "prach_mistnosti": "Applies only with “In selected rooms”. For a large home, where something sits between the zone and the whole place.",
             "vlhkost_dosah": "Humidifying with a window open means humidifying the street. Humidity spreads further than its own room, so you can decide which open windows count.\n\nBy default the whole home does; its zone or selected rooms if that is enough for you.",
             "vlhkost_mistnosti": "Applies only with “In selected rooms”.",
-            "noc_posun": "How far the target temperature shifts at night. A negative number means heat less, a positive one more, zero leaves the target alone.\n\nThe drop begins before night starts so it is not a step; the sleep switch applies at once, whatever the hour."
+            "noc_posun": "How far the target temperature shifts at night. A negative number means heat less, a positive one more, zero leaves the target alone.\n\nThe drop begins before night starts so it is not a step; the sleep switch applies at once, whatever the hour.",
+            "rucni_klid_zaluzie_min": "When you reposition the blinds by hand, the automation keeps out of them for this long. We notice it because the real position drifts from the one we sent — and it has to be confirmed twice in a row, so that a drive coasting to a stop does not look like a hand.\n\nThis is usually longer than for a window: a blind position is chosen deliberately. Zero means the automation carries on at once. The Line up blinds button clears the hold, because that is an explicit instruction."
           },
           "submit": "Next"
         },
@@ -542,6 +544,7 @@
             "odvzdusneni_t": "Temperature while bleeding",
             "stineni_predstih": "Shading lead time",
             "klid_stineni_min": "Move at most once per",
+            "rucni_klid_zaluzie_min": "After a manual change of the blinds, leave them alone for",
             "rh_min": "Humidify below humidity",
             "rh_max": "Turn the humidifier off above",
             "zvlhcovac_kdy": "Humidify",
@@ -612,7 +615,8 @@
             "indicie_stav": "Entities where being on means somebody is there. A TV, lights, a media player.",
             "indicie_vykon": "Power draw sensors. Above the threshold the room counts as occupied.",
             "prah_vykonu": "Above this draw it is more than standby. For a TV usually 15 to 30 W.",
-            "indicie_dobeh_min": "How long it still counts after switching off. Someone who just turned the light off has not left yet."
+            "indicie_dobeh_min": "How long it still counts after switching off. Someone who just turned the light off has not left yet.",
+            "rucni_klid_zaluzie_min": "When you reposition the blinds by hand, the automation keeps out of them for this long. We notice it because the real position drifts from the one we sent — and it has to be confirmed twice in a row, so that a drive coasting to a stop does not look like a hand.\n\nThis is usually longer than for a window: a blind position is chosen deliberately. Zero means the automation carries on at once. The Line up blinds button clears the hold, because that is an explicit instruction."
           }
         }
       },
@@ -872,6 +876,9 @@
       "cil": {
         "name": "Target temperature"
       },
+      "odchylka_od_cile": {
+        "name": "Deviation from target"
+      },
       "slunce": {
         "name": "Sun on the windows"
       },
@@ -959,6 +966,9 @@
       },
       "rucni_klid_min": {
         "name": "After a manual change, leave alone for"
+      },
+      "rucni_klid_zaluzie_min": {
+        "name": "After a manual change of the blinds, leave them alone for"
       },
       "hyst_den_otevrit": {
         "name": "By day open at a deviation from the target of"
