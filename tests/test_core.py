@@ -2121,7 +2121,7 @@ def test_ucinek_se_posuzuje_po_usecich():
     assert p.ucinek_kolikaty == 1
 
     # a obrat se pozná proti novému bodu, ne proti dávným 26 °C
-    r = krok_v(78, 23.6)
+    r = krok_v(82, 23.6)
     assert r.akce is Akce.ZAVRIT and "zhoršuje se to" in r.duvod
 
 
@@ -2171,7 +2171,7 @@ def test_zastaveni_ceka_na_konec_useku():
 
     r1 = dal(61)
     assert r1.akce is not Akce.ZAVRIT and "ještě jeden úsek" in r1.duvod
-    r2 = dal(74)
+    r2 = dal(82)
     assert r2.akce is Akce.ZAVRIT and "nehýbe se to" in r2.duvod
 
 
@@ -2190,15 +2190,15 @@ def test_dalsi_useky_jsou_kratsi():
                    cas_s=Z + 61 * 60), p, nast)
     assert p.ucinek_kolikaty == 1
 
-    # druhý úsek trvá dvanáct minut; po něm dostane ještě šanci
+    # druhý úsek trvá dvacet minut; po něm dostane ještě šanci
     r = rozhodni(Vstup(co2=900, t_in=21.0, t_in_max=21.2, t_out=12.0,
                        rh_out=50.0, cil=22.0, hodina=14.0,
-                       cas_s=Z + 74 * 60), p, nast)
+                       cas_s=Z + 82 * 60), p, nast)
     assert "ještě jeden úsek" in r.duvod
     # a po třetím se zavírá
     r2 = rozhodni(Vstup(co2=900, t_in=21.0, t_in_max=21.2, t_out=12.0,
                         rh_out=50.0, cil=22.0, hodina=14.0,
-                        cas_s=Z + 87 * 60), p, nast)
+                        cas_s=Z + 103 * 60), p, nast)
     assert r2.akce is Akce.ZAVRIT and "nehýbe se to" in r2.duvod
 
 
@@ -2221,7 +2221,7 @@ def test_nezlepsovani_dostane_jeste_sanci():
     assert "ještě jeden úsek" in r1.duvod
     assert p.ucinek_bez_zlepseni == 1
 
-    r2 = krok_v(27)
+    r2 = krok_v(42)
     assert r2.akce is Akce.ZAVRIT and "nehýbe se to" in r2.duvod
 
 
@@ -2240,7 +2240,7 @@ def test_zlepseni_sance_zase_vrati():
 
     rozhodni(Vstup(co2=950, t_in=21.0, t_in_max=21.2, t_out=12.0,
                    rh_out=50.0, cil=22.0, hodina=14.0,
-                   cas_s=Z + 27 * 60), p, nast)
+                   cas_s=Z + 42 * 60), p, nast)
     assert p.ucinek_bez_zlepseni == 0
 
 
@@ -2257,6 +2257,54 @@ def test_zhorseni_respektuje_drzeni_polohy():
                        cas_s=Z + 15 * 60), p, nast)
     # zavřít se nesmí, dokud doba držení neuplyne
     assert r.akce is not Akce.ZAVRIT
+
+
+def test_dalsi_usek_nikdy_neni_delsi_nez_drzeni():
+    """U krátkého držení by třetina s dolní hranicí dvaceti minut
+    vyšla delší než první úsek — druhé posouzení by přišlo později než
+    to první a kratší nastavení by sledování účinku zpomalilo."""
+    from core import Nastaveni as N_
+    nast = N_(min_drzeni_s=10 * 60)
+    Z = 100000
+    p = Pamet(otevreno=True, cas_povelu_s=Z, rezim="pulz", vetra_se=True,
+              ucinek_od_s=Z, ucinek_co2=1100, ucinek_t_in=21.0)
+
+    def krok_v(minuty):
+        return rozhodni(Vstup(co2=1100, t_in=21.0, t_in_max=21.2,
+                              t_out=12.0, rh_out=50.0, cil=22.0,
+                              hodina=14.0, cas_s=Z + minuty * 60), p, nast)
+
+    r1 = krok_v(11)
+    assert "ještě jeden úsek" in r1.duvod
+
+    # druhý úsek je zkrácený na deset minut, ne nafouknutý na dvacet
+    assert krok_v(18).akce is not Akce.ZAVRIT
+    r2 = krok_v(22)
+    assert r2.akce is Akce.ZAVRIT and "nehýbe se to" in r2.duvod
+
+
+def test_dalsi_usek_je_aspon_dvacet_minut():
+    """Za kratší dobu se CO2 ani teplota nestihnou posunout tak, aby
+    se dalo poznat, jestli se něco hýbe, nebo jen šumí čidlo."""
+    from core import Nastaveni as N_
+    nast = N_(min_drzeni_s=60 * 60)       # třetina by byla dvacet minut
+    Z = 100000
+    p = Pamet(otevreno=True, cas_povelu_s=Z, rezim="pulz", vetra_se=True,
+              ucinek_od_s=Z, ucinek_co2=1100, ucinek_t_in=21.0,
+              ucinek_bez_zlepseni=1)
+
+    def krok_v(minuty):
+        return rozhodni(Vstup(co2=1200, t_in=21.0, t_in_max=21.2,
+                              t_out=12.0, rh_out=50.0, cil=22.0,
+                              hodina=14.0, cas_s=Z + minuty * 60), p, nast)
+
+    # Zhoršení se pozná hned, ale ne dřív než po dvaceti minutách.
+    # Zavřít se stejně nesmí, dokud neuplyne doba držení — vidět je
+    # proto to rozhodnutí, ne pohyb okna.
+    r1 = krok_v(18)
+    assert r1.akce is Akce.NIC and r1.kod != "drzeni"
+    r2 = krok_v(21)
+    assert r2.kod == "drzeni" and "zavřít" in r2.duvod
 
 
 

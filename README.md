@@ -222,9 +222,13 @@ nepřiblížila k cíli o tři desetiny, okno se zavře a chvíli se to
 nezkouší. Pauza se s každým dalším marným pokusem zdvojnásobí.
 
 Účinek se posuzuje **po úsecích, ne proti okamžiku otevření**. První
-úsek trvá nejkratší dobu držení polohy, další pětinu z ní a nejméně pět
-minut. Bez toho by větrání, které zabralo na začátku a pak se
-zastavilo, prošlo navždycky — stačilo mu být lepší než před hodinou.
+úsek trvá nejkratší dobu držení polohy, další třetinu z ní, nejméně
+dvacet minut — a nikdy ne víc než ta doba sama, aby kratší nastavení
+sledování nezpomalilo. Pod dvacet minut nemá smysl chodit: za kratší
+dobu se CO2 ani teplota nestihnou posunout tak, aby se dalo poznat,
+jestli se něco hýbe, nebo jen šumí čidlo. Bez úseků by větrání, které
+zabralo na začátku a pak se zastavilo, prošlo navždycky — stačilo mu
+být lepší než před hodinou.
 
 **Zastavení a zhoršení nejsou totéž.** Po prvním úseku bez zlepšení se
 dává ještě jedna šance, protože se větrání může rozjet pomalu; zavírá
@@ -844,7 +848,11 @@ reacts to an open window.
 
 Effectiveness is judged **in intervals, not against the moment of
 opening**. The first interval is the shortest hold time, the following
-ones a fifth of it and at least five minutes.
+ones a third of it, at least twenty minutes — and never longer than
+that hold time itself, so a shorter setting cannot slow the watching
+down. Anything under twenty minutes is pointless: in less time
+neither CO2 nor the temperature moves enough to tell a real change
+from sensor noise.
 
 Stalling and worsening are not the same thing. After the first
 interval without improvement it gets one more chance, because

@@ -743,6 +743,60 @@ for jm in ("_zadost_bez_okna", "_zona_mistnosti"):
                 f"coordinator.py: {jm}() čte atribut {a}, který v době "
                 f"výpočtu zóny ještě neexistuje")
 
+# 1ai) funkce, která vrací jen text, použitá jako podmínka. Text je
+# pravdivý vždycky, takže se taková podmínka nikdy nevyhodnotí jako
+# nepravda a celá větev kódu běží naslepo. Projde to syntaxí i testy,
+# protože výsledek je formálně v pořádku — jen vůbec nic neřídí.
+def _je_text(uzel):
+    """Vrací výraz vždycky neprázdný text? Podmíněný výraz se rozebere."""
+    if isinstance(uzel, ast.JoinedStr):
+        return True
+    if isinstance(uzel, ast.Constant):
+        return isinstance(uzel.value, str) and uzel.value != ""
+    if isinstance(uzel, ast.IfExp):
+        return _je_text(uzel.body) and _je_text(uzel.orelse)
+    if isinstance(uzel, ast.BinOp) and isinstance(uzel.op, ast.Add):
+        return _je_text(uzel.left) or _je_text(uzel.right)
+    return False
+
+
+_textove = {}
+for p in d.glob("*.py"):
+    for u in ast.walk(ast.parse(p.read_text())):
+        if not isinstance(u, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        vraceni = [r for r in ast.walk(u) if isinstance(r, ast.Return)]
+        if not vraceni:
+            continue
+        if all(_je_text(r.value) for r in vraceni):
+            _textove[u.name] = p.name
+
+def _jmeno_volani(uzel):
+    f = uzel.func
+    if isinstance(f, ast.Attribute):
+        return f.attr
+    if isinstance(f, ast.Name):
+        return f.id
+    return None
+
+for p in d.glob("*.py"):
+    for u in ast.walk(ast.parse(p.read_text())):
+        testy = []
+        if isinstance(u, (ast.If, ast.While, ast.IfExp)):
+            testy = [u.test]
+        elif isinstance(u, ast.BoolOp):
+            testy = list(u.values)
+        elif isinstance(u, ast.UnaryOp) and isinstance(u.op, ast.Not):
+            testy = [u.operand]
+        for t_ in testy:
+            if not isinstance(t_, ast.Call):
+                continue
+            jm = _jmeno_volani(t_)
+            if jm in _textove:
+                chyby.append(
+                    f"{p.name}: {jm}() vrací jen text, ale stojí jako "
+                    f"podmínka — text je pravdivý vždycky")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):

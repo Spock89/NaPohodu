@@ -241,7 +241,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
         co2_cidla, rh_cidla = {}, {}
         s_okny, s_klidem = set(), set()
         nazvy, poradi = {}, {}
-        se_zvlhcovacem, zvlhcovace = set(), {}
+        se_zvlhcovacem, zvlhcovace, s_cistickou = set(), {}, set()
         for pod in self.config_entry.subentries.values():
             if pod.subentry_type == c.PODENTITA_MISTNOST:
                 k = klic(pod.title)
@@ -250,6 +250,8 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 if pod.data.get(c.CONF_ZVLHCOVAC):
                     se_zvlhcovacem.add(k)
                     zvlhcovace[k] = list(pod.data[c.CONF_ZVLHCOVAC])
+                if pod.data.get(c.CONF_CISTICKA):
+                    s_cistickou.add(k)
                 poradi[k] = float(pod.data.get(c.CONF_PORADI, 0) or 0)
                 teploty = pod.data.get(c.CONF_TEPLOTY) or []
                 if teploty:
@@ -283,6 +285,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 lambda e: self.hass.states.get(e) is not None,
                 cidla=cidla, zaluzie=zaluzie, nazvy=nazvy,
                 se_zvlhcovacem=se_zvlhcovacem, zvlhcovace=zvlhcovace,
+                s_cistickou=s_cistickou,
                 venku=g.get(c.CONF_T_VENKU),
                 co2_cidla=co2_cidla, rh_cidla=rh_cidla,
                 s_okny=s_okny, s_klidem=s_klidem, podoba=podoba)

@@ -326,6 +326,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
               nazvy: dict | None = None,
               se_zvlhcovacem: set | None = None,
               zvlhcovace: dict | None = None,
+              s_cistickou: set | None = None,
               venku: str | None = None,
               co2_cidla: dict | None = None,
               rh_cidla: dict | None = None, s_okny: set | None = None,
@@ -345,6 +346,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     # meze vlhkosti i místnostem, které žádný nemají
     se_zvlhcovacem = se_zvlhcovacem if se_zvlhcovacem is not None else set(
         mistnosti)
+    s_cistickou = s_cistickou if s_cistickou is not None else set(mistnosti)
 
     def jm(m: str) -> str:
         return nazvy.get(m) or m.capitalize()
@@ -487,6 +489,13 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         if m in s_okny:
             polozky += _radek(f"binary_sensor.napohodu_{m}_okno", "Okno")
         for a, n, s in ATRIBUTY_STAVU:
+            # Řádek zařízení, které místnost nemá, by jen svítil
+            # „nenastaveno". Karta se seznamem prázdný řádek skrýt
+            # neumí, tak se vůbec nevyrobí.
+            if a == "zvlhcovac_bezi" and m not in se_zvlhcovacem:
+                continue
+            if a == "cisticka_bezi" and m not in s_cistickou:
+                continue
             polozky += _atribut(stav, a, n, s)
 
         # ručičky nahoře: cíl vedle skutečnosti, ať je rozdíl vidět hned

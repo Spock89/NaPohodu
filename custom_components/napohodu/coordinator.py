@@ -1878,8 +1878,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Ultrazvukový zvlhčovač rozprašuje minerály z vody a čidlo
             # je vidí jako prach. Větrat ani čistit kvůli tomu nemá
             # smysl — je to jeho vlastní aerosol, ne vzduch zvenčí.
-            if self._stav_pomocnika(zvlhcovac,
-                                    vyk.stav.zarizeni.get("zvlhčovač")):
+            # Ptát se musíme na stav zařízení, ne na jeho popis:
+            # _stav_pomocnika vrací text a ten je pravdivý i tehdy,
+            # když zvlhčovač stojí — pak se prach pořád sváděl na něj
+            # a kvůli prachu se nikdy neotevřelo okno.
+            if vyk.stav.zarizeni.get("zvlhčovač"):
                 self.zvlhcuje.add(p.subentry_id)
                 self._dozvuk.pop(p.subentry_id, None)
             elif p.subentry_id in self.zvlhcuje:

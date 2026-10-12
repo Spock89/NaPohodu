@@ -487,6 +487,29 @@ def test_zvlhcovace_jen_kde_jsou():
     assert "kuchyne" not in text
 
 
+def test_radky_zarizeni_jen_kde_zarizeni_je():
+    """Řádek zvlhčovače nebo čističky v místnosti, která je nemá, by
+    svítil „nenastaveno" — a karta se seznamem prázdný řádek skrýt
+    neumí, tak se vůbec nevyrobí."""
+    import yaml
+    d = yaml.safe_load(dashboard(
+        ["obyvak", "kuchyne"], [], vzdy,
+        cidla={"obyvak": "sensor.a", "kuchyne": "sensor.b"},
+        se_zvlhcovacem={"obyvak"}, s_cistickou={"kuchyne"},
+        podoba="stranka"))
+
+    def radky(m):
+        stav = f"sensor.napohodu_{m}_stav"
+        return [e.get("attribute") for s in d["sections"] for k in s["cards"]
+                for e in (k.get("entities") or [])
+                if isinstance(e, dict) and e.get("entity") == stav]
+
+    assert "zvlhcovac_bezi" in radky("obyvak")
+    assert "cisticka_bezi" not in radky("obyvak")
+    assert "cisticka_bezi" in radky("kuchyne")
+    assert "zvlhcovac_bezi" not in radky("kuchyne")
+
+
 def test_bez_zvlhcovacu_sekce_neni():
     import yaml
     d = yaml.safe_load(dashboard(

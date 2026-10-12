@@ -26,9 +26,12 @@ PAUZA_PO_PULZU_S = 15 * 60
 
 # Na kolik dílů se doba držení polohy dělí pro další úseky sledování
 # účinku. První úsek čeká celou dobu, protože dřív se zavřít nedá;
-# další na nic čekat nemusí a kratší úsek pozná obrat dřív.
-UCINEK_DILU = 5
-UCINEK_NEJKRATSI_S = 5 * 60
+# další je kratší, aby obrat poznal dřív. Pod dvacet minut ale nemá
+# smysl chodit: za kratší dobu se CO2 ani teplota v pokoji nestihnou
+# posunout tak, aby se dalo poznat, jestli se něco hýbe, nebo jen
+# šumí čidlo.
+UCINEK_DILU = 3
+UCINEK_NEJKRATSI_S = 20 * 60
 
 PM10_NASOBEK = 1.4       # PM10 bývá tolikrát vyšší než PM2.5
 PM_VYHLAZENI = 0.15      # jak rychle průměr prachu reaguje
@@ -782,8 +785,13 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # kdykoli, protože čekat na konec úseku znamená nechat okno dál
     # tahat dovnitř, co nechceme.
     prvni = p.ucinek_kolikaty == 0
-    ucinek_po = (n.min_drzeni_s if prvni else
-                 max(n.min_drzeni_s / UCINEK_DILU, UCINEK_NEJKRATSI_S))
+    # Další úsek je třetina doby držení, nejméně dvacet minut. Nikdy
+    # ale není delší než ta doba sama: u krátkého držení by jinak
+    # druhé posouzení přišlo později než to první a sledování účinku
+    # by se krátkým nastavením paradoxně zpomalilo.
+    dalsi_usek = min(max(n.min_drzeni_s / UCINEK_DILU,
+                         UCINEK_NEJKRATSI_S), n.min_drzeni_s)
+    ucinek_po = n.min_drzeni_s if prvni else dalsi_usek
     if (p.otevreno and n.min_drzeni_s > 0 and p.ucinek_od_s > 0
             and v.co2 <= n.co2_noc_krize
             and not v.vetrat and not v.vynuceno):
@@ -801,8 +809,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         zhorseni = (horsi_co2 or dal) and not lepsi_co2 and not blize
         konec_useku = uplynulo >= ucinek_po
 
-        if zhorseni and uplynulo >= max(n.min_drzeni_s / UCINEK_DILU,
-                                        UCINEK_NEJKRATSI_S):
+        if zhorseni and uplynulo >= dalsi_usek:
             p.pulzy_za_sebou += 1
             p.marne_od_s = v.cas_s
             p.marne_t_out = v.t_out
@@ -1222,8 +1229,9 @@ def pevna_pravidla_bytu() -> list[str]:
         "než pár stupňů.",
         f"Účinek větrání se posuzuje po úsecích: první trvá nejkratší "
         f"dobu držení polohy, další {1 / UCINEK_DILU:.0%} z ní, nejméně "
-        f"{UCINEK_NEJKRATSI_S // 60:.0f} min. Zhoršení zavře okno hned, "
-        f"zastavení až na konci úseku.",
+        f"{UCINEK_NEJKRATSI_S // 60:.0f} min — a nikdy ne víc než ta "
+        f"doba sama. Zhoršení zavře okno hned, zastavení až na konci "
+        f"úseku.",
         f"Otevřené okno ověřím: když se za nastavenou dobu CO2 "
         f"nesnížilo aspoň o {UCINEK_CO2_PPM:.0f} ppm ani teplota "
         f"nepřiblížila k cíli o {UCINEK_TEPLOTA:.1f} °C, zavřu — "
