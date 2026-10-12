@@ -450,6 +450,38 @@ def test_bez_hlasene_polohy_se_nic_nedeje():
     assert "cover.o2" in v.stav.posledni_stineni
 
 
+def test_bez_ulozene_polohy_se_vezme_ta_skutecna():
+    """Po startu se pojmenovaný stav jen převezme, poloha se nikde
+    nezapíše — a bez tohohle zůstalo ruční přestavení navždy skryté."""
+    h, v = vyk()
+    v.stav.posledni_stineni["cover.o2"] = "zastíněno"
+    v.stav.stineni_cas_s = 0.0
+    assert "cover.o2" not in v.stav.stineni_poloha
+
+    # první pohled jen zapíše, kde žaluzie stojí
+    assert v.zkontroluj_polohu("cover.o2", 12.0, POZDE) is None
+    assert v.stav.stineni_poloha["cover.o2"] == 12.0
+
+    # a od té chvíle se ruka pozná
+    assert v.zkontroluj_polohu("cover.o2", 40.0, POZDE) is None
+    assert v.zkontroluj_polohu("cover.o2", 40.0, POZDE) == "zastíněno"
+
+
+def test_druhe_rucni_prestaveni_se_taky_pozna():
+    """Po prvním zásahu se uložená poloha zahodí. Bez převzetí té
+    skutečné by se druhé přestavení už nikdy nepoznalo."""
+    h, v = vyk()
+    _s_polohou(v)
+    v.zkontroluj_polohu("cover.o2", 3.0, POZDE)
+    assert v.zkontroluj_polohu("cover.o2", 3.0, POZDE) == "zastíněno"
+    assert "cover.o2" not in v.stav.stineni_poloha
+
+    v.stav.posledni_stineni["cover.o2"] = "odstíněno"
+    v.zkontroluj_polohu("cover.o2", 3.0, POZDE)       # převezme se
+    v.zkontroluj_polohu("cover.o2", 60.0, POZDE)
+    assert v.zkontroluj_polohu("cover.o2", 60.0, POZDE) == "odstíněno"
+
+
 def test_neznama_zaluzie_nespadne():
     h, v = vyk()
     assert v.zkontroluj_polohu("cover.jina", 50.0, POZDE) is None

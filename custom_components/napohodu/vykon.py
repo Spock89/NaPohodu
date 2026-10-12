@@ -101,9 +101,20 @@ class Vykonavac:
         sebou — jednorázový přeskok je skoro vždycky dojezd, ne ruka.
         """
         ocekavana = self.stav.stineni_poloha.get(zaluzie)
-        if poloha is None or ocekavana is None or jede:
+        if poloha is None or jede:
             return None
         if cas_s - self.stav.stineni_cas_s < self.ODKLAD_KONTROLY_S:
+            return None
+        if ocekavana is None:
+            # Proti čemu porovnávat, když jsme sami nic neposlali:
+            # po startu se pojmenovaný stav jen převezme, takže poloha
+            # nikde zapsaná není, a po ručním přestavení se zahodí.
+            # Bez tohohle zůstalo ruční přestavení navždy neviditelné —
+            # stačilo jednou a kontrola už se nikdy nespustila. Teď se
+            # za správnou bere ta, kde žaluzie právě stojí, a od ní se
+            # měří dál.
+            self.stav.stineni_poloha[zaluzie] = poloha
+            self.stav.poloha_predbezna.discard(zaluzie)
             return None
 
         if abs(poloha - ocekavana) <= self.TOLERANCE_POLOHY:

@@ -671,15 +671,28 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         polozky += _atribut(eid, "zadana_poloha", "   žádaná poloha")
         polozky += _atribut(eid, "stineni_stav", "   nastavený stav")
         polozky += _atribut(eid, "zaluzie_poloha", "   skutečná poloha")
-        polozky += _atribut(eid, "prestaveno_rukou", "   přestaveno rukou")
-        polozky += _atribut(eid, "zaluzie_rucni_klid", "   ruční klid")
-        polozky += _atribut(eid, "zaluzie_chybi", "   chybějící entita")
         polozky += _atribut(eid, "stineni_duvody", "   proč je tam, kde je")
         polozky += _atribut(eid, "stineni_co_dal", "   co pohyb spustí")
     if polozky:
         c.append(SEKCE)
         c += _hlavicka("Slunce a stínění", "mdi:blinds-horizontal", "subtitle")
         c += _karta(polozky)
+        # Ruka, klid po ní a chybějící entita jsou výjimečné stavy.
+        # V kartě se seznamem by tři čtvrtiny roku svítily „Neznámý",
+        # protože prázdný řádek skrýt neumí. Markdown ano.
+        c.append("  - type: markdown")
+        c.append("    content: |-")
+        for m in mistnosti:
+            eid = f"sensor.napohodu_{m}_slunce_na_oknech"
+            if not existuje(eid):
+                continue
+            for a, n in (("prestaveno_rukou", "přestaveno rukou"),
+                         ("zaluzie_rucni_klid", "ruční klid"),
+                         ("zaluzie_chybi", "chybějící entita")):
+                c.append(f"      {{% set x = state_attr('{eid}', '{a}') %}}")
+                c.append("      {% if x is not none and x != '' %}")
+                c.append(f"      - **{jm(m)} — {n}:** {{{{ x }}}}")
+                c.append("      {% endif %}")
         c.append("")
 
     # --- obsazenost ---
