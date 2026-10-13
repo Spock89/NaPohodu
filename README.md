@@ -177,6 +177,11 @@ celého cyklu — a to včetně nejkratší doby držení polohy, kterou nárazo
 zavření obchází. Délka pulzu zůstává stejná jako jindy; mění se jen to,
 že může skončit dřív.
 
+To, že jde o nárazový pulz, si pamatuje **samo větrání**, ne až okamžik
+zavírání. Příznak zvenčí totiž platí, dokud je CO2 nad prahem otevření,
+kdežto zavírá se až pod prahem zavření — kdyby se nárazové zavření
+ptalo jeho, nestihlo by se nikdy.
+
 Režim se přepíná s půlstupňovou hysterezí, aby neposkakoval, když se
 venkovní teplota motá kolem prahu. Brzda proti otvírání pro pohodu
 platí i tehdy, když je nárazové větrání vypnuté — jinak by v mrazu

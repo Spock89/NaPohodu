@@ -1450,6 +1450,40 @@ def test_narazove_zavira_bez_cekani_na_drzeni():
     assert zkus(True).akce is Akce.ZAVRIT        # zavře hned
 
 
+def test_narazove_pozna_se_z_pulzu_ne_z_prahu():
+    """Příznak zvenčí platí, dokud je CO2 nad prahem otevření, kdežto
+    zavírá se až pod prahem zavření. V tu chvíli je příznak dávno pryč,
+    takže se nárazové větrání nestihlo zavřít hned nikdy."""
+    from core import Nastaveni as N_
+    nast = N_(narazove_odstup=4.0, min_drzeni_s=21 * 60)
+
+    def zkus(pulz):
+        p = Pamet(otevreno=True, cas_povelu_s=100000 - 300, rezim="pulz",
+                  vetra_se=True, narazove_pulz=pulz)
+        return rozhodni(Vstup(co2=500, t_in=19.0, t_in_max=19.2,
+                              t_out=2.0, rh_out=50.0, cil=20.5,
+                              hodina=8.0, narazove=False,
+                              cas_s=100000), p, nast)
+
+    # takhle to vypadá doopravdy: vyvětráno, příznak zvenčí už neplatí
+    r = zkus(True)
+    assert r.akce is Akce.ZAVRIT and r.kod == "cisto"
+    assert zkus(False).akce is Akce.NIC           # běžné větrání drží
+
+
+def test_narazove_slibuje_jen_to_co_udela():
+    """Hláška „zavřu hned" se brala z téhož příznaku, takže slibovala
+    něco, co se v tu chvíli už stát nemohlo."""
+    from core import Nastaveni as N_, ocekavani
+    nast = N_(narazove_odstup=4.0)
+    p = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz",
+              vetra_se=True, narazove_pulz=True)
+    radky = ocekavani(Vstup(co2=900, t_in=19.0, t_in_max=19.2, t_out=2.0,
+                            rh_out=50.0, cil=20.5, hodina=8.0,
+                            narazove=False, cas_s=100000), p, nast)
+    assert any("nárazové větrání" in r for r in radky)
+
+
 
 
 # --------------------- venkovní vzduch na správné straně cíle

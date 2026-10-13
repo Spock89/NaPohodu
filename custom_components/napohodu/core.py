@@ -579,7 +579,9 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         # takže se musí vyjmenovat, co zbývá — jinak člověk kouká na
         # nízké CO2 a nechápe, proč je pořád otevřeno.
         chybi = []
-        if v.narazove:
+        # Totéž co v rozhodování: platí běžící pulz, ne jen to, jestli
+        # je zrovna čím nárazové větrání spustit.
+        if v.narazove or p.narazove_pulz:
             seznam.append("nárazové větrání: zavřu hned, jak důvod "
                           "pomine")
         if v.co2 >= n.co2_zavrit:
@@ -961,6 +963,16 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                      or not pm_venku_lepsi
                      or (v.pm25 < n.pm_prah_cisto and v.pm10 < n.pm_prah_cisto * PM10_NASOBEK)))
 
+    # Nárazové větrání se pozná z běžícího pulzu, ne jen z toho, jestli
+    # je zrovna čím ho spustit. Příznak zvenčí platí, dokud je CO2 nad
+    # prahem otevření, kdežto zavírá se až pod prahem zavření — v tu
+    # chvíli je dávno pryč. Zavřít hned by se tedy nestihlo nikdy
+    # a nárazové větrání nedělalo nic jiného než běžné.
+    #
+    # Čte se dřív, než si to některá větev stihne přepsat: pulz se
+    # při zavření ruší, a to je právě ten okamžik, kdy se ptáme.
+    narazove = bool(v.narazove or p.narazove_pulz)
+
     if v.co2 > n.co2_otevrit:
         p.vetra_se = True
     if v.co2 < n.co2_zavrit:
@@ -1198,7 +1210,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             if (v.co2 < n.co2_zavrit and not pm_spatne
                     and not v.vetrat and not v.vynuceno):
                 return zavri(f"noc: vyvětráno, CO2 {v.co2:.0f}",
-                             hned=bool(v.narazove), kod="noc_hotovo")
+                             hned=narazove, kod="noc_hotovo")
             return beze_zmeny(
                 f"noc: větrá {t_in:.1f} °C, CO2 {v.co2:.0f}", True)
 
@@ -1227,7 +1239,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # V nárazovém režimu se zavírá okamžitě, bez čekání na nejkratší
         # dobu držení. Bez toho by nárazové větrání nedělalo nic jiného
         # než běžné — a v mrazu je každá minuta navíc drahá.
-        return zavri(f"vyvětráno, CO2 {v.co2:.0f}", hned=bool(v.narazove),
+        return zavri(f"vyvětráno, CO2 {v.co2:.0f}", hned=narazove,
                      kod="cisto")
 
 
