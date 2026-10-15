@@ -636,9 +636,11 @@ v noci vyžaduje klid.
 protože zdivo i hlavice reagují pomalu. Útlum, náběh i větrání se
 vyplatí spustit dřív, než se situace změní.
 
-Vlastní plánovač integrace nemá a nebude mít: Home Assistant má v jádře
-dva a oba jsou lepší, než co by šlo poskládat do konfiguračního
-formuláře.
+Plán se dá vést dvěma způsoby a jde je míchat: **vlastní kalendář
+integrace** (`calendar.napohodu_plan`, zakládá se z dashboardu, viz
+níž) a **cizí entity**, které si do polí níž vložíš sám. Pro cizí
+entity má Home Assistant v jádře dva nástroje a oba jsou lepší, než co
+by šlo poskládat do konfiguračního formuláře:
 
 **Kalendář** (integrace Local Calendar) jsou události s konkrétními
 daty, jednorázové i opakované. Diář: „od pátku do neděle nikdo",
@@ -685,16 +687,37 @@ v kartě místnosti, i s tím, ze kterého kalendáře to je. Když je plán
 nastavený, ale zrovna nic neplatí, řádek to napíše taky — jinak se při
 zakládání nedá poznat, jestli se nečte, nebo jen nic neběží.
 
-**Události jdou zakládat přímo z dashboardu.** V sekci u obsazenosti
-se vybere co, odkdy a dokdy a zmáčkne se Naplánovat; kalendář si
-integrace dohledá sama podle nastavení, takže se nedá zapsat do
-špatného. V nabídce je jen to, co má kam zapsat. Výsledek posledního
-stisku je vidět hned pod tlačítkem.
+#### Vlastní kalendář
 
-Opakované události takhle založit nejdou — akce
-`calendar.create_event` pole pro opakování nemá. Pravidelný vzorec
-patří do panelu Kalendář, kde se opakování naklikat dá, nebo do
-týdenního rozvrhu, který je přesně na to.
+Integrace si vyrábí vlastní kalendář `calendar.napohodu_plan`. Ten se
+do polí níž vkládat nemusí — čte se vždycky a sám ví, co která událost
+znamená, protože význam je uložený v záznamu, ne v názvu. Překlep
+v názvu tak nemůže nic vypnout a nehrozí ani zápis do nesprávného
+kalendáře. V panelu Kalendář se ukazuje jako každý jiný, takže se
+odtud dá i prohlížet a mazat.
+
+**Události jdou zakládat přímo z dashboardu.** V sekci u obsazenosti se
+vybere co, odkdy a dokdy, volitelně jak často se to má opakovat, a
+zmáčkne se Naplánovat. V nabídce jsou všechny varianty pro všechny
+definované místnosti. Výsledek posledního stisku je vidět hned pod
+tlačítkem a naplánované události pod ním v kalendáři.
+
+**Opakování funguje.** *Jak často* nabízí denně, všední dny, víkend,
+týdně, za dva týdny a měsíčně; *Kolikrát zopakovat* omezí počet
+výskytů (nula = bez omezení). Akce `calendar.create_event` pole pro
+opakování nemá, ale rozhraní kalendářové entity ano — a vlastní
+kalendář se zakládá přes ně, takže ze stejného pravidla
+(`FREQ=WEEKLY;COUNT=8`, iCalendar RRULE) vznikne řada výskytů jako při
+klikání v panelu.
+
+**Plánovat jde i cílovou teplotu.** Varianta *místnost: cílová teplota*
+uloží konkrétní číslo, které po dobu události platí jako skutečný cíl:
+přebíjí adaptivní normu i posun místnosti, protože přesně proto se
+zadává. Po skončení události se cíl vrátí k výpočtu.
+
+Opakovaný vzorec na nudné pozadí („ve všední dny od osmi do čtyř
+nikdo") se pořád vyplatí dát do týdenního rozvrhu — je přesně na to a
+nezabírá místo v kalendáři.
 
 ### Zprávy
 
@@ -720,11 +743,26 @@ které se dají na dashboardu chytat a přesouvat.
 
 Po přidání místnosti si přijdeš pro novou verzi.
 
+Při generování se dají **hlavní bloky odškrtnout** — místnosti, cílová
+teplota, ladění, stínění, grafy, zvlhčovače, obsazenost, ovládání,
+podrobnosti. Výchozí stav je všechno zapnuté a po odeslání se karta
+vypíše znovu, takže jde ubírat a přidávat, dokud to nesedí.
+
+Generuje se jen to, co místnost **opravdu má**: pásmo a pojistky bez
+okna, noční posun bez hlavice ani prachové prahy bez čidla nemají co
+ovlivnit, tak se nevyrobí. Místnost s jedním topením tak dostane jen
+odchylku cíle a nastavení topení místo třiceti šoupátek, ze kterých
+devět desetin nic nedělá.
+
 Stránka začíná **místnostmi**, zbytek jde za nimi. Pořadí sekcí za nimi
 je seřazené sestupně podle výšky: mřížka zarovnává řádky a řádek je
 vysoký jako jeho nejvyšší sekce, takže pod krátkou sekcí vedle vysoké
 zůstane díra přes půl obrazovky. Ladicí výpisy místností jsou úplně
 nakonec.
+
+Ručičky jsou v mřížce o čtyřech sloupcích, ne vedle sebe natvrdo:
+sloupec má pořád stejnou šířku, takže dvě ručičky jsou stejně velké
+jako čtyři a na úzkém displeji se zalomí.
 
 U každé místnosti jsou nahoře **čtyři ručičky**: cíl, odchylka od cíle,
 CO2 a prach. Hrany barev nejsou pevná čísla — počítají se z toho, podle
@@ -1107,9 +1145,11 @@ humidifying.
 Sensors know what is happening now. A **plan knows what is coming** —
 and that difference matters, because masonry and valves are slow.
 
-The integration has no scheduler of its own and will not get one:
-Home Assistant ships two, and both beat anything that would fit in a
-config form. A **calendar** (Local Calendar) holds events on real
+A plan can be kept in two ways, and they mix: the integration's **own
+calendar** (`calendar.napohodu_plan`, filled from the dashboard — see
+below) and **foreign entities** you assign to the fields yourself. For
+those, Home Assistant ships two tools, and both beat anything that
+would fit in a config form. A **calendar** (Local Calendar) holds events on real
 dates, one-off or repeating — a diary. A **weekly schedule** (the
 Schedule helper) is one week repeating forever — a timetable on the
 wall, good for the dull background, useless for exceptions.
@@ -1130,13 +1170,38 @@ sensors in it.
 sees movement, the room is occupied, whatever the plan says. A missing
 or deleted entity is skipped silently.
 
-Events can be created **straight from the dashboard**: pick what, from
-when and until when, and press Plan it. The integration finds the
-right calendar from the settings, so it cannot be written to the wrong
-one, and only things that have somewhere to go are offered. Recurring
-events are not possible this way — the `calendar.create_event` action
-has no recurrence field — so a repeating pattern belongs in the
-Calendar panel or in a weekly schedule.
+#### Own calendar
+
+The integration creates its own calendar, `calendar.napohodu_plan`. It
+needs no assigning: it is always read, and it knows what each event
+means because the meaning is stored in the record, not in the title. A
+typo cannot disable anything and there is no wrong calendar to write
+to. It shows up in the Calendar panel like any other, so it can be
+browsed and deleted from there too.
+
+Events are created **straight from the dashboard**: pick what, from
+when, until when, optionally how often to repeat, and press Plan it.
+Every variant for every defined room is offered. The result of the
+last press shows right under the button, and the planned events below
+it in the calendar.
+
+**Recurrence works.** *How often* offers daily, weekdays, weekend,
+weekly, fortnightly and monthly; *how many repeats* caps the number of
+occurrences (zero = no cap). The `calendar.create_event` action has no
+recurrence field, but the calendar entity API does — and the own
+calendar is written through that — so the same rule
+(`FREQ=WEEKLY;COUNT=8`, an iCalendar RRULE) produces a series of
+occurrences, exactly as clicking in the panel would.
+
+**A target temperature can be planned too.** The *room: target
+temperature* variant stores a concrete number that acts as the real
+target while the event lasts: it overrides both the adaptive standard
+and the room shift, because that is precisely what it is for. When the
+event ends, the target goes back to being computed.
+
+A dull repeating background ("nobody on weekdays from eight to four")
+is still better off in a weekly schedule — that is what it is for, and
+it keeps the calendar clear.
 
 The aerosol lingers after the humidifier stops, so dust is trusted
 again only once it falls into the clean band, and at most for two

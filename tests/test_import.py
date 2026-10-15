@@ -17,7 +17,8 @@ MODULY = [
     "const", "core", "slunce", "pritomnost", "prumery", "sousedstvi",
     "sekvence", "vykon", "entity", "coordinator", "config_flow",
     "services", "sensor", "binary_sensor", "number", "switch", "button",
-    "karty", "zpravy", "klima", "select",
+    "karty", "zpravy", "klima", "select", "plan", "planovac",
+    "datetime", "calendar",
 ]
 
 

@@ -14,6 +14,11 @@ def vsechny_karty(s):
     import yaml
 
     def projdi(k):
+        # Karta kalendáře bere entity jako prosté řetězce, ostatní jako
+        # slovníky. Testům se hodí jeden tvar, tak se to srovná tady.
+        if k.get("entities"):
+            k["entities"] = [{"entity": e} if isinstance(e, str) else e
+                             for e in k["entities"]]
         yield k
         for vnorena in k.get("cards", []) or []:
             yield from projdi(vnorena)
@@ -202,6 +207,50 @@ def test_segmenty_sjednoti_a_seradi():
     assert radky[-1] == f'            color: "{V_PASMU}"'
 
 
+def test_rucicky_jsou_v_mrizce_at_je_jich_kolik_chce():
+    """Ve stacku si dvě ručičky rozdělí celou šířku a vyjdou vyšší než
+    čtyři. Mřížka o čtyřech sloupcích drží šířku sloupce stejnou."""
+    s = dashboard(["kuchyne"], [], vzdy, cidla={"kuchyne": "sensor.t"},
+                  prahy={"kuchyne": PRAH})
+    mrizky = [k for k in vsechny_karty(s) if k.get("type") == "grid"]
+    assert mrizky and mrizky[0]["columns"] == 4
+    assert mrizky[0]["square"] is False
+
+
+def test_soupatka_jen_k_tomu_co_mistnost_ma():
+    """Pásmo bez okna ani noční posun bez hlavice nemají co ovlivnit —
+    generovat je znamená stránku plnou nastavení, která nic nedělají."""
+    s = dashboard(["obyvak", "kuchyne"], [], vzdy,
+                  cidla={"obyvak": "sensor.a", "kuchyne": "sensor.b"},
+                  vybaveni={"obyvak": {"topeni"},
+                            "kuchyne": {"okno", "co2", "topeni"}})
+
+    def v_karte(nazev):
+        for k in vsechny_karty(s):
+            if k.get("title") == nazev:
+                return [e.get("name") for e in k.get("entities") or []]
+        return []
+
+    assert v_karte("Ve dne otevřít při odchylce od cíle o") == ["Kuchyne"]
+    # topení má obývák taky, i když okno nemá
+    assert v_karte("V noci posun cílové teploty") == ["Obyvak", "Kuchyne"]
+    # a odchylka cíle platí všude
+    assert v_karte("Moje odchylka teploty") == ["Obyvak", "Kuchyne"]
+
+
+def test_odskrtnuty_blok_se_nevygeneruje():
+    """Odškrtnutý blok má zmizet celý i s hranicemi sekcí, ne nechat
+    po sobě prázdný nadpis."""
+    from karty import BLOKY
+    cele = dashboard(["kuchyne"], [], vzdy, cidla={"kuchyne": "sensor.t"})
+    bez = dashboard(["kuchyne"], [], vzdy, cidla={"kuchyne": "sensor.t"},
+                    bloky=set(BLOKY) - {"grafy", "podrobnosti"})
+    assert "Grafy" in cele and "podrobnosti" in cele
+    assert "Grafy" not in bez and "podrobnosti" not in bez
+    # ostatní bloky zůstanou
+    assert "Ladění" in bez and "Cílová teplota" in bez
+
+
 def test_graf_teplot_je_jeden_pro_vsechny():
     s = dashboard(["kuchyne", "obyvak"], [], vzdy,
                   cidla={"kuchyne": "sensor.t_kuchyne",
@@ -332,7 +381,7 @@ def test_poradi_sekci_odpovida_nastavenemu():
         podoba="stranka"))
     prvni = [sek["cards"][0].get("heading") or sek["cards"][0].get("title")
              or sek["cards"][0]["type"] for sek in d["sections"]]
-    assert prvni[0] == "horizontal-stack"        # místnosti hned nahoře
+    assert prvni[0] == "grid"                    # místnosti hned nahoře
     assert "Cílová teplota" in prvni
     # podrobnosti jsou vždycky až za vším ostatním
     assert all("podrobnosti" in x for x in prvni[-1:])
@@ -437,8 +486,8 @@ def test_rozvrzeni_sekci():
     prvni = [sek["cards"][0].get("heading") or sek["cards"][0].get("title")
              or sek["cards"][0]["type"] for sek in d["sections"]]
     # místnosti hned nahoře, ladicí výpisy úplně dole
-    assert prvni[0] == "horizontal-stack"
-    assert prvni[prvni.index("Cílová teplota") - 1] == "horizontal-stack"
+    assert prvni[0] == "grid"
+    assert prvni[prvni.index("Cílová teplota") - 1] == "grid"
     assert "podrobnosti" in prvni[-1]
     assert prvni.index("Ovládání oken") < prvni.index("Ladění")
     assert prvni.index("Zvlhčovače") < prvni.index("Obsazenost a klid")

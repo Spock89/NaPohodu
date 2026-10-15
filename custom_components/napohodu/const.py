@@ -55,6 +55,10 @@ CONF_DOMA = "doma"
 CONF_PLAN_NIKDO = "plan_nikdo_doma"
 CONF_PLAN_VIC = "plan_vic_lidi"
 CONF_PREDVETRAT = "predvetrat_min"
+# Plánovač na dashboardu: kolikrát opakovat a jakou cílovou
+# teplotu naplánovat.
+CONF_PLAN_KOLIKRAT = "plan_kolikrat"
+CONF_PLAN_CIL = "plan_cil"
 # Zimní přitápění. Adaptivní křivka podle EN 16798-1 je psaná na letní
 # komfort a v zimě se opře o dolní hranici. V mrazu ale chladnou stěny
 # a okna, klesá radiační teplota a při stejném vzduchu je člověku

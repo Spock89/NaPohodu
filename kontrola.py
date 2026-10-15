@@ -61,7 +61,7 @@ for p in d.glob("*.py"):
 # nikdo neimportuje a přesto nejsou mrtvé.
 VSTUPNI = {"__init__", "const", "config_flow", "coordinator", "entity",
            "sensor", "binary_sensor", "number", "switch", "button",
-           "services", "karty", "select", "datetime"}
+           "services", "karty", "select", "datetime", "calendar"}
 importovane = set()
 for p in d.glob("*.py"):
     for u in ast.walk(ast.parse(p.read_text())):
@@ -286,6 +286,8 @@ HA_HOOKY = {"async_setup_entry", "async_unload_entry", "async_setup",
             "async_set_value",
             "async_added_to_hass", "is_on", "native_value",
             "extra_state_attributes", "options", "current_option",
+            "event", "async_get_events", "async_create_event",
+            "async_delete_event",
             "available", "async_get_options_flow",
             "async_get_supported_subentry_types", "async_migrate_entry",
             "_async_update_data", "device_info", "icon", "native_unit_of_measurement"}
@@ -395,6 +397,10 @@ for m in re.finditer(r"vol\.Optional\(c\.(CONF_\w+),\s*default=([^)]+?)\)",
             f"{klic}: formulář má výchozí {ve_form}, kód bere "
             f"{sorted(cisla)} — komu se pole neuložilo, platí jiná hodnota")
 
+# Argumenty, které předepisuje Home Assistant. Vyhodit je nejde,
+# i když je zrovna nepoužijeme.
+HA_ARGUMENTY = {"recurrence_id", "recurrence_range", "hass"}
+
 # 1p) argument, který se v těle nepoužije. Vzniká, když se funkce
 # přestaví a volání zůstane po starém — čte se pak něco, co nikdo
 # nedodává, nebo se vleče hodnota, kterou nikdo nechce.
@@ -408,7 +414,8 @@ for p in d.glob("*.py"):
             continue
         telo = ast.dump(ast.Module(body=f.body, type_ignores=[]))
         for a in f.args.args + f.args.kwonlyargs:
-            if a.arg in POVOLENE or a.arg.startswith("_"):
+            if (a.arg in POVOLENE or a.arg in HA_ARGUMENTY
+                    or a.arg.startswith("_")):
                 continue
             if f"id='{a.arg}'" not in telo:
                 chyby.append(
@@ -426,7 +433,11 @@ UI_POLE = {"CONF_KARTA_YAML", "CONF_NAZEV_STAVU", "CONF_SEKVENCE",
            "CONF_PORADI", "CONF_MISTNOSTI", "CONF_SOUSEDI",
            "CONF_ZALUZIE", "CONF_STINENI_MAPA",
            # ukládají se krokem se stavy žaluzií, ne polem ve formuláři
-           "CONF_STINENI_CHOVANI"}
+           "CONF_STINENI_CHOVANI",
+           # Šoupátka plánovače na dashboardu. Nejsou to nastavení
+           # chování, ale rozdělané zadání — do formuláře s nastavením
+           # nepatří o nic víc než políčko „od kdy" v kalendáři.
+           "CONF_PLAN_KOLIKRAT", "CONF_PLAN_CIL"}
 # Chování žaluzií se ukládá krokem, ne polem ve formuláři: klíče se
 # zapisují do slovníku „chovani". Vyjmenovávat je ručně znamenalo
 # doplňovat seznam při každém novém.

@@ -245,17 +245,43 @@
         "title": "Jedna karta",
         "description": "Karta pro {pocet} místností a {oblasti} oblastí, poskládaná z entit, které opravdu existují.\n\nOznač text a zkopíruj. Pak na dashboardu: tužka → Přidat kartu → úplně dole Manuální → smazat obsah → vložit.",
         "data": {
-          "karta_yaml": "YAML"
+          "karta_yaml": "YAML",
+          "mistnosti": "Místnosti",
+          "cilova_teplota": "Cílová teplota",
+          "zaklad": "Základ výpočtu",
+          "ladeni": "Ladění",
+          "stineni": "Slunce a stínění",
+          "grafy": "Grafy",
+          "zvlhcovace": "Zvlhčovače",
+          "obsazenost": "Obsazenost a plán",
+          "ovladani": "Ovládání a tlačítka",
+          "podrobnosti": "Podrobnosti místností"
         },
-        "submit": "Zpět"
+        "submit": "Zpět",
+        "data_description": {
+          "mistnosti": "Co se má do karty vygenerovat. Odškrtnutý blok se vynechá celý; po odeslání se karta vypíše znovu, takže jde ubírat a přidávat, dokud to nesedí."
+        }
       },
       "karta_stranka": {
         "title": "Celá stránka",
         "description": "Stránka pro {pocet} místností a {oblasti} oblastí, rozdělená do sekcí, které se dají chytat a přesouvat.\n\nOznač text a zkopíruj. Pak na dashboardu: tužka → tři tečky → Nezpracovaný editor konfigurace → vlož blok do seznamu views jako další položku.",
         "data": {
-          "karta_yaml": "YAML"
+          "karta_yaml": "YAML",
+          "mistnosti": "Místnosti",
+          "cilova_teplota": "Cílová teplota",
+          "zaklad": "Základ výpočtu",
+          "ladeni": "Ladění",
+          "stineni": "Slunce a stínění",
+          "grafy": "Grafy",
+          "zvlhcovace": "Zvlhčovače",
+          "obsazenost": "Obsazenost a plán",
+          "ovladani": "Ovládání a tlačítka",
+          "podrobnosti": "Podrobnosti místností"
         },
-        "submit": "Zpět"
+        "submit": "Zpět",
+        "data_description": {
+          "mistnosti": "Co se má do karty vygenerovat. Odškrtnutý blok se vynechá celý; po odeslání se karta vypíše znovu, takže jde ubírat a přidávat, dokud to nesedí."
+        }
       }
     },
     "error": {
@@ -1020,6 +1046,12 @@
       },
       "noc_posun": {
         "name": "V noci posun cílové teploty"
+      },
+      "plan_kolikrat": {
+        "name": "Kolikrát zopakovat"
+      },
+      "plan_cil": {
+        "name": "Plánovaná cílová teplota"
       }
     },
     "switch": {
@@ -1089,6 +1121,18 @@
       },
       "co_naplanovat": {
         "name": "Co naplánovat"
+      },
+      "jak_casto": {
+        "name": "Jak často",
+        "state": {
+          "jednou": "jednou",
+          "denne": "denně",
+          "tydne": "týdně",
+          "vsedni_dny": "všední dny",
+          "vikend": "víkend",
+          "za_dva_tydny": "za dva týdny",
+          "mesicne": "měsíčně"
+        }
       }
     },
     "datetime": {
@@ -1097,6 +1141,11 @@
       },
       "plan_do": {
         "name": "Plán do"
+      }
+    },
+    "calendar": {
+      "plan": {
+        "name": "Plán"
       }
     }
   }

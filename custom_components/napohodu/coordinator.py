@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import uuid
 from dataclasses import asdict, dataclass, field, fields, replace
 from datetime import timedelta
 
@@ -17,6 +18,11 @@ from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
+
+try:      # dateutil je v Home Assistantu běžně k dispozici
+    from dateutil.rrule import rrulestr
+except ImportError:      # pragma: no cover - bez něj se jen neopakuje
+    rrulestr = None
 
 from .number import MISTNOST as POSUVNIKY_MISTNOSTI
 from . import (core, plan as pl, planovac as pz, pritomnost as pr,
@@ -42,6 +48,7 @@ from .const import (
     CONF_OKNA, CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU,
     CONF_PLAN_NIKDO, CONF_PLAN_OBSAZENO, CONF_PLAN_PRAZDNO,
     CONF_PLAN_VIC, CONF_PM_CISTO, CONF_PM_PLATNY, CONF_PM_SPATNE,
+    CONF_PLAN_CIL, CONF_PLAN_KOLIKRAT,
     CONF_PRACH_DOSAH, CONF_PREDVETRAT,
     CONF_PRACH_MISTNOSTI, CONF_PRAH_VYKONU, CONF_PRITOMNOST,
     CONF_PROJEZD_M, CONF_PRO_POHODU, CONF_PRYC_PO, CONF_PRYC_UTLUM,
@@ -136,6 +143,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.plan_volba: str | None = None
         self.plan_od = None
         self.plan_do = None
+        self.plan_opakovani: str = "jednou"
+        # Vlastní kalendář plánu. Význam události je v záznamu, ne
+        # v názvu, takže ho nejde pokazit překlepem.
+        self._plan: list[dict] = []
         # Poslední viděné hodnoty z formuláře. Musí přežít znovunačtení
         # integrace, protože uložení formuláře ho spustí — jinak by se
         # změna nikdy nepoznala a šoupátko by po restartu vyhrálo.
@@ -194,6 +205,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # Bez tohohle se po restartu zapomene rozdělané větrání, doba
         # držení stavu i běžící pulz — okno by se mohlo hned rozjet.
         self._uloziste_pameti = Store(hass, 1, f"{DOMAIN}.pameti")
+        self._uloziste_planu = Store(hass, 1, f"{DOMAIN}.plan")
         self.mistnosti: dict[str, VysledekMistnosti] = {}
 
     def vynuluj_stavy(self) -> None:
@@ -256,6 +268,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         """Obnoví průměry i polohy žaluzií, ať se nezačíná od nuly."""
         self.prumery = pm.Prumery.ze_slovniku(await self._uloziste.async_load())
         await self._nacti_pameti()
+        await self._nacti_plan()
         ulozene = await self._uloziste_stineni.async_load() or {}
         for pod_id, data in ulozene.items():
             vyk = self.vykonavaci.setdefault(
@@ -908,8 +921,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # jeden zapomenutý záznam v kalendáři a člověk sedí ve studeném
         # bytě. Proto se plán „nikdo" uplatní, jen když ani přítomnost
         # nikoho nevidí.
-        self.plan_nikdo = await self._plan(g.get(CONF_PLAN_NIKDO), cas_s)
-        self.plan_vic = await self._plan(g.get(CONF_PLAN_VIC), cas_s)
+        self.plan_nikdo = pl.slouc(
+            [await self._plan(g.get(CONF_PLAN_NIKDO), cas_s),
+             self.plan_vlastni("nikdo", None, cas_s)])
+        self.plan_vic = pl.slouc(
+            [await self._plan(g.get(CONF_PLAN_VIC), cas_s),
+             self.plan_vlastni("vic", None, cas_s)])
         if self.plan_vic.bezi:
             doma = True
             # Ať je v kartě poznat, proč se byt bere za obsazený,
@@ -960,17 +977,25 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Plán místnosti. Obsazenost smí jen přidat: když čidlo
             # vidí pohyb, je obsazeno, ať plán říká co chce. „Nikdo tu
             # nebude" proto platí jen tam, kde to čidlo nevyvrací.
-            plan_je = await self._plan(d.get(CONF_PLAN_OBSAZENO), cas_s)
-            plan_neni = await self._plan(d.get(CONF_PLAN_PRAZDNO), cas_s)
+            plan_je = pl.slouc(
+                [await self._plan(d.get(CONF_PLAN_OBSAZENO), cas_s),
+                 self.plan_vlastni("obsazeno", p.title, cas_s)])
+            plan_neni = pl.slouc(
+                [await self._plan(d.get(CONF_PLAN_PRAZDNO), cas_s),
+                 self.plan_vlastni("prazdno", p.title, cas_s)])
             obsazeno = pr.obsazeno(sig, nast_pr)
             if plan_je.bezi:
                 obsazeno = True
             elif plan_neni.bezi and not pr.indicie_aktivni(sig, nast_pr):
                 obsazeno = False
 
+            # Naplánovaná cílová teplota je konečná: přebíjí adaptivní
+            # normu i posun místnosti, protože přesně proto se zadává.
+            plan_cil = self.plan_cil_mistnosti(p.title)
             m = VysledekMistnosti(
                 nazev=jmeno,
-                cil=round(cil_zakl + odchylka, 1),
+                cil=(round(plan_cil, 1) if plan_cil is not None
+                     else round(cil_zakl + odchylka, 1)),
                 obsazeno=obsazeno,
                 klid=pr.klid(sig),
             )
@@ -1927,13 +1952,113 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         m.atributy["topeni_hlavice"] = ", ".join(skutecnost) or None
         m.atributy["odvzdusneni"] = odvzdusneni
 
+    def plan_vlastni(self, druh: str, mistnost: str | None,
+                     cas_s: float) -> pl.Udalost:
+        """Co o téhle věci říká vlastní plán.
+
+        Čte se rovnou ze záznamů, ne přes kalendářovou entitu: význam
+        je v nich uložený, takže odpadá hádání z názvu i okružní cesta
+        přes službu.
+        """
+        ted = dt_util.now()
+        okno_od = ted - timedelta(days=1)
+        okno_do = ted + timedelta(days=14)
+        vyskyty = []
+        for z in self._plan:
+            if z.get("druh") != druh:
+                continue
+            if (z.get("mistnost") or None) != (mistnost or None):
+                continue
+            vyskyty += pz.rozbal(z, okno_od, okno_do, rrulestr)
+        nejblizsi = pz.nejblizsi(vyskyty, ted)
+        if nejblizsi is None:
+            return pl.Udalost()
+        od, do = nejblizsi
+        zdroj = "plán"
+        if od <= ted < do:
+            return pl.Udalost(bezi=True, zdroj=zdroj,
+                              do_s=cas_s + (do - ted).total_seconds())
+        return pl.Udalost(bezi=False, zdroj=zdroj,
+                          od_s=cas_s + (od - ted).total_seconds())
+
+    def plan_cil_mistnosti(self, mistnost: str) -> float | None:
+        """Naplánovaná cílová teplota, pokud zrovna platí.
+
+        Je to konečný cíl: přebíjí adaptivní normu i posun místnosti,
+        protože přesně proto se zadává.
+        """
+        ted = dt_util.now()
+        for z in self._plan:
+            if z.get("druh") != "cil" or z.get("cil") is None:
+                continue
+            if (z.get("mistnost") or None) != mistnost:
+                continue
+            for od, do in pz.rozbal(z, ted - timedelta(days=1),
+                                    ted + timedelta(days=1), rrulestr):
+                if od <= ted < do:
+                    return float(z["cil"])
+        return None
+
+    def plan_zaznamy(self) -> list[dict]:
+        """Uložené záznamy plánu i s časy jako datum, ne text."""
+        return self._plan
+
+    def plan_z_nazvu(self, nazev: str) -> tuple:
+        """Co znamená událost založená ručně v panelu Kalendář.
+
+        Panel nic jiného než název nenabízí, takže se tady čte zpátky
+        to, co píšeme my. Čemu nerozumíme, zůstane uložené a objeví se
+        v kartě — tiše to zahodit by bylo horší.
+        """
+        text = (nazev or "").strip()
+        mistnost = None
+        if ":" in text:
+            pred, _, za = text.partition(":")
+            if pred.strip().lower() != "napohodu":
+                mistnost = pred.strip()
+            text = za.strip()
+        text = text.lower()
+        if text.startswith("cíl"):
+            cislo = text.replace("°c", "").replace(",", ".")
+            cislo = "".join(z for z in cislo if z.isdigit() or z == ".")
+            try:
+                return ("cil", mistnost, float(cislo))
+            except ValueError:
+                return ("nerozumim", mistnost, None)
+        for druh, popis in pz.DRUHY.items():
+            if text.startswith(popis):
+                return (druh, mistnost, None)
+        return ("nerozumim", mistnost, None)
+
+    async def plan_zapis(self, zaznam: dict) -> None:
+        self._plan.append(zaznam)
+        await self._uloz_plan()
+        await self.async_request_refresh()
+
+    async def plan_smaz(self, uid: str) -> None:
+        self._plan = [z for z in self._plan if z.get("uid") != uid]
+        await self._uloz_plan()
+        await self.async_request_refresh()
+
+    async def _uloz_plan(self) -> None:
+        """Časy se ukládají textem, protože datum se do JSONu nevejde."""
+        await self._uloziste_planu.async_save(
+            [{**z, "od": z["od"].isoformat(), "do": z["do"].isoformat()}
+             for z in self._plan if z.get("od") and z.get("do")])
+
+    async def _nacti_plan(self) -> None:
+        ulozene = await self._uloziste_planu.async_load() or []
+        self._plan = []
+        for z in ulozene:
+            od = dt_util.parse_datetime(str(z.get("od")))
+            do = dt_util.parse_datetime(str(z.get("do")))
+            if od and do:
+                self._plan.append({**z, "od": od, "do": do})
+
     def nabidka_planu(self) -> list[pz.Volba]:
-        """Co jde naplánovat z dashboardu. Podle toho, co je nastavené."""
-        g = {**self.entry.data, **self.entry.options}
-        mistnosti = [(p.title, p.data)
-                     for p in self._podentity(PODENTITA_MISTNOST)]
-        return pz.nabidka(g, mistnosti, CONF_PLAN_NIKDO, CONF_PLAN_VIC,
-                          CONF_PLAN_OBSAZENO, CONF_PLAN_PRAZDNO)
+        """Co jde naplánovat z dashboardu."""
+        return pz.nabidka([p.title
+                           for p in self._podentity(PODENTITA_MISTNOST)])
 
     async def naplanuj(self, popis: str, od, do) -> str:
         """Založí událost v kalendáři, který k té volbě patří.
@@ -1954,26 +2079,25 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if potiz:
             self.plan_vysledek = potiz
             return self.plan_vysledek
-        g = {**self.entry.data, **self.entry.options}
-        mistnosti = {p.title: p.data
-                     for p in self._podentity(PODENTITA_MISTNOST)}
-        kalendar = pz.kam(volba, g, mistnosti)
-        try:
-            await self.hass.services.async_call(
-                "calendar", "create_event",
-                {"entity_id": kalendar, "summary": f"NaPohodu: {popis}",
-                 "start_date_time": od.isoformat(),
-                 "end_date_time": do.isoformat()},
-                blocking=True)
-        except Exception as e:      # pragma: no cover - cizí integrace
-            _LOGGER.warning("NaPohodu: událost se nepovedlo založit: %s", e)
-            self.plan_vysledek = f"nepovedlo se: {e}"
-            return self.plan_vysledek
+        # Hodnoty šoupátek se čtou přes hodnota(), stejně jako
+        # všechno ostatní — jinak by platil jen formulář.
+        kolikrat = self.hodnota(self.entry.entry_id, CONF_PLAN_KOLIKRAT, 8.0)
+        cil = self.hodnota(self.entry.entry_id, CONF_PLAN_CIL, 21.0)
+        pravidlo = pz.pravidlo(self.plan_opakovani, int(kolikrat or 0))
+        await self.plan_zapis({
+            "uid": uuid.uuid4().hex,
+            "druh": volba.druh,
+            "mistnost": volba.mistnost,
+            "cil": round(float(cil), 1) if volba.druh == "cil" else None,
+            "od": od, "do": do, "rrule": pravidlo, "popis": "",
+        })
+        kolik = (f", opakovaně: {self.plan_opakovani}"
+                 + (f", {int(kolikrat)}×" if kolikrat else "")
+                 if pravidlo else "")
         self.plan_vysledek = (
-            f"{popis}: {od:%-d.%-m. %H:%M} – {do:%-d.%-m. %H:%M} "
-            f"→ {kalendar}")
+            f"{pz.nazev(volba.druh, volba.mistnost, cil)}: "
+            f"{od:%-d.%-m. %H:%M} – {do:%-d.%-m. %H:%M}{kolik}")
         _LOGGER.info("NaPohodu: %s", self.plan_vysledek)
-        await self.async_request_refresh()
         return self.plan_vysledek
 
     def _plan_popis(self, slova, prazdno_ent, plno_ent, prazdno: pl.Udalost,

@@ -245,17 +245,43 @@
         "title": "Single card",
         "description": "A card for {pocet} rooms and {oblasti} zones, built from entities that really exist.\n\nSelect the text and copy it. Then on the dashboard: pencil → Add card → Manual at the very bottom → clear the content → paste.",
         "data": {
-          "karta_yaml": "YAML"
+          "karta_yaml": "YAML",
+          "mistnosti": "Rooms",
+          "cilova_teplota": "Target temperature",
+          "zaklad": "How the target is computed",
+          "ladeni": "Tuning",
+          "stineni": "Sun and shading",
+          "grafy": "Graphs",
+          "zvlhcovace": "Humidifiers",
+          "obsazenost": "Occupancy and plan",
+          "ovladani": "Controls and buttons",
+          "podrobnosti": "Room details"
         },
-        "submit": "Back"
+        "submit": "Back",
+        "data_description": {
+          "mistnosti": "What to generate. An unticked block is left out entirely; the card is written out again after each submit, so you can add and remove until it fits."
+        }
       },
       "karta_stranka": {
         "title": "Full page",
         "description": "A page for {pocet} rooms and {oblasti} zones, split into sections you can grab and move.\n\nSelect the text and copy it. Then on the dashboard: pencil → three dots → Raw configuration editor → paste the block into the views list as another item.",
         "data": {
-          "karta_yaml": "YAML"
+          "karta_yaml": "YAML",
+          "mistnosti": "Rooms",
+          "cilova_teplota": "Target temperature",
+          "zaklad": "How the target is computed",
+          "ladeni": "Tuning",
+          "stineni": "Sun and shading",
+          "grafy": "Graphs",
+          "zvlhcovace": "Humidifiers",
+          "obsazenost": "Occupancy and plan",
+          "ovladani": "Controls and buttons",
+          "podrobnosti": "Room details"
         },
-        "submit": "Back"
+        "submit": "Back",
+        "data_description": {
+          "mistnosti": "What to generate. An unticked block is left out entirely; the card is written out again after each submit, so you can add and remove until it fits."
+        }
       }
     },
     "error": {
@@ -1020,6 +1046,12 @@
       },
       "noc_posun": {
         "name": "Night shift of the target temperature"
+      },
+      "plan_kolikrat": {
+        "name": "How many repeats"
+      },
+      "plan_cil": {
+        "name": "Planned target temperature"
       }
     },
     "switch": {
@@ -1089,6 +1121,18 @@
       },
       "co_naplanovat": {
         "name": "What to plan"
+      },
+      "jak_casto": {
+        "name": "How often",
+        "state": {
+          "jednou": "once",
+          "denne": "daily",
+          "tydne": "weekly",
+          "vsedni_dny": "weekdays",
+          "vikend": "weekend",
+          "za_dva_tydny": "fortnightly",
+          "mesicne": "monthly"
+        }
       }
     },
     "datetime": {
@@ -1097,6 +1141,11 @@
       },
       "plan_do": {
         "name": "Plan until"
+      }
+    },
+    "calendar": {
+      "plan": {
+        "name": "Plan"
       }
     }
   }

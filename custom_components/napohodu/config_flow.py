@@ -232,8 +232,12 @@ class NaPohoduOptionsFlow(OptionsFlow):
         za uživatele nechceme — dashboard si kreslí sám a přepsat mu ho
         by bylo drzé.
         """
+        # Zaškrtávátka se vyhodnotí a karta se vygeneruje znovu —
+        # krok se tím nezavře, takže jde ubírat a přidávat, dokud to
+        # nesedí. Zavřít ho jde tlačítkem Zpět.
+        bloky = set(karty.BLOKY)
         if user_input is not None:
-            return await self.async_step_init()
+            bloky = {b for b in karty.BLOKY if user_input.get(b, True)}
 
 
         def klic(nazev: str) -> str:
@@ -248,7 +252,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
         s_okny, s_klidem = set(), set()
         nazvy, poradi = {}, {}
         se_zvlhcovacem, zvlhcovace, s_cistickou = set(), {}, set()
-        pm_cidla, prahy = {}, {}
+        pm_cidla, prahy, vybaveni = {}, {}, {}
         for pod in self.config_entry.subentries.values():
             if pod.subentry_type == c.PODENTITA_MISTNOST:
                 k = klic(pod.title)
@@ -259,6 +263,22 @@ class NaPohoduOptionsFlow(OptionsFlow):
                     zvlhcovace[k] = list(pod.data[c.CONF_ZVLHCOVAC])
                 if pod.data.get(c.CONF_CISTICKA):
                     s_cistickou.add(k)
+                # Co místnost opravdu má. Podle toho se generují jen
+                # nastavení, která v ní něco ovlivní.
+                znacky = set()
+                if pod.data.get(c.CONF_OKNA):
+                    znacky |= {"okno", "co2"}
+                if pod.data.get(c.CONF_ZALUZIE) or pod.data.get(
+                        c.CONF_ZALUZIE_STARE):
+                    znacky.add("zaluzie")
+                if pod.data.get(c.CONF_CLIMATE):
+                    znacky.add("topeni")
+                if pod.data.get(c.CONF_CO2):
+                    znacky.add("co2")
+                if pod.data.get(c.CONF_PM25) or pod.data.get(
+                        c.CONF_CISTICKA):
+                    znacky.add("prach")
+                vybaveni[k] = znacky
                 pm = pod.data.get(c.CONF_PM25) or []
                 if pm:
                     pm_cidla[k] = pm[0]
@@ -306,6 +326,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 se_zvlhcovacem=se_zvlhcovacem, zvlhcovace=zvlhcovace,
                 s_cistickou=s_cistickou,
                 pm_cidla=pm_cidla, prahy=prahy,
+                vybaveni=vybaveni, bloky=bloky,
                 venku=g.get(c.CONF_T_VENKU),
                 co2_cidla=co2_cidla, rh_cidla=rh_cidla,
                 s_okny=s_okny, s_klidem=s_klidem, podoba=podoba)
@@ -321,8 +342,11 @@ class NaPohoduOptionsFlow(OptionsFlow):
                     vol.Optional(c.CONF_KARTA_YAML, default=""):
                         selector.TextSelector(
                             selector.TextSelectorConfig(multiline=True)),
+                    **{vol.Optional(b, default=True):
+                       selector.BooleanSelector() for b in karty.BLOKY},
                 }),
-                {c.CONF_KARTA_YAML: text},
+                {c.CONF_KARTA_YAML: text,
+                 **{b: b in bloky for b in karty.BLOKY}},
             ),
             description_placeholders={
                 "pocet": str(len(mistnosti)),

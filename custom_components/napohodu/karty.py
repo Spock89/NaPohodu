@@ -178,6 +178,29 @@ ATRIBUTY_PODROBNE = [
 ]
 
 
+# Značka bloku v proudu řádků. Blok, který se při generování
+# odškrtne, se takhle dá vyhodit celý včetně jeho hranic sekcí.
+ZNACKA_BLOKU = "#--BLOK--"
+
+
+def _jen_zapnute(radky: list[str], bloky: set | None) -> list[str]:
+    """Vyhodí řádky bloků, které nikdo nechce.
+
+    Filtruje se až nad hotovým proudem: každý blok se jinak musel
+    obalit podmínkou a odsazení by se roztrhalo při první úpravě.
+    """
+    zapnuto = set(bloky) if bloky is not None else set(BLOKY)
+    out, blok = [], None
+    for r in radky:
+        if r.startswith(ZNACKA_BLOKU):
+            blok = r[len(ZNACKA_BLOKU):]
+            continue
+        if blok is not None and blok not in zapnuto:
+            continue
+        out.append(r)
+    return out
+
+
 # Hranice sekce. V jedné kartě se značky zahodí, na stránce se podle
 # nich vytvoří samostatné sekce, které jdou chytat a přesouvat.
 SEKCE = "#--SEKCE--"
@@ -193,6 +216,37 @@ ZLOMY_LADENI = {
     "v_noci_posun_cilove_teploty": "Ladění — topení",
     "otevrit_nad_co2": "Ladění — CO2",
 }
+
+# Co které šoupátko potřebuje, aby mělo smysl. Místnost bez okna nemá
+# co dělat s pásmem ani s pojistkami, místnost bez hlavice s nočním
+# posunem. Generovat je stejně znamená stránku plnou nastavení, která
+# nic neovlivní — a hledá se v tom pak to, co ovlivní.
+POTREBUJE = {
+    "ve_dne_otevrit_pri_odchylce_od_cile_o": "okno",
+    "ve_dne_zavrit_az_za_cilem_o": "okno",
+    "v_noci_otevrit_pri_odchylce_od_cile_o": "okno",
+    "v_noci_zavrit_az_za_cilem_o": "okno",
+    "venku_musi_byt_za_dojezdem_o": "okno",
+    "pojistka_nevychladit_pod": "okno",
+    "pojistka_neprehrat_nad": "okno",
+    "nejkratsi_doba_drzeni_polohy": "okno",
+    "po_rucnim_zasahu_nechat_byt": "okno",
+    "chladit_jen_pri_venkovni_teplote_nad": "okno",
+    "po_rucnim_prestaveni_zaluzii_nechat_byt": "zaluzie",
+    "prach_je_spatny_od_pm2_5": "prach",
+    "prach_je_cisty_pod_pm2_5": "prach",
+    "v_noci_posun_cilove_teploty": "topeni",
+    "pri_otevrenem_okne_topit_na": "topeni",
+    "otevrit_nad_co2": "co2",
+    "zavrit_pod_co2": "co2",
+    "v_noci_otevrit_nad_co2": "co2",
+    "nouzove_otevrit_nad_co2": "co2",
+}
+
+# Hlavní bloky stránky. Dají se při generování odškrtnout — výchozí
+# stav je všechno zapnuté.
+BLOKY = ["mistnosti", "cilova_teplota", "zaklad", "ladeni", "stineni",
+         "grafy", "zvlhcovace", "obsazenost", "ovladani", "podrobnosti"]
 
 # Home Assistant skládá sekce do mřížky po řádcích a řádek je vysoký
 # jako jeho nejvyšší sekce — pod krátkou tedy zůstane díra. Pořadí je
@@ -413,7 +467,12 @@ def _budiky_mistnosti(prah: dict | None, existuje, cil: str,
              (spatne, KRAJ)] if prah else [])
     if not karty:
         return []
-    return ["  - type: horizontal-stack", "    cards:"] + karty + [""]
+    # Mřížka o čtyřech sloupcích, ne stack: ve stacku si dvě ručičky
+    # rozdělí celou šířku a vyjdou vyšší než čtyři. Takhle má sloupec
+    # pořád stejnou šířku, takže ručičky jsou stejně velké, ať už jsou
+    # dvě nebo čtyři — a na úzkém displeji se zalomí.
+    return (["  - type: grid", "    columns: 4", "    square: false",
+             "    cards:"] + karty + [""])
 
 
 def _jako_pohled(radky: list[str]) -> list[str]:
@@ -431,7 +490,10 @@ def _jako_pohled(radky: list[str]) -> list[str]:
 def _klic_sekce(sekce: list[str]) -> tuple:
     """Kam sekce v pořadí patří. Neznámé skončí na konci."""
     prvni = next((r for r in sekce if r.strip().startswith("- type:")), "")
-    if "horizontal-stack" in prvni:
+    # Sekce místnosti začíná mřížkou ručiček. Dřív to byl stack a po
+    # přechodu na mřížku se sekce přestaly poznávat — skončily na konci
+    # stránky, protože značka seděla na typu karty.
+    if "grid" in prvni:
         znacka = "#pokoj"          # budíky místnosti a její údaje
     else:
         text = "\n".join(sekce)
@@ -488,6 +550,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
               s_cistickou: set | None = None,
               pm_cidla: dict | None = None,
               prahy: dict | None = None,
+              vybaveni: dict | None = None,
+              bloky: set | None = None,
               venku: str | None = None,
               co2_cidla: dict | None = None,
               rh_cidla: dict | None = None, s_okny: set | None = None,
@@ -514,6 +578,14 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
 
     co2_cidla = co2_cidla or {}
     pm_cidla = pm_cidla or {}
+    # Co která místnost má. Bez toho se generují i nastavení, která
+    # v ní nic neovlivní — neznámá místnost se bere jako vybavená vším.
+    vybaveni = vybaveni or {}
+    VSE = set(POTREBUJE.values())
+
+    def ma(m: str, co: str) -> bool:
+        return co in vybaveni.get(m, VSE)
+
     # Hrany barevných pásem pro ručičky. Počítá je integrace z toho,
     # podle čeho se rozhoduje; karta je jen přepíše do YAML.
     prahy = prahy or {}
@@ -523,6 +595,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     s_klidem = s_klidem if s_klidem is not None else set(mistnosti)
     c = []
 
+    c.append(ZNACKA_BLOKU + "cilova_teplota")
     # --- odchylky s oddělovači, ať se místnosti nepletou ---
     polozky = []
     for i, m in enumerate(mistnosti):
@@ -538,6 +611,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     c += _karta([x for x in polozky if _ok(x, existuje)])
     c.append("")
 
+    c.append(ZNACKA_BLOKU + "zaklad")
     # --- základ výpočtu ---
     polozky = []
     for klic, jmeno in (("tydenni", "Venku \u2300 za týden"),
@@ -644,6 +718,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         c.append("      {% endfor %}{% endif %}")
         c.append("")
 
+    c.append(ZNACKA_BLOKU + "mistnosti")
     # --- okna ---
     for m in mistnosti:
         c.append(SEKCE)
@@ -721,6 +796,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         c.append("      {% endfor %}{% endif %}")
         c.append("")
 
+    c.append(ZNACKA_BLOKU + "stineni")
     # --- oblasti ---
     # --- stínění ---
     polozky = []
@@ -748,6 +824,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
              if existuje(f"sensor.napohodu_{m}_slunce_na_oknech")
              for a, n in ATRIBUTY_STINENI_OBCAS])
 
+    c.append(ZNACKA_BLOKU + "obsazenost")
     # --- obsazenost ---
     polozky = []
     for klic, popis, kde in (("obsazeno", "obsazeno", None),
@@ -790,12 +867,17 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         c.append("")
 
     # --- plánovač ---
-    # Co, odkdy, dokdy a tlačítko. Kalendář si integrace dohledá sama
-    # podle nastavení, takže se nedá zapsat do špatného.
+    # Co, odkdy, dokdy, jak často a tlačítko. Zapisuje se do vlastního
+    # kalendáře integrace, takže není kam se netrefit.
     polozky = []
     for eid, popis in (("select.napohodu_co_naplanovat", "Co naplánovat"),
                        ("datetime.napohodu_plan_od", "Od"),
                        ("datetime.napohodu_plan_do", "Do"),
+                       ("select.napohodu_jak_casto", "Jak často"),
+                       ("number.napohodu_kolikrat_zopakovat",
+                        "   kolikrát zopakovat"),
+                       ("number.napohodu_planovana_cilova_teplota",
+                        "   cílová teplota"),
                        ("button.napohodu_naplanovat", "Naplánovat")):
         if existuje(eid):
             polozky += _radek(eid, popis)
@@ -807,9 +889,18 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         c += _hlavicka("Naplánovat obsazenost", "mdi:calendar-plus",
                        "subtitle")
         c += _karta(polozky)
+        # Vlastní kalendář integrace. Je vidět, co je naplánované, a dá
+        # se odtud i mazat — ručně založené události plán nezná, proto
+        # se ukazuje tenhle, ne všechny.
+        if existuje("calendar.napohodu_plan"):
+            c += ["  - type: calendar",
+                  "    initial_view: listWeek",
+                  "    entities:",
+                  "      - calendar.napohodu_plan"]
         c.append("")
 
 
+    c.append(ZNACKA_BLOKU + "ladeni")
     # --- ladění ---
     c.append(SEKCE)
     c += _hlavicka("Ladění", "mdi:tune")
@@ -827,6 +918,12 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             c += _hlavicka(ZLOMY_LADENI[klic], "mdi:tune", "subtitle")
         polozky = []
         for m in mistnosti:
+            # Šoupátko, které v té místnosti nic neovlivní, se
+            # negeneruje: pásmo bez okna ani noční posun bez hlavice
+            # nemají co dělat.
+            potreba = POTREBUJE.get(klic)
+            if potreba and not ma(m, potreba):
+                continue
             eid = _prvni(existuje, f"number.napohodu_{m}_{klic}",
                          *(f"number.napohodu_{m}_{x}" for x in drive))
             if existuje(eid):
@@ -838,6 +935,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             c.append(f"    content: \"*{popis}*\"")
             c.append("")
 
+    c.append(ZNACKA_BLOKU + "ovladani")
     # --- ovládání a tlačítka ---
     c.append(SEKCE)
 
@@ -881,6 +979,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
 
     c.append(SEKCE)
 
+    c.append(ZNACKA_BLOKU + "zvlhcovace")
     # --- zvlhčovače: jen místnosti, které ho mají ---
     polozky = []
     for m in mistnosti:
@@ -930,6 +1029,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     c.append("")
 
 
+    c.append(ZNACKA_BLOKU + "grafy")
     # --- grafy ---
     c.append(SEKCE)
     # Do jednoho grafu se nevejde všechno čitelně. Cíle jsou skoro
@@ -976,6 +1076,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             for m in mistnosti for e in (zvlhcovace or {}).get(m, [])]
     c += _graf("Zvlhčovače", 48, zvlh, existuje, min_radku=1)
 
+    c.append(ZNACKA_BLOKU + "podrobnosti")
     # Podrobnosti každé místnosti zvlášť a úplně nakonec. Řádek, který
     # nemá hodnotu, se vynechá — karta se seznamem to neumí, markdown
     # ano, a prázdné „Neznámý" jen zabíralo místo.
@@ -987,7 +1088,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         c += _hlavicka(f"{jm(m)} — podrobnosti", "mdi:magnify", "subtitle")
         c += _markdown([(stav, a, n, jed) for a, n, jed in ATRIBUTY_PODROBNE])
 
-    karty = [x for x in c if x is not None]
+    karty = _jen_zapnute([x for x in c if x is not None],
+                         bloky)
 
     if podoba == "stranka":
         hlava = ["# Vygenerováno integrací NaPohodu.",

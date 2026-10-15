@@ -9,6 +9,8 @@
   "issue_tracker": "https://github.com/Spock89/NaPohodu/issues",
   "integration_type": "service",
   "iot_class": "local_polling",
-  "requirements": [],
-  "version": "2.22.0"
+  "requirements": [
+    "python-dateutil>=2.8.2"
+  ],
+  "version": "2.24.0"
 }

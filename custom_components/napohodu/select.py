@@ -17,6 +17,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import planovac as pz
 from .const import CONF_ZALUZIE, DOMAIN, PODENTITA_MISTNOST
 from .entity import NaPohoduEntity
 from .services import nacti_stavy, proved_stav_stineni
@@ -34,7 +35,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                   for i, z in enumerate(pod.data.get(CONF_ZALUZIE) or [])]
         if vybery:
             pridat(vybery, config_subentry_id=pod.subentry_id)
-    pridat([CoNaplanovat(k, entry)])
+    pridat([CoNaplanovat(k, entry), JakCasto(k, entry)])
 
 
 class StavZaluzie(NaPohoduEntity, SelectEntity):
@@ -130,4 +131,42 @@ class CoNaplanovat(CoordinatorEntity, RestoreEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         self._volba = option
         self.coordinator.plan_volba = option
+        self.async_write_ha_state()
+
+
+class JakCasto(CoordinatorEntity, RestoreEntity, SelectEntity):
+    """Jak často se má naplánovaná událost opakovat.
+
+    Opakování neumí akce `calendar.create_event`, ale entita kalendáře
+    ano — a vlastní kalendář integrace je právě entita, takže sem to
+    projde.
+    """
+
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:repeat"
+    _attr_translation_key = "jak_casto"
+
+    def __init__(self, k, entry) -> None:
+        super().__init__(k)
+        self._attr_unique_id = f"{entry.entry_id}_jak_casto"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name="NaPohodu", manufacturer="NaPohodu", model="Byt")
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        posledni = await self.async_get_last_state()
+        if posledni is not None and posledni.state in self.options:
+            self.coordinator.plan_opakovani = posledni.state
+
+    @property
+    def options(self) -> list[str]:
+        return list(pz.OPAKOVANI)
+
+    @property
+    def current_option(self) -> str | None:
+        return self.coordinator.plan_opakovani
+
+    async def async_select_option(self, option: str) -> None:
+        self.coordinator.plan_opakovani = option
         self.async_write_ha_state()

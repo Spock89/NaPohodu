@@ -19,7 +19,7 @@ from .const import (
     CONF_HYST_DEN_ZAVRIT, CONF_HYST_NOC_OTEVRIT, CONF_HYST_NOC_ZAVRIT,
     CONF_MEZ_DOLNI, CONF_MEZ_HORNI, CONF_MIN_DRZENI, CONF_NARAZOVE_ODSTUP,
     CONF_NEJDRIV_ZNOVU, CONF_NOC_POSUN, CONF_ODCHYLKA, CONF_PM_CISTO,
-    CONF_PREDVETRAT,
+    CONF_PLAN_CIL, CONF_PLAN_KOLIKRAT, CONF_PREDVETRAT,
     CONF_PM_SPATNE, CONF_REZERVA_VENKU, CONF_RH_MAX, CONF_RH_MIN,
     CONF_RUCNI_KLID, CONF_RUCNI_KLID_ZALUZIE, CONF_UTLUM,
     CONF_ZMENA_PODMINEK, DOMAIN,
@@ -50,6 +50,11 @@ CELY_BYT = [
              "mdi:timer-sand"),
     Posuvnik(CONF_PREDVETRAT, 0, 240, 15, "min", 60.0,
              "mdi:calendar-clock"),
+    # Plánovač: kolikrát se má událost zopakovat a jakou cílovou
+    # teplotu nese, když se plánuje právě ta.
+    Posuvnik(CONF_PLAN_KOLIKRAT, 0, 52, 1, "×", 8.0, "mdi:repeat"),
+    Posuvnik(CONF_PLAN_CIL, 10, 30, 0.5, UnitOfTemperature.CELSIUS, 21.0,
+             "mdi:thermometer-check"),
 ]
 
 MISTNOST = [
