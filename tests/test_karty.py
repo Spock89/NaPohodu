@@ -445,7 +445,9 @@ def test_rozvrzeni_sekci():
     # obsazenost a sdílený vzduch v jedné sekci, každé s nadpisem
     sekce = d["sections"][prvni.index("Obsazenost a klid")]
     nadpisy = [k.get("heading") for k in sekce["cards"] if k.get("heading")]
-    assert nadpisy == ["Obsazenost a klid", "Sdílený vzduch"]
+    # plánovač patří ke stejnému tématu, ne do vlastní sekce
+    assert nadpisy == ["Obsazenost a klid", "Sdílený vzduch",
+                       "Naplánovat obsazenost"]
 
 
 def test_posuvniky_maji_popisky():

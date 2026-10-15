@@ -1078,11 +1078,25 @@
       },
       "vynulovat_stavy": {
         "name": "Vynulovat vnitřní stavy"
+      },
+      "naplanovat": {
+        "name": "Naplánovat"
       }
     },
     "select": {
       "stav_zaluzie": {
         "name": "Žaluzie {cislo} — stav"
+      },
+      "co_naplanovat": {
+        "name": "Co naplánovat"
+      }
+    },
+    "datetime": {
+      "plan_od": {
+        "name": "Plán od"
+      },
+      "plan_do": {
+        "name": "Plán do"
       }
     }
   }

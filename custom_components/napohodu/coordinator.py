@@ -19,9 +19,9 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
 from .number import MISTNOST as POSUVNIKY_MISTNOSTI
-from . import (core, plan as pl, pritomnost as pr, prumery as pm,
-               slunce as sl, sousedstvi as so, vykon as vy, zpravy as zp,
-               klima as kl)
+from . import (core, plan as pl, planovac as pz, pritomnost as pr,
+               prumery as pm, slunce as sl, sousedstvi as so,
+               vykon as vy, zpravy as zp, klima as kl)
 from .const import (
     CONF_AZIMUT, CONF_CHLAZENI_MIN_VENKU, CONF_CIL_MAX, CONF_CIL_MIN,
     CONF_CISTICKA, CONF_CISTICKA_OD, CONF_CLIMATE, CONF_CO2, CONF_CO2_NOC,
@@ -130,6 +130,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.plan_popis: str | None = None
         self.predvetrat: bool = False
         self.plan_pryc: bool = False
+        # výsledek posledního stisku tlačítka Naplánovat
+        self.plan_vysledek: str = "zatím nic"
+        # co je navolené na dashboardu pro tlačítko Naplánovat
+        self.plan_volba: str | None = None
+        self.plan_od = None
+        self.plan_do = None
         # Poslední viděné hodnoty z formuláře. Musí přežít znovunačtení
         # integrace, protože uložení formuláře ho spustí — jinak by se
         # změna nikdy nepoznala a šoupátko by po restartu vyhrálo.
@@ -909,7 +915,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Ať je v kartě poznat, proč se byt bere za obsazený,
             # když přítomnost hlásí opak.
             self.doma_popis += " (plán: víc lidí)"
-        self.plan_popis = pl.popis(self.plan_nikdo, self.plan_vic, cas_s)
+        self.plan_popis = self._plan_popis(
+            pl.BYT, g.get(CONF_PLAN_NIKDO), g.get(CONF_PLAN_VIC),
+            self.plan_nikdo, self.plan_vic, cas_s)
         predstih = self.hodnota(self.entry.entry_id, CONF_PREDVETRAT,
                                 float(g.get(CONF_PREDVETRAT, 60)))
         self.predvetrat = pl.predvetrat(self.plan_vic, cas_s, predstih)
@@ -977,7 +985,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 # Proč je místnost brána za obsazenou, když tam není
                 # čidlo — bez toho by se nedalo zjistit, odkud se to
                 # vzalo.
-                "plan": pl.popis(plan_neni, plan_je, cas_s, pl.MISTNOST),
+                "plan": self._plan_popis(
+                    pl.MISTNOST, d.get(CONF_PLAN_PRAZDNO),
+                    d.get(CONF_PLAN_OBSAZENO), plan_neni, plan_je, cas_s),
             }
             self.mistnosti[p.subentry_id] = m
             podklady[p.subentry_id] = {"pod": p, "d": d, "sig": sig,
@@ -1916,6 +1926,75 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 m.atributy["topeni_poslano"] = "nic — hlavice už na tom stojí"
         m.atributy["topeni_hlavice"] = ", ".join(skutecnost) or None
         m.atributy["odvzdusneni"] = odvzdusneni
+
+    def nabidka_planu(self) -> list[pz.Volba]:
+        """Co jde naplánovat z dashboardu. Podle toho, co je nastavené."""
+        g = {**self.entry.data, **self.entry.options}
+        mistnosti = [(p.title, p.data)
+                     for p in self._podentity(PODENTITA_MISTNOST)]
+        return pz.nabidka(g, mistnosti, CONF_PLAN_NIKDO, CONF_PLAN_VIC,
+                          CONF_PLAN_OBSAZENO, CONF_PLAN_PRAZDNO)
+
+    async def naplanuj(self, popis: str, od, do) -> str:
+        """Založí událost v kalendáři, který k té volbě patří.
+
+        Vrací větu pro člověka — tlačítko samo o sobě nic neukáže
+        a bez zpětné vazby se nedá poznat, jestli se událost založila.
+
+        Opakované události takhle nejdou: akce `calendar.create_event`
+        pole pro opakování nemá. Pravidelný vzorec patří do panelu
+        Kalendář nebo do týdenního rozvrhu.
+        """
+        volba = next((v for v in self.nabidka_planu() if v.popis == popis),
+                     None)
+        if volba is None:
+            self.plan_vysledek = f"neznámá volba: {popis}"
+            return self.plan_vysledek
+        potiz = pz.zkontroluj(od, do)
+        if potiz:
+            self.plan_vysledek = potiz
+            return self.plan_vysledek
+        g = {**self.entry.data, **self.entry.options}
+        mistnosti = {p.title: p.data
+                     for p in self._podentity(PODENTITA_MISTNOST)}
+        kalendar = pz.kam(volba, g, mistnosti)
+        try:
+            await self.hass.services.async_call(
+                "calendar", "create_event",
+                {"entity_id": kalendar, "summary": f"NaPohodu: {popis}",
+                 "start_date_time": od.isoformat(),
+                 "end_date_time": do.isoformat()},
+                blocking=True)
+        except Exception as e:      # pragma: no cover - cizí integrace
+            _LOGGER.warning("NaPohodu: událost se nepovedlo založit: %s", e)
+            self.plan_vysledek = f"nepovedlo se: {e}"
+            return self.plan_vysledek
+        self.plan_vysledek = (
+            f"{popis}: {od:%-d.%-m. %H:%M} – {do:%-d.%-m. %H:%M} "
+            f"→ {kalendar}")
+        _LOGGER.info("NaPohodu: %s", self.plan_vysledek)
+        await self.async_request_refresh()
+        return self.plan_vysledek
+
+    def _plan_popis(self, slova, prazdno_ent, plno_ent, prazdno: pl.Udalost,
+                    plno: pl.Udalost, cas_s: float) -> str | None:
+        """Co plán říká — a když neříká nic, tak aspoň že je nastavený.
+
+        Tiché nic je správné chování, ale při zakládání je to k ničemu:
+        člověk vybere kalendář, nic se neukáže a nemá jak poznat, jestli
+        se nečte, nebo jen zrovna nic neplatí. Řádek proto vypíše, co je
+        nastavené, a zvlášť upozorní na entitu, která neexistuje.
+        """
+        text = pl.popis(prazdno, plno, cas_s, slova)
+        if text:
+            return text
+        nastavene = list(prazdno_ent or []) + list(plno_ent or [])
+        if not nastavene:
+            return None
+        chybi = [e for e in nastavene if self._stav(e) is None]
+        if chybi:
+            return "entita chybí: " + ", ".join(chybi)
+        return f"nastaveno ({', '.join(nastavene)}), teď nic neplatí"
 
     async def _plan(self, entity, cas_s: float) -> pl.Udalost:
         """Co říká kalendář nebo rozvrh: platí to teď a kdy se to změní.

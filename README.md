@@ -681,7 +681,20 @@ zapomenutý záznam v kalendáři a člověk sedí ve studeném pokoji.
 
 Chybějící nebo smazaná entita se tiše přeskočí — plán prostě neplatí
 a zbytek jede jako bez něj. Co plán zrovna říká a do kdy, je vidět
-v kartě místnosti.
+v kartě místnosti, i s tím, ze kterého kalendáře to je. Když je plán
+nastavený, ale zrovna nic neplatí, řádek to napíše taky — jinak se při
+zakládání nedá poznat, jestli se nečte, nebo jen nic neběží.
+
+**Události jdou zakládat přímo z dashboardu.** V sekci u obsazenosti
+se vybere co, odkdy a dokdy a zmáčkne se Naplánovat; kalendář si
+integrace dohledá sama podle nastavení, takže se nedá zapsat do
+špatného. V nabídce je jen to, co má kam zapsat. Výsledek posledního
+stisku je vidět hned pod tlačítkem.
+
+Opakované události takhle založit nejdou — akce
+`calendar.create_event` pole pro opakování nemá. Pravidelný vzorec
+patří do panelu Kalendář, kde se opakování naklikat dá, nebo do
+týdenního rozvrhu, který je přesně na to.
 
 ### Zprávy
 
@@ -1116,6 +1129,14 @@ sensors in it.
 **Reality may only add presence, never take it away:** if a sensor
 sees movement, the room is occupied, whatever the plan says. A missing
 or deleted entity is skipped silently.
+
+Events can be created **straight from the dashboard**: pick what, from
+when and until when, and press Plan it. The integration finds the
+right calendar from the settings, so it cannot be written to the wrong
+one, and only things that have somewhere to go are offered. Recurring
+events are not possible this way — the `calendar.create_event` action
+has no recurrence field — so a repeating pattern belongs in the
+Calendar panel or in a weekly schedule.
 
 The aerosol lingers after the humidifier stops, so dust is trusted
 again only once it falls into the clean band, and at most for two

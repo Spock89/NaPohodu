@@ -57,9 +57,11 @@ for p in d.glob("*.py"):
             chyby.append(f"{p.name}:{i + 1}: řádek je tam dvakrát: {r[:40]}")
 
 # 1e) moduly, které nikdo neimportuje — mrtvý kód mate a duplikuje logiku
+# Platformy si načítá Home Assistant sám podle jména souboru, takže je
+# nikdo neimportuje a přesto nejsou mrtvé.
 VSTUPNI = {"__init__", "const", "config_flow", "coordinator", "entity",
            "sensor", "binary_sensor", "number", "switch", "button",
-           "services", "karty", "select"}
+           "services", "karty", "select", "datetime"}
 importovane = set()
 for p in d.glob("*.py"):
     for u in ast.walk(ast.parse(p.read_text())):
@@ -281,6 +283,7 @@ for klic, rozsah in sorted(posuvniky_rozsah.items()):
 HA_HOOKY = {"async_setup_entry", "async_unload_entry", "async_setup",
             "async_press", "async_turn_on", "async_turn_off",
             "async_select_option", "async_set_native_value",
+            "async_set_value",
             "async_added_to_hass", "is_on", "native_value",
             "extra_state_attributes", "options", "current_option",
             "available", "async_get_options_flow",
@@ -315,7 +318,9 @@ def _slug(text):
 
 
 try:
-    sys.path.insert(0, str(d))
+    # na konec, ať moduly datetime.py a select.py nezastíní standardní
+    # knihovnu — v balíčku se importují relativně, tady ne
+    sys.path.append(str(d))
     import karty as _karty
 
     preklady = json.loads((d / "translations" / "cs.json").read_text())

@@ -53,7 +53,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                 if vy.cile_zaluzii(role, mapa):
                     tlacitka.append(Stineni(k, pod, klic, role))
             pridat(tlacitka, config_subentry_id=pod.subentry_id)
-    pridat([SrovnatVse(k, entry), VynulovatStavy(k, entry)])
+    pridat([SrovnatVse(k, entry), VynulovatStavy(k, entry),
+            Naplanovat(k, entry)])
 
 
 class Srovnat(NaPohoduEntity, ButtonEntity):
@@ -167,3 +168,32 @@ class Okno(NaPohoduEntity, ButtonEntity):
                 float(self.pod.data.get(CONF_RUCNI_KLID, 30))) * 60
             core.rucni_zasah(pamet, None, dt_util.utcnow().timestamp(),
                              self._otevrit, klid_s=klid)
+
+
+class Naplanovat(CoordinatorEntity, ButtonEntity):
+    """Založí událost plánu podle toho, co je navolené vedle.
+
+    Kalendář si integrace dohledá sama podle nastavení, takže se nedá
+    zapsat do špatného. Výsledek se ukáže v atributu výběru — tlačítko
+    samo o sobě nic nezobrazí.
+    """
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "naplanovat"
+    _attr_icon = "mdi:calendar-check"
+
+    def __init__(self, koordinator, entry) -> None:
+        super().__init__(koordinator)
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_naplanovat"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name="NaPohodu", manufacturer="NaPohodu", model="Byt",
+        )
+
+    async def async_press(self) -> None:
+        # Hodnoty drží koordinátor, ne entity: hledat je podle jména
+        # by se rozešlo při prvním přejmenování.
+        await self.coordinator.naplanuj(self.coordinator.plan_volba or "",
+                                        self.coordinator.plan_od,
+                                        self.coordinator.plan_do)

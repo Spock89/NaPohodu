@@ -207,9 +207,9 @@ PORADI_SEKCI = [
     "Ladění — meze",
     "Slunce a stínění",
     "Ladění — pásmo",
-    "Zvlhčovače",             # se srovnáním v jedné sekci
     "Ladění — CO2",
     "Ovládání oken",          # s ovládáním žaluzií v jedné sekci
+    "Zvlhčovače",             # se srovnáním v jedné sekci
     "Obsazenost a klid",      # se sdíleným vzduchem v jedné sekci
     "Grafy",
     "Ladění — topení",
@@ -788,6 +788,27 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         c += _hlavicka("Sdílený vzduch", "mdi:home-group", "subtitle")
         c += _karta(polozky)
         c.append("")
+
+    # --- plánovač ---
+    # Co, odkdy, dokdy a tlačítko. Kalendář si integrace dohledá sama
+    # podle nastavení, takže se nedá zapsat do špatného.
+    polozky = []
+    for eid, popis in (("select.napohodu_co_naplanovat", "Co naplánovat"),
+                       ("datetime.napohodu_plan_od", "Od"),
+                       ("datetime.napohodu_plan_do", "Do"),
+                       ("button.napohodu_naplanovat", "Naplánovat")):
+        if existuje(eid):
+            polozky += _radek(eid, popis)
+    if polozky:
+        polozky += _atribut("select.napohodu_co_naplanovat",
+                            "posledni_vysledek", "   naposledy")
+        # Patří ke sdílenému vzduchu a obsazenosti, ne do vlastní
+        # sekce: je to totéž téma a krátká sekce navíc rozhází mřížku.
+        c += _hlavicka("Naplánovat obsazenost", "mdi:calendar-plus",
+                       "subtitle")
+        c += _karta(polozky)
+        c.append("")
+
 
     # --- ladění ---
     c.append(SEKCE)

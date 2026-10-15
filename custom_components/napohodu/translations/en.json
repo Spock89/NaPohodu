@@ -1078,11 +1078,25 @@
       },
       "vynulovat_stavy": {
         "name": "Reset internal state"
+      },
+      "naplanovat": {
+        "name": "Plan it"
       }
     },
     "select": {
       "stav_zaluzie": {
         "name": "Blind {cislo} — position"
+      },
+      "co_naplanovat": {
+        "name": "What to plan"
+      }
+    },
+    "datetime": {
+      "plan_od": {
+        "name": "Plan from"
+      },
+      "plan_do": {
+        "name": "Plan until"
       }
     }
   }
