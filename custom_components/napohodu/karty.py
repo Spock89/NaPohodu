@@ -118,11 +118,24 @@ ATRIBUTY_STAVU = [
     ("provedeno", "Poslední povel", None),
     ("co_bylo", "Poslední rozhodnutí", None),
     ("co_dal", "Co změnu spustí", None),
-    ("ucinek", "Zabírá to? (od otevření)", None),
     ("duvody", "Diagnostika", None),
     ("topeni", "Topení — posíláme", None),
     ("zvlhcovac_bezi", "Zvlhčovač", None),
     ("cisticka_bezi", "Čistička", None),
+]
+
+# Řádky, které většinu času nemají co říct. Karta se seznamem prázdný
+# řádek skrýt neumí, takže by svítily „Neznámý"; markdown je vynechá.
+ATRIBUTY_JEN_OBCAS = [
+    ("ucinek", "Zabírá to"),
+]
+
+# Totéž u stínění: ruka, klid po ní a chybějící entita jsou výjimečné
+# stavy, ne každodenní údaje.
+ATRIBUTY_STINENI_OBCAS = [
+    ("prestaveno_rukou", "přestaveno rukou"),
+    ("zaluzie_rucni_klid", "ruční klid"),
+    ("zaluzie_chybi", "chybějící entita"),
 ]
 
 # Podrobnosti: zajímavé při ladění, ne při pohledu z chodby. Jdou na
@@ -214,6 +227,27 @@ def _atribut(eid: str, atribut: str, nazev: str,
     if pripona:
         r.append(f'        suffix: "{pripona}"')
     return r
+
+
+def _markdown(radky: list[tuple]) -> list[str]:
+    """Karta, která řádek bez hodnoty vynechá.
+
+    Karta se seznamem to neumí: prázdný atribut v ní svítí jako
+    „Neznámý" a zabírá místo, i když zrovna nemá co říct.
+
+    Každý řádek je (entita, atribut, popisek, jednotka).
+    """
+    if not radky:
+        return []
+    out = ["  - type: markdown", "    content: |-"]
+    for eid, atribut, popis, jednotka in radky:
+        out.append(f"      {{% set x = state_attr('{eid}', "
+                   f"'{atribut}') %}}")
+        out.append("      {% if x is not none and x != '' %}")
+        out.append(f"      - **{popis}:** {{{{ x }}}}{jednotka or ''}")
+        out.append("      {% endif %}")
+    out.append("")
+    return out
 
 
 def _karta(polozky: list[str], nazev: str | None = None) -> list[str]:
@@ -627,6 +661,10 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
                 c.append("")
 
         c += _karta(polozky, nazev=jm(m))
+        # Co má co říct jen někdy — v seznamu by to zbytek času svítilo
+        # jako „Neznámý".
+        c += _markdown([(stav, a, n, None)
+                        for a, n in ATRIBUTY_JEN_OBCAS])
 
         # Konflikt, stupnice a předpověď v jedné kartě. Stupnice patří
         # do bloku s pevnou šířkou kvůli zarovnání, věta naopak mimo —
@@ -677,23 +715,12 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         c.append(SEKCE)
         c += _hlavicka("Slunce a stínění", "mdi:blinds-horizontal", "subtitle")
         c += _karta(polozky)
-        # Ruka, klid po ní a chybějící entita jsou výjimečné stavy.
-        # V kartě se seznamem by tři čtvrtiny roku svítily „Neznámý",
-        # protože prázdný řádek skrýt neumí. Markdown ano.
-        c.append("  - type: markdown")
-        c.append("    content: |-")
-        for m in mistnosti:
-            eid = f"sensor.napohodu_{m}_slunce_na_oknech"
-            if not existuje(eid):
-                continue
-            for a, n in (("prestaveno_rukou", "přestaveno rukou"),
-                         ("zaluzie_rucni_klid", "ruční klid"),
-                         ("zaluzie_chybi", "chybějící entita")):
-                c.append(f"      {{% set x = state_attr('{eid}', '{a}') %}}")
-                c.append("      {% if x is not none and x != '' %}")
-                c.append(f"      - **{jm(m)} — {n}:** {{{{ x }}}}")
-                c.append("      {% endif %}")
-        c.append("")
+        c += _markdown(
+            [(f"sensor.napohodu_{m}_slunce_na_oknech", a,
+              f"{jm(m)} — {n}", None)
+             for m in mistnosti
+             if existuje(f"sensor.napohodu_{m}_slunce_na_oknech")
+             for a, n in ATRIBUTY_STINENI_OBCAS])
 
     # --- obsazenost ---
     polozky = []
@@ -911,14 +938,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             continue
         c.append(SEKCE)
         c += _hlavicka(f"{jm(m)} — podrobnosti", "mdi:magnify", "subtitle")
-        c.append("  - type: markdown")
-        c.append("    content: |-")
-        for a, n, jed in ATRIBUTY_PODROBNE:
-            c.append(f"      {{% set x = state_attr('{stav}', '{a}') %}}")
-            c.append("      {% if x is not none and x != '' %}")
-            c.append(f"      - **{n}:** {{{{ x }}}}{jed or ''}")
-            c.append("      {% endif %}")
-        c.append("")
+        c += _markdown([(stav, a, n, jed) for a, n, jed in ATRIBUTY_PODROBNE])
 
     karty = [x for x in c if x is not None]
 

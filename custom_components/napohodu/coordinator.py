@@ -121,6 +121,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.narazove: bool = False
         self.narazove_bezi: bool = False
         self.narazove_co2: float = 0.0
+        self.narazove_pm: float = 0.0
         # Poslední viděné hodnoty z formuláře. Musí přežít znovunačtení
         # integrace, protože uložení formuláře ho spustí — jinak by se
         # změna nikdy nepoznala a šoupátko by po restartu vyhrálo.
@@ -207,6 +208,17 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._cizi_zadost.clear()
         self._t_in_drive.clear()
         self._zaluzie_rukou.clear()      # i ruční klid žaluzií
+        # Nárazové větrání se drží mezi prahy, takže je to taky stav.
+        self.narazove_bezi = False
+        # Doznívání aerosolu je odpočet jako každý jiný. Mazal se jen
+        # seznam běžících zvlhčovačů, takže po „bodu nula" zůstal pokoj
+        # dál označený za zaprášený od zvlhčovače, který už neběžel.
+        self._dozvuk.clear()
+        self._pm_syrovy.clear()
+        # Odpočet dlouhé nepřítomnosti a odstup mezi povely klimatizaci
+        # jsou taky jen rozdělané mezičasy.
+        self._prazdno_od = None
+        self._klima_pamet.clear()
         for vyk in self.vykonavaci.values():
             vyk.stav.pulz_do_s = None          # dojezd pulzu
             vyk.stav.posledni_cas_s = -1e9     # a odstup mezi povely
@@ -1032,7 +1044,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 CONF_CO2_ZAVRIT: nej(CONF_CO2_ZAVRIT, 700),
                 CONF_CO2_NOC: nej(CONF_CO2_NOC, 1000),
                 CONF_CO2_NOC_KRIZE: nej(CONF_CO2_NOC_KRIZE, 1250),
+                # Prach má nárazové větrání spouštět stejně jako CO2,
+                # takže se jeho prahy berou po okruhu týmž pravidlem.
+                CONF_PM_SPATNE: nej(CONF_PM_SPATNE, 35.0),
+                CONF_PM_CISTO: nej(CONF_PM_CISTO, 20.0),
             }
+            # Ultrazvukový zvlhčovač rozprašuje minerály a čidlo je
+            # vidí jako prach. Okruh, kam jeho aerosol dosáhne, se do
+            # nárazového větrání nepočítá — jinak by zvlhčovač
+            # v obýváku otevřel okno v ložnici kvůli prachu, který se
+            # vyvětrat nedá.
+            o["pm_od_zvlhcovace"] = any(
+                self._zvlhcuje_na(x.subentry_id) for x in o["cleni"])
 
         # ---------- 3. zastupování mezi oblastmi ----------
         stavy = []
@@ -1089,14 +1112,19 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.narazove = bool(g.get(CONF_NARAZOVE, False)) and rozdil > prah
         if self.narazove:
             nejhorsi = max((o["co2"] for o in okruhy), default=0.0)
-            spousti = max(
-                (o["prahy"][CONF_CO2_OTEVRIT] for o in okruhy if o.get("prahy")),
-                default=800.0)
-            self.narazove_bezi = nejhorsi > spousti
+            self.narazove_bezi = self._narazove_pokracuje(
+                self._narazove_vzduch(okruhy), self.narazove_bezi)
             self.narazove_co2 = nejhorsi
+            # Nejhorší prach jen z okruhů bez aerosolu ze zvlhčovače;
+            # ten se vyvětrat nedá a posílat ho po bytě by otevíralo
+            # okna kvůli ničemu.
+            self.narazove_pm = max(
+                (o.get("pm25") or 0.0 for o in okruhy
+                 if not o.get("pm_od_zvlhcovace")), default=0.0)
         else:
             self.narazove_bezi = False
             self.narazove_co2 = 0.0
+            self.narazove_pm = 0.0
 
         # ---------- 4. rozhodnutí a vykonání za místnost ----------
         for o in okruhy:
@@ -1295,8 +1323,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Zvlhčovač v jedné místnosti zóny zvedne prach i vedle,
             # pokud jsou dveře otevřené — vzduch je společný, takže
             # i ten vlastní aerosol se musí ignorovat společně.
-            pm25=0.0 if self._zvlhcuje_na(p.subentry_id)
-            else okruh["pm25"],
+            #
+            # Při nárazovém větrání se sem přidá nejhorší prach z bytu,
+            # stejně jako u CO2: o ten průvan jde. Posílá se jen prach
+            # z okruhů bez zvlhčovače, takže i místnost, která svůj
+            # vlastní aerosol ignoruje, se otevře kvůli skutečnému
+            # prachu odjinud.
+            pm25=max(0.0 if self._zvlhcuje_na(p.subentry_id)
+                     else okruh["pm25"],
+                     self.narazove_pm if self.narazove_bezi else 0.0),
             pm10=0.0 if self._zvlhcuje_na(p.subentry_id)
             else okruh["pm10"],
             pm_platny=okruh["pm_platny"],
@@ -1422,6 +1457,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         elif kontakty and rucne and not skutecne:
             skutecne = True
             stav_znamy = True
+        elif not okna and not kontakty:
+            # Místnost bez ovládaného okna a bez kontaktu o žádném okně
+            # neví. Brala se poslední vnitřní hodnota jádra, takže si
+            # pokoj myslel, že se u něj větrá: v souhrnu přibývaly
+            # minuty otevření a kontrola účinku „zavírala" okno, které
+            # neexistuje — a každé takové rozhodnutí se počítalo jako
+            # pohyb okna. Odtud ty stovky pohybů v obýváku.
+            skutecne = False
 
         # Po dojezdu se povel a skutečnost musí shodovat. Když ne, sáhl
         # na okno člověk — rozdělaná akce se ruší a čeká se na nový
@@ -1532,9 +1575,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         sh = self.souhrn.setdefault(p.subentry_id, {
             "pohyby": 0, "minut_otevreno": 0, "co2_max": 0,
             "nejnizsi_teplota": None, "nouzove": 0})
-        if r.akce is not core.Akce.NIC:
+        # Pohyby a minuty otevření se počítají jen tam, kde je co
+        # otevírat. Bez okna i kontaktu jsou to čísla bez opory ve
+        # skutečnosti: povel nikam nejde a „otevřeno" je jen vnitřní
+        # stav jádra.
+        ma_okno = bool(okna or kontakty)
+        if ma_okno and r.akce is not core.Akce.NIC:
             sh["pohyby"] += 1
-        if skutecne:
+        if ma_okno and skutecne:
             sh["minut_otevreno"] += INTERVAL_S / 60
         sh["co2_max"] = max(sh["co2_max"], int(v.co2))
         if r.t_in_korig:
@@ -1659,9 +1707,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 core._je_noc(self._hodina_ted, nast, bool(m.klid)),
                 nast.co2_noc, nast.co2_noc_krize, nast.co2_zavrit),
             "vitr": self.vitr_stav,
+            # Údaje o oknu se vynechají tam, kde žádné není — zpráva
+            # i karta se pak skládají z toho, co doopravdy existuje.
             "dnes": {
-                "pohyby": sh["pohyby"],
-                "otevreno_min": round(sh["minut_otevreno"]),
+                **({"pohyby": sh["pohyby"],
+                    "otevreno_min": round(sh["minut_otevreno"])}
+                   if ma_okno else {}),
                 "co2_max": sh["co2_max"],
                 "nejnizsi_teplota": sh["nejnizsi_teplota"],
                 "nouzove_vetrani": sh["nouzove"],
@@ -1808,6 +1859,56 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 m.atributy["topeni_poslano"] = "nic — hlavice už na tom stojí"
         m.atributy["topeni_hlavice"] = ", ".join(skutecnost) or None
         m.atributy["odvzdusneni"] = odvzdusneni
+
+    @staticmethod
+    def _narazove_vzduch(okruhy: list[dict]) -> list[tuple]:
+        """Co se do nárazového větrání počítá: hodnota a její dva prahy.
+
+        CO2 za každý okruh a prach taky — v mrazu je krátké vyvětrání
+        průvanem lepší než půlhodina jedním oknem, a to platí na prach
+        stejně jako na vydýchaný vzduch. Okruh, kam dosáhne aerosol ze
+        zvlhčovače, se do prachu nepočítá: není co vyvětrat.
+        """
+        vzduch = []
+        for o in okruhy:
+            prahy = o.get("prahy")
+            if not prahy:
+                continue
+            vzduch.append((o["co2"], prahy[CONF_CO2_OTEVRIT],
+                           prahy[CONF_CO2_ZAVRIT]))
+            if not o.get("pm_od_zvlhcovace"):
+                # Bez běžícího ventilátoru je měření prachu nejisté,
+                # takže platí vyšší práh — stejně jako v rozhodování
+                # jedné místnosti. Jinak by nejisté číslo otevřelo
+                # okna po celém bytě.
+                spatne = prahy[CONF_PM_SPATNE]
+                if o.get("pm_platny") is False:
+                    spatne = max(spatne, core.Nastaveni.pm_prah_bez_ventilatoru)
+                vzduch.append((o.get("pm25") or 0.0, spatne,
+                               prahy[CONF_PM_CISTO]))
+        return vzduch
+
+    @staticmethod
+    def _narazove_pokracuje(vzduch: list[tuple], bezi: bool) -> bool:
+        """Běží nárazové větrání? Hystereze jako u všeho ostatního.
+
+        Zapne práh otevření, vypne až práh zavření, mezi tím drží.
+        Bez toho injekce nejhoršího vzduchu do všech místností skončila
+        už v pásmu mezi prahy: pomocné místnosti spadly na své vlastní
+        čisté hodnoty, zavřely jako vyvětrané a iniciátor dojížděl sám
+        — bez průvanu, kvůli kterému se otevíralo všude.
+
+        Každý okruh se měří svými prahy, ne nejvyššími v bytě: okruh
+        s přísnějším prahem má větrání spustit, i když je jinde práh
+        vyšší, a držet ho, dokud není čistý.
+        """
+        if not vzduch:
+            return False
+        if any(h > otevrit for h, otevrit, _ in vzduch):
+            return True
+        if all(h < zavrit for h, _, zavrit in vzduch):
+            return False
+        return bezi
 
     @staticmethod
     def _stav_pomocnika(entity, bezi) -> str:

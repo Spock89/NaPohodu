@@ -182,6 +182,33 @@ zavírání. Příznak zvenčí totiž platí, dokud je CO2 nad prahem otevřen�
 kdežto zavírá se až pod prahem zavření — kdyby se nárazové zavření
 ptalo jeho, nestihlo by se nikdy.
 
+Zatímco nárazové větrání běží, vidí **každá místnost nejhorší CO2
+z celého bytu**. Proto se otevře i tam, kde je vzduch v pořádku: o ten
+průvan jde. Běh má vlastní hysterezi — spustí ho zóna nad svým prahem
+otevření a skončí, až je **každá** zóna pod svým prahem zavření. Bez
+toho se sdílení přerušilo už v pásmu mezi prahy, pomocné místnosti
+spadly na své vlastní čisté CO2, zavřely jako vyvětrané a iniciátor
+dojížděl sám. Pomocná místnost pořád smí zavřít dřív sama za sebe,
+když narazí na pojistku „nevychladit pod" — mrazit ložnici kvůli
+kuchyni nemá cenu.
+
+Spouští ho **vzduch: CO2 i prach**. Obojí se během nárazového větrání
+sdílí po bytě a obojí ho drží, dokud není čistý — v mrazu je krátké
+vyvětrání průvanem lepší než půlhodina jedním oknem, a to platí na
+prach stejně jako na vydýchaný vzduch. Okruh, kam dosáhne aerosol
+z ultrazvukového zvlhčovače, se do prachu nepočítá: čidlo vidí
+rozprášené minerály jako prach a vyvětrat se nedají. Bez běžícího
+ventilátoru je měření prachu nejisté, takže platí vyšší práh, stejně
+jako v rozhodování jedné místnosti. A protože při nárazovém větrání
+vidí místnost prach z celého bytu, přestává se z něj učit, jestli si
+prach netahá vlastním oknem — z cizí hodnoty se o svém okně nedá
+odvodit nic.
+
+**Teplota ho nespouští** a nesdílí se vůbec: chlazení a ohřev mají
+vlastní pásmo s dojezdem a každá místnost si je řeší sama. Teplo se
+průvanem nepřenáší, takže otevřít ložnici kvůli horku v kuchyni by
+ložnici jen vychladilo.
+
 Režim se přepíná s půlstupňovou hysterezí, aby neposkakoval, když se
 venkovní teplota motá kolem prahu. Brzda proti otvírání pro pohodu
 platí i tehdy, když je nárazové větrání vypnuté — jinak by v mrazu
@@ -612,6 +639,11 @@ a zavírání, chyby pohonu, denní souhrn.
 
 Stejná zpráva se neopakuje dřív než za půl hodiny. Automatika, která
 upozorňuje pořád, se přestane číst.
+
+Denní souhrn se skládá z toho, co místnost opravdu má. Bez ovládaného
+okna a bez kontaktu o žádném okně neví, takže se v něm pohyby okna ani
+minuty otevření neobjeví — dřív se braly z vnitřního stavu jádra, který
+se tam nikdy neměl dostat, a vycházela z toho nesmyslně vysoká čísla.
 
 ### Karta na dashboard
 

@@ -245,6 +245,10 @@ def test_vlhkost_se_ukazuje_i_bez_zarizeni(nahradni_ha):
         _cizi_zadost: dict = {}
         _t_in_drive: dict = {}
         _zaluzie_rukou: dict = {}
+        _prazdno_od = 100.0
+        _klima_pamet: dict = {}
+        _dozvuk: dict = {}
+        _pm_syrovy: dict = {}
         vykonavaci: dict = {}
         hass = None
 
@@ -700,6 +704,10 @@ def test_odeslany_souhrn_prezije_znovunacteni(nahradni_ha):
         _cizi_zadost: dict = {}
         _t_in_drive: dict = {}
         _zaluzie_rukou: dict = {}
+        _prazdno_od = 100.0
+        _klima_pamet: dict = {}
+        _dozvuk: dict = {}
+        _pm_syrovy: dict = {}
         vykonavaci: dict = {}
         _uloz_pameti = ko.NaPohoduCoordinator._uloz_pameti
 
@@ -1087,6 +1095,10 @@ def test_vynulovani_nesahne_na_nastaveni(nahradni_ha):
         _cizi_zadost: dict = {}
         _t_in_drive: dict = {}
         _zaluzie_rukou: dict = {}
+        _prazdno_od = 100.0
+        _klima_pamet: dict = {}
+        _dozvuk: dict = {}
+        _pm_syrovy: dict = {}
         vykonavaci: dict = {}
 
     k = Falesny()
@@ -1138,6 +1150,10 @@ def test_vynulovani_zrusi_i_cekani(nahradni_ha):
         _cizi_zadost: dict = {}
         _t_in_drive: dict = {}
         _zaluzie_rukou: dict = {}
+        _prazdno_od = 100.0
+        _klima_pamet: dict = {}
+        _dozvuk: dict = {}
+        _pm_syrovy: dict = {}
         vykonavaci = {"id": Vyk()}
 
     k = Falesny()
@@ -1153,6 +1169,8 @@ def test_vynulovani_zrusi_i_cekani(nahradni_ha):
     # i stavy, které si koordinátor vede mimo paměť místností
     assert not k._cizi_zadost and not k._t_in_drive
     assert not k._zaluzie_rukou          # ani ruční klid žaluzií
+    assert not k._dozvuk and not k._klima_pamet
+    assert k._prazdno_od is None
 
 
 def test_rucni_klid_zaluzii_zastavi_povel(nahradni_ha):
@@ -1167,6 +1185,81 @@ def test_rucni_klid_zaluzii_zastavi_povel(nahradni_ha):
     # klid se vyhodnotí dřív, než se vůbec dojde k posílání
     assert blok.index("rukou_zbyva =") < blok.index("elif rukou_zbyva:")
     assert "elif rukou_zbyva:" in blok
+
+
+def test_narazove_drzi_mezi_prahy(nahradni_ha):
+    """Pomocné okno se otevírá za někoho jiného, takže nesmí zavřít
+    dřív, než je vyvětraný ten, kvůli komu se otevřelo."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    drz = ko.NaPohoduCoordinator._narazove_pokracuje
+
+    def co2(*hodnoty):
+        return [(h, 800, 700) for h in hodnoty]
+
+    # nad prahem otevření se spustí
+    assert drz(co2(900, 500), False) is True
+    # v pásmu mezi prahy drží dál — tady to dřív spadlo
+    assert drz(co2(750, 500), True) is True
+    # ale samo od sebe se v tom pásmu nespustí
+    assert drz(co2(750, 500), False) is False
+    # a vypne, až je čistý každý okruh
+    assert drz(co2(650, 500), True) is False
+    # dokud je jeden okruh nad svým prahem zavření, drží se dál
+    assert drz(co2(650, 720), True) is True
+    assert drz([], False) is False        # bez okruhů se nespouští
+
+
+def test_narazove_meri_kazdy_okruh_jeho_prahy(nahradni_ha):
+    """Okruh s přísnějším prahem má větrání spustit, i když je jinde
+    práh vyšší."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    drz = ko.NaPohoduCoordinator._narazove_pokracuje
+
+    prisny = (700, 650, 550)
+    volny = (900, 1200, 1000)
+    assert drz([prisny, volny], False) is True
+
+
+def test_narazove_spousti_i_prach(nahradni_ha):
+    """V mrazu je krátké vyvětrání průvanem lepší než půlhodina jedním
+    oknem, a to platí na prach stejně jako na vydýchaný vzduch."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    c = importlib.import_module("napohodu.const")
+    vzduch = ko.NaPohoduCoordinator._narazove_vzduch
+    drz = ko.NaPohoduCoordinator._narazove_pokracuje
+
+    def okruh(co2=500, pm=0.0, zvlhcovac=False):
+        return {"co2": co2, "pm25": pm, "pm_od_zvlhcovace": zvlhcovac,
+                "prahy": {c.CONF_CO2_OTEVRIT: 800, c.CONF_CO2_ZAVRIT: 700,
+                          c.CONF_PM_SPATNE: 35.0, c.CONF_PM_CISTO: 20.0}}
+
+    assert drz(vzduch([okruh(pm=50.0)]), False) is True
+    # a drží v pásmu mezi prahy prachu, stejně jako u CO2
+    assert drz(vzduch([okruh(pm=25.0)]), True) is True
+    assert drz(vzduch([okruh(pm=15.0)]), True) is False
+
+
+def test_narazove_ignoruje_prach_ze_zvlhcovace(nahradni_ha):
+    """Aerosol se vyvětrat nedá, takže by okna otevíral pro nic."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    c = importlib.import_module("napohodu.const")
+    vzduch = ko.NaPohoduCoordinator._narazove_vzduch
+    drz = ko.NaPohoduCoordinator._narazove_pokracuje
+
+    okruh = {"co2": 500, "pm25": 90.0, "pm_od_zvlhcovace": True,
+             "prahy": {c.CONF_CO2_OTEVRIT: 800, c.CONF_CO2_ZAVRIT: 700,
+                       c.CONF_PM_SPATNE: 35.0, c.CONF_PM_CISTO: 20.0}}
+    assert drz(vzduch([okruh]), False) is False
+    # prach z okruhu se zvlhčovačem se vůbec neposuzuje
+    assert len(vzduch([okruh])) == 1
 
 
 def test_srovnat_zaluzie_zrusi_rucni_klid(nahradni_ha):

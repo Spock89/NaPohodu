@@ -114,11 +114,20 @@ def _obnova(m, u):
 
 
 def _souhrn(m, u):
+    """Skládá se z toho, co místnost opravdu má.
+
+    Místnost bez ovládaného okna o žádném nic neví, takže psát jí do
+    souhrnu pohyby okna a minuty otevření znamená vymýšlet si.
+    """
     d = u.get("dnes", {})
-    return (f"{m} za dnešek: {d.get('pohyby', 0)}x pohyb okna, "
-            f"otevřeno {d.get('otevreno_min', 0)} min, "
-            f"nejvyšší CO2 {d.get('co2_max', 0)}, "
-            f"nejnižší teplota {d.get('nejnizsi_teplota', '?')} °C.")
+    casti = []
+    if d.get("pohyby") is not None:
+        casti.append(f"{d['pohyby']}x pohyb okna")
+    if d.get("otevreno_min") is not None:
+        casti.append(f"otevřeno {d['otevreno_min']} min")
+    casti.append(f"nejvyšší CO2 {d.get('co2_max', 0)}")
+    casti.append(f"nejnižší teplota {d.get('nejnizsi_teplota', '?')} °C")
+    return f"{m} za dnešek: " + ", ".join(casti) + "."
 
 
 SKLADBA = {

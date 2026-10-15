@@ -95,6 +95,17 @@ def test_souhrn_shrne_den():
     assert "4x" in t and "95" in t and "1180" in t
 
 
+def test_souhrn_bez_okna_o_oknu_nemluvi():
+    """Obývák žádné ovládané okno nemá, takže mu psát pohyby okna
+    a minuty otevření znamená vymýšlet si — a ta čísla navíc vycházela
+    nesmyslně vysoká z vnitřního stavu jádra."""
+    h = Hlasic(VYCHOZI)
+    t = h.zprava("souhrn", "Obývák", 1000,
+                 dnes={"co2_max": 927, "nejnizsi_teplota": 20.9})
+    assert "pohyb okna" not in t and "otevřeno" not in t
+    assert "927" in t and "20.9" in t
+
+
 def test_neznamy_druh_nespadne():
     h = Hlasic(DRUHY)
     assert h.zprava("cosi", "Kuchyně", 1000) is None

@@ -231,6 +231,31 @@ for radek in karty_text.splitlines():
     if f'"{atribut}"' not in ko_text2 and f'"{atribut}"' not in senzor_text:
         chyby.append(f"karty.py: atribut {atribut!r} nikdo nenastavuje")
 
+# 1am) atributy vypisované markdownem. Ty do karty nejdou přes
+# _atribut(), takže je kontrola výš neviděla — a seznam atributů, který
+# se po přejmenování v jádře rozejde, by tiše zmizel z karty.
+MARKDOWN_SEZNAMY = {
+    "ATRIBUTY_STAVU": "StavMistnosti",
+    "ATRIBUTY_PODROBNE": "StavMistnosti",
+    "ATRIBUTY_JEN_OBCAS": "StavMistnosti",
+    "ATRIBUTY_STINENI_OBCAS": "SlunceMistnosti",
+}
+for jmeno_seznamu, trida in MARKDOWN_SEZNAMY.items():
+    blok = re.search(rf"^{jmeno_seznamu} = \[(.*?)^\]",
+                     karty_text, re.S | re.M)
+    if not blok:
+        chyby.append(f"karty.py: seznam {jmeno_seznamu} chybí")
+        continue
+    for atribut in re.findall(r'\("(\w+)"', blok.group(1)):
+        propousti = filtry.get(trida)
+        if propousti is not None and atribut not in propousti:
+            chyby.append(f"karty.py: {trida} nevystavuje atribut "
+                         f"{atribut!r} ze seznamu {jmeno_seznamu}")
+        if (f'"{atribut}"' not in ko_text2
+                and f'"{atribut}"' not in senzor_text):
+            chyby.append(f"karty.py: atribut {atribut!r} ze seznamu "
+                         f"{jmeno_seznamu} nikdo nenastavuje")
+
 # 1k) posuvník a pole ve formuláři musí mít stejný rozsah. Jinak se
 # hodnota zadaná ve formuláři do posuvníku nevejde a ty dva pak ukazují
 # každý něco jiného.

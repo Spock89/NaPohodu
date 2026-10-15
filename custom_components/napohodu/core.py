@@ -939,7 +939,13 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # Bez venkovního čidla se to pozná z chování: když prach uvnitř
         # při otevřeném okně stoupá, tahá se dovnitř. Poznatek pár hodin
         # vydrží, ať se okno nezkouší otevřít každou minutu.
-        if p.otevreno and v.pm_platny:
+        if v.narazove:
+            # Při nárazovém větrání vidí místnost nejhorší prach
+            # z celého bytu, ne svůj vlastní. Z cizí hodnoty se o svém
+            # okně nedá odvodit nic — stoupne-li prach vedle, vypadalo
+            # by to, že si ho tahá dovnitř, a zavřela by na hodiny.
+            pass
+        elif p.otevreno and v.pm_platny:
             if p.pm_pri_otevreni is None:
                 p.pm_pri_otevreni = v.pm25
                 p.pm_otevreno_od_s = v.cas_s
