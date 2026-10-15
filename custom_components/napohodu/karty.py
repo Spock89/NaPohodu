@@ -198,8 +198,8 @@ ZLOMY_LADENI = {
 # jako jeho nejvyšší sekce — pod krátkou tedy zůstane díra. Pořadí je
 # proto seřazené tak, aby vedle sebe stály podobně vysoké sekce.
 PORADI_SEKCI = [
+    "#pokoj",                 # každá místnost se svými budíky, hned nahoře
     "Cílová teplota",
-    "#pokoj",                 # každá místnost se svými budíky
     # Dál sestupně podle výšky: mřížka zarovnává řádky, takže vedle
     # sebe mají stát podobně vysoké sekce, jinak pod tou krátkou
     # zůstane díra přes půl obrazovky.

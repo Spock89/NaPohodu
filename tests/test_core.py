@@ -851,13 +851,57 @@ def test_rucni_zadost_v_noci_vetra_i_po_vyvetrani():
 
 # --------------------- konflikt mezí s cílovou teplotou
 
+def test_pojistka_na_spatne_strane_cile_se_hlasi_vzdy():
+    """Pojistka nad cílem zavře okno dřív, než se dá cokoli vyvětrat.
+    To je nesmysl v každém počasí."""
+    from core import konflikt_mezi
+
+    potize = konflikt_mezi(cil=20.0, otevrit=2.5, zavrit=1.0,
+                           mez_dolni=21.0, mez_horni=27.0)
+    assert any("je nad cílem" in x for x in potize)
+
+    potize = konflikt_mezi(cil=20.0, otevrit=2.5, zavrit=1.0,
+                           mez_dolni=18.0, mez_horni=19.0)
+    assert any("je pod cílem" in x for x in potize)
 
 
+def test_pojistka_uvnitr_pasma_se_v_mrazu_nehlasi():
+    """Cíl se hýbe s adaptivní normou, takže dvojice „pojistka uvnitř
+    pásma" vzniká a mizí sama. V mrazu navíc ohřívat venkovním
+    vzduchem stejně nejde, takže není co překazit."""
+    from core import konflikt_mezi
+
+    # přesně případ z provozu: cíl 20, pásmo 2,5, pojistka 18
+    assert konflikt_mezi(cil=20.0, otevrit=2.5, zavrit=1.0,
+                         mez_dolni=18.0, mez_horni=27.0,
+                         t_out=2.0, rezerva=2.0) == []
+    # a bez venkovní teploty se taky mlčí, protože se nedá říct nic
+    assert konflikt_mezi(cil=20.0, otevrit=2.5, zavrit=1.0,
+                         mez_dolni=18.0, mez_horni=27.0) == []
 
 
+def test_pojistka_uvnitr_pasma_se_hlasi_az_kdyz_prekazi():
+    """Když je venku tepleji, než kam pásmo dojede, ohřev větráním by
+    dával smysl — a tehdy má cenu říct, že ho pojistka blokuje."""
+    from core import konflikt_mezi
+
+    potize = konflikt_mezi(cil=20.0, otevrit=2.5, zavrit=1.0,
+                           mez_dolni=18.0, mez_horni=27.0,
+                           t_out=26.0, rezerva=2.0)
+    assert any("přitopit větráním" in x for x in potize)
+    assert any("cíl 20.0" in x for x in potize)
 
 
+def test_zablokovane_chlazeni_se_hlasi_jen_v_horku():
+    from core import konflikt_mezi
 
+    kw = dict(cil=24.0, otevrit=2.5, zavrit=1.0, mez_dolni=18.0,
+              mez_horni=26.0, rezerva=2.0, chlazeni_min=7.0)
+    # chladný vzduch je k dispozici: pojistka chlazení překazí
+    assert any("chladit větráním" in x
+               for x in konflikt_mezi(t_out=20.0, **kw))
+    # v mrazu by se chladit stejně nemělo čím
+    assert konflikt_mezi(t_out=2.0, **kw) == []
 
 
 

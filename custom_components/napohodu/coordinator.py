@@ -1473,7 +1473,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # a nebylo by poznat proč.
         potize = core.konflikt_mezi(
             m.cil, nast.hyst_den_otevrit, nast.hyst_den_zavrit,
-            nast.mez_dolni, nast.mez_horni)
+            nast.mez_dolni, nast.mez_horni, t_ven,
+            nast.rezerva_venku, nast.chlazeni_min_venku)
         m.atributy["konflikt_mezi"] = potize or None
         if potize and self._konflikt_hlasen.get(p.subentry_id) != potize:
             self._konflikt_hlasen[p.subentry_id] = potize

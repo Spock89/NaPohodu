@@ -707,6 +707,12 @@ které se dají na dashboardu chytat a přesouvat.
 
 Po přidání místnosti si přijdeš pro novou verzi.
 
+Stránka začíná **místnostmi**, zbytek jde za nimi. Pořadí sekcí za nimi
+je seřazené sestupně podle výšky: mřížka zarovnává řádky a řádek je
+vysoký jako jeho nejvyšší sekce, takže pod krátkou sekcí vedle vysoké
+zůstane díra přes půl obrazovky. Ladicí výpisy místností jsou úplně
+nakonec.
+
 U každé místnosti jsou nahoře **čtyři ručičky**: cíl, odchylka od cíle,
 CO2 a prach. Hrany barev nejsou pevná čísla — počítají se z toho, podle
 čeho se rozhoduje, takže zelená končí přesně tam, kde se okno kvůli té
@@ -770,6 +776,14 @@ sobě vypadá rozumně a konflikt je vidět až dohromady.
 Integrace to hlídá při každém cyklu a ohlásí zprávou, řádkem v kartě a
 zápisem do protokolu. Hláška pojmenuje nastavení tak, jak ho vidíš na
 obrazovce, uvede obě čísla a řekne, co s tím udělat.
+
+Pojistka na špatné straně cíle se hlásí vždycky — to je nesmysl
+v každém počasí. **Pojistka uvnitř pásma** je jiný případ: cíl se hýbe
+s adaptivní normou, takže ta dvojice vzniká a mizí sama, aniž by se
+cokoli nastavovalo. Hlásí se proto, jen když venkovní vzduch ten směr
+doopravdy umožňuje a pojistka tedy něco překazí. V mrazu se kvůli
+zablokovanému ohřevu větráním neozve nic, protože ohřívat venkovním
+vzduchem stejně nejde.
 
 ## Vynulovat vnitřní stavy
 

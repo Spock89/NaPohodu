@@ -361,11 +361,25 @@ def cil_adaptivni(prumer_venku: float, posun: float = 0.0,
 
 
 def konflikt_mezi(cil: float, otevrit: float, zavrit: float,
-                  mez_dolni: float, mez_horni: float) -> list[str]:
+                  mez_dolni: float, mez_horni: float,
+                  t_out: float | None = None, rezerva: float = 0.0,
+                  chlazeni_min: float | None = None) -> list[str]:
     """Nesrovnalosti v nastavení pásma a pojistek.
 
     Každé nastavení samo o sobě vypadá rozumně, teprve dohromady dají
     chování, které nikdo nechtěl — a není to nikde vidět.
+
+    Pojistky jsou pevná čísla, ale **cíl se hýbe**: adaptivní norma ho
+    posouvá podle venkovního průměru. Hrana pásma se tedy posouvá taky
+    a dvojice „pojistka uvnitř pásma" vzniká a mizí sama, aniž by se
+    cokoli nastavovalo. Hlásit to pokaždé znamená budit člověka kvůli
+    něčemu, co nezavinil a co ho většinu roku nestojí nic.
+    #
+    Proto se tyhle dvě hlásí, jen když venkovní vzduch ten směr
+    doopravdy umožňuje — tedy ve chvíli, kdy by se bez pojistky
+    opravdu větralo a ona to překazí. V mrazu se kvůli zablokovanému
+    ohřevu venkovním vzduchem neozve nic, protože ohřívat venkovním
+    vzduchem stejně nejde.
     """
     potize = []
     if otevrit <= 0 and zavrit <= 0:
@@ -383,16 +397,25 @@ def konflikt_mezi(cil: float, otevrit: float, zavrit: float,
             f"Pojistka „nepřehřát nad“ {mez_horni:.1f} °C je pod cílem "
             f"{cil:.1f} °C, takže se okno kvůli teplu nikdy neotevře. "
             f"Zvyš ji nad cíl.")
-    if mez_dolni > cil - otevrit:
+    # Šlo by teď vůbec ohřívat, respektive chladit venkovním vzduchem?
+    # Bez venkovní teploty se nedá říct nic, tak se mlčí.
+    ohrev_by_sel = t_out is not None and t_out > cil + zavrit + rezerva
+    chlazeni_by_slo = (t_out is not None
+                       and t_out < cil - zavrit - rezerva
+                       and (chlazeni_min is None or t_out > chlazeni_min))
+
+    if ohrev_by_sel and mez_dolni > cil - otevrit:
         potize.append(
-            f"Pojistka „nevychladit pod“ {mez_dolni:.1f} °C je nad dolní "
-            f"hranou pásma {cil - otevrit:.1f} °C, takže se kvůli chladu "
-            f"nikdy neotevře — pojistka zasáhne dřív.")
-    if mez_horni < cil + otevrit:
+            f"Venku je {t_out:.1f} °C, dalo by se přitopit větráním, ale "
+            f"pojistka „nevychladit pod“ {mez_dolni:.1f} °C je nad dolní "
+            f"hranou pásma {cil - otevrit:.1f} °C (cíl {cil:.1f} °C). "
+            f"Kvůli chladu se proto neotevře — pojistka zasáhne dřív.")
+    if chlazeni_by_slo and mez_horni < cil + otevrit:
         potize.append(
-            f"Pojistka „nepřehřát nad“ {mez_horni:.1f} °C je pod horní "
-            f"hranou pásma {cil + otevrit:.1f} °C, takže se chlazení "
-            f"nikdy nerozjede — pojistka zasáhne dřív.")
+            f"Venku je {t_out:.1f} °C, dalo by se chladit větráním, ale "
+            f"pojistka „nepřehřát nad“ {mez_horni:.1f} °C je pod horní "
+            f"hranou pásma {cil + otevrit:.1f} °C (cíl {cil:.1f} °C). "
+            f"Chlazení se proto nerozjede — pojistka zasáhne dřív.")
     return potize
 
 

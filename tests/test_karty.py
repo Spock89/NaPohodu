@@ -332,8 +332,8 @@ def test_poradi_sekci_odpovida_nastavenemu():
         podoba="stranka"))
     prvni = [sek["cards"][0].get("heading") or sek["cards"][0].get("title")
              or sek["cards"][0]["type"] for sek in d["sections"]]
-    assert prvni[0] == "Cílová teplota"
-    assert prvni[1] == "horizontal-stack"       # místnosti hned za tím
+    assert prvni[0] == "horizontal-stack"        # místnosti hned nahoře
+    assert "Cílová teplota" in prvni
     # podrobnosti jsou vždycky až za vším ostatním
     assert all("podrobnosti" in x for x in prvni[-1:])
     assert "Ladění" in prvni
@@ -377,7 +377,9 @@ def test_prepinace_ovladani_hned_pod_teplotou():
         ["kuchyne", "obyvak"], [], vzdy,
         cidla={"kuchyne": "sensor.a", "obyvak": "sensor.b"},
         podoba="stranka"))
-    prvni = d["sections"][0]["cards"]
+    # sekce s cílovou teplotou je hned za místnostmi
+    prvni = next(s["cards"] for s in d["sections"]
+                 if s["cards"][0].get("heading") == "Cílová teplota")
     assert prvni[0]["heading"] == "Cílová teplota"
     # za ovládáním ještě volby místnosti, které nejsou číslo
     assert [k.get("title") for k in prvni][-2:] == [
@@ -434,7 +436,9 @@ def test_rozvrzeni_sekci():
         zaluzie={"obyvak": ["cover.o1"]}, podoba="stranka"))
     prvni = [sek["cards"][0].get("heading") or sek["cards"][0].get("title")
              or sek["cards"][0]["type"] for sek in d["sections"]]
-    assert prvni[0] == "Cílová teplota"
+    # místnosti hned nahoře, ladicí výpisy úplně dole
+    assert prvni[0] == "horizontal-stack"
+    assert prvni[prvni.index("Cílová teplota") - 1] == "horizontal-stack"
     assert "podrobnosti" in prvni[-1]
     assert prvni.index("Ovládání oken") < prvni.index("Ladění")
     assert prvni.index("Zvlhčovače") < prvni.index("Obsazenost a klid")
