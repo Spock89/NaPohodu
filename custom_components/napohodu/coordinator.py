@@ -146,7 +146,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.plan_opakovani: str = "jednou"
         # Vlastní kalendář plánu. Význam události je v záznamu, ne
         # v názvu, takže ho nejde pokazit překlepem.
-        self._plan: list[dict] = []
+        self._vlastni_plan: list[dict] = []
         # Poslední viděné hodnoty z formuláře. Musí přežít znovunačtení
         # integrace, protože uložení formuláře ho spustí — jinak by se
         # změna nikdy nepoznala a šoupátko by po restartu vyhrálo.
@@ -1964,7 +1964,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         okno_od = ted - timedelta(days=1)
         okno_do = ted + timedelta(days=14)
         vyskyty = []
-        for z in self._plan:
+        for z in self._vlastni_plan:
             if z.get("druh") != druh:
                 continue
             if (z.get("mistnost") or None) != (mistnost or None):
@@ -1988,7 +1988,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         protože přesně proto se zadává.
         """
         ted = dt_util.now()
-        for z in self._plan:
+        for z in self._vlastni_plan:
             if z.get("druh") != "cil" or z.get("cil") is None:
                 continue
             if (z.get("mistnost") or None) != mistnost:
@@ -2001,7 +2001,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     def plan_zaznamy(self) -> list[dict]:
         """Uložené záznamy plánu i s časy jako datum, ne text."""
-        return self._plan
+        return self._vlastni_plan
 
     def plan_z_nazvu(self, nazev: str) -> tuple:
         """Co znamená událost založená ručně v panelu Kalendář.
@@ -2031,12 +2031,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         return ("nerozumim", mistnost, None)
 
     async def plan_zapis(self, zaznam: dict) -> None:
-        self._plan.append(zaznam)
+        self._vlastni_plan.append(zaznam)
         await self._uloz_plan()
         await self.async_request_refresh()
 
     async def plan_smaz(self, uid: str) -> None:
-        self._plan = [z for z in self._plan if z.get("uid") != uid]
+        self._vlastni_plan = [z for z in self._vlastni_plan
+                              if z.get("uid") != uid]
         await self._uloz_plan()
         await self.async_request_refresh()
 
@@ -2044,16 +2045,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         """Časy se ukládají textem, protože datum se do JSONu nevejde."""
         await self._uloziste_planu.async_save(
             [{**z, "od": z["od"].isoformat(), "do": z["do"].isoformat()}
-             for z in self._plan if z.get("od") and z.get("do")])
+             for z in self._vlastni_plan if z.get("od") and z.get("do")])
 
     async def _nacti_plan(self) -> None:
         ulozene = await self._uloziste_planu.async_load() or []
-        self._plan = []
+        self._vlastni_plan = []
         for z in ulozene:
             od = dt_util.parse_datetime(str(z.get("od")))
             do = dt_util.parse_datetime(str(z.get("do")))
             if od and do:
-                self._plan.append({**z, "od": od, "do": do})
+                self._vlastni_plan.append({**z, "od": od, "do": do})
 
     def nabidka_planu(self) -> list[pz.Volba]:
         """Co jde naplánovat z dashboardu."""
@@ -2061,14 +2062,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                            for p in self._podentity(PODENTITA_MISTNOST)])
 
     async def naplanuj(self, popis: str, od, do) -> str:
-        """Založí událost v kalendáři, který k té volbě patří.
+        """Založí událost ve vlastním kalendáři plánu.
 
         Vrací větu pro člověka — tlačítko samo o sobě nic neukáže
         a bez zpětné vazby se nedá poznat, jestli se událost založila.
 
-        Opakované události takhle nejdou: akce `calendar.create_event`
-        pole pro opakování nemá. Pravidelný vzorec patří do panelu
-        Kalendář nebo do týdenního rozvrhu.
+        Včetně opakování: zapisuje se do vlastního záznamu, ne akcí
+        `calendar.create_event`, která pole pro opakování nemá.
         """
         volba = next((v for v in self.nabidka_planu() if v.popis == popis),
                      None)

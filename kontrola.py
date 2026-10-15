@@ -885,6 +885,34 @@ for p in d.glob("*.py"):
                     f"{p.name}: {jm}() vrací jen text, ale stojí jako "
                     f"podmínka — text je pravdivý vždycky")
 
+# 1an) atribut přiřazený v těle třídy nebo v __init__, který se jmenuje
+# stejně jako metoda té třídy. Atribut metodu zastíní, takže volání
+# skončí na „'list' object is not callable" — a to až za běhu, při
+# prvním načtení. Testy to nechytnou, pokud se obě jména nepotkají
+# v jednom testu.
+for p in d.glob("*.py"):
+    for tr in ast.walk(ast.parse(p.read_text())):
+        if not isinstance(tr, ast.ClassDef):
+            continue
+        metody = {c.name for c in tr.body
+                  if isinstance(c, (ast.FunctionDef, ast.AsyncFunctionDef))}
+        prirazene = set()
+        for u in ast.walk(tr):
+            cile = []
+            if isinstance(u, ast.Assign):
+                cile = u.targets
+            elif isinstance(u, (ast.AnnAssign, ast.AugAssign)):
+                cile = [u.target]
+            for c in cile:
+                if (isinstance(c, ast.Attribute)
+                        and isinstance(c.value, ast.Name)
+                        and c.value.id == "self"):
+                    prirazene.add(c.attr)
+        for jm in sorted(prirazene & metody):
+            chyby.append(
+                f"{p.name}: {tr.name}.{jm} je metoda i přiřazovaný "
+                f"atribut — atribut ji zastíní a volání spadne")
+
 # 2) místní moduly
 soubory = {p.stem for p in d.glob("*.py")}
 for p in d.glob("*.py"):
