@@ -21,6 +21,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
+# Jak se plán pojmenovává. Byt a místnost mluví každý o něčem jiném,
+# a když se slova půjčí, řádek v kartě tvrdí nesmysl: plán jedné
+# místnosti se hlásí jako „nikdo doma" za celý byt.
+@dataclass(frozen=True)
+class Slova:
+    prazdno: str
+    plno: str
+
+
+BYT = Slova(prazdno="nikdo doma", plno="víc lidí")
+MISTNOST = Slova(prazdno="nikdo tu nebude", plno="je tu někdo")
+
+
 @dataclass(frozen=True)
 class Udalost:
     """Co plán říká o jedné věci: platí to teď, a kdy se to změní.
@@ -33,6 +46,10 @@ class Udalost:
     bezi: bool = False
     do_s: float | None = None        # kdy skončí, pokud běží
     od_s: float | None = None        # kdy začne, pokud neběží
+    # Odkud to je. Bez toho se při víc kalendářích nedá zjistit, který
+    # z nich zrovna mluví — a právě to člověk hledá, když mu plán
+    # tvrdí něco, co nečeká.
+    zdroj: str | None = None
 
 
 def slouc(udalosti: list[Udalost]) -> Udalost:
@@ -48,9 +65,14 @@ def slouc(udalosti: list[Udalost]) -> Udalost:
         # Když u jednoho konec neznáme, neumíme říct, kdy to skončí.
         do_s = (max(konce) if konce and len(konce) == len(bezici)
                 else None)
-        return Udalost(bezi=True, do_s=do_s)
-    zacatky = [u.od_s for u in udalosti if u.od_s is not None]
-    return Udalost(bezi=False, od_s=min(zacatky) if zacatky else None)
+        posledni = max(bezici, key=lambda u: (u.do_s is not None, u.do_s
+                                              if u.do_s is not None else 0))
+        return Udalost(bezi=True, do_s=do_s, zdroj=posledni.zdroj)
+    cekajici = [u for u in udalosti if u.od_s is not None]
+    if not cekajici:
+        return Udalost()
+    prvni = min(cekajici, key=lambda u: u.od_s)
+    return Udalost(bezi=False, od_s=prvni.od_s, zdroj=prvni.zdroj)
 
 
 def predvetrat(vic: Udalost, cas_s: float, predstih_min: float) -> bool:
@@ -75,22 +97,34 @@ def konci_do(nikdo: Udalost, cas_s: float, predstih_min: float) -> bool:
     return nikdo.do_s - cas_s <= predstih_min * 60
 
 
-def popis(nikdo: Udalost, vic: Udalost, cas_s: float) -> str | None:
-    """Co plán zrovna říká. Bez plánu nic — řádek se pak v kartě skryje."""
+def popis(nikdo: Udalost, vic: Udalost, cas_s: float,
+          slova: Slova = BYT) -> str | None:
+    """Co plán zrovna říká. Bez plánu nic — řádek se pak v kartě skryje.
+
+    Slova se předávají, protože plán bytu a plán místnosti mluví každý
+    o něčem jiném. Ke každé hlášce patří i zdroj: při víc kalendářích
+    je to jediný způsob, jak poznat, který z nich zrovna mluví.
+    """
     casti = []
     if nikdo.bezi:
-        casti.append("nikdo doma" + _dokdy(nikdo.do_s, cas_s))
+        casti.append(slova.prazdno + _dokdy(nikdo.do_s, cas_s)
+                     + _odkud(nikdo.zdroj))
     elif vic.bezi:
-        casti.append("víc lidí" + _dokdy(vic.do_s, cas_s))
+        casti.append(slova.plno + _dokdy(vic.do_s, cas_s)
+                     + _odkud(vic.zdroj))
     if not vic.bezi and vic.od_s is not None:
         za = int((vic.od_s - cas_s) / 60)
         if 0 <= za <= 24 * 60:
-            casti.append(f"víc lidí za {za} min")
+            casti.append(f"{slova.plno} za {za} min{_odkud(vic.zdroj)}")
     if not nikdo.bezi and not vic.bezi and nikdo.od_s is not None:
         za = int((nikdo.od_s - cas_s) / 60)
         if 0 <= za <= 24 * 60:
-            casti.append(f"prázdno za {za} min")
+            casti.append(f"{slova.prazdno} za {za} min{_odkud(nikdo.zdroj)}")
     return ", ".join(casti) or None
+
+
+def _odkud(zdroj: str | None) -> str:
+    return f" ({zdroj})" if zdroj else ""
 
 
 def _dokdy(do_s: float | None, cas_s: float) -> str:

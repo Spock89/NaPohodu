@@ -977,7 +977,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 # Proč je místnost brána za obsazenou, když tam není
                 # čidlo — bez toho by se nedalo zjistit, odkud se to
                 # vzalo.
-                "plan": pl.popis(plan_neni, plan_je, cas_s),
+                "plan": pl.popis(plan_neni, plan_je, cas_s, pl.MISTNOST),
             }
             self.mistnosti[p.subentry_id] = m
             podklady[p.subentry_id] = {"pod": p, "d": d, "sig": sig,
@@ -1941,7 +1941,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             kdy = self._cas_z(st.attributes.get("next_event"), cas_s)
             jednotlive.append(pl.Udalost(
                 bezi=bezi, do_s=kdy if bezi else None,
-                od_s=None if bezi else kdy))
+                od_s=None if bezi else kdy, zdroj=eid))
         return pl.slouc(jednotlive) if jednotlive else pl.Udalost()
 
     async def _plan_kalendar(self, eid: str, bezi: bool,
@@ -1955,15 +1955,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         except Exception as e:      # pragma: no cover - cizí integrace
             _LOGGER.debug("NaPohodu: %s neodpověděl na get_events: %s",
                           eid, e)
-            return pl.Udalost(bezi=bezi)
+            return pl.Udalost(bezi=bezi, zdroj=eid)
         udalosti = ((odpoved or {}).get(eid) or {}).get("events") or []
         if not udalosti:
-            return pl.Udalost(bezi=bezi)
+            return pl.Udalost(bezi=bezi, zdroj=eid)
         prvni = udalosti[0]
         if bezi:
-            return pl.Udalost(bezi=True,
+            return pl.Udalost(bezi=True, zdroj=eid,
                               do_s=self._cas_z(prvni.get("end"), cas_s))
-        return pl.Udalost(bezi=False,
+        return pl.Udalost(bezi=False, zdroj=eid,
                           od_s=self._cas_z(prvni.get("start"), cas_s))
 
     def _cas_z(self, hodnota, cas_s: float) -> float | None:

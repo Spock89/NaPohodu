@@ -1,6 +1,6 @@
 """Testy plánu obsazenosti."""
 
-from plan import Udalost, konci_do, popis, predvetrat, slouc
+from plan import MISTNOST, Udalost, konci_do, popis, predvetrat, slouc
 
 HODINA = 3600.0
 TED = 100000.0
@@ -71,3 +71,30 @@ def test_popis_rika_co_plati_a_dokdy():
 def test_popis_nehlasi_udalosti_z_pristiho_tydne():
     """Zajímá nás, co se chystá dnes, ne co je za pět dní."""
     assert popis(Udalost(), Udalost(od_s=TED + 100 * HODINA), TED) is None
+
+
+def test_mistnost_mluvi_o_sobe_ne_za_cely_byt():
+    """Plán jedné místnosti se hlásil jako „nikdo doma" za celý byt —
+    slova se půjčila od bytu a řádek v kartě pak tvrdil nesmysl."""
+    je_tu = Udalost(bezi=True, do_s=TED + HODINA, zdroj="calendar.loznice")
+    t = popis(Udalost(), je_tu, TED, MISTNOST)
+    assert t.startswith("je tu někdo")
+    assert "nikdo doma" not in t
+
+
+def test_popis_rekne_ze_ktereho_kalendare_to_je():
+    """Při víc kalendářích je to jediný způsob, jak poznat, který
+    z nich zrovna mluví."""
+    u = Udalost(bezi=True, do_s=TED + HODINA, zdroj="calendar.prazdno")
+    assert "(calendar.prazdno)" in popis(u, Udalost(), TED)
+
+
+def test_slouc_si_zdroj_pamatuje():
+    u = slouc([Udalost(bezi=True, do_s=TED + HODINA, zdroj="calendar.a"),
+               Udalost(bezi=True, do_s=TED + 5 * HODINA,
+                       zdroj="calendar.b")])
+    assert u.zdroj == "calendar.b"        # ta, která platí déle
+
+    c = slouc([Udalost(od_s=TED + 5 * HODINA, zdroj="calendar.a"),
+               Udalost(od_s=TED + HODINA, zdroj="calendar.b")])
+    assert c.zdroj == "calendar.b"        # ta, která začne dřív
