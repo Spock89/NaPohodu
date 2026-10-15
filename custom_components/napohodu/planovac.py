@@ -80,7 +80,25 @@ OPAKOVANI = {
     "vikend": "FREQ=WEEKLY;BYDAY=SA,SU",
     "za_dva_tydny": "FREQ=WEEKLY;INTERVAL=2",
     "mesicne": "FREQ=MONTHLY",
+    "lichy_tyden": "FREQ=WEEKLY",
+    "sudy_tyden": "FREQ=WEEKLY",
+    "vikend_lichy": "FREQ=WEEKLY;BYDAY=SA,SU",
+    "vikend_sudy": "FREQ=WEEKLY;BYDAY=SA,SU",
 }
+
+# Lichost a sudost se v iCalendaru vyjádřit nedá: `INTERVAL=2` je
+# „každý druhý týden od začátku", ne „lichý týden". V roce s 53 týdny
+# se to převrátí a od Nového roku by plán padal do opačných týdnů.
+# Proto se opakuje každý týden a ty nesprávné se při rozbalování
+# zahodí podle čísla týdne podle ISO — to je přesně ten lichý a sudý
+# týden, který má člověk na papírku od školy nebo ze střídavé péče.
+PARITA = {"lichy_tyden": 1, "sudy_tyden": 0,
+          "vikend_lichy": 1, "vikend_sudy": 0}
+
+
+def parita(opakovani: str) -> int | None:
+    """Zbytek čísla týdne po dělení dvěma, na který se plán omezuje."""
+    return PARITA.get(opakovani)
 
 
 def pravidlo(opakovani: str, kolikrat: int) -> str | None:
@@ -93,7 +111,10 @@ def pravidlo(opakovani: str, kolikrat: int) -> str | None:
     zaklad = OPAKOVANI.get(opakovani)
     if not zaklad:
         return None
-    if kolikrat and kolikrat > 0:
+    # U lichých a sudých týdnů se počet do pravidla nedává: `COUNT` by
+    # počítal i týdny, které se potom vyhodí, takže by z osmi opakování
+    # zbyla čtyři. Omezuje se až po filtru, při rozbalování.
+    if kolikrat and kolikrat > 0 and opakovani not in PARITA:
         return f"{zaklad};COUNT={int(kolikrat)}"
     return zaklad
 
@@ -131,9 +152,37 @@ def rozbal(zaznam: dict, od, do, rrulestr=None) -> list[tuple]:
         rada = rrulestr(pravidlo_text, dtstart=zacatek)
     except Exception:          # pragma: no cover - cizí knihovna
         return [(zacatek, konec)] if konec > od and zacatek < do else []
+    par = zaznam.get("parita")
+    if par is not None:
+        return [(x, x + delka)
+                for x in _lichy_nebo_sudy(rada, int(par), do,
+                                          int(zaznam.get("kolikrat") or 0))
+                if x + delka > od and x < do]
     # Okno se posune o délku události, aby se do něj dostal i výskyt,
     # který začal dřív a ještě běží.
     return [(x, x + delka) for x in rada.between(od - delka, do, inc=True)]
+
+
+def _lichy_nebo_sudy(rada, par: int, do, kolikrat: int) -> list:
+    """Výskyty jen v lichých nebo jen v sudých týdnech.
+
+    Počítá se od začátku řady, ne od začátku okna: omezení počtu
+    opakování má platit na ty týdny, které zbyly po filtru, jinak by
+    z osmi opakování byla čtyři.
+
+    Týden podle ISO začíná v pondělí, takže sobota s nedělí padnou do
+    stejného týdne a víkend se nerozdělí na dvě poloviny.
+    """
+    out = []
+    for x in rada:
+        if x > do:
+            break
+        if x.isocalendar()[1] % 2 != par:
+            continue
+        out.append(x)
+        if kolikrat and len(out) >= kolikrat:
+            break
+    return out
 
 
 def nejblizsi(vyskyty: list[tuple], ted) -> tuple | None:

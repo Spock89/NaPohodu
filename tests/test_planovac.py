@@ -2,7 +2,8 @@
 
 from datetime import datetime, timedelta
 
-from planovac import DRUHY, nabidka, nazev, pravidlo, rozbal, nejblizsi, zkontroluj
+from planovac import (DRUHY, nabidka, nazev, nejblizsi, parita,
+                      pravidlo, rozbal, zkontroluj)
 
 
 def test_nabidka_ma_vsechny_varianty_kazde_mistnosti():
@@ -34,6 +35,53 @@ def test_pravidlo_opakovani():
     assert pravidlo("jednou", 8) is None
     assert pravidlo("tydne", 8) == "FREQ=WEEKLY;COUNT=8"
     assert pravidlo("vsedni_dny", 0) == "FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR"
+
+
+def test_lichy_a_sudy_tyden_nejde_do_pravidla_jako_count():
+    """COUNT by počítal i týdny, které se pak vyhodí."""
+    assert pravidlo("lichy_tyden", 8) == "FREQ=WEEKLY"
+    assert pravidlo("vikend_sudy", 8) == "FREQ=WEEKLY;BYDAY=SA,SU"
+    assert parita("lichy_tyden") == 1
+    assert parita("sudy_tyden") == 0 and parita("tydne") is None
+
+
+def test_lichy_tyden_padne_jen_do_lichych_tydnu():
+    """Ne `INTERVAL=2`: ten se v roce s 53 týdny převrátí."""
+    from dateutil.rrule import rrulestr
+
+    # 19. 10. 2026 je pondělí 43. týdne (lichý)
+    z = {"od": datetime(2026, 10, 19, 8, 0),
+         "do": datetime(2026, 10, 19, 15, 0),
+         "rrule": pravidlo("lichy_tyden", 0), "parita": 1}
+    v = rozbal(z, datetime(2026, 10, 1), datetime(2026, 12, 1), rrulestr)
+    tydny = [a.isocalendar()[1] for a, _ in v]
+    assert tydny == [43, 45, 47, 49]
+    z["parita"] = 0
+    v = rozbal(z, datetime(2026, 10, 1), datetime(2026, 12, 1), rrulestr)
+    assert [a.isocalendar()[1] for a, _ in v] == [44, 46, 48]
+
+
+def test_omezeni_poctu_plati_az_po_filtru():
+    """Tři opakování v lichém týdnu jsou tři, ne půldruhého."""
+    from dateutil.rrule import rrulestr
+
+    z = {"od": datetime(2026, 10, 19, 8, 0),
+         "do": datetime(2026, 10, 19, 15, 0),
+         "rrule": pravidlo("lichy_tyden", 3), "parita": 1, "kolikrat": 3}
+    v = rozbal(z, datetime(2026, 10, 1), datetime(2027, 3, 1), rrulestr)
+    assert [a.isocalendar()[1] for a, _ in v] == [43, 45, 47]
+
+
+def test_vikend_v_lichem_tydnu_se_nerozdeli():
+    """Týden podle ISO začíná v pondělí, sobota a nedělě drží spolu."""
+    from dateutil.rrule import rrulestr
+
+    z = {"od": datetime(2026, 10, 24, 20, 0),      # sobota, 43. týden
+         "do": datetime(2026, 10, 24, 23, 0),
+         "rrule": pravidlo("vikend_lichy", 0), "parita": 1}
+    v = rozbal(z, datetime(2026, 10, 20), datetime(2026, 11, 10), rrulestr)
+    dny = [(a.day, a.isocalendar()[1]) for a, _ in v]
+    assert dny == [(24, 43), (25, 43), (7, 45), (8, 45)]
 
 
 def test_nazev_nese_i_cilovou_teplotu():

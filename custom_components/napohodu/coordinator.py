@@ -2090,6 +2090,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "mistnost": volba.mistnost,
             "cil": round(float(cil), 1) if volba.druh == "cil" else None,
             "od": od, "do": do, "rrule": pravidlo, "popis": "",
+            # Lichý a sudý týden se v pravidle vyjádřit nedá, drží se
+            # zvlášť a uplatní se při rozbalování.
+            "parita": pz.parita(self.plan_opakovani),
+            "kolikrat": int(kolikrat or 0),
         })
         kolik = (f", opakovaně: {self.plan_opakovani}"
                  + (f", {int(kolikrat)}×" if kolikrat else "")

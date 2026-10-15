@@ -601,8 +601,11 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     for i, m in enumerate(mistnosti):
         if i:
             polozky.append("      - type: divider")
-        polozky += _radek(f"number.napohodu_{m}_odchylka_teploty",
-                          jm(m))
+        # Identifikátor vzniká z přeloženého jména; starší instalace
+        # mají šoupátko pod původním, proto se zkouší obojí.
+        polozky += _radek(
+            _prvni(existuje, f"number.napohodu_{m}_moje_odchylka_teploty",
+                   f"number.napohodu_{m}_odchylka_teploty"), jm(m))
         polozky += _radek(f"sensor.napohodu_{m}_cilova_teplota",
                           "   výsledný cíl")
         if cidla.get(m):
@@ -758,7 +761,9 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             polozky_pod = []
             if existuje(cidlo):
                 polozky_pod += _radek(cidlo, "Teď v místnosti")
-            posun = f"number.napohodu_{m}_odchylka_teploty"
+            posun = _prvni(
+                existuje, f"number.napohodu_{m}_moje_odchylka_teploty",
+                f"number.napohodu_{m}_odchylka_teploty")
             if existuje(posun):
                 polozky_pod += _radek(posun, "Posun cíle v místnosti")
             if polozky_pod:

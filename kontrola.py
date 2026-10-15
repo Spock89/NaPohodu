@@ -377,6 +377,40 @@ try:
                    for x in ("", "pokoj_", "oblast_")):
                 chyby.append(
                     f"karty.py: {druh} {jm} vzniká, ale v kartě není")
+
+    # 1ao) starší jméno šoupátka se smí použít jen jako záložní
+    # varianta v _prvni(). Samo o sobě na nové instalaci neexistuje,
+    # takže řádek tiše vypadne — a vypadne jen té místnosti, která
+    # vznikla později. Kontrola 1m to neuvidí: řádek se zahodí ještě
+    # před vykreslením, takže ve výsledku chybí, ne přebývá.
+    starsi = set()
+    for v in _karty.STARSI_POSUVNIKY.values():
+        starsi.update((v,) if isinstance(v, str) else v)
+    strom_karet = ast.parse((d / "karty.py").read_text())
+    v_prvni = set()
+    for u in ast.walk(strom_karet):
+        if (isinstance(u, ast.Call) and isinstance(u.func, ast.Name)
+                and u.func.id == "_prvni"):
+            for x in ast.walk(u):
+                v_prvni.add(id(x))
+    for u in ast.walk(strom_karet):
+        if not isinstance(u, (ast.JoinedStr, ast.Constant)):
+            continue
+        if id(u) in v_prvni:
+            continue
+        if isinstance(u, ast.JoinedStr):
+            text = "".join(c.value for c in u.values
+                           if isinstance(c, ast.Constant)
+                           and isinstance(c.value, str))
+        else:
+            text = u.value if isinstance(u.value, str) else ""
+        if "napohodu" not in text:
+            continue
+        for a in sorted(starsi):
+            if text.endswith("_" + a):
+                chyby.append(
+                    f"karty.py: {text!r} používá starší jméno {a!r} "
+                    f"mimo _prvni() — na nové instalaci to nevznikne")
 except Exception as e:      # pragma: no cover
     chyby.append(f"kontrola karty selhala: {e}")
 

@@ -703,12 +703,22 @@ definované místnosti. Výsledek posledního stisku je vidět hned pod
 tlačítkem a naplánované události pod ním v kalendáři.
 
 **Opakování funguje.** *Jak často* nabízí denně, všední dny, víkend,
-týdně, za dva týdny a měsíčně; *Kolikrát zopakovat* omezí počet
-výskytů (nula = bez omezení). Akce `calendar.create_event` pole pro
-opakování nemá, ale rozhraní kalendářové entity ano — a vlastní
-kalendář se zakládá přes ně, takže ze stejného pravidla
-(`FREQ=WEEKLY;COUNT=8`, iCalendar RRULE) vznikne řada výskytů jako při
-klikání v panelu.
+týdně, za dva týdny, měsíčně, **lichý a sudý týden** a **víkend
+v lichém nebo sudém týdnu**; *Kolikrát zopakovat* omezí počet výskytů
+(nula = bez omezení). Akce `calendar.create_event` pole pro opakování
+nemá, ale rozhraní kalendářové entity ano — a vlastní kalendář se
+zakládá přes ně, takže ze stejného pravidla (`FREQ=WEEKLY;COUNT=8`,
+iCalendar RRULE) vznikne řada výskytů jako při klikání v panelu.
+
+Lichý a sudý týden se v iCalendaru vyjádřit nedají: `INTERVAL=2`
+znamená „každý druhý týden od začátku", ne „lichý týden" — a v roce
+s 53 týdny se to na Nový rok převrátí. Proto se opakuje každý týden
+a nesprávné týdny se zahazují podle **čísla týdne podle ISO**, tedy
+podle toho lichého a sudého týdne, který má člověk na papírku ze
+školy nebo ze střídavé péče. Týden podle ISO začíná v pondělí, takže
+sobota s nedělí padnou do stejného týdne a víkend se nerozdělí.
+U těchto voleb se *Kolikrát zopakovat* vztahuje na týdny, které
+zbyly po filtru — tři opakování v lichém týdnu jsou tři.
 
 **Plánovat jde i cílovou teplotu.** Varianta *místnost: cílová teplota*
 uloží konkrétní číslo, které po dobu události platí jako skutečný cíl:
@@ -1186,12 +1196,22 @@ last press shows right under the button, and the planned events below
 it in the calendar.
 
 **Recurrence works.** *How often* offers daily, weekdays, weekend,
-weekly, fortnightly and monthly; *how many repeats* caps the number of
+weekly, fortnightly, monthly, **odd and even weeks**, and **the
+weekend in odd or even weeks**; *how many repeats* caps the number of
 occurrences (zero = no cap). The `calendar.create_event` action has no
 recurrence field, but the calendar entity API does — and the own
 calendar is written through that — so the same rule
 (`FREQ=WEEKLY;COUNT=8`, an iCalendar RRULE) produces a series of
 occurrences, exactly as clicking in the panel would.
+
+Odd and even weeks cannot be expressed in iCalendar: `INTERVAL=2`
+means "every other week from the start", not "odd week" — and in a
+53-week year it flips at New Year. So the rule repeats every week and
+the wrong weeks are dropped by **ISO week number**, which is the odd
+and even week people actually mean. An ISO week starts on Monday, so
+Saturday and Sunday fall in the same week and a weekend is never
+split. For these options the repeat count applies to the weeks that
+survive the filter — three repeats in odd weeks means three.
 
 **A target temperature can be planned too.** The *room: target
 temperature* variant stores a concrete number that acts as the real

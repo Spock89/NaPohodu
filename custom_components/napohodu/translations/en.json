@@ -1131,7 +1131,11 @@
           "vsedni_dny": "weekdays",
           "vikend": "weekend",
           "za_dva_tydny": "fortnightly",
-          "mesicne": "monthly"
+          "mesicne": "monthly",
+          "lichy_tyden": "odd weeks",
+          "sudy_tyden": "even weeks",
+          "vikend_lichy": "weekend in odd weeks",
+          "vikend_sudy": "weekend in even weeks"
         }
       }
     },

@@ -786,3 +786,42 @@ def test_sekce_jsou_serazene_podle_vysky():
     ztrata = sum(sum(max(v[r:r + 4]) - x for x in v[r:r + 4])
                  for r in range(0, len(v), 4))
     assert ztrata < 120, ztrata
+
+
+def _radek_jmenem(s, nazev):
+    """Entity z řádků, které se jmenují zadaným popiskem."""
+    return [e.get("entity") for k in vsechny_karty(s)
+            for e in (k.get("entities") or [])
+            if isinstance(e, dict) and e.get("name") == nazev]
+
+
+def test_posun_cile_je_v_karte_mistnosti_pod_oba_nazvy():
+    """Šoupátko odchylky vzniká pod novým jménem, starší instalace ho
+    mají pod původním. Dřív se v kartě místnosti i v sekci Cílová
+    teplota zkoušelo jen to původní, takže místnosti založené později
+    řádek zmizel — a jen jí, což se hledá nejhůř."""
+    predpona = "number.napohodu_kuchyne_"
+    for jmeno in ("moje_odchylka_teploty", "odchylka_teploty"):
+        def jen_tenhle(e, jmeno=jmeno):
+            if e.startswith(predpona) and "odchylka_teploty" in e:
+                return e == predpona + jmeno
+            return True
+
+        s = dashboard(["kuchyne"], [], jen_tenhle,
+                      cidla={"kuchyne": "sensor.t"})
+        # v kartě místnosti pod ručičkami
+        assert _radek_jmenem(s, "Posun cíle v místnosti") == [
+            predpona + jmeno], jmeno
+        # a v sekci Cílová teplota, kde se řádek jmenuje po místnosti
+        assert predpona + jmeno in _radek_jmenem(s, "Kuchyne"), jmeno
+
+
+def test_posun_cile_i_v_mistnosti_bez_okna():
+    """Topení bez okna je pořád topení — ladit teplotu musí jít taky."""
+    def bez_oken(e):
+        return "okno" not in e and "zaluzie" not in e
+
+    s = dashboard(["obyvak"], [], bez_oken, cidla={"obyvak": "sensor.t"},
+                  s_okny=set())
+    assert _radek_jmenem(s, "Posun cíle v místnosti") == [
+        "number.napohodu_obyvak_moje_odchylka_teploty"]

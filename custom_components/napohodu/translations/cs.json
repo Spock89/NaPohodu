@@ -1131,7 +1131,11 @@
           "vsedni_dny": "všední dny",
           "vikend": "víkend",
           "za_dva_tydny": "za dva týdny",
-          "mesicne": "měsíčně"
+          "mesicne": "měsíčně",
+          "lichy_tyden": "lichý týden",
+          "sudy_tyden": "sudý týden",
+          "vikend_lichy": "víkend v lichém týdnu",
+          "vikend_sudy": "víkend v sudém týdnu"
         }
       }
     },
