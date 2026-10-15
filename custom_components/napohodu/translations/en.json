@@ -11,6 +11,9 @@
           "naraz_vetru": "Wind gust",
           "dest": "Rain intensity",
           "doma": "Someone is home",
+          "plan_nikdo_doma": "Plan: nobody home",
+          "plan_vic_lidi": "Plan: more people",
+          "predvetrat_min": "Pre-ventilate before a planned visit",
           "cil_min": "Lowest target",
           "cil_max": "Highest target",
           "noc_od": "Quiet hours from",
@@ -77,7 +80,10 @@
           "zima_o_kolik": "How many degrees to add when it is really cold outside. Nothing more is added beyond that — deeper frost changes nothing.",
           "zima_najezd": "How many degrees below the threshold reach the full value. With a threshold of 7 and a ramp of 2.5 the full boost applies from 4.5 °C.",
           "zmena_podminek": "After a futile attempt it waits for the outdoor temperature to move by this much — and only in the direction that would help: colder for cooling, warmer for heating. A move the other way improves nothing.\n\nIt is measured from the temperature at the last futile attempt, not the first; every further attempt therefore starts a fresh comparison.\n\nZero disables only the wait for conditions — the “Or at the latest in” ceiling still applies. Emergency ventilation and a manual request always get past it.\n\nThe wait also ends on its own as soon as the reason for ventilating disappears: the temperature comes back inside the band, or the air clears without the window. There is then nothing left to postpone, not even the ceiling. Ventilation for comfort is the exception — there was no reason to begin with, so the wait stays; otherwise the window would keep opening and closing on a pleasant day.",
-          "nejdriv_znovu_min": "The waiting ceiling: even if nothing changes outside, it tries again after this time. If things change outside sooner, it tries sooner — this time delays nothing."
+          "nejdriv_znovu_min": "The waiting ceiling: even if nothing changes outside, it tries again after this time. If things change outside sooner, it tries sooner — this time delays nothing.",
+          "plan_nikdo_doma": "A calendar or weekly schedule where a running event means nobody will be home. The meaning comes from this field, not from the event title — a typo in a title would quietly do nothing.\n\nThe absence then counts as a long one straight away, without waiting out the hours in Setback when away after. And because its end is known, the setback is released in time to heat back up, using the lead time from Ramp before night.\n\nReality overrides the plan: if presence says somebody is home, that wins, whatever the calendar says.",
+          "plan_vic_lidi": "A calendar or schedule for visitors and the like. While the event runs, the home counts as occupied, so nothing is set back, and the air is cleared before it starts.",
+          "predvetrat_min": "How many minutes before a Plan: more people event ventilation starts aiming at the clean CO2 level rather than merely the opening threshold, so there is headroom once the place fills up. Zero turns it off.\n\nThe limits and the wind guard still apply, so this cannot hold a window open through a frost."
         },
         "title": "NaPohodu"
       }
@@ -107,6 +113,9 @@
           "naraz_vetru": "Wind gust",
           "dest": "Rain intensity",
           "doma": "Someone is home",
+          "plan_nikdo_doma": "Plan: nobody home",
+          "plan_vic_lidi": "Plan: more people",
+          "predvetrat_min": "Pre-ventilate before a planned visit",
           "cil_min": "Lowest target",
           "cil_max": "Highest target",
           "noc_od": "Quiet hours from",
@@ -173,7 +182,10 @@
           "zima_o_kolik": "How many degrees to add when it is really cold outside. Nothing more is added beyond that — deeper frost changes nothing.",
           "zima_najezd": "How many degrees below the threshold reach the full value. With a threshold of 7 and a ramp of 2.5 the full boost applies from 4.5 °C.",
           "zmena_podminek": "After a futile attempt it waits for the outdoor temperature to move by this much — and only in the direction that would help: colder for cooling, warmer for heating. A move the other way improves nothing.\n\nIt is measured from the temperature at the last futile attempt, not the first; every further attempt therefore starts a fresh comparison.\n\nZero disables only the wait for conditions — the “Or at the latest in” ceiling still applies. Emergency ventilation and a manual request always get past it.\n\nThe wait also ends on its own as soon as the reason for ventilating disappears: the temperature comes back inside the band, or the air clears without the window. There is then nothing left to postpone, not even the ceiling. Ventilation for comfort is the exception — there was no reason to begin with, so the wait stays; otherwise the window would keep opening and closing on a pleasant day.",
-          "nejdriv_znovu_min": "The waiting ceiling: even if nothing changes outside, it tries again after this time. If things change outside sooner, it tries sooner — this time delays nothing."
+          "nejdriv_znovu_min": "The waiting ceiling: even if nothing changes outside, it tries again after this time. If things change outside sooner, it tries sooner — this time delays nothing.",
+          "plan_nikdo_doma": "A calendar or weekly schedule where a running event means nobody will be home. The meaning comes from this field, not from the event title — a typo in a title would quietly do nothing.\n\nThe absence then counts as a long one straight away, without waiting out the hours in Setback when away after. And because its end is known, the setback is released in time to heat back up, using the lead time from Ramp before night.\n\nReality overrides the plan: if presence says somebody is home, that wins, whatever the calendar says.",
+          "plan_vic_lidi": "A calendar or schedule for visitors and the like. While the event runs, the home counts as occupied, so nothing is set back, and the air is cleared before it starts.",
+          "predvetrat_min": "How many minutes before a Plan: more people event ventilation starts aiming at the clean CO2 level rather than merely the opening threshold, so there is headroom once the place fills up. Zero turns it off.\n\nThe limits and the wind guard still apply, so this cannot hold a window open through a frost."
         }
       },
       "tester": {
@@ -314,6 +326,8 @@
             "zdroj_klidu": "Quiet based on",
             "spanek": "Sleep switch",
             "pritomnost": "Motion sensor",
+            "plan_obsazeno": "Plan: someone is here",
+            "plan_prazdno": "Plan: nobody will be here",
             "dobeh_min": "Run-on after motion",
             "max_stari_h": "Distrust readings older than",
             "stineni_pryc": "Shading when nobody is home"
@@ -325,7 +339,9 @@
             "pritomnost": "A motion sensor. On its own it is not enough, because it does not see a person sitting still.",
             "dobeh_min": "How long after the last motion the room still counts as occupied.",
             "max_stari_h": "If a sensor stays silent for this long, its battery has most likely died and it stops being trusted.",
-            "stineni_pryc": "What the blinds should do when nobody is home."
+            "stineni_pryc": "What the blinds should do when nobody is home.",
+            "plan_obsazeno": "While the event runs, the room counts as occupied even with no sensors in it. For rooms whose use changes from week to week — a guest room, a study, a child's room.\n\nIt overrides both the home-wide plan and the Occupancy source setting.",
+            "plan_prazdno": "The opposite of the previous one. A sensor overrides it: if somebody really is in the room, it counts as occupied — the plan may only add presence, never take it away."
           },
           "submit": "Next"
         },
@@ -362,6 +378,8 @@
             "zdroj_obsazenosti": "Occupancy based on",
             "spanek": "Sleep switch",
             "pritomnost": "Motion sensor",
+            "plan_obsazeno": "Plan: someone is here",
+            "plan_prazdno": "Plan: nobody will be here",
             "dobeh_min": "Run-on after motion",
             "max_stari_h": "Distrust readings older than",
             "stineni_pryc": "Shading when nobody is home",
@@ -498,7 +516,9 @@
             "vlhkost_dosah": "Humidifying with a window open means humidifying the street. Humidity spreads further than its own room, so you can decide which open windows count.\n\nBy default the whole home does; its zone or selected rooms if that is enough for you.",
             "vlhkost_mistnosti": "Applies only with “In selected rooms”.",
             "noc_posun": "How far the target temperature shifts at night. A negative number means heat less, a positive one more, zero leaves the target alone.\n\nThe drop begins before night starts so it is not a step; the sleep switch applies at once, whatever the hour.",
-            "rucni_klid_zaluzie_min": "When you reposition the blinds by hand, the automation keeps out of them for this long. We notice it because the real position drifts from the one we sent — and it has to be confirmed twice in a row, so that a drive coasting to a stop does not look like a hand.\n\nThis is usually longer than for a window: a blind position is chosen deliberately. Zero means the automation carries on at once. The Line up blinds button clears the hold, because that is an explicit instruction."
+            "rucni_klid_zaluzie_min": "When you reposition the blinds by hand, the automation keeps out of them for this long. We notice it because the real position drifts from the one we sent — and it has to be confirmed twice in a row, so that a drive coasting to a stop does not look like a hand.\n\nThis is usually longer than for a window: a blind position is chosen deliberately. Zero means the automation carries on at once. The Line up blinds button clears the hold, because that is an explicit instruction.",
+            "plan_obsazeno": "While the event runs, the room counts as occupied even with no sensors in it. For rooms whose use changes from week to week — a guest room, a study, a child's room.\n\nIt overrides both the home-wide plan and the Occupancy source setting.",
+            "plan_prazdno": "The opposite of the previous one. A sensor overrides it: if somebody really is in the room, it counts as occupied — the plan may only add presence, never take it away."
           },
           "submit": "Next"
         },
@@ -556,6 +576,8 @@
             "zdroj_obsazenosti": "Occupancy based on",
             "spanek": "Sleep switch",
             "pritomnost": "Motion sensor",
+            "plan_obsazeno": "Plan: someone is here",
+            "plan_prazdno": "Plan: nobody will be here",
             "dobeh_min": "Run-on after motion",
             "max_stari_h": "Distrust readings older than",
             "stineni_pryc": "Shading when nobody is home",
@@ -616,7 +638,9 @@
             "indicie_vykon": "Power draw sensors. Above the threshold the room counts as occupied.",
             "prah_vykonu": "Above this draw it is more than standby. For a TV usually 15 to 30 W.",
             "indicie_dobeh_min": "How long it still counts after switching off. Someone who just turned the light off has not left yet.",
-            "rucni_klid_zaluzie_min": "When you reposition the blinds by hand, the automation keeps out of them for this long. We notice it because the real position drifts from the one we sent — and it has to be confirmed twice in a row, so that a drive coasting to a stop does not look like a hand.\n\nThis is usually longer than for a window: a blind position is chosen deliberately. Zero means the automation carries on at once. The Line up blinds button clears the hold, because that is an explicit instruction."
+            "rucni_klid_zaluzie_min": "When you reposition the blinds by hand, the automation keeps out of them for this long. We notice it because the real position drifts from the one we sent — and it has to be confirmed twice in a row, so that a drive coasting to a stop does not look like a hand.\n\nThis is usually longer than for a window: a blind position is chosen deliberately. Zero means the automation carries on at once. The Line up blinds button clears the hold, because that is an explicit instruction.",
+            "plan_obsazeno": "While the event runs, the room counts as occupied even with no sensors in it. For rooms whose use changes from week to week — a guest room, a study, a child's room.\n\nIt overrides both the home-wide plan and the Occupancy source setting.",
+            "plan_prazdno": "The opposite of the previous one. A sensor overrides it: if somebody really is in the room, it counts as occupied — the plan may only add presence, never take it away."
           }
         }
       },
@@ -960,6 +984,9 @@
       },
       "nejdriv_znovu_min": {
         "name": "Or at the latest in"
+      },
+      "predvetrat_min": {
+        "name": "Pre-ventilate before a planned visit"
       },
       "min_drzeni_min": {
         "name": "Shortest time to hold a position"

@@ -19,8 +19,8 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
 from .number import MISTNOST as POSUVNIKY_MISTNOSTI
-from . import (core, pritomnost as pr, prumery as pm, slunce as sl,
-               sousedstvi as so, vykon as vy, zpravy as zp,
+from . import (core, plan as pl, pritomnost as pr, prumery as pm,
+               slunce as sl, sousedstvi as so, vykon as vy, zpravy as zp,
                klima as kl)
 from .const import (
     CONF_AZIMUT, CONF_CHLAZENI_MIN_VENKU, CONF_CIL_MAX, CONF_CIL_MIN,
@@ -40,7 +40,9 @@ from .const import (
     CONF_NOC_OD, CONF_NOC_POSUN, CONF_NOC_PREDSTIH, CONF_NOC_UTLUM,
     CONF_OCHOTA, CONF_ODCHYLKA, CONF_ODVZDUSNENI_H, CONF_ODVZDUSNENI_T,
     CONF_OKNA, CONF_PM10, CONF_PM10_VENKU, CONF_PM25, CONF_PM25_VENKU,
-    CONF_PM_CISTO, CONF_PM_PLATNY, CONF_PM_SPATNE, CONF_PRACH_DOSAH,
+    CONF_PLAN_NIKDO, CONF_PLAN_OBSAZENO, CONF_PLAN_PRAZDNO,
+    CONF_PLAN_VIC, CONF_PM_CISTO, CONF_PM_PLATNY, CONF_PM_SPATNE,
+    CONF_PRACH_DOSAH, CONF_PREDVETRAT,
     CONF_PRACH_MISTNOSTI, CONF_PRAH_VYKONU, CONF_PRITOMNOST,
     CONF_PROJEZD_M, CONF_PRO_POHODU, CONF_PRYC_PO, CONF_PRYC_UTLUM,
     CONF_REZERVA_VENKU, CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU,
@@ -122,6 +124,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.narazove_bezi: bool = False
         self.narazove_co2: float = 0.0
         self.narazove_pm: float = 0.0
+        # co říká plán obsazenosti; přepočítává se každý cyklus
+        self.plan_nikdo = pl.Udalost()
+        self.plan_vic = pl.Udalost()
+        self.plan_popis: str | None = None
+        self.predvetrat: bool = False
+        self.plan_pryc: bool = False
         # Poslední viděné hodnoty z formuláře. Musí přežít znovunačtení
         # integrace, protože uložení formuláře ho spustí — jinak by se
         # změna nikdy nepoznala a šoupátko by po restartu vyhrálo.
@@ -889,6 +897,29 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self._souhrn_den = dnes
             self.souhrn = {}          # nový den, počítadla od nuly
         cas_s = dt_util.utcnow().timestamp()
+        # Plán obsazenosti. Skutečnost smí přítomnost jen přidat, nikdy
+        # ubrat: kdyby plán uměl „nikdo doma" přebít čidlo, stačil by
+        # jeden zapomenutý záznam v kalendáři a člověk sedí ve studeném
+        # bytě. Proto se plán „nikdo" uplatní, jen když ani přítomnost
+        # nikoho nevidí.
+        self.plan_nikdo = await self._plan(g.get(CONF_PLAN_NIKDO), cas_s)
+        self.plan_vic = await self._plan(g.get(CONF_PLAN_VIC), cas_s)
+        if self.plan_vic.bezi:
+            doma = True
+            # Ať je v kartě poznat, proč se byt bere za obsazený,
+            # když přítomnost hlásí opak.
+            self.doma_popis += " (plán: víc lidí)"
+        self.plan_popis = pl.popis(self.plan_nikdo, self.plan_vic, cas_s)
+        predstih = self.hodnota(self.entry.entry_id, CONF_PREDVETRAT,
+                                float(g.get(CONF_PREDVETRAT, 60)))
+        self.predvetrat = pl.predvetrat(self.plan_vic, cas_s, predstih)
+        # Plánovaná nepřítomnost se počítá za dlouhou hned, bez čekání
+        # na hodiny — a končí s předstihem, aby se stihlo nahřát zpátky.
+        self.plan_pryc = (
+            self.plan_nikdo.bezi and not doma
+            and not pl.konci_do(self.plan_nikdo, cas_s,
+                                float(g.get(CONF_NOC_PREDSTIH, 60))))
+
         cil_zakl = self._cil_zakladni(g)
         drive_sezona = self.topna_sezona
         self.topna_sezona = self._sezona(g)
@@ -918,10 +949,21 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             sig = self._signaly(d, doma, hodina, noc_od, noc_do)
             nast_pr = self._nastaveni_pritomnosti(d)
 
+            # Plán místnosti. Obsazenost smí jen přidat: když čidlo
+            # vidí pohyb, je obsazeno, ať plán říká co chce. „Nikdo tu
+            # nebude" proto platí jen tam, kde to čidlo nevyvrací.
+            plan_je = await self._plan(d.get(CONF_PLAN_OBSAZENO), cas_s)
+            plan_neni = await self._plan(d.get(CONF_PLAN_PRAZDNO), cas_s)
+            obsazeno = pr.obsazeno(sig, nast_pr)
+            if plan_je.bezi:
+                obsazeno = True
+            elif plan_neni.bezi and not pr.indicie_aktivni(sig, nast_pr):
+                obsazeno = False
+
             m = VysledekMistnosti(
                 nazev=jmeno,
                 cil=round(cil_zakl + odchylka, 1),
-                obsazeno=pr.obsazeno(sig, nast_pr),
+                obsazeno=obsazeno,
                 klid=pr.klid(sig),
             )
             okno_m = sl.Okno(nazev=p.title,
@@ -932,6 +974,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 "teplota_max": self._max(d.get(CONF_TEPLOTY)),
                 "co2_vlastni": self._max(d.get(CONF_CO2)),
                 "indicie": pr.indicie_aktivni(sig, nast_pr),
+                # Proč je místnost brána za obsazenou, když tam není
+                # čidlo — bez toho by se nedalo zjistit, odkud se to
+                # vzalo.
+                "plan": pl.popis(plan_neni, plan_je, cas_s),
             }
             self.mistnosti[p.subentry_id] = m
             podklady[p.subentry_id] = {"pod": p, "d": d, "sig": sig,
@@ -1227,6 +1273,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             v_pokoji = self.mistnosti.get(v_pokoji_id)
 
             dlouho = bool(self._zapnuto(d.get(CONF_KLIMA_DLOUHA)))
+            # Plánovaná nepřítomnost je dlouhá hned, bez čekání na
+            # hodiny — kalendář to ví dopředu.
+            dlouho = dlouho or self.plan_pryc
             if not dlouho and self._prazdno_od is not None:
                 hodin = float(d.get(CONF_KLIMA_DLOUHA_H, 24))
                 dlouho = (cas_s - self._prazdno_od) > hodin * 3600
@@ -1356,6 +1405,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             hodina=hodina, cas_s=cas_s,
             zastupce=uprava.zastupce is not None,
             narazove=self.narazove_bezi,
+            predvetrat=self.predvetrat,
         )
         nast = core.Nastaveni(
             # prahy z oblasti, ať se místnosti nepřetahují
@@ -1658,6 +1708,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # vidět vůbec a nikdo by nevěděl, že existují.
             "nastaveni_bytu": self._prehled_bytu(g),
             "doma_podle": self.doma_popis,
+            # Co plán říká pro celý byt. Bez plánu nic a řádek se
+            # v kartě skryje.
+            "plan_bytu": self.plan_popis,
             # jak se dospělo k cílové teplotě, ať to není magie.
             # Odchylka místnosti se sem nepřidává: je vidět na svém
             # posuvníku a výsledek je v cílové teplotě.
@@ -1797,7 +1850,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         pryc = float(g.get(CONF_PRYC_UTLUM, 0.0))
         if pryc > 0 and self._prazdno_od is not None:
             hodin = float(g.get(CONF_PRYC_PO, 2.0))
-            if cas_s - self._prazdno_od >= hodin * 3600:
+            # Plánovaná nepřítomnost se nemusí odsedět: kalendář ví
+            # dopředu, že se nikdo nevrátí, a stejně tak ví, kdy
+            # skončí — útlum proto včas povolí, aby se stihlo nahřát.
+            if cas_s - self._prazdno_od >= hodin * 3600 or self.plan_pryc:
                 utlum_pryc = pryc
 
         celkem = round(utlum_noc + utlum_pryc, 2)
@@ -1859,6 +1915,72 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 m.atributy["topeni_poslano"] = "nic — hlavice už na tom stojí"
         m.atributy["topeni_hlavice"] = ", ".join(skutecnost) or None
         m.atributy["odvzdusneni"] = odvzdusneni
+
+    async def _plan(self, entity, cas_s: float) -> pl.Udalost:
+        """Co říká kalendář nebo rozvrh: platí to teď a kdy se to změní.
+
+        Stav obojího je zapnuto/vypnuto, takže „teď" se čte stejně.
+        Pro „kdy" má rozvrh atribut `next_event`, kalendář odpověď
+        akce `calendar.get_events`. Když se nic z toho nepovede,
+        zůstane jen „teď" — plán se pak neplánuje dopředu, ale ani
+        nelže.
+
+        Chybějící nebo smazaná entita se tiše přeskočí: plán prostě
+        neplatí a zbytek integrace jede jako bez něj.
+        """
+        jednotlive = []
+        for eid in (entity or []):
+            st = self._stav(eid)
+            if st is None:
+                continue
+            bezi = str(st.state).lower() == "on"
+            if eid.startswith("calendar."):
+                jednotlive.append(await self._plan_kalendar(eid, bezi, cas_s))
+                continue
+            kdy = self._cas_z(st.attributes.get("next_event"), cas_s)
+            jednotlive.append(pl.Udalost(
+                bezi=bezi, do_s=kdy if bezi else None,
+                od_s=None if bezi else kdy))
+        return pl.slouc(jednotlive) if jednotlive else pl.Udalost()
+
+    async def _plan_kalendar(self, eid: str, bezi: bool,
+                             cas_s: float) -> pl.Udalost:
+        """Nejbližší událost kalendáře. Bez ní platí jen „teď"."""
+        try:
+            odpoved = await self.hass.services.async_call(
+                "calendar", "get_events",
+                {"entity_id": eid, "duration": {"hours": 48}},
+                blocking=True, return_response=True)
+        except Exception as e:      # pragma: no cover - cizí integrace
+            _LOGGER.debug("NaPohodu: %s neodpověděl na get_events: %s",
+                          eid, e)
+            return pl.Udalost(bezi=bezi)
+        udalosti = ((odpoved or {}).get(eid) or {}).get("events") or []
+        if not udalosti:
+            return pl.Udalost(bezi=bezi)
+        prvni = udalosti[0]
+        if bezi:
+            return pl.Udalost(bezi=True,
+                              do_s=self._cas_z(prvni.get("end"), cas_s))
+        return pl.Udalost(bezi=False,
+                          od_s=self._cas_z(prvni.get("start"), cas_s))
+
+    def _cas_z(self, hodnota, cas_s: float) -> float | None:
+        """Čas z entity na tutéž osu, na jaké běží jádro.
+
+        Kalendář vrací text i datetime a celodenní událost jen datum.
+        Počítá se rozdíl proti teď, ne absolutní hodnota — jádro měří
+        v sekundách od spuštění stroje, ne v kalendářním čase.
+        """
+        if hodnota in (None, ""):
+            return None
+        kdy = dt_util.parse_datetime(str(hodnota))
+        if kdy is None:
+            den = dt_util.parse_date(str(hodnota))
+            if den is None:
+                return None
+            kdy = dt_util.start_of_local_day(den)
+        return cas_s + (dt_util.as_utc(kdy) - dt_util.utcnow()).total_seconds()
 
     @staticmethod
     def _narazove_vzduch(okruhy: list[dict]) -> list[tuple]:

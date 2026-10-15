@@ -1486,6 +1486,26 @@ def test_narazove_slibuje_jen_to_co_udela():
 
 
 
+def test_predvetrani_vetra_az_do_cista():
+    """Začínat na osmi stovkách CO2 ve chvíli, kdy se byt zaplní, je
+    pozdě — před návštěvou se proto větrá až na čistou hodnotu."""
+    from core import Nastaveni as N_
+    nast = N_(co2_otevrit=800, co2_zavrit=700, narazove_odstup=15.0)
+
+    def zkus(co2, predvetrat):
+        p = Pamet(otevreno=False, cas_povelu_s=0)
+        return rozhodni(Vstup(co2=co2, t_in=22.0, t_in_max=22.2,
+                              t_out=14.0, rh_out=50.0, cil=22.0,
+                              hodina=14.0, cas_s=100000,
+                              predvetrat=predvetrat), p, nast)
+
+    # mezi prahy: běžně se neotvírá, před návštěvou ano
+    assert zkus(750, False).akce is not Akce.OTEVRIT
+    assert zkus(750, True).akce is Akce.OTEVRIT
+    # pod čistou hodnotou není co řešit ani před návštěvou
+    assert zkus(650, True).akce is not Akce.OTEVRIT
+
+
 # --------------------- venkovní vzduch na správné straně cíle
 
 def test_neotevira_kdyz_je_venku_na_spatne_strane():

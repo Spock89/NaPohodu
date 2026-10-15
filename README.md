@@ -630,6 +630,59 @@ ignoruje.
 Obsazenost a klid jsou dvě nezávislé věci. Ložnice bývá neobsazená, ale
 v noci vyžaduje klid.
 
+### Plán obsazenosti
+
+Čidla vědí, co je teď. **Plán ví, co bude** — a na tom rozdílu záleží,
+protože zdivo i hlavice reagují pomalu. Útlum, náběh i větrání se
+vyplatí spustit dřív, než se situace změní.
+
+Vlastní plánovač integrace nemá a nebude mít: Home Assistant má v jádře
+dva a oba jsou lepší, než co by šlo poskládat do konfiguračního
+formuláře.
+
+**Kalendář** (integrace Local Calendar) jsou události s konkrétními
+daty, jednorázové i opakované. Diář: „od pátku do neděle nikdo",
+„v sobotu přijde šest lidí". **Týdenní rozvrh** (pomocník Plán) je
+jeden týden, který se opakuje pořád dokola — rozvrh hodin na zdi.
+Dobrý na nudné pozadí typu „ve všední dny od osmi do čtyř nikdo",
+výjimky neumí.
+
+Význam dává **pole, do kterého entitu vložíš**, ne název události:
+
+| kde | pole |
+|---|---|
+| byt | Plán: nikdo doma |
+| byt | Plán: víc lidí |
+| místnost | Plán: je tu někdo |
+| místnost | Plán: nikdo tu nebude |
+
+Název události tak zůstane volný na poznámky („chalupa", „babička") a
+překlep v něm nemůže tiše vypnout chování. Do každého pole jde vložit
+víc entit najednou, kalendář i rozvrh zároveň; stačí jedna platná
+událost, aby plán platil, a běží-li víc, platí ta, která skončí
+později.
+
+Co to dělá:
+
+- **nikdo doma** — nepřítomnost se bere za dlouhou hned, bez čekání na
+  hodiny v poli *Útlum při nepřítomnosti po*. A protože se ví, kdy
+  skončí, útlum včas povolí, aby se stihlo nahřát zpátky; předstih je
+  tentýž, jaký se nastavuje pro náběh před nocí.
+- **víc lidí** — byt se bere za obsazený, takže se netlumí, a před
+  začátkem události se **předvětrá**: větrá se až na čistou hodnotu
+  CO2, ne jen pod práh otevření, aby byla rezerva, než se byt zaplní.
+  Kolik minut předem, se nastavuje šoupátkem; nula vypíná.
+- **je tu někdo** v místnosti — bere se za obsazenou, i když v ní
+  nejsou čidla. Pro pokoje, jejichž využití se mění po týdnech.
+
+**Skutečnost smí přítomnost jen přidat, nikdy ubrat.** Když čidlo vidí
+pohyb, je obsazeno, ať plán říká co chce. Opačně by stačil jeden
+zapomenutý záznam v kalendáři a člověk sedí ve studeném pokoji.
+
+Chybějící nebo smazaná entita se tiše přeskočí — plán prostě neplatí
+a zbytek jede jako bez něj. Co plán zrovna říká a do kdy, je vidět
+v kartě místnosti.
+
 ### Zprávy
 
 Posílá se přes notify entity, takže příjemce vybereš ze seznamu — u
@@ -1021,6 +1074,34 @@ An ultrasonic humidifier sprays minerals that sensors see as dust. Its
 reach is configurable: its own room, its zone, selected rooms or the
 whole home. The same choice exists for which open windows stop it
 humidifying.
+
+### Occupancy plan
+
+Sensors know what is happening now. A **plan knows what is coming** —
+and that difference matters, because masonry and valves are slow.
+
+The integration has no scheduler of its own and will not get one:
+Home Assistant ships two, and both beat anything that would fit in a
+config form. A **calendar** (Local Calendar) holds events on real
+dates, one-off or repeating — a diary. A **weekly schedule** (the
+Schedule helper) is one week repeating forever — a timetable on the
+wall, good for the dull background, useless for exceptions.
+
+The meaning comes from the field you put the entity in, not from the
+event title: *nobody home* and *more people* for the home, *someone is
+here* and *nobody will be here* per room. Titles stay free for your
+own notes, and a typo in one cannot quietly disable anything.
+
+A planned absence counts as a long one at once, and because its end is
+known the setback is released in time to heat back up. A planned visit
+keeps the home counted as occupied and **pre-ventilates** before it
+starts, aiming at the clean CO2 level rather than the opening
+threshold. A room plan makes a room count as occupied even with no
+sensors in it.
+
+**Reality may only add presence, never take it away:** if a sensor
+sees movement, the room is occupied, whatever the plan says. A missing
+or deleted entity is skipped silently.
 
 The aerosol lingers after the humidifier stops, so dust is trusted
 again only once it falls into the clean band, and at most for two

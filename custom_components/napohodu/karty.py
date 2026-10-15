@@ -26,6 +26,10 @@ GLOBALNI = [
      "stupňů. Čas je jen zástupná veličina, důvod byl venku."),
     ("nebo_nejpozdeji_za", "Nebo nejpozději za",
      "Strop čekání. Když se venku změní dřív, zkusí se dřív."),
+    ("predvetrat_pred_planovanou_navstevou",
+     "Předvětrat před plánovanou návštěvou",
+     "Kolik minut před začátkem události „víc lidí“ se začne větrat až "
+     "na čistou hodnotu CO2. Nula vypíná."),
 ]
 
 POSUVNIKY = [
@@ -118,17 +122,19 @@ ATRIBUTY_STAVU = [
     ("provedeno", "Poslední povel", None),
     ("co_bylo", "Poslední rozhodnutí", None),
     ("co_dal", "Co změnu spustí", None),
+    ("ucinek", "Zabírá to? (od otevření)", None),
+    ("plan_bytu", "Plán bytu", None),
+    ("plan", "Plán místnosti", None),
     ("duvody", "Diagnostika", None),
     ("topeni", "Topení — posíláme", None),
     ("zvlhcovac_bezi", "Zvlhčovač", None),
     ("cisticka_bezi", "Čistička", None),
 ]
 
-# Řádky, které většinu času nemají co říct. Karta se seznamem prázdný
-# řádek skrýt neumí, takže by svítily „Neznámý"; markdown je vynechá.
-ATRIBUTY_JEN_OBCAS = [
-    ("ucinek", "Zabírá to"),
-]
+# Řádky, které většinu času nemají co říct. Zůstávají na svém místě
+# v kartě, ale vyrobí se jako podmíněné: dokud atribut nemá hodnotu,
+# řádek se vůbec nezobrazí, místo aby svítil „Neznámý".
+JEN_KDYZ_JE = {"ucinek", "plan_bytu", "plan"}
 
 # Totéž u stínění: ruka, klid po ní a chybějící entita jsou výjimečné
 # stavy, ne každodenní údaje.
@@ -198,17 +204,17 @@ PORADI_SEKCI = [
     # sebe mají stát podobně vysoké sekce, jinak pod tou krátkou
     # zůstane díra přes půl obrazovky.
     "Základ výpočtu",         # s pravidly bez nastavení
-    "Ladění — pásmo",
     "Ladění — meze",
-    "Ladění — CO2",
     "Slunce a stínění",
-    "Ovládání oken",          # s ovládáním žaluzií v jedné sekci
-    "Grafy",
+    "Ladění — pásmo",
     "Zvlhčovače",             # se srovnáním v jedné sekci
-    "Srovnat do žádané polohy",
+    "Ladění — CO2",
+    "Ovládání oken",          # s ovládáním žaluzií v jedné sekci
     "Obsazenost a klid",      # se sdíleným vzduchem v jedné sekci
+    "Grafy",
     "Ladění — topení",
     "Ladění — prach",
+    "Srovnat do žádané polohy",
     "Ladění",                 # odchylka a časování oken
     "— podrobnosti",          # ladicí výpisy místností, úplně nakonec
 ]
@@ -248,6 +254,27 @@ def _markdown(radky: list[tuple]) -> list[str]:
         out.append("      {% endif %}")
     out.append("")
     return out
+
+
+def _atribut_kdyz_je(eid: str, atribut: str, nazev: str,
+                     pripona: str | None = None) -> list[str]:
+    """Řádek, který se schová, dokud atribut nemá hodnotu.
+
+    Karta se seznamem prázdný řádek skrýt neumí a svítí v něm
+    „Neznámý". Podmíněný řádek to umí a zůstane přitom na svém místě
+    mezi ostatními — šablona se vyhodnocuje za běhu, takže řádek
+    naskočí i zmizí sám.
+    """
+    # Řádek pod „row:" je mapa, ne položka seznamu — pomlčka se proto
+    # musí zahodit a odsazení srovnat.
+    telo = [r.strip() for r in _atribut(eid, atribut, nazev, pripona)]
+    telo[0] = telo[0].removeprefix("- ")
+    return (["      - type: conditional", "        conditions:",
+             "          - condition: template",
+             f"            value_template: \"{{{{ state_attr('{eid}', "
+             f"'{atribut}') is not none }}}}\"",
+             "        row:"]
+            + [f"          {r}" for r in telo])
 
 
 def _karta(polozky: list[str], nazev: str | None = None) -> list[str]:
@@ -634,7 +661,10 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
                 continue
             if a == "cisticka_bezi" and m not in s_cistickou:
                 continue
-            polozky += _atribut(stav, a, n, s)
+            if a in JEN_KDYZ_JE:
+                polozky += _atribut_kdyz_je(stav, a, n, s)
+            else:
+                polozky += _atribut(stav, a, n, s)
 
         # Ručičky nahoře: hlavní čtyři veličiny vedle sebe a pod nimi
         # šoupátko odchylky, aby se kvůli jednomu stupni nemuselo
@@ -661,10 +691,6 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
                 c.append("")
 
         c += _karta(polozky, nazev=jm(m))
-        # Co má co říct jen někdy — v seznamu by to zbytek času svítilo
-        # jako „Neznámý".
-        c += _markdown([(stav, a, n, None)
-                        for a, n in ATRIBUTY_JEN_OBCAS])
 
         # Konflikt, stupnice a předpověď v jedné kartě. Stupnice patří
         # do bloku s pevnou šířkou kvůli zarovnání, věta naopak mimo —

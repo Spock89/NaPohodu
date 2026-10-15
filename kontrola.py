@@ -237,7 +237,6 @@ for radek in karty_text.splitlines():
 MARKDOWN_SEZNAMY = {
     "ATRIBUTY_STAVU": "StavMistnosti",
     "ATRIBUTY_PODROBNE": "StavMistnosti",
-    "ATRIBUTY_JEN_OBCAS": "StavMistnosti",
     "ATRIBUTY_STINENI_OBCAS": "SlunceMistnosti",
 }
 for jmeno_seznamu, trida in MARKDOWN_SEZNAMY.items():

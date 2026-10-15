@@ -11,6 +11,9 @@
           "naraz_vetru": "Náraz větru",
           "dest": "Intenzita deště",
           "doma": "Někdo je doma",
+          "plan_nikdo_doma": "Plán: nikdo doma",
+          "plan_vic_lidi": "Plán: víc lidí",
+          "predvetrat_min": "Předvětrat před plánovanou návštěvou",
           "cil_min": "Cíl nejméně",
           "cil_max": "Cíl nejvíc",
           "noc_od": "Noční klid od",
@@ -77,7 +80,10 @@
           "zima_o_kolik": "O kolik stupňů přitopit, když je venku doopravdy zima. Dál se nepřidává — hlubší mrazy na tom nic nemění.",
           "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C.",
           "zmena_podminek": "Po marném větrání se čeká, až se venkovní teplota posune o tolik stupňů — a to jen tím směrem, který by pomohl: u chlazení chladněji, u ohřevu tepleji. Opačný posun situaci nezlepší.\n\nMěří se od teploty při posledním marném pokusu, ne od prvního; každý další pokus tedy začíná nové srovnání.\n\nNula vypne jen čekání na podmínky — strop „Nebo nejpozději za\" platí dál. Nouzové větrání a ruční žádost to obchází vždycky.\n\nČekání skončí samo, jakmile zmizí důvod, kvůli kterému se větralo: teplota se vrátí do pásma, nebo se vzduch vyčistí i bez okna. Pak už není co odkládat a nečeká se ani na strop. Výjimka je větrání pro pohodu — tam žádný důvod nebyl, takže se čeká dál; jinak by si okno v příjemném dni otevíralo a zavíralo pořád dokola.",
-          "nejdriv_znovu_min": "Strop čekání: i když se venku nic nezmění, po téhle době se zkusí znovu. Když se venku změní dřív, zkusí se dřív — tahle doba nic nezdržuje."
+          "nejdriv_znovu_min": "Strop čekání: i když se venku nic nezmění, po téhle době se zkusí znovu. Když se venku změní dřív, zkusí se dřív — tahle doba nic nezdržuje.",
+          "plan_nikdo_doma": "Kalendář nebo týdenní rozvrh, kde platná událost znamená, že nikdo nebude doma. Význam dává tohle pole, ne název události — překlep v názvu by tiše nic neudělal.\n\nNepřítomnost se pak bere za dlouhou hned, bez čekání na hodiny v poli Útlum při nepřítomnosti po. A protože se ví, kdy skončí, útlum včas povolí, aby se stihlo nahřát zpátky — s předstihem podle pole Náběh před nocí.\n\nSkutečnost plán přebíjí: když přítomnost hlásí, že je někdo doma, platí to, ať v kalendáři stojí cokoli.",
+          "plan_vic_lidi": "Kalendář nebo rozvrh pro návštěvy a podobné. Po dobu události se byt bere za obsazený, takže se netlumí, a před jejím začátkem se předvětrá.",
+          "predvetrat_min": "Kolik minut před začátkem události Plán: víc lidí se začne větrat až na čistou hodnotu CO2, ne jen pod práh otevření. Cílem je mít rezervu, než se byt zaplní. Nula vypíná.\n\nPojistky i vítr platí dál, takže v mrazu se tím okno neotevře napořád."
         },
         "title": "NaPohodu"
       }
@@ -107,6 +113,9 @@
           "naraz_vetru": "Náraz větru",
           "dest": "Intenzita deště",
           "doma": "Někdo je doma",
+          "plan_nikdo_doma": "Plán: nikdo doma",
+          "plan_vic_lidi": "Plán: víc lidí",
+          "predvetrat_min": "Předvětrat před plánovanou návštěvou",
           "cil_min": "Cíl nejméně",
           "cil_max": "Cíl nejvíc",
           "noc_od": "Noční klid od",
@@ -173,7 +182,10 @@
           "zima_o_kolik": "O kolik stupňů přitopit, když je venku doopravdy zima. Dál se nepřidává — hlubší mrazy na tom nic nemění.",
           "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C.",
           "zmena_podminek": "Po marném větrání se čeká, až se venkovní teplota posune o tolik stupňů — a to jen tím směrem, který by pomohl: u chlazení chladněji, u ohřevu tepleji. Opačný posun situaci nezlepší.\n\nMěří se od teploty při posledním marném pokusu, ne od prvního; každý další pokus tedy začíná nové srovnání.\n\nNula vypne jen čekání na podmínky — strop „Nebo nejpozději za\" platí dál. Nouzové větrání a ruční žádost to obchází vždycky.\n\nČekání skončí samo, jakmile zmizí důvod, kvůli kterému se větralo: teplota se vrátí do pásma, nebo se vzduch vyčistí i bez okna. Pak už není co odkládat a nečeká se ani na strop. Výjimka je větrání pro pohodu — tam žádný důvod nebyl, takže se čeká dál; jinak by si okno v příjemném dni otevíralo a zavíralo pořád dokola.",
-          "nejdriv_znovu_min": "Strop čekání: i když se venku nic nezmění, po téhle době se zkusí znovu. Když se venku změní dřív, zkusí se dřív — tahle doba nic nezdržuje."
+          "nejdriv_znovu_min": "Strop čekání: i když se venku nic nezmění, po téhle době se zkusí znovu. Když se venku změní dřív, zkusí se dřív — tahle doba nic nezdržuje.",
+          "plan_nikdo_doma": "Kalendář nebo týdenní rozvrh, kde platná událost znamená, že nikdo nebude doma. Význam dává tohle pole, ne název události — překlep v názvu by tiše nic neudělal.\n\nNepřítomnost se pak bere za dlouhou hned, bez čekání na hodiny v poli Útlum při nepřítomnosti po. A protože se ví, kdy skončí, útlum včas povolí, aby se stihlo nahřát zpátky — s předstihem podle pole Náběh před nocí.\n\nSkutečnost plán přebíjí: když přítomnost hlásí, že je někdo doma, platí to, ať v kalendáři stojí cokoli.",
+          "plan_vic_lidi": "Kalendář nebo rozvrh pro návštěvy a podobné. Po dobu události se byt bere za obsazený, takže se netlumí, a před jejím začátkem se předvětrá.",
+          "predvetrat_min": "Kolik minut před začátkem události Plán: víc lidí se začne větrat až na čistou hodnotu CO2, ne jen pod práh otevření. Cílem je mít rezervu, než se byt zaplní. Nula vypíná.\n\nPojistky i vítr platí dál, takže v mrazu se tím okno neotevře napořád."
         }
       },
       "tester": {
@@ -314,6 +326,8 @@
             "zdroj_klidu": "Klid podle",
             "spanek": "Spánkový přepínač",
             "pritomnost": "Čidlo pohybu",
+            "plan_obsazeno": "Plán: je tu někdo",
+            "plan_prazdno": "Plán: nikdo tu nebude",
             "dobeh_min": "Doběh po pohybu",
             "max_stari_h": "Nevěřit čidlu starším než",
             "stineni_pryc": "Stínění, když nikdo není doma"
@@ -325,7 +339,9 @@
             "pritomnost": "Čidlo pohybu. Samo o sobě nestačí, protože nevidí sedícího člověka.",
             "dobeh_min": "Jak dlouho po posledním pohybu se místnost ještě považuje za obsazenou.",
             "max_stari_h": "Když se čidlo tak dlouho neozve, nejspíš mu došla baterie a přestane se mu věřit.",
-            "stineni_pryc": "Co se má stát se žaluziemi, když nikdo není doma."
+            "stineni_pryc": "Co se má stát se žaluziemi, když nikdo není doma.",
+            "plan_obsazeno": "Po dobu události se místnost bere za obsazenou, i když v ní nejsou čidla. Pro pokoje, kde se obsazenost mění po týdnech — host, pracovna, dětský pokoj.\n\nPřebíjí plán bytu i volbu Zdroj obsazenosti.",
+            "plan_prazdno": "Opak předchozího. Čidlo ho ale přebije: když v místnosti opravdu někdo je, bere se za obsazenou — plán smí přítomnost jen přidat, nikdy ubrat."
           },
           "submit": "Další"
         },
@@ -362,6 +378,8 @@
             "zdroj_obsazenosti": "Obsazenost podle",
             "spanek": "Spánkový přepínač",
             "pritomnost": "Čidlo pohybu",
+            "plan_obsazeno": "Plán: je tu někdo",
+            "plan_prazdno": "Plán: nikdo tu nebude",
             "dobeh_min": "Doběh po pohybu",
             "max_stari_h": "Nevěřit čidlu starším než",
             "stineni_pryc": "Stínění, když nikdo není doma",
@@ -498,7 +516,9 @@
             "vlhkost_dosah": "Zvlhčovat při otevřeném okně znamená zvlhčovat ulici. Vlhkost se šíří dál než jen do vlastní místnosti, takže se dá určit, odkud se otevřené okno počítá.\n\nVe výchozím stavu platí celý byt; v jeho zóně nebo ve vybraných místnostech, pokud ti to stačí.",
             "vlhkost_mistnosti": "Platí jen při volbě „Ve vybraných místnostech“.",
             "noc_posun": "O kolik se v noci posune cílová teplota. Záporné číslo znamená topit míň, kladné víc, nula nechává cíl být.\n\nKlesá se s předstihem před začátkem noci, aby to nebyl skok; zapnutý spánek platí hned, bez ohledu na hodinu.",
-            "rucni_klid_zaluzie_min": "Když si žaluzie přestavíš rukou, automatika se do nich tak dlouho nemontuje. Poznáme to tak, že se skutečná poloha rozejde s tou, kterou jsme poslali — a musí se to potvrdit dvakrát za sebou, aby dojezd pohonu nevypadal jako ruka.\n\nBývá to delší než u okna: polohu žaluzií si člověk vybírá vědomě. Nula znamená, že automatika pokračuje hned. Tlačítko Srovnat žaluzie klid zruší, protože to je výslovný pokyn."
+            "rucni_klid_zaluzie_min": "Když si žaluzie přestavíš rukou, automatika se do nich tak dlouho nemontuje. Poznáme to tak, že se skutečná poloha rozejde s tou, kterou jsme poslali — a musí se to potvrdit dvakrát za sebou, aby dojezd pohonu nevypadal jako ruka.\n\nBývá to delší než u okna: polohu žaluzií si člověk vybírá vědomě. Nula znamená, že automatika pokračuje hned. Tlačítko Srovnat žaluzie klid zruší, protože to je výslovný pokyn.",
+            "plan_obsazeno": "Po dobu události se místnost bere za obsazenou, i když v ní nejsou čidla. Pro pokoje, kde se obsazenost mění po týdnech — host, pracovna, dětský pokoj.\n\nPřebíjí plán bytu i volbu Zdroj obsazenosti.",
+            "plan_prazdno": "Opak předchozího. Čidlo ho ale přebije: když v místnosti opravdu někdo je, bere se za obsazenou — plán smí přítomnost jen přidat, nikdy ubrat."
           },
           "submit": "Další"
         },
@@ -556,6 +576,8 @@
             "zdroj_obsazenosti": "Obsazenost podle",
             "spanek": "Spánkový přepínač",
             "pritomnost": "Čidlo pohybu",
+            "plan_obsazeno": "Plán: je tu někdo",
+            "plan_prazdno": "Plán: nikdo tu nebude",
             "dobeh_min": "Doběh po pohybu",
             "max_stari_h": "Nevěřit čidlu starším než",
             "stineni_pryc": "Stínění, když nikdo není doma",
@@ -616,7 +638,9 @@
             "indicie_vykon": "Čidla odběru. Nad prahem se místnost považuje za obsazenou.",
             "prah_vykonu": "Nad tímto odběrem to není jen pohotovostní režim. U televize obvykle 15 až 30 W.",
             "indicie_dobeh_min": "Jak dlouho po vypnutí ještě platí. Kdo právě zhasl, ještě neodešel.",
-            "rucni_klid_zaluzie_min": "Když si žaluzie přestavíš rukou, automatika se do nich tak dlouho nemontuje. Poznáme to tak, že se skutečná poloha rozejde s tou, kterou jsme poslali — a musí se to potvrdit dvakrát za sebou, aby dojezd pohonu nevypadal jako ruka.\n\nBývá to delší než u okna: polohu žaluzií si člověk vybírá vědomě. Nula znamená, že automatika pokračuje hned. Tlačítko Srovnat žaluzie klid zruší, protože to je výslovný pokyn."
+            "rucni_klid_zaluzie_min": "Když si žaluzie přestavíš rukou, automatika se do nich tak dlouho nemontuje. Poznáme to tak, že se skutečná poloha rozejde s tou, kterou jsme poslali — a musí se to potvrdit dvakrát za sebou, aby dojezd pohonu nevypadal jako ruka.\n\nBývá to delší než u okna: polohu žaluzií si člověk vybírá vědomě. Nula znamená, že automatika pokračuje hned. Tlačítko Srovnat žaluzie klid zruší, protože to je výslovný pokyn.",
+            "plan_obsazeno": "Po dobu události se místnost bere za obsazenou, i když v ní nejsou čidla. Pro pokoje, kde se obsazenost mění po týdnech — host, pracovna, dětský pokoj.\n\nPřebíjí plán bytu i volbu Zdroj obsazenosti.",
+            "plan_prazdno": "Opak předchozího. Čidlo ho ale přebije: když v místnosti opravdu někdo je, bere se za obsazenou — plán smí přítomnost jen přidat, nikdy ubrat."
           }
         }
       },
@@ -960,6 +984,9 @@
       },
       "nejdriv_znovu_min": {
         "name": "Nebo nejpozději za"
+      },
+      "predvetrat_min": {
+        "name": "Předvětrat před plánovanou návštěvou"
       },
       "min_drzeni_min": {
         "name": "Nejkratší doba držení polohy"

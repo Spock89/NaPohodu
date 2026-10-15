@@ -161,6 +161,10 @@ class Vstup:
     # neruší, má větrat v noci stejně jako přes den
     vetrat: bool = False
     vynuceno: bool = False
+    # Plán hlásí, že se blíží návštěva. Větrá se dopředu, dokud je
+    # čas — začínat na osmi stovkách CO2 ve chvíli, kdy se byt zaplní,
+    # je pozdě.
+    predvetrat: bool = False
 
     hodina: float = 12.0
     cas_s: float = 0.0
@@ -984,6 +988,10 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     if v.co2 < n.co2_zavrit:
         p.vetra_se = False
     prah_startu = n.co2_zavrit if p.vetra_se else n.co2_otevrit
+    if v.predvetrat:
+        # Před návštěvou se větrá až na čistou hodnotu, ne jen pod
+        # práh otevření: cílem je mít rezervu, než se byt zaplní.
+        prah_startu = n.co2_zavrit
     if v.zastupce and not v.narazove:
         # větrá za nás soused, sami otevřeme až když to nestačí.
         # Při nárazovém větrání naopak otevíráme všude, o to jde.

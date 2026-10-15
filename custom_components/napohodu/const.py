@@ -49,6 +49,12 @@ CONF_VITR = "vitr"
 CONF_NARAZ = "naraz_vetru"
 CONF_DEST = "dest"
 CONF_DOMA = "doma"
+# Plán obsazenosti: kalendář nebo týdenní rozvrh. Význam dává pole,
+# do kterého se entita vloží, ne název události — překlep v názvu by
+# tiše nic neudělal a přišlo by se na to v lednu.
+CONF_PLAN_NIKDO = "plan_nikdo_doma"
+CONF_PLAN_VIC = "plan_vic_lidi"
+CONF_PREDVETRAT = "predvetrat_min"
 # Zimní přitápění. Adaptivní křivka podle EN 16798-1 je psaná na letní
 # komfort a v zimě se opře o dolní hranici. V mrazu ale chladnou stěny
 # a okna, klesá radiační teplota a při stejném vzduchu je člověku
@@ -91,6 +97,10 @@ CONF_PM10_VENKU = "pm10_venku"
 CONF_PM_PLATNY = "pm_platny"
 CONF_SPANEK = "spanek"
 CONF_PRITOMNOST = "pritomnost"
+# Plán pro jednu místnost. Hodí se tam, kde nejsou čidla a obsazenost
+# se mění po týdnech.
+CONF_PLAN_OBSAZENO = "plan_obsazeno"
+CONF_PLAN_PRAZDNO = "plan_prazdno"
 CONF_ZDROJ_OBSAZENOSTI = "zdroj_obsazenosti"
 CONF_DOBEH = "dobeh_min"
 CONF_MAX_STARI = "max_stari_h"

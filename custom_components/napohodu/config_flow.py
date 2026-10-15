@@ -92,6 +92,12 @@ SCHEMA_GLOBAL = vol.Schema(
         vol.Optional(c.CONF_NARAZ): _ent(["sensor"]),
         vol.Optional(c.CONF_DEST): _ent(["sensor"]),
         vol.Optional(c.CONF_DOMA): _ent(["input_boolean", "binary_sensor", "person"]),
+        # Plán: kalendář i týdenní rozvrh umí říct, co platí teď a kdy
+        # se to změní, takže se berou oba a klidně víc najednou.
+        vol.Optional(c.CONF_PLAN_NIKDO): _ent(["calendar", "schedule"], True),
+        vol.Optional(c.CONF_PLAN_VIC): _ent(["calendar", "schedule"], True),
+        vol.Optional(c.CONF_PREDVETRAT, default=60):
+            _cislo(0, 240, 15, "min"),
         vol.Optional(c.CONF_PRYC_UTLUM, default=0.0): _cislo(0, 3, 0.5),
         vol.Optional(c.CONF_PRYC_PO, default=2.0): _cislo(0, 12, 0.5, "h"),
         vol.Optional(c.CONF_NOC_PREDSTIH, default=60):
@@ -589,6 +595,10 @@ SCHEMA_PRITOMNOST = vol.Schema(
         ),
         vol.Optional(c.CONF_SPANEK): _ent(["input_boolean", "binary_sensor"]),
         vol.Optional(c.CONF_PRITOMNOST): _ent(["binary_sensor"]),
+        # Plán místnosti. Přebíjí plán bytu a hodí se tam, kde nejsou
+        # čidla a obsazenost se mění po týdnech.
+        vol.Optional(c.CONF_PLAN_OBSAZENO): _ent(["calendar", "schedule"], True),
+        vol.Optional(c.CONF_PLAN_PRAZDNO): _ent(["calendar", "schedule"], True),
         vol.Optional(c.CONF_DOBEH, default=30): _cislo(0, 240, 5, "min"),
         vol.Optional(c.CONF_MAX_STARI, default=6): _cislo(1, 48, 1, "h"),
         vol.Optional(c.CONF_STINENI_PRYC, default="nic"): _volba(

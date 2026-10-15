@@ -19,6 +19,7 @@ from .const import (
     CONF_HYST_DEN_ZAVRIT, CONF_HYST_NOC_OTEVRIT, CONF_HYST_NOC_ZAVRIT,
     CONF_MEZ_DOLNI, CONF_MEZ_HORNI, CONF_MIN_DRZENI, CONF_NARAZOVE_ODSTUP,
     CONF_NEJDRIV_ZNOVU, CONF_NOC_POSUN, CONF_ODCHYLKA, CONF_PM_CISTO,
+    CONF_PREDVETRAT,
     CONF_PM_SPATNE, CONF_REZERVA_VENKU, CONF_RH_MAX, CONF_RH_MIN,
     CONF_RUCNI_KLID, CONF_RUCNI_KLID_ZALUZIE, CONF_UTLUM,
     CONF_ZMENA_PODMINEK, DOMAIN,
@@ -47,6 +48,8 @@ CELY_BYT = [
              2.0, "mdi:thermometer-chevron-up"),
     Posuvnik(CONF_NEJDRIV_ZNOVU, 5, 240, 5, "min", 60.0,
              "mdi:timer-sand"),
+    Posuvnik(CONF_PREDVETRAT, 0, 240, 15, "min", 60.0,
+             "mdi:calendar-clock"),
 ]
 
 MISTNOST = [

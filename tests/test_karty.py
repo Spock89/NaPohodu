@@ -106,6 +106,24 @@ def test_budiky_u_kazde_mistnosti():
     assert "sensor.t_kuchyne" in s
 
 
+def test_zabira_to_se_schova_kdyz_nic_nerika():
+    """Zůstane na svém místě mezi ostatními řádky, ale dokud atribut
+    nemá hodnotu, nesvítí v kartě „Neznámý" — karta se seznamem
+    prázdný řádek skrýt neumí, podmíněný řádek ano."""
+    s = dashboard(["kuchyne"], [], vzdy, cidla={"kuchyne": "sensor.t"})
+    radky = [e for k in vsechny_karty(s) for e in (k.get("entities") or [])
+             if isinstance(e, dict)]
+    podm = [e for e in radky if e.get("type") == "conditional"]
+    assert [x["row"]["attribute"] for x in podm] == [
+        "ucinek", "plan_bytu", "plan"]
+    assert "is not none" in podm[0]["conditions"][0]["value_template"]
+
+    # a je tam, kde byl: hned za „Co změnu spustí"
+    poradi = [e.get("attribute") or e.get("row", {}).get("attribute")
+              for e in radky]
+    assert poradi[poradi.index("co_dal") + 1] == "ucinek"
+
+
 def test_ctyri_budiky_s_cidly():
     """Hlavní sledované veličiny vedle sebe: cíl, odchylka, CO2, prach."""
     s = dashboard(["kuchyne"], [], vzdy,
