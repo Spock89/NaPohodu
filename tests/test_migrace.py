@@ -230,3 +230,20 @@ def test_sluzba_spusti_srovnani_znovu(migrace):
     assert len(r.smazane) == 1
     asyncio.run(m.znovu(hass, entry))
     assert len(r.smazane) == 2
+
+
+def test_nenactena_entita_neni_chybejici(migrace):
+    """Rozdíl mezi „není" a „zatím mlčí". Při startu se integrace
+    načítají postupně — žaluzie z Zigbee bývá hotová později než my
+    a upozornění na ni je planý poplach."""
+    m, reg = migrace
+    import importlib
+    koord = importlib.import_module("napohodu.coordinator")
+
+    k = object.__new__(koord.NaPohoduCoordinator)
+    r = reg.Registr([reg.RegistrZapis("cover.zaluzie_o1", "z1")])
+    k.hass = Hass(r)
+    # v registru je, jen ještě nemá stav
+    assert k._v_registru("cover.zaluzie_o1")
+    # tahle neexistuje ani v registru
+    assert not k._v_registru("cover.smazana")

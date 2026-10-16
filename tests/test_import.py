@@ -872,6 +872,10 @@ def test_diagnostika_zaluzii_se_nastavuje(nahradni_ha):
         assert f'atributy["{a}"]' in ko, a
     # a povel se na neexistující entitu neposílá
     assert "cile.pop(z, None)" in ko
+    # hlásí se jen ta, kterou nezná ani registr: při startu se
+    # integrace načítají postupně a Zigbee bývá hotové později než my
+    assert 'm.atributy["zaluzie_chybi"] = neni or None' in ko
+    assert "if not self._v_registru(z)" in ko
 
 
 def test_venkovni_teplota_se_nevymysli(nahradni_ha):

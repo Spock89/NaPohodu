@@ -17,6 +17,7 @@ from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.core import HomeAssistant, State
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
 try:      # dateutil je v Home Assistantu běžně k dispozici
@@ -401,6 +402,19 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 "NaPohodu: %s (%s) hlásí v %r, ale prahy jsou v %s — "
                 "hodnoty nebudou odpovídat",
                 popis, eid, jednotka, " nebo ".join(ocekavane))
+
+    def _v_registru(self, eid: str) -> bool:
+        """Existuje entita, i když zrovna nehlásí stav?
+
+        Entita, která je v registru, existuje — jen ještě není
+        načtená, nebo je dočasně nedostupná. Rozdíl mezi „není" a
+        „zatím mlčí" se bez tohohle nedá udělat a upozornění na
+        nenačtenou entitu je planý poplach.
+        """
+        try:
+            return er.async_get(self.hass).async_get(eid) is not None
+        except Exception:      # pragma: no cover - registr při startu
+            return False
 
     def _rychlost(self, eid: str | None, nahrada: float = 0.0) -> float:
         """Rychlost větru v metrech za sekundu, ať čidlo hlásí cokoli."""
@@ -2651,12 +2665,17 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             chybi = [z for z in cile if self._stav(z) is None]
             for z in chybi:
                 cile.pop(z, None)
-            m.atributy["zaluzie_chybi"] = chybi or None
-            if chybi:
+            # Bez stavu ještě neznamená neexistující. Při startu se
+            # integrace načítají postupně a Zigbee bývá hotové později
+            # než my — žaluzie, která je v registru, se za chvíli
+            # ozve. Hlásí se proto jen ta, kterou nezná ani registr.
+            neni = [z for z in chybi if not self._v_registru(z)]
+            m.atributy["zaluzie_chybi"] = neni or None
+            if neni:
                 _LOGGER.warning(
                     "NaPohodu: %s — přiřazení stínění ukazuje na "
                     "neexistující %s, přenastav Stavy žaluzií",
-                    m.nazev, ", ".join(chybi))
+                    m.nazev, ", ".join(neni))
 
             m.atributy["stineni_mapa"] = mapa or None
             m.atributy["vraceni_vychoziho"] = {
