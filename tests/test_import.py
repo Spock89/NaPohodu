@@ -18,6 +18,7 @@ MODULY = [
     "sekvence", "vykon", "entity", "coordinator", "config_flow",
     "services", "sensor", "binary_sensor", "number", "switch", "button",
     "karty", "zpravy", "klima", "select", "plan", "planovac",
+    "migrace",
     "datetime", "calendar",
 ]
 
@@ -1521,14 +1522,18 @@ def test_dosah_vlhkosti_jde_nastavit(nahradni_ha):
     assert not sam._okno_brani_zvlhcovani("loznice")
 
 
-def test_stary_utlum_se_prevede_na_posun(nahradni_ha):
-    """Starý útlum byl kladné číslo s opačným významem. Bez převodu by
-    se u stávajících instalací v noci přitápělo."""
+def test_nocni_posun_se_cte_se_znamenkem(nahradni_ha):
+    """Posun se zadává se znaménkem, mínus znamená topit míň. Jádro
+    bere útlum, tedy kladné číslo — proto se při předání obrací."""
     import pathlib
+    import re
     ko = pathlib.Path(
         "custom_components/napohodu/coordinator.py").read_text()
-    assert "-float(d.get(CONF_NOC_UTLUM, 0.0))" in ko
-    assert "CONF_NOC_POSUN" in ko
+    volani = ko[ko.index("core.nocni_utlum("):][:400]
+    assert re.search(r"-self\.hodnota\(\s*p\.subentry_id,\s*"
+                     r"CONF_NOC_POSUN", volani), volani
+    # žádná starší podoba toho pole se už nečte
+    assert "UTLUM" not in volani
 
 
 def test_posuvniky_se_opravdu_ctou(nahradni_ha):

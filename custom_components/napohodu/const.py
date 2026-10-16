@@ -70,7 +70,6 @@ CONF_PLAN_CIL = "plan_cil"
 # Útlumy topení. Nejsou to absolutní teploty, ale odečty od cíle, aby
 # zůstala zachovaná adaptivní křivka.
 CONF_NOC_POSUN = "noc_posun"
-CONF_NOC_UTLUM = "noc_utlum_topeni"
 CONF_NOC_PREDSTIH = "noc_utlum_predstih"
 CONF_PRYC_UTLUM = "pryc_utlum_topeni"
 CONF_PRYC_PO = "pryc_utlum_po_hodinach"
@@ -167,7 +166,7 @@ CONF_CO2_NOC = "co2_noc"              # v noci se otevírá až od tohoto
 CONF_CO2_NOC_KRIZE = "co2_noc_krize"  # tohle přebije i teplotní mez
 
 # stínění zóny: jména uložených stavů
-CONF_ZALUZIE_STARE = "zaluzie_zony"   # dřívější název, kvůli starším verzím
+CONF_ZALUZIE_STARE = "zaluzie_zony"   # dřívější klíč, srovná ho migrace
 CONF_STINENI_MAPA = "stineni_mapa"   # {"cover.o1|zastinit": "zastíněno"}
 CONF_KLID_STINENI_MIN = "klid_stineni_min"
 CONF_STINENI_PREDSTIH = "stineni_predstih"

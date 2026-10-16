@@ -539,29 +539,25 @@ def test_jmena_posuvniku_sedi_s_identifikatory():
         assert klic in jmena, klic
 
 
-def test_starsi_instalace_ma_posuvniky_taky():
-    """Home Assistant identifikátor entity při přejmenování nemění,
-    takže starší instalace je má pod původními jmény."""
+def test_karta_zna_jen_dnesni_jmena_posuvniku():
+    """Dřívější identifikátory srovná migrace při načtení integrace,
+    takže entita pod starým jménem po prvním spuštění neexistuje.
+    Karta se jich tedy nesmí ptát — řádek by tiše vypadl."""
     import re
-    from karty import POSUVNIKY, STARSI_POSUVNIKY
+    import pathlib
 
-    # jeden posuvník může mít víc starších jmen
-    stare = set()
-    for v in STARSI_POSUVNIKY.values():
-        stare.update((v,) if isinstance(v, str) else v)
+    text = pathlib.Path(
+        "custom_components/napohodu/migrace.py").read_text()
+    blok = re.search(r"STARSI_JMENA = \{(.*?)\n\}", text, re.S)
+    starsi = dict(re.findall(r'"(\w+)":\s*"(\w+)"', blok.group(1)))
+    assert starsi, "tabulku dřívějších jmen nejde přečíst"
 
-    def existuje(e):
-        if e.startswith("number.napohodu_loznice_"):
-            return e.rsplit("loznice_", 1)[1] in stare
-        return True
-
-    s = dashboard(["loznice"], [], existuje, cidla={"loznice": "sensor.t"})
-    najdene = set(re.findall(r"number\.napohodu_loznice_(\w+)", s))
-    # u každého přejmenovaného posuvníku stačí jedno ze starších jmen —
-    # entita existuje jen pod tím, pod kterým vznikla
-    for klic, varianty in STARSI_POSUVNIKY.items():
-        varianty = (varianty,) if isinstance(varianty, str) else varianty
-        assert najdene & set(varianty) or klic in najdene, klic
+    s = dashboard(["loznice"], [], vzdy, cidla={"loznice": "sensor.t"})
+    for stare, nove in starsi.items():
+        # podtržítko je součást slova, takže se hledá celé jméno
+        assert not re.search(rf"number\.napohodu_loznice_{stare}(?!\w)", s), \
+            stare
+        assert f"number.napohodu_loznice_{nove}" in s, nove
 
 
 def test_nova_instalace_ma_vsechny_posuvniky():
@@ -797,25 +793,13 @@ def _radek_jmenem(s, nazev):
             if isinstance(e, dict) and e.get("name") == nazev]
 
 
-def test_posun_cile_je_v_karte_mistnosti_pod_oba_nazvy():
-    """Šoupátko odchylky vzniká pod novým jménem, starší instalace ho
-    mají pod původním. Dřív se v kartě místnosti i v sekci Cílová
-    teplota zkoušelo jen to původní, takže místnosti založené později
-    řádek zmizel — a jen jí, což se hledá nejhůř."""
-    predpona = "number.napohodu_kuchyne_"
-    for jmeno in ("moje_odchylka_teploty", "odchylka_teploty"):
-        def jen_tenhle(e, jmeno=jmeno):
-            if e.startswith(predpona) and "odchylka_teploty" in e:
-                return e == predpona + jmeno
-            return True
-
-        s = dashboard(["kuchyne"], [], jen_tenhle,
-                      cidla={"kuchyne": "sensor.t"})
-        # v kartě místnosti pod ručičkami
-        assert _radek_jmenem(s, "Posun cíle v místnosti") == [
-            predpona + jmeno], jmeno
-        # a v sekci Cílová teplota, kde se řádek jmenuje po místnosti
-        assert predpona + jmeno in _radek_jmenem(s, "Kuchyne"), jmeno
+def test_posun_cile_je_v_karte_mistnosti_i_v_cilove_teplote():
+    """Šoupátko odchylky patří do karty místnosti pod ručičky i do
+    sekce Cílová teplota. Chybělo to právě tam, kde se to hledá."""
+    predpona = "number.napohodu_kuchyne_moje_odchylka_teploty"
+    s = dashboard(["kuchyne"], [], vzdy, cidla={"kuchyne": "sensor.t"})
+    assert _radek_jmenem(s, "Posun cíle v místnosti") == [predpona]
+    assert predpona in _radek_jmenem(s, "Kuchyne")
 
 
 def test_posun_cile_i_v_mistnosti_bez_okna():

@@ -380,9 +380,7 @@ Když má oblast souseda za otevřenými dveřmi, vyvětrá ji raději on.
 ### Topení
 
 **V noci posun cílové teploty** se zadává se znaménkem: záporné číslo
-znamená topit míň, kladné víc, nula nechává cíl být. Hodnota uložená
-jako útlum, tedy kladné číslo s opačným významem, se při načtení
-přepočítá, aby se v noci nezačalo přitápět.
+znamená topit míň, kladné víc, nula nechává cíl být.
 
 Cíl se hlavici posílá jen při skutečné změně a **porovnává se s tím, co
 hlavice hlásí**, ne s tím, co jsme naposled poslali. Better Thermostat
@@ -459,9 +457,7 @@ vrtí každou minutu.
 ### Topení
 
 **V noci posun cílové teploty** se zadává se znaménkem: záporné číslo
-znamená topit míň, kladné víc, nula nechává cíl být. Hodnota uložená
-jako útlum, tedy kladné číslo s opačným významem, se při načtení
-přepočítá, aby se v noci nezačalo přitápět.
+znamená topit míň, kladné víc, nula nechává cíl být.
 
 Integrace posílá hlavicím cílovou teplotu a režim. Funguje na virtuální
 hlavici z Better Thermostatu i na skutečnou, protože používá jen běžné
@@ -952,11 +948,25 @@ konstanty, mrtvé moduly a funkce, proměnné čtené před přiřazením,
 chybějící překlady na obou obrazovkách, rozsahy posuvníků proti polím ve
 formuláři, výchozí hodnoty ve formuláři proti kódu, nastavení, které
 nejde vyplnit nebo nikdo nečte, jedno jméno pro jednu hodnotu, atributy
-vystavené bez toho, aby se nastavovaly, a entity, na které se odkazuje
-karta, ale nevznikají.
+vystavené bez toho, aby se nastavovaly, entity, na které se odkazuje
+karta, ale nevznikají, a dřívější jména entit použitá jinde než
+v jednorázovém srovnání.
 
 Každý hlídač byl přidán po skutečné chybě a ověřen tím, že ji naschvál
 vrátíme a kontrola ji najde.
+
+### Srovnání při načtení
+
+Při každém načtení integrace proběhne **jednorázové srovnání**: entita,
+která si drží identifikátor po dřívějším jméně šoupátka, se v registru
+přepíše na dnešní, a seznam žaluzií uložený pod dřívějším klíčem se
+přepíše do dnešního. Každá změna jde do logu, protože kdo má starý
+identifikátor v automatizaci nebo ve vlastní kartě, musí si ho opravit.
+
+Dál se pracuje jen s dnešními jmény. Na minulost tak nemusí myslet ani
+karta, ani rozhodování — a nová instalace nemá co srovnávat, takže se
+jí to nijak netýká. Entitu, kterou sis přejmenoval sám, srovnání
+nechává být; sahá jen na jména, která kdysi rozdávala integrace.
 
 ## Instalace přes HACS
 

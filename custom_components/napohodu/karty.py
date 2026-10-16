@@ -95,24 +95,6 @@ POSUVNIKY = [
      "Nad tímhle se otevře, i když je zima nebo se spí."),
 ]
 
-# Starší identifikátory přejmenovaných posuvníků. Home Assistant
-# identifikátor při přejmenování nemění, takže instalace, která entitu
-# založila dřív, ji má pořád pod starým jménem.
-STARSI_POSUVNIKY = {
-     # Pásmo nahradilo denní hysterezi a noční mez; entita si ale drží
-     # identifikátor, pod kterým vznikla, takže se zkouší i ty.
-     've_dne_otevrit_pri_odchylce_od_cile_o': (
-         'denni_hystereze', 'odstup_od_cile_pro_otevreni',
-         've_dne_smi_klesnout_pod_cil_o'),
-     'pojistka_nevychladit_pod': ('v_noci_vychladnout_nejvys_na',
-                                  'minimum_na_noc'),
-     'moje_odchylka_teploty': 'odchylka_teploty',
-     'v_noci_posun_cilove_teploty': ('v_noci_topit_o_mene',
-                                     'nocni_utlum_topeni'),
-     'pri_otevrenem_okne_topit_na': 'utlum_pri_otevrenem_okne',
-     'v_noci_otevrit_nad_co2': 'v_noci_otevrit_nad',
-     'nouzove_otevrit_nad_co2': 'nouzove_otevrit_nad'}
-
 # Co je vidět pořád: stav, rozhodnutí a to, co se zrovna děje.
 ATRIBUTY_STAVU = [
     ("co2", "CO2", " ppm"),
@@ -646,11 +628,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     for i, m in enumerate(mistnosti):
         if i:
             polozky.append("      - type: divider")
-        # Identifikátor vzniká z přeloženého jména; starší instalace
-        # mají šoupátko pod původním, proto se zkouší obojí.
         polozky += _radek(
-            _prvni(existuje, f"number.napohodu_{m}_moje_odchylka_teploty",
-                   f"number.napohodu_{m}_odchylka_teploty"), jm(m))
+            f"number.napohodu_{m}_moje_odchylka_teploty", jm(m))
         polozky += _radek(f"sensor.napohodu_{m}_cilova_teplota",
                           "   výsledný cíl")
         if cidla.get(m):
@@ -809,9 +788,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             polozky_pod = []
             if existuje(cidlo):
                 polozky_pod += _radek(cidlo, "Teď v místnosti")
-            posun = _prvni(
-                existuje, f"number.napohodu_{m}_moje_odchylka_teploty",
-                f"number.napohodu_{m}_odchylka_teploty")
+            posun = f"number.napohodu_{m}_moje_odchylka_teploty"
             if existuje(posun):
                 polozky_pod += _radek(posun, "Posun cíle v místnosti")
             if polozky_pod:
@@ -968,12 +945,6 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     c.append(SEKCE)
     c += _hlavicka("Ladění", "mdi:tune")
     for klic, nadpis, popis in POSUVNIKY:
-        # Home Assistant identifikátor entity při přejmenování nemění,
-        # takže starší instalace mají jiný než nové. Zkusí se obojí.
-        drive = STARSI_POSUVNIKY.get(klic)
-        # Přejmenovaná entita si v Home Assistantu drží původní
-        # identifikátor, takže se zkouší všechny, pod kterými kdy byla.
-        drive = (drive,) if isinstance(drive, str) else (drive or ())
         # Jedna sekce s třiceti kartami rozhodí rozvržení do sloupců,
         # protože ostatní jsou krátké. Ladění se proto dělí po tématech.
         if klic in ZLOMY_LADENI:
@@ -987,8 +958,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             potreba = POTREBUJE.get(klic)
             if potreba and not ma(m, potreba):
                 continue
-            eid = _prvni(existuje, f"number.napohodu_{m}_{klic}",
-                         *(f"number.napohodu_{m}_{x}" for x in drive))
+            eid = f"number.napohodu_{m}_{klic}"
             if existuje(eid):
                 polozky += _radek(eid, jm(m))
         c += _karta(polozky, nazev=nadpis)

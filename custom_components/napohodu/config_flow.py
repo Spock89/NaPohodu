@@ -269,8 +269,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 znacky = set()
                 if pod.data.get(c.CONF_OKNA):
                     znacky |= {"okno", "co2"}
-                if pod.data.get(c.CONF_ZALUZIE) or pod.data.get(
-                        c.CONF_ZALUZIE_STARE):
+                if pod.data.get(c.CONF_ZALUZIE):
                     znacky.add("zaluzie")
                 if pod.data.get(c.CONF_CLIMATE):
                     znacky.add("topeni")
@@ -302,8 +301,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 rh = pod.data.get(c.CONF_RH_VNITRNI)
                 if rh:
                     rh_cidla[k] = rh
-                zaluzie[k] = (pod.data.get(c.CONF_ZALUZIE)
-                              or pod.data.get(c.CONF_ZALUZIE_STARE) or [])
+                zaluzie[k] = pod.data.get(c.CONF_ZALUZIE) or []
                 if pod.data.get(c.CONF_OKNA):
                     s_okny.add(k)
                 # klid má smysl jen tam, kde je spánkový přepínač
@@ -786,8 +784,7 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         Dvě žaluzie v jednom pokoji můžou mít stavy pojmenované jinak,
         proto se nabízejí jen ty, které daná žaluzie skutečně má.
         """
-        zaluzie = (self._data.get(c.CONF_ZALUZIE)
-                   or self._data.get(c.CONF_ZALUZIE_STARE) or [])
+        zaluzie = self._data.get(c.CONF_ZALUZIE) or []
         if not zaluzie:
             self._data.pop(c.CONF_STINENI_MAPA, None)
             return await self._dal()

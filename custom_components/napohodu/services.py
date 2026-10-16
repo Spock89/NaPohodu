@@ -56,15 +56,14 @@ SCHEMA_MISTNOST = vol.Schema({
 
 def _zaluzie_mistnosti(hass: HomeAssistant, nazev: str) -> list[str]:
     """Najde žaluzie místnosti podle jejího jména."""
-    from .const import CONF_ZALUZIE, CONF_ZALUZIE_STARE, PODENTITA_MISTNOST
+    from .const import CONF_ZALUZIE, PODENTITA_MISTNOST
 
     for entry in hass.config_entries.async_entries(DOMAIN):
         for pod in entry.subentries.values():
             if pod.subentry_type != PODENTITA_MISTNOST:
                 continue
             if pod.title.lower() == nazev.lower():
-                return list(pod.data.get(CONF_ZALUZIE)
-                            or pod.data.get(CONF_ZALUZIE_STARE) or [])
+                return list(pod.data.get(CONF_ZALUZIE) or [])
     return []
 
 

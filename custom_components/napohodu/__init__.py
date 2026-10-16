@@ -10,6 +10,7 @@ from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN, PODENTITA_MISTNOST, PODENTITA_ZONA
 from .coordinator import NaPohoduCoordinator
+from .migrace import srovnej
 from .services import zaregistruj
 
 _LOGGER = logging.getLogger(__name__)
@@ -28,6 +29,10 @@ PLATFORMY: list[Platform] = [
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await zaregistruj(hass)
+    # Dřívější jména a klíče se srovnají jednou, před založením entit —
+    # dál se pracuje jen s dnešními, takže na minulost nemusí myslet
+    # ani karta, ani rozhodování.
+    await srovnej(hass, entry)
 
     koordinator = NaPohoduCoordinator(hass, entry)
     await koordinator.async_nacti()
