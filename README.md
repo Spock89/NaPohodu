@@ -146,9 +146,7 @@ ztráty a v zimě je to skoro vždycky lepší volba.
 
 Když integrace najde otevřené okno, o kterém nemá záznam — po restartu
 nebo když povel přišel na okno, které už otevřené bylo — přijme ho za
-vlastní a dopočítá, od čeho měřit účinek a kde zavřít. Dřív místo toho
-hlásila, že okno otevřel někdo jiný, přestože o řádek výš stál její
-vlastní povel.
+vlastní a dopočítá, od čeho měřit účinek a kde zavřít.
 
 Mez poklesu se nasadí jen tehdy, když je teplota nad ní. Jinak by
 přijetí okna vedlo rovnou k jeho zavření.
@@ -157,8 +155,8 @@ přijetí okna vedlo rovnou k jeho zavření.
 
 Zrcadlový obraz chlazení: když je pokoj pod cílem a venku je tepleji,
 otevře se a teplo se pustí dovnitř. Dojede se na cíl, stejně jako
-u chlazení, a v diagnostice se to tak i jmenuje — dřív to splývalo
-s hláškou „venku je příjemně".
+u chlazení, a v diagnostice se to tak i jmenuje — ohřev venkovním
+vzduchem je něco jiného než „venku je příjemně" a má to být poznat.
 
 V noci se kvůli teplotě otevírá jen pro chlazení. Ohřev čeká do rána,
 protože ticho je v noci cennější než pár stupňů.
@@ -281,16 +279,15 @@ zkusí se to tak jako tak po nastavené době, ve výchozím stavu po hodině
 
 **Čekání ale skončí samo, jakmile zmizí důvod, kvůli kterému se
 větralo.** Teplota se vrátí do pásma, nebo se vzduch vyčistí i bez
-okna — pak není co odkládat a nečeká se ani na strop. Dřív zůstal marný
-pokus zapsaný i nad pokojem, který už nic nechtěl: karta slibovala
-pokus, ke kterému nedojde, blokovalo to i novou potřebu a žebřík pauz
-zůstával nahoře.
+okna — pak není co odkládat a nečeká se ani na strop. Marný pokus
+zapsaný nad pokojem, který už nic nechce, by sliboval pokus, ke kterému
+nedojde, blokoval by i novou potřebu a držel žebřík pauz nahoře.
 
 Ptá se to na ten konkrétní důvod, ne na to, jestli by se teď otevřelo.
 Venkovní vzduch, který zrovna nestačí, je překážka dočasná, ne zmizelý
 důvod — na jeho změnu se čeká dál. A větrání **pro pohodu** je výjimka:
 žádný důvod nemá, takže by nebylo co zmizet. Kontrola účinku ho dřív
-nebo později zavře jako marné, protože nic nezlepšuje, a bez téhle
+nebo později zavře jako marné, protože nic nezlepšuje; bez téhle
 výjimky by se okno v příjemném dni otevíralo a zavíralo pořád dokola.
 Teplotu zpátky do pásma musí vrátit celá odchylka otevření, takže
 o poskakování se stará tatáž hystereze jako jinde.
@@ -345,12 +342,12 @@ které zrovna chladí přehřátý pokoj, pojistka nezavře. Obchází je jen
 ruční žádost o vyvětrání.
 
 Větrání kvůli CO2 nebo prachu **čeká na vyvětrání** a o prochladnutí se
-stará pojistka. Dřív se zavíralo na dolní hraně pásma i s dusnem a hned
-se otevíralo znovu.
+stará pojistka. Zavřít na dolní hraně pásma i s dusnem by znamenalo
+otevřít hned znovu.
 
-Tím zmizely čtyři starší pojmy: denní hystereze, noční mez, tloušťka
-noční smyčky a pojistka ve spánku — čtyři čísla, která dělala totéž na
-různých místech a tvrdila o sobě rozporné věci.
+Pásmo a pojistky jsou na to celé dvě čísla pro den a dvě pro noc:
+jedna hodnota pro jednu věc, místo několika, které by si na různých
+místech dělaly totéž a tvrdily o sobě rozporné věci.
 
 ### Otevírání pro pohodu
 
@@ -383,15 +380,14 @@ Když má oblast souseda za otevřenými dveřmi, vyvětrá ji raději on.
 ### Topení
 
 **V noci posun cílové teploty** se zadává se znaménkem: záporné číslo
-znamená topit míň, kladné víc, nula nechává cíl být. Dřív to byl útlum,
-tedy kladné číslo s opačným významem — stará hodnota se proto při
-načtení přepočítá, aby se u stávajících instalací v noci nezačalo
-přitápět.
+znamená topit míň, kladné víc, nula nechává cíl být. Hodnota uložená
+jako útlum, tedy kladné číslo s opačným významem, se při načtení
+přepočítá, aby se v noci nezačalo přitápět.
 
 Cíl se hlavici posílá jen při skutečné změně a **porovnává se s tím, co
 hlavice hlásí**, ne s tím, co jsme naposled poslali. Better Thermostat
-si cíl občas přepíše sám a dřív jsme kvůli tomu čekali na obnovu
-s vědomím, že hlavice „už na tom stojí", přestože stála jinde.
+si cíl občas přepíše sám, takže „už na tom stojí" podle naší paměti
+nic neznamená — rozhoduje, co hlásí.
 
 V kartě je proto rozlišené, jestli hlavice opravdu stojí na našem cíli,
 nebo jestli hlásí něco jiného a čeká se na klid mezi povely.
@@ -463,10 +459,9 @@ vrtí každou minutu.
 ### Topení
 
 **V noci posun cílové teploty** se zadává se znaménkem: záporné číslo
-znamená topit míň, kladné víc, nula nechává cíl být. Dřív to byl útlum,
-tedy kladné číslo s opačným významem — stará hodnota se proto při
-načtení přepočítá, aby se u stávajících instalací v noci nezačalo
-přitápět.
+znamená topit míň, kladné víc, nula nechává cíl být. Hodnota uložená
+jako útlum, tedy kladné číslo s opačným významem, se při načtení
+přepočítá, aby se v noci nezačalo přitápět.
 
 Integrace posílá hlavicím cílovou teplotu a režim. Funguje na virtuální
 hlavici z Better Thermostatu i na skutečnou, protože používá jen běžné
@@ -786,8 +781,8 @@ zabrat, už k ničemu není.
 
 Denní souhrn se skládá z toho, co místnost opravdu má. Bez ovládaného
 okna a bez kontaktu o žádném okně neví, takže se v něm pohyby okna ani
-minuty otevření neobjeví — dřív se braly z vnitřního stavu jádra, který
-se tam nikdy neměl dostat, a vycházela z toho nesmyslně vysoká čísla.
+minuty otevření neobjeví. Brát je z vnitřního stavu jádra nelze —
+vycházela by z toho nesmyslně vysoká čísla.
 
 ### Karta na dashboard
 
@@ -816,11 +811,13 @@ ovlivnit, tak se nevyrobí. Místnost s jedním topením tak dostane jen
 odchylku cíle a nastavení topení místo třiceti šoupátek, ze kterých
 devět desetin nic nedělá.
 
-Stránka začíná **místnostmi**, zbytek jde za nimi. Pořadí sekcí za nimi
-je seřazené sestupně podle výšky: mřížka zarovnává řádky a řádek je
-vysoký jako jeho nejvyšší sekce, takže pod krátkou sekcí vedle vysoké
-zůstane díra přes půl obrazovky. Ladicí výpisy místností jsou úplně
-nakonec.
+Stránka začíná **místnostmi**. Za nimi jde pořadí podle toho, jak se
+s kartou pracuje: ruční ovládání a plánování, pak nastavení od
+nejčastěji přestavovaného, a nakonec výpisy, které se jen čtou —
+ladicí výpisy místností úplně nakonec. Mřížka zarovnává řádky a řádek
+je vysoký jako jeho nejvyšší sekce, takže vedle vysoké sekce zůstane
+pod krátkou díra; pořadí podle použití za to stojí, protože se v něm
+hledá bez přemýšlení.
 
 Ručičky jsou v mřížce o čtyřech sloupcích, ne vedle sebe natvrdo:
 sloupec má pořád stejnou šířku, takže dvě ručičky jsou stejně velké
@@ -1311,8 +1308,8 @@ it keeps the calendar clear.
 The aerosol lingers after the humidifier stops, so dust is trusted
 again only once it falls into the clean band, and at most for two
 hours. A restart counts the same as switching off, so both the
-humidifier state and the afterglow are persisted. Without that, a window opened right after the run for dust that
-cannot be ventilated away.
+humidifier state and the afterglow are persisted — otherwise a window
+would open right after a run, for dust that cannot be ventilated away.
 
 ### Dashboard
 

@@ -254,24 +254,27 @@ BLOKY = ["mistnosti", "cilova_teplota", "zaklad", "ladeni", "stineni",
 # proto seřazené tak, aby vedle sebe stály podobně vysoké sekce.
 PORADI_SEKCI = [
     "#pokoj",                 # každá místnost se svými budíky, hned nahoře
+    # Dál podle toho, jak se s kartou pracuje: nejdřív ruční ovládání
+    # a plánování, pak nastavení od nejčastěji přestavovaného, a
+    # nakonec výpisy, které se jen čtou. Mřížka zarovnává řádky, takže
+    # vedle krátké sekce u vysoké zůstane díra — pořadí podle použití
+    # za to stojí, hledá se v něm bez přemýšlení.
+    "Ovládání oken",          # s žaluziemi a zvlhčovači v jedné sekci
+    "Plánování",              # zadání plánu včetně kalendáře
     "Cílová teplota",
-    # Dál sestupně podle výšky: mřížka zarovnává řádky, takže vedle
-    # sebe mají stát podobně vysoké sekce, jinak pod tou krátkou
-    # zůstane díra přes půl obrazovky.
-    "Základ výpočtu",         # s pravidly bez nastavení
+    "Ladění — topení",
     "Ladění — meze",
-    "Slunce a stínění",
     "Ladění — pásmo",
     "Ladění — CO2",
-    "Ovládání oken",          # s ovládáním žaluzií v jedné sekci
-    "Zvlhčovače",             # se srovnáním v jedné sekci
-    "Obsazenost a klid",      # se sdíleným vzduchem v jedné sekci
-    "Jak zadat plán ručně",
-    "Grafy",
-    "Ladění — topení",
     "Ladění — prach",
+    "Základ výpočtu",
+    "Slunce a stínění",
     "Srovnat do žádané polohy",
+    "Grafy",
+    "Obsazenost a klid",      # se sdíleným vzduchem v jedné sekci
     "Ladění",                 # odchylka a časování oken
+    "Jak zadat plán ručně",
+    "Platí bez nastavení",
     "— podrobnosti",          # ladicí výpisy místností, úplně nakonec
 ]
 
@@ -752,6 +755,9 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         c.append("      - {{ z }}")
         c.append("      {% endfor %}{% endif %}")
         c.append("")
+        # Vlastní sekce: je to výpis pravidel, která se nenastavují,
+        # takže se čte zvlášť od toho, co se nastavit dá.
+        c.append(SEKCE)
         c += _hlavicka("Platí bez nastavení", "mdi:gavel", "subtitle")
         c.append("  - type: markdown")
         c.append("    content: |-")
@@ -931,8 +937,10 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     if polozky:
         polozky += _atribut("select.napohodu_co_naplanovat",
                             "posledni_vysledek", "   naposledy")
-        # Patří ke sdílenému vzduchu a obsazenosti, ne do vlastní
-        # sekce: je to totéž téma a krátká sekce navíc rozhází mřížku.
+        # Vlastní sekce: zadávání plánu je úkon sám pro sebe a hledá se
+        # podle nadpisu, ne pod obsazeností.
+        c.append(SEKCE)
+        c += _hlavicka("Plánování", "mdi:calendar-clock")
         c += _hlavicka("Naplánovat obsazenost", "mdi:calendar-plus",
                        "subtitle")
         c += _karta(polozky)
@@ -994,10 +1002,6 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     # --- ovládání a tlačítka ---
     c.append(SEKCE)
 
-    c.append(SEKCE)
-
-    c.append(SEKCE)
-
     # ruční ovládání oken
     polozky = []
     for m in mistnosti:
@@ -1031,9 +1035,6 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     c += _karta(polozky[:-1], nazev="Ovládání žaluzií")
     c.append("")
 
-
-    c.append(SEKCE)
-
     c.append(ZNACKA_BLOKU + "zvlhcovace")
     # --- zvlhčovače: jen místnosti, které ho mají ---
     polozky = []
@@ -1055,14 +1056,15 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         if len(polozky) > pred:
             polozky.append("      - type: divider")
     if polozky:
-        c.append(SEKCE)
+        # Patří k ovládání: je to další přístroj v místnosti, ne
+        # samostatné téma, a krátká sekce navíc rozhází mřížku.
         c += _hlavicka("Zvlhčovače", "mdi:air-humidifier", "subtitle")
         c += _karta(polozky[:-1], nazev="Zvlhčovače")
         c.append("")
-    else:
-        # bez zvlhčovačů dostane srovnání vlastní sekci
-        c.append(SEKCE)
 
+    # Srovnání má vlastní sekci: jsou to tlačítka, která posílají
+    # povely znovu, a hledají se podle nadpisu.
+    c.append(SEKCE)
     polozky = []
     if existuje("button.napohodu_srovnat_vse"):
         polozky += _radek("button.napohodu_srovnat_vse", "Všechno naráz")

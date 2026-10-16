@@ -487,16 +487,25 @@ def test_rozvrzeni_sekci():
              or sek["cards"][0]["type"] for sek in d["sections"]]
     # místnosti hned nahoře, ladicí výpisy úplně dole
     assert prvni[0] == "grid"
-    assert prvni[prvni.index("Cílová teplota") - 1] == "grid"
+    # první sekce bez ručiček je ruční ovládání
+    assert next(x for x in prvni if x != "grid") == "Ovládání oken"
     assert "podrobnosti" in prvni[-1]
-    assert prvni.index("Ovládání oken") < prvni.index("Ladění")
-    assert prvni.index("Zvlhčovače") < prvni.index("Obsazenost a klid")
+    # ruční ovládání a plánování nahoře, nastavení za nimi
+    assert prvni.index("Ovládání oken") < prvni.index("Plánování")
+    assert prvni.index("Plánování") < prvni.index("Cílová teplota")
+    assert prvni.index("Cílová teplota") < prvni.index("Ladění")
+    assert prvni.index("Ovládání oken") < prvni.index("Obsazenost a klid")
     # obsazenost a sdílený vzduch v jedné sekci, každé s nadpisem
     sekce = d["sections"][prvni.index("Obsazenost a klid")]
     nadpisy = [k.get("heading") for k in sekce["cards"] if k.get("heading")]
-    # plánovač patří ke stejnému tématu, ne do vlastní sekce
-    assert nadpisy == ["Obsazenost a klid", "Sdílený vzduch",
-                       "Naplánovat obsazenost"]
+    assert nadpisy == ["Obsazenost a klid", "Sdílený vzduch"]
+    # zadávání plánu je úkon sám pro sebe, takže vlastní sekce
+    sekce = d["sections"][prvni.index("Plánování")]
+    nadpisy = [k.get("heading") for k in sekce["cards"] if k.get("heading")]
+    assert nadpisy == ["Plánování", "Naplánovat obsazenost"]
+    # zvlhčovače patří k ovládání, je to další přístroj v místnosti
+    sekce = d["sections"][prvni.index("Ovládání oken")]
+    assert "Zvlhčovače" in [k.get("heading") for k in sekce["cards"]]
 
 
 def test_posuvniky_maji_popisky():
@@ -607,13 +616,12 @@ def test_pravidla_bytu_jsou_jednou_a_v_samostatne_sekci():
             if "pevna_pravidla_bytu" in str(k.get("content", ""))]
     assert len(bytu) == 1
 
-    # patří k základu výpočtu, ne do vlastní sekce
+    # vlastní sekce: je to výpis pravidel, která se nenastavují
     sekce = [s for s in d["sections"]
              if any("pevna_pravidla_bytu" in str(k.get("content", ""))
                     for k in s["cards"])][0]
     nadpisy = [k.get("heading") for k in sekce["cards"] if k.get("heading")]
-    assert nadpisy == ["Základ výpočtu", "Nastavení pro celý byt",
-                       "Platí bez nastavení"]
+    assert nadpisy == ["Platí bez nastavení"]
 
 
 def test_karta_zvlhcovacu():
@@ -765,27 +773,21 @@ def test_v_kartach_je_jen_jedna_teplota_v_pokoji():
     assert "teplota_max" not in vse and "uvnitr" not in vse
 
 
-def test_sekce_jsou_serazene_podle_vysky():
-    """Mřížka zarovnává řádky: pod krátkou sekcí vedle vysoké zůstane
-    díra přes půl obrazovky."""
+def test_sekce_nekoncí_prazdnou():
+    """Prázdná sekce udělá v mřížce díru a nedá se na ni kliknout.
+
+    Pořadí sekcí se řídí tím, jak se s kartou pracuje, ne výškou —
+    to je volba majitele dashboardu. Zbytečná prázdná sekce je ale
+    chyba v generování za všech okolností.
+    """
     import yaml
     d = yaml.safe_load(dashboard(
-        ["obyvak", "kuchyne", "loznice"], ["zona"], vzdy,
-        cidla={m: f"sensor.{m}" for m in ("obyvak", "kuchyne", "loznice")},
+        ["obyvak", "kuchyne"], ["zona"], vzdy,
+        cidla={m: f"sensor.{m}" for m in ("obyvak", "kuchyne")},
         podoba="stranka"))
-
-    def vyska(sek):
-        return sum({"heading": 1,
-                    "entities": 2 + len(k.get("entities", [])),
-                    "markdown": 3 + k.get("content", "").count("\n") // 2,
-                    "history-graph": 8, "gauge": 6,
-                    "horizontal-stack": 7}.get(k.get("type"), 3)
-                   for k in sek["cards"])
-
-    v = [vyska(s) for s in d["sections"]]
-    ztrata = sum(sum(max(v[r:r + 4]) - x for x in v[r:r + 4])
-                 for r in range(0, len(v), 4))
-    assert ztrata < 120, ztrata
+    prazdne = [i for i, s in enumerate(d["sections"])
+               if not s.get("cards")]
+    assert prazdne == [], prazdne
 
 
 def _radek_jmenem(s, nazev):
