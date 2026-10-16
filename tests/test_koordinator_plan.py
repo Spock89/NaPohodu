@@ -35,6 +35,23 @@ def koord():
     sys.path.remove(str(KOREN / "custom_components"))
 
 
+class Podentita:
+    def __init__(self, typ, nazev, data=None):
+        self.subentry_type = typ
+        self.subentry_id = nazev
+        self.title = nazev
+        self.data = data or {}
+
+
+class Zapis2:
+    """Konfigurační záznam s podentitami, které plán potřebuje."""
+
+    entry_id = "x"
+
+    def __init__(self, podentity=()):
+        self.subentries = {p.subentry_id: p for p in podentity}
+
+
 class Uloziste:
     def __init__(self):
         self.ulozeno = None
@@ -46,9 +63,10 @@ class Uloziste:
         return self.ulozeno
 
 
-def _instance(koord, zaznamy=None):
+def _instance(koord, zaznamy=None, podentity=()):
     """Prázdná instance s tím minimem, co plán čte."""
     k = object.__new__(koord.NaPohoduCoordinator)
+    k.entry = Zapis2(podentity)
     k._vlastni_plan = list(zaznamy or [])
     k._uloziste_planu = Uloziste()
     k.plan_vysledek = ""
@@ -112,9 +130,47 @@ def test_ulozeni_a_nacteni_prezije_restart(koord):
 
 def test_nazev_z_panelu_se_precte_zpatky(koord):
     """Ručně založená událost se pozná z názvu, který píšeme my."""
-    k = _instance(koord)
-    assert k.plan_z_nazvu("NaPohodu: nikdo doma") == ("nikdo", None, None)
-    assert k.plan_z_nazvu("Ložnice: je tu někdo") == ("obsazeno", "Ložnice",
+    k = _instance(koord, podentity=[
+        Podentita("skupina", "1. patro",
+                  {"skupina_mistnosti": ["Ložnice"]})])
+    assert k.plan_z_nazvu("NaPohodu: nikdo doma") == ("nikdo", None, None,
                                                       None)
-    assert k.plan_z_nazvu("Ložnice: cíl 22,5 °C") == ("cil", "Ložnice", 22.5)
+    assert k.plan_z_nazvu("Ložnice: je tu někdo") == ("obsazeno", "Ložnice",
+                                                      None, None)
+    assert k.plan_z_nazvu("Ložnice: cíl 22,5 °C") == ("cil", "Ložnice", None,
+                                                      22.5)
+    # jméno před dvojtečkou, které je skupina, se pozná jako skupina
+    assert k.plan_z_nazvu("1. patro: zavřená okna") == ("zavreno", None,
+                                                        "1. patro", None)
+    # a složený povel se nesmí poznat jen jako jeho první polovina
+    assert k.plan_z_nazvu(
+        "Ložnice: nikdo tu nebude, zavřená okna")[0] == "prazdno_zavreno"
     assert k.plan_z_nazvu("dovolená")[0] == "nerozumim"
+
+
+def test_skupina_platí_pro_sve_mistnosti(koord):
+    """Jedna událost na celé patro místo pěti na místnosti."""
+    ted = _ted(koord)
+    skupina = Podentita("skupina", "1. patro",
+                        {"skupina_mistnosti": ["Ložnice", "Dětská"]})
+    k = _instance(koord, [{"uid": "a", "druh": "prazdno_zavreno",
+                           "mistnost": None, "skupina": "1. patro",
+                           "clenove": ["Ložnice"],
+                           "od": ted - timedelta(hours=1),
+                           "do": ted + timedelta(hours=1), "rrule": None}],
+                  [skupina])
+    # složený povel nese obojí a platí na oba členy
+    assert k.plan_vlastni("prazdno", "Dětská", 1000.0).bezi
+    assert k.plan_vlastni("zavreno", "Dětská", 1000.0).bezi
+    assert not k.plan_vlastni("prazdno", "Kuchyně", 1000.0).bezi
+
+
+def test_prazdno_samo_okno_nezavira(koord):
+    """Utlumená ložnice nesmí ochromit větrání zbytku bytu."""
+    ted = _ted(koord)
+    k = _instance(koord, [{"uid": "a", "druh": "prazdno",
+                           "mistnost": "Ložnice",
+                           "od": ted - timedelta(hours=1),
+                           "do": ted + timedelta(hours=1), "rrule": None}])
+    assert k.plan_vlastni("prazdno", "Ložnice", 1000.0).bezi
+    assert not k.plan_vlastni("zavreno", "Ložnice", 1000.0).bezi

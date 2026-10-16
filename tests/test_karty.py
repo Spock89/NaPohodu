@@ -825,3 +825,22 @@ def test_posun_cile_i_v_mistnosti_bez_okna():
                   s_okny=set())
     assert _radek_jmenem(s, "Posun cíle v místnosti") == [
         "number.napohodu_obyvak_moje_odchylka_teploty"]
+
+
+def test_napoveda_vypisuje_skutecna_jmena():
+    """Obecný návod je k ničemu: splést se dá jen v přesném jménu."""
+    s = dashboard(["loznice"], [], vzdy, nazvy={"loznice": "Ložnice"},
+                  skupiny=["1. patro"])
+    assert "Ložnice: nikdo tu nebude, zavřená okna" in s
+    assert "1. patro: zavřená okna" in s
+    assert "calendar.napohodu_plan" in s
+    # a jde ji vypnout jako každý jiný blok
+    bez = dashboard(["loznice"], [], vzdy, nazvy={"loznice": "Ložnice"},
+                    skupiny=["1. patro"],
+                    bloky={"mistnosti", "ladeni"})
+    assert "Jak zadat plán ručně" not in bez
+
+
+def test_napoveda_bez_mistnosti_nevznika():
+    s = dashboard([], [], vzdy)
+    assert "Jak zadat plán ručně" not in s

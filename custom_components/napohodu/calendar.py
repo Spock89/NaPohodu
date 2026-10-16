@@ -85,7 +85,8 @@ class KalendarPlanu(CoordinatorEntity, CalendarEntity):
             for a, b in pz.rozbal(z, od, do, rrulestr):
                 out.append(CalendarEvent(
                     start=a, end=b, uid=z["uid"],
-                    summary=pz.nazev(z["druh"], z.get("mistnost"),
+                    summary=pz.nazev(z["druh"],
+                                     z.get("mistnost") or z.get("skupina"),
                                      z.get("cil")),
                     description=z.get("popis") or ""))
         return sorted(out, key=lambda u: u.start)
@@ -100,11 +101,14 @@ class KalendarPlanu(CoordinatorEntity, CalendarEntity):
         """
         zacatek = kw.get("dtstart") or kw.get("start")
         konec = kw.get("dtend") or kw.get("end")
-        druh, mistnost, cil = self.coordinator.plan_z_nazvu(
+        druh, mistnost, skupina, cil = self.coordinator.plan_z_nazvu(
             kw.get("summary") or "")
         await self.coordinator.plan_zapis({
             "uid": uuid.uuid4().hex,
             "druh": druh, "mistnost": mistnost, "cil": cil,
+            "skupina": skupina,
+            "clenove": (self.coordinator.plan_skupiny().get(skupina, [])
+                        if skupina else None),
             "od": zacatek, "do": konec,
             "rrule": kw.get("rrule"),
             "popis": kw.get("description") or "",

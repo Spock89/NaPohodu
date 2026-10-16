@@ -254,6 +254,7 @@
           "grafy": "Graphs",
           "zvlhcovace": "Humidifiers",
           "obsazenost": "Occupancy and plan",
+          "napoveda": "Help for entering the plan by hand",
           "ovladani": "Controls and buttons",
           "podrobnosti": "Room details"
         },
@@ -275,6 +276,7 @@
           "grafy": "Graphs",
           "zvlhcovace": "Humidifiers",
           "obsazenost": "Occupancy and plan",
+          "napoveda": "Help for entering the plan by hand",
           "ovladani": "Controls and buttons",
           "podrobnosti": "Room details"
         },
@@ -504,7 +506,7 @@
             "co2_noc": "At night the opening threshold is higher, so nothing opens over a trifle. While sleeping not even this one opens the window — there only the emergency threshold decides.\n\nIt closes once the air is cleared at “Close below CO2”, just like during the day; one closing value instead of two.",
             "co2_noc_krize": "Above this it opens even at night and during sleep, because stale air is by then worse than window noise. While sleeping it is the only reason the window opens at all.",
             "dest_prah": "Above this rain intensity the window closes. Zero means rain always matters. A high value means rain does not bother this window — for instance when it sits under an eave.",
-            "i_kdyz_nikdo_doma": "By default windows close when the home is empty. Turn this on if this particular window is safe to leave open.",
+            "i_kdyz_nikdo_doma": "By default windows close when the home is empty. Turn this on when this window is safe to leave open. It applies only to **short-term** absence from the presence sensor — it does not override the plan's \"windows closed\" command, where the window stays shut regardless.",
             "t_venku_mistni": "When the window opens onto a balcony or a conservatory, the air behind it differs from the one at the façade. Enter a sensor from there and it overrides the global outdoor temperature.",
             "rh_venku_mistni": "Humidity from the same spot, for the dew point.",
             "min_drzeni_min": "The shortest time the window stays in the position it reached. It keeps it from flying back and forth.\n\nAfter this time it is also checked that the ventilation works at all: if neither CO2 nor the temperature moved for the better, the window closes and the pause doubles with every further futile attempt. Emergency ventilation and a manual request are not held by this.",
@@ -633,7 +635,7 @@
             "mez_dolni": "An absolute lower limit: below it the window closes, whatever it is open for. Only a manual request to air out gets past it.\n\nIt replaced the former night limit and the sleep limit, which did the same job in three places.",
             "mez_horni": "An absolute upper limit against overheating: above it the window closes, whatever it is open for.",
             "pro_pohodu": "It may open even when there is no reason to — the air is fine, the temperature is inside the band and the weather is pleasant.\n\nTurn it off and the window will open only for a reason: CO2, dust, cooling or heating.",
-            "i_kdyz_nikdo_doma": "By default windows close when the home is empty. Turn this on if this particular window is safe to leave open.",
+            "i_kdyz_nikdo_doma": "By default windows close when the home is empty. Turn this on when this window is safe to leave open. It applies only to **short-term** absence from the presence sensor — it does not override the plan's \"windows closed\" command, where the window stays shut regardless.",
             "ochota_vetrat": "In some places an open window is unpleasant even when the temperature is fine — a kitchen window draughts on whoever stands at the counter. Elsewhere it can stay open all day and nobody minds. That is how we decide which room ventilates for which. Sleep overrides it: where someone sleeps, nothing ventilates anyway.",
             "dest_prah": "Above this rain intensity the window closes. Zero means rain always matters. A high value means rain does not bother this window — for instance when it sits under an eave.",
             "topit_pri_oknu": "We give the valve a window sensor, so it can handle an open window itself — that is the default, Leave it to the valve. Use setback or off only with a valve that has no window sensor, otherwise you are telling it the same thing twice.",
@@ -802,6 +804,40 @@
           "submit": "Save"
         }
       }
+    },
+    "skupina": {
+      "title": "Room group",
+      "entry_type": "Group",
+      "initiate_flow": {
+        "user": "group",
+        "reconfigure": "Edit group"
+      },
+      "step": {
+        "user": {
+          "title": "Room group",
+          "description": "A group is **only for planning**: instead of five events for five rooms you enter one for the whole floor.\n\nIt is not a zone — it shares no air, does not stand in for ventilation and has no say in any decision.\n\nThe plan holds the group by name, so a room added later is planned too. Deleting the group does not break an existing plan: it falls back to the member list from the time it was entered.",
+          "data": {
+            "nazev": "Group name",
+            "skupina_mistnosti": "Rooms in the group"
+          },
+          "data_description": {
+            "nazev": "What the group is called in the plan — \"1st floor\", say. It appears under this name in the planner and in the calendar event title.",
+            "skupina_mistnosti": "Which rooms the group covers. It only changes what can be planned in one event — a group has no influence on decisions about windows, heating or shading."
+          }
+        },
+        "reconfigure": {
+          "title": "Room group",
+          "description": "A group is **only for planning**: instead of five events for five rooms you enter one for the whole floor.\n\nIt is not a zone — it shares no air, does not stand in for ventilation and has no say in any decision.\n\nThe plan holds the group by name, so a room added later is planned too. Deleting the group does not break an existing plan: it falls back to the member list from the time it was entered.",
+          "data": {
+            "nazev": "Group name",
+            "skupina_mistnosti": "Rooms in the group"
+          },
+          "data_description": {
+            "nazev": "What the group is called in the plan — \"1st floor\", say. It appears under this name in the planner and in the calendar event title.",
+            "skupina_mistnosti": "Which rooms the group covers. It only changes what can be planned in one event — a group has no influence on decisions about windows, heating or shading."
+          }
+        }
+      }
     }
   },
   "selector": {
@@ -852,6 +888,7 @@
         "vetrani": "Window opening",
         "zavirani": "Window closing",
         "chyba": "Drive error",
+        "plan": "Plan: starts, ends and mistakes in what was entered",
         "souhrn": "Daily summary",
         "obnova": "Repeated command (sent regularly)",
         "zaluzie": "Blind movement"

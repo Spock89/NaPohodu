@@ -151,6 +151,7 @@ class NaPohoduConfigFlow(ConfigFlow, domain=c.DOMAIN):
             c.PODENTITA_MISTNOST: MistnostSubentryFlow,
             c.PODENTITA_ZONA: ZonaSubentryFlow,
             c.PODENTITA_KLIMA: KlimaSubentryFlow,
+            c.PODENTITA_SKUPINA: SkupinaSubentryFlow,
         }
 
     @staticmethod
@@ -246,7 +247,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
             return "".join(z if z.isalnum() else "_"
                            for z in bez.lower()).strip("_")
 
-        mistnosti, oblasti = [], []
+        mistnosti, oblasti, skupiny = [], [], []
         cidla, zaluzie = {}, {}
         co2_cidla, rh_cidla = {}, {}
         s_okny, s_klidem = set(), set()
@@ -308,6 +309,8 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 # klid má smysl jen tam, kde je spánkový přepínač
                 if pod.data.get(c.CONF_SPANEK):
                     s_klidem.add(k)
+            elif pod.subentry_type == c.PODENTITA_SKUPINA:
+                skupiny.append(pod.title)
             elif pod.subentry_type == c.PODENTITA_ZONA:
                 nazvy[klic(pod.title)] = pod.title
                 oblasti.append(klic(pod.title))
@@ -329,7 +332,8 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 vybaveni=vybaveni, bloky=bloky,
                 venku=g.get(c.CONF_T_VENKU),
                 co2_cidla=co2_cidla, rh_cidla=rh_cidla,
-                s_okny=s_okny, s_klidem=s_klidem, podoba=podoba)
+                s_okny=s_okny, s_klidem=s_klidem, podoba=podoba,
+                skupiny=skupiny)
         except Exception as e:  # pragma: no cover
             # Chyba v generování nesmí položit celý dialog nastavení.
             _LOGGER.exception("NaPohodu: kartu se nepodařilo poskládat")
@@ -1048,6 +1052,53 @@ def _schema_klima(mistnosti: list[dict]) -> vol.Schema:
                 _cislo(2, 168, 1, "h"),
         }
     )
+
+
+def _schema_skupina(mistnosti: list[dict]) -> vol.Schema:
+    """Skupina místností jen pro plánování.
+
+    Není to zóna a na rozhodování nemá žádný vliv — jediné, k čemu
+    slouží, je zadat jednu událost celému patru místo každé místnosti
+    zvlášť. Proto tady nic jiného než jméno a seznam členů není.
+    """
+    jmena = [{"value": m["label"], "label": m["label"]} for m in mistnosti]
+    return vol.Schema(
+        {
+            vol.Required(c.CONF_NAZEV): selector.TextSelector(),
+            vol.Required(c.CONF_SKUPINA_MISTNOSTI): _vyber(jmena),
+        }
+    )
+
+
+class SkupinaSubentryFlow(ConfigSubentryFlow):
+    """Přidání a úprava skupiny místností pro plánování."""
+
+    def _mistnosti(self) -> list[dict]:
+        try:
+            entry = self._get_entry()
+        except Exception:  # pragma: no cover
+            return []
+        return [{"value": p.subentry_id, "label": p.title}
+                for p in entry.subentries.values()
+                if p.subentry_type == c.PODENTITA_MISTNOST]
+
+    async def async_step_user(self, user_input=None) -> SubentryFlowResult:
+        if user_input is not None:
+            return self.async_create_entry(
+                title=user_input[c.CONF_NAZEV], data=user_input)
+        return self.async_show_form(
+            step_id="user", data_schema=_schema_skupina(self._mistnosti()))
+
+    async def async_step_reconfigure(self, user_input=None) -> SubentryFlowResult:
+        pod = self._get_reconfigure_subentry()
+        if user_input is not None:
+            return self.async_update_and_abort(
+                self._get_entry(), pod, data=user_input,
+                title=user_input[c.CONF_NAZEV])
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                _schema_skupina(self._mistnosti()), pod.data))
 
 
 class KlimaSubentryFlow(ConfigSubentryFlow):

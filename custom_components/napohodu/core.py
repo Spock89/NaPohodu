@@ -165,6 +165,11 @@ class Vstup:
     # čas — začínat na osmi stovkách CO2 ve chvíli, kdy se byt zaplní,
     # je pozdě.
     predvetrat: bool = False
+    # Plán říká „zavřená okna". Je to povel, ne informace o tom, kdo
+    # kde je: platí i tam, kde je povolené větrat při prázdném bytě,
+    # a nepustí k oknu zónu, nárazové větrání ani pojistky. Přebít ho
+    # smí jen ruka na okně.
+    plan_zavreno: bool = False
 
     hodina: float = 12.0
     cas_s: float = 0.0
@@ -497,6 +502,8 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         seznam.append(f"déšť {v.dest:.1f}")
     if not v.doma:
         seznam.append("nikdo není doma")
+    if v.plan_zavreno:
+        seznam.append("plán: zavřená okna")
 
     tin = v.t_in
     noc = _je_noc(v.hodina, n, v.spanek)
@@ -798,6 +805,19 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         return hotovo(Akce.NIC,
                       f"sáhl jsi na okno, nechávám to na tobě "
                       f"(ještě {zbyva} min)", kod="rucni_zasah")
+
+    # --- 2c. plán: zavřená okna --------------------------------------
+    # Povel z kalendáře, ne informace o obsazenosti. Stojí tady, tedy
+    # hned za ručním zásahem: ruka na okně ho na nastavenou dobu
+    # přebije, všechno ostatní pod ním — vynucené větrání, pojistky,
+    # zóna i nárazové větrání — už ne. Zavírá se hned, bez čekání na
+    # nejkratší dobu držení: zavřené okno nikoho neobtěžuje a o nic
+    # jiného u prázdného patra nejde.
+    if v.plan_zavreno:
+        if not p.otevreno:
+            return beze_zmeny("plán: zavřená okna")
+        p.rezim = "pulz"
+        return zavri("plán: zavřená okna", hned=True, kod="plan_zavreno")
 
     # --- 3. ruční otevření -----------------------------------------
     if v.vynuceno:

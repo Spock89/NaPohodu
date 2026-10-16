@@ -254,6 +254,7 @@
           "grafy": "Grafy",
           "zvlhcovace": "Zvlhčovače",
           "obsazenost": "Obsazenost a plán",
+          "napoveda": "Nápověda k ručnímu zadání plánu",
           "ovladani": "Ovládání a tlačítka",
           "podrobnosti": "Podrobnosti místností"
         },
@@ -275,6 +276,7 @@
           "grafy": "Grafy",
           "zvlhcovace": "Zvlhčovače",
           "obsazenost": "Obsazenost a plán",
+          "napoveda": "Nápověda k ručnímu zadání plánu",
           "ovladani": "Ovládání a tlačítka",
           "podrobnosti": "Podrobnosti místností"
         },
@@ -504,7 +506,7 @@
             "co2_noc": "V noci je práh pro otevření vyšší, aby se neotvíralo kvůli maličkosti. Ve spánku se neotvírá ani podle něj — tam rozhoduje až krizový práh.\n\nZavírá se po vyvětrání na „Zavřít pod CO2“, stejně jako ve dne; jedna hodnota na zavírání místo dvou.",
             "co2_noc_krize": "Nad tímhle se otevře i v noci a ve spánku, protože dusno už je horší než rámus okna. Ve spánku je to jediný důvod, proč se okno otevře.",
             "dest_prah": "Nad touto intenzitou deště se okno zavře. Nula znamená, že déšť vadí vždycky. Vysoká hodnota, že tomuhle oknu déšť nevadí — třeba když je pod stříškou.",
-            "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené.",
+            "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené. Platí jen pro **krátkodobou** nepřítomnost z čidla přítomnosti — povel „zavřená okna\" z plánu tím neobejdeš, tam zůstane okno zavřené tak jako tak.",
             "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
             "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
             "min_drzeni_min": "Nejkratší doba, po kterou okno zůstane v poloze, do které dojelo. Brání tomu, aby lítalo sem a tam.\n\nPo téhle době se zároveň ověří, že větrání vůbec zabírá: když se ani CO2, ani teplota neposunuly k lepšímu, okno se zavře a pauza se s každým dalším marným pokusem zdvojnásobí. Nouzové větrání a ruční žádost tím neprochází.",
@@ -633,7 +635,7 @@
             "mez_dolni": "Absolutní spodní mez: pod ní se okno zavře, ať je otevřené z jakéhokoli důvodu. Obchází ji jen ruční žádost o vyvětrání.\n\nNahradila dřívější noční mez i pojistku ve spánku, které dělaly totéž na třech místech.",
             "mez_horni": "Absolutní horní mez proti přehřátí: nad ní se okno zavře, ať je otevřené z jakéhokoli důvodu.",
             "pro_pohodu": "Otevřít smí i tehdy, když k tomu není důvod — vzduch je v pořádku, teplota v pásmu a venku je příjemně.\n\nVypnutím se okno bude otevírat jen z důvodu: kvůli CO2, prachu, chlazení nebo ohřevu.",
-            "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené.",
+            "i_kdyz_nikdo_doma": "Ve výchozím stavu se při prázdném bytě okna zavírají. Zapni, když je tohle okno bezpečné nechat otevřené. Platí jen pro **krátkodobou** nepřítomnost z čidla přítomnosti — povel „zavřená okna\" z plánu tím neobejdeš, tam zůstane okno zavřené tak jako tak.",
             "ochota_vetrat": "Někde je otevřené okno nepříjemné, i když je teplota v pořádku — od kuchyňského okna táhne na člověka u linky. Jinde může být otevřeno celý den a nikoho to netrápí. Podle toho se rozhoduje, která místnost vyvětrá za kterou. Spánek to nepřebíjí: kde se spí, se nevětrá tak jako tak.",
             "dest_prah": "Nad touto intenzitou deště se okno zavře. Nula znamená, že déšť vadí vždycky. Vysoká hodnota, že tomuhle oknu déšť nevadí — třeba když je pod stříškou.",
             "topit_pri_oknu": "Hlavici posíláme okenní senzor, takže si otevřené okno umí ošetřit sama — to je výchozí volba Nechat na hlavici. Útlum nebo vypnuto použij jen u hlavice, která okenní senzor neumí, jinak jí posíláš dvě informace o téže věci.",
@@ -802,6 +804,40 @@
           "submit": "Uložit"
         }
       }
+    },
+    "skupina": {
+      "title": "Skupina místností",
+      "entry_type": "Skupina",
+      "initiate_flow": {
+        "user": "skupina",
+        "reconfigure": "Upravit skupinu"
+      },
+      "step": {
+        "user": {
+          "title": "Skupina místností",
+          "description": "Skupina slouží **jen k plánování**: místo pěti událostí pro pět místností zadáš jednu pro celé patro.\n\nNení to zóna — nesdílí vzduch, nezastupuje se ve větrání a do rozhodování nijak nemluví.\n\nPlán si skupinu drží jménem, takže místnost přidaná později už naplánovaná bude. Když skupinu smažeš, existující plán nespadne: jede dál podle seznamu členů z doby, kdy se zadával.",
+          "data": {
+            "nazev": "Název skupiny",
+            "skupina_mistnosti": "Místnosti ve skupině"
+          },
+          "data_description": {
+            "nazev": "Jak se skupina jmenuje v plánu — třeba „1. patro\". Pod tímhle jménem se objeví v nabídce plánovače a v názvu události v kalendáři.",
+            "skupina_mistnosti": "Které místnosti skupina zahrnuje. Mění se jen to, co se dá naplánovat jednou událostí — na rozhodování o oknech, topení ani stínění skupina žádný vliv nemá."
+          }
+        },
+        "reconfigure": {
+          "title": "Skupina místností",
+          "description": "Skupina slouží **jen k plánování**: místo pěti událostí pro pět místností zadáš jednu pro celé patro.\n\nNení to zóna — nesdílí vzduch, nezastupuje se ve větrání a do rozhodování nijak nemluví.\n\nPlán si skupinu drží jménem, takže místnost přidaná později už naplánovaná bude. Když skupinu smažeš, existující plán nespadne: jede dál podle seznamu členů z doby, kdy se zadával.",
+          "data": {
+            "nazev": "Název skupiny",
+            "skupina_mistnosti": "Místnosti ve skupině"
+          },
+          "data_description": {
+            "nazev": "Jak se skupina jmenuje v plánu — třeba „1. patro\". Pod tímhle jménem se objeví v nabídce plánovače a v názvu události v kalendáři.",
+            "skupina_mistnosti": "Které místnosti skupina zahrnuje. Mění se jen to, co se dá naplánovat jednou událostí — na rozhodování o oknech, topení ani stínění skupina žádný vliv nemá."
+          }
+        }
+      }
     }
   },
   "selector": {
@@ -852,6 +888,7 @@
         "vetrani": "Otevření okna",
         "zavirani": "Zavření okna",
         "chyba": "Chyba pohonu",
+        "plan": "Plán: začátky, konce a chyby v zadání",
         "souhrn": "Denní souhrn",
         "obnova": "Opakovaný povel (chodí pravidelně)",
         "zaluzie": "Pohyb žaluzií"

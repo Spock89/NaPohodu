@@ -25,22 +25,34 @@ class Volba:
     """Jedna položka v nabídce: co znamená a koho se týká."""
 
     popis: str                 # co se ukáže na dashboardu
-    druh: str                  # nikdo / vic / obsazeno / prazdno / cil
-    mistnost: str | None = None    # None = celý byt
+    druh: str                  # viz DRUHY
+    mistnost: str | None = None    # None = celý byt nebo skupina
+    skupina: str | None = None     # jméno skupiny místností
 
 
-def nabidka(mistnosti: list[str]) -> list[Volba]:
+# Co se dá zadat jedné místnosti nebo skupině. Prázdno a zavřená okna
+# jsou dvě různé věci a musí jít zadat zvlášť: „v ložnici nikdo
+# nebude" je informace o vytápění, kdežto „v prvním patře zavřená
+# okna" je povel, který nesmí ochromit větrání zbytku bytu.
+PRO_MISTNOST = ("obsazeno", "prazdno", "zavreno", "prazdno_zavreno", "cil")
+
+
+def nabidka(mistnosti: list[str],
+            skupiny: list[str] | None = None) -> list[Volba]:
     """Co všechno jde naplánovat.
 
-    Všechny varianty pro všechny místnosti: zapisuje se do vlastního
-    kalendáře integrace, takže není kam se netrefit a nabídku nemá
-    smysl zkracovat podle toho, co je kde přiřazené.
+    Všechny varianty pro všechny místnosti i skupiny: zapisuje se do
+    vlastního kalendáře integrace, takže není kam se netrefit a nabídku
+    nemá smysl zkracovat podle toho, co je kde přiřazené.
     """
     out = [Volba("nikdo doma", "nikdo"), Volba("víc lidí", "vic")]
     for nazev in mistnosti:
-        out.append(Volba(f"{nazev}: je tu někdo", "obsazeno", nazev))
-        out.append(Volba(f"{nazev}: nikdo tu nebude", "prazdno", nazev))
-        out.append(Volba(f"{nazev}: cílová teplota", "cil", nazev))
+        for druh in PRO_MISTNOST:
+            out.append(Volba(f"{nazev}: {DRUHY[druh]}", druh, nazev))
+    for nazev in (skupiny or []):
+        for druh in PRO_MISTNOST:
+            out.append(Volba(f"{nazev}: {DRUHY[druh]}", druh,
+                             None, nazev))
     return out
 
 
@@ -67,8 +79,36 @@ DRUHY = {
     "vic": "víc lidí",
     "obsazeno": "je tu někdo",
     "prazdno": "nikdo tu nebude",
+    "zavreno": "zavřená okna",
+    "prazdno_zavreno": "nikdo tu nebude, zavřená okna",
     "cil": "cílová teplota",
 }
+
+# Složený povel se rozpadne na jednotlivé. Jeden záznam je lepší než
+# dvě události na totéž: „odjíždíme na týden" je jedna věc a mazat se
+# má taky jednou.
+ROZPAD = {"prazdno_zavreno": ("prazdno", "zavreno")}
+
+
+def obsahuje(druh_zaznamu: str, hledany: str) -> bool:
+    """Nese tenhle záznam zadaný povel?"""
+    return hledany in ROZPAD.get(druh_zaznamu, (druh_zaznamu,))
+
+
+def patri(zaznam: dict, mistnost: str | None,
+          skupiny: dict | None = None) -> bool:
+    """Vztahuje se záznam na tuhle místnost?
+
+    Skupina se drží jménem, aby „1. patro" znamenalo 1. patro i po
+    přidání místnosti. Opis členů z doby zadání je záloha: když
+    skupinu smažeš, plán nespadne a jede dál podle něj.
+    """
+    if zaznam.get("skupina"):
+        clenove = (skupiny or {}).get(zaznam["skupina"])
+        if clenove is None:
+            clenove = zaznam.get("clenove") or []
+        return mistnost in clenove
+    return (zaznam.get("mistnost") or None) == (mistnost or None)
 
 # Co nabízíme k opakování. Víc než tohle se v bytě nehodí a každá
 # další možnost je další způsob, jak to nastavit špatně.
@@ -119,17 +159,25 @@ def pravidlo(opakovani: str, kolikrat: int) -> str | None:
     return zaklad
 
 
-def nazev(druh: str, mistnost: str | None = None,
+def nazev(druh: str, kdo: str | None = None,
           cil: float | None = None) -> str:
     """Jak se událost jmenuje v kalendáři.
 
-    Název je jen popisek pro člověka; integrace se řídí uloženým
-    záznamem. Když si ho přepíšeš, nic se nerozbije.
+    `kdo` je místnost nebo skupina; prázdno znamená celý byt. Název je
+    jen popisek pro člověka, pokud se událost zadala z dashboardu —
+    integrace se řídí uloženým záznamem a přepsaným názvem se nic
+    nerozbije. U události založené v panelu Kalendář je to naopak
+    jediný nosič významu, proto se drží přesně těchhle tvarů.
     """
     co = DRUHY.get(druh, druh)
     if druh == "cil" and cil is not None:
         co = f"cíl {cil:.1f} °C".replace(".", ",")
-    return f"{mistnost}: {co}" if mistnost else f"NaPohodu: {co}"
+    return f"{kdo}: {co}" if kdo else f"NaPohodu: {co}"
+
+
+# Skládaný povel musí jít na řadu dřív než jeho části, jinak by se
+# „nikdo tu nebude, zavřená okna" poznalo jen jako prázdno.
+PODLE_DELKY = sorted(DRUHY.items(), key=lambda x: -len(x[1]))
 
 
 def rozbal(zaznam: dict, od, do, rrulestr=None) -> list[tuple]:
@@ -192,3 +240,52 @@ def nejblizsi(vyskyty: list[tuple], ted) -> tuple | None:
         return max(bezici, key=lambda x: x[1])
     budouci = [(a, b) for a, b in vyskyty if a > ted]
     return min(budouci, key=lambda x: x[0]) if budouci else None
+
+
+# Co povel udělá, řečeno pro člověka. Zpráva o začátku události má
+# říct dopad, ne jen jméno: „zavřená okna" je název, „držím okna
+# zavřená a nepustím k nim ani zónu" je to, co se stane.
+DOPAD = {
+    "nikdo": "zavírám okna a tlumím topení",
+    "vic": "beru byt jako obsazený, větrám dopředu",
+    "obsazeno": "beru místnost jako obsazenou",
+    "prazdno": "tlumím topení, okna jedou dál",
+    "zavreno": "držím okna zavřená",
+    "prazdno_zavreno": "tlumím topení a držím okna zavřená",
+}
+
+
+def dopad(druhy) -> str:
+    """Souhrn dopadů několika povelů dohromady."""
+    texty = []
+    for d in druhy:
+        x = DOPAD.get(d)
+        if x and x not in texty:
+            texty.append(x)
+    return ", ".join(texty)
+
+
+def chyby(zaznam: dict, skupiny: dict, mistnosti, mez=(10.0, 30.0)) -> list:
+    """Co je na záznamu špatně. Prázdno znamená, že je v pořádku.
+
+    Hlásí se dopředu, dokud se s tím dá něco dělat. Tiše to spolknout
+    by znamenalo, že člověk zjistí chybu teprve podle toho, že se
+    v zimě nic nestalo.
+    """
+    out = []
+    druh = zaznam.get("druh") or ""
+    if druh == "nerozumim":
+        out.append("nerozumím názvu události")
+    if zaznam.get("skupina") and zaznam["skupina"] not in skupiny:
+        out.append(f"skupina „{zaznam['skupina']}“ už neexistuje, "
+                   f"jedu podle členů z doby zadání")
+    if zaznam.get("mistnost") and zaznam["mistnost"] not in mistnosti:
+        out.append(f"místnost „{zaznam['mistnost']}“ v nastavení není")
+    if druh == "cil":
+        cil = zaznam.get("cil")
+        if cil is None:
+            out.append("chybí cílová teplota")
+        elif not mez[0] <= float(cil) <= mez[1]:
+            out.append(f"naplánovaná teplota {cil} °C je mimo rozsah "
+                       f"{mez[0]:.0f}–{mez[1]:.0f} °C")
+    return out

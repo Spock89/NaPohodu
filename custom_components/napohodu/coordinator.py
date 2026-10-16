@@ -57,7 +57,8 @@ from .const import (
     CONF_RUCNI_KLID_ZALUZIE,
     CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SEZONA_REZIM,
     CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG, CONF_SOUHRN_CAS,
-    CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK, CONF_STINENI_CHOVANI,
+    CONF_SKUPINA_MISTNOSTI, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
+    CONF_STINENI_CHOVANI,
     CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH, CONF_STINENI_PRYC,
     CONF_STINENI_REZIM, CONF_TEPLOTY, CONF_TOPENI_OBNOVA,
     CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
@@ -68,8 +69,8 @@ from .const import (
     CONF_ZIMA_O_KOLIK, CONF_ZIMA_PRAH, CONF_ZMENA_PODMINEK,
     CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY,
     CONF_ZVLHCOVAC, CONF_ZVLHCOVAC_KDY, CONF_ZVLHCOVAC_VE_SPANKU, DOMAIN,
-    INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_ZONA,
-    ZASKLENI_PODIL,
+    INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST,
+    PODENTITA_SKUPINA, PODENTITA_ZONA, ZASKLENI_PODIL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -99,6 +100,10 @@ class VysledekMistnosti:
     klid: bool = False
     okno_otevreno: bool = False
     slunce: float = 0.0
+    # dva samostatné povely z plánu: držet okno zavřené a utlumit
+    plan_zavreno: bool = False
+    plan_prazdno: bool = False
+    plan_prazdno_do_s: float | None = None
     atributy: dict = field(default_factory=dict)
 
 
@@ -137,6 +142,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.plan_popis: str | None = None
         self.predvetrat: bool = False
         self.plan_pryc: bool = False
+        self.plan_zavrit_byt: bool = False
+        # co z plánu platilo při poslední obnově, ať se hlásí
+        # jen změny, a na které záznamy se už chyba hlásila
+        self._plan_bezelo: dict[str, list[str]] = {}
+        self._plan_chyby: set[str] = set()
+        self._plan_zpravy_prvni: bool = True
         # výsledek posledního stisku tlačítka Naplánovat
         self.plan_vysledek: str = "zatím nic"
         # co je navolené na dashboardu pro tlačítko Naplánovat
@@ -944,6 +955,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self.plan_nikdo.bezi and not doma
             and not pl.konci_do(self.plan_nikdo, cas_s,
                                 float(g.get(CONF_NOC_PREDSTIH, 60))))
+        # Povel „zavřená okna" pro celý byt. Nekončí s předstihem jako
+        # útlum: nahřát se musí dopředu, ale okno nemá proč otevírat
+        # dřív, než se někdo vrátí. Přepínač přítomnosti ho ruší —
+        # když jsi doma, plán ustupuje.
+        self.plan_zavrit_byt = bool(self.plan_nikdo.bezi and not doma)
 
         cil_zakl = self._cil_zakladni(g)
         drive_sezona = self.topna_sezona
@@ -989,6 +1005,17 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             elif plan_neni.bezi and not pr.indicie_aktivni(sig, nast_pr):
                 obsazeno = False
 
+            # „Zavřená okna" je druhý, samostatný povel. Není to
+            # informace o obsazenosti: platí i tehdy, když je zbytek
+            # bytu plný lidí, a naopak „nikdo tu nebude" samo o sobě
+            # okno nezavírá — jinak by jedna utlumená místnost
+            # ochromila větrání celého bytu. Pohyb v místnosti povel
+            # ruší, protože pak se plán mýlí.
+            plan_zavreno = self.plan_vlastni("zavreno", p.title, cas_s)
+            zavreno = bool(
+                plan_zavreno.bezi
+                and not pr.indicie_aktivni(sig, nast_pr))
+
             # Naplánovaná cílová teplota je konečná: přebíjí adaptivní
             # normu i posun místnosti, protože přesně proto se zadává.
             plan_cil = self.plan_cil_mistnosti(p.title)
@@ -998,6 +1025,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                      else round(cil_zakl + odchylka, 1)),
                 obsazeno=obsazeno,
                 klid=pr.klid(sig),
+                plan_zavreno=zavreno,
+                plan_prazdno=bool(plan_neni.bezi and not obsazeno),
+                plan_prazdno_do_s=plan_neni.do_s,
             )
             okno_m = sl.Okno(nazev=p.title,
                              azimut=float(d.get(CONF_AZIMUT, 180)))
@@ -1013,6 +1043,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 "plan": self._plan_popis(
                     pl.MISTNOST, d.get(CONF_PLAN_PRAZDNO),
                     d.get(CONF_PLAN_OBSAZENO), plan_neni, plan_je, cas_s),
+                # Povel se ukazuje zvlášť, ať je poznat, že okno drží
+                # zavřené plán, a ne že se zrovna nemá proč otevřít.
+                "plan_okna": "zavřená okna podle plánu" if zavreno else None,
             }
             self.mistnosti[p.subentry_id] = m
             podklady[p.subentry_id] = {"pod": p, "d": d, "sig": sig,
@@ -1223,6 +1256,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self._prazdno_od = cas_s
         await self._klima_krok(t_out, cas_s)
 
+        # ---------- 5b. zprávy o plánu ----------
+        # Až tady, protože dopad na místnosti je známý teprve po
+        # jejich rozhodnutí — zpráva má říkat, co se stalo.
+        await self._plan_zpravy(g, cas_s)
+
         # ---------- 6. denní souhrn ----------
         cas_souhrnu = self._hodina(g.get(CONF_SOUHRN_CAS), 21.0)
         if (hodina >= cas_souhrnu and self._souhrn_odeslan != dnes
@@ -1261,6 +1299,91 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self._uloziste_pameti.async_delay_save(lambda: snimek, 30)
 
         return {"zony": self.zony, "mistnosti": self.mistnosti}
+
+    async def _plan_zpravy(self, g: dict, cas_s: float) -> None:
+        """Zprávy o plánu: začátky, konce a chyby v zadání.
+
+        Hlásí se **dopad**, ne záznam: co se právě na koho vztahuje.
+        Tím se pokryjí i cizí kalendáře a rozvrhy, u kterých žádný
+        záznam nemáme, a složený povel pošle jednu zprávu místo dvou.
+        """
+        ted = dt_util.now()
+        stav: dict[str, list[str]] = {}
+
+        def pridej(kdo: str, popis: str, bezi: bool) -> None:
+            if bezi:
+                stav.setdefault(kdo, []).append(popis)
+
+        pridej("Byt", "nikdo doma", self.plan_nikdo.bezi)
+        pridej("Byt", "víc lidí", self.plan_vic.bezi)
+        for m in self.mistnosti.values():
+            pridej(m.nazev, "nikdo tu nebude", m.plan_prazdno)
+            pridej(m.nazev, "zavřená okna", m.plan_zavreno)
+
+        do_kdy = {"Byt": self.plan_nikdo.do_s or self.plan_vic.do_s}
+        for m in self.mistnosti.values():
+            do_kdy[m.nazev] = m.plan_prazdno_do_s
+
+        if self._plan_zpravy_prvni:
+            # Po restartu se jen zapamatuje, co platí. Hlásí se změny,
+            # a restart změna není — jinak by každé přenačtení
+            # integrace poslalo všechno, co zrovna běží.
+            self._plan_zpravy_prvni = False
+            self._plan_bezelo = {k: v for k, v in stav.items() if v}
+            return
+
+        for kdo in set(stav) | set(self._plan_bezelo):
+            nove = stav.get(kdo, [])
+            if nove == self._plan_bezelo.get(kdo, []):
+                continue
+            if nove:
+                kdy = do_kdy.get(kdo)
+                await self._posli(
+                    g, "plan", kdo, cas_s,
+                    co=f"{kdo} — {', '.join(nove)}",
+                    do_kdy=(self._cas_text(kdy, cas_s, ted) if kdy else None),
+                    dopad=pz.dopad(self._druhy_popisu(nove)))
+            else:
+                await self._posli(g, "plan", kdo, cas_s,
+                                  co=kdo, konec=True)
+        self._plan_bezelo = {k: v for k, v in stav.items() if v}
+
+        # Chyby v zadání. Hlásí se jednou na záznam, ne každou minutu:
+        # nepochopená událost v kalendáři vydrží týdny.
+        skupiny = self._skupiny()
+        jmena = {p.title for p in self._podentity(PODENTITA_MISTNOST)}
+        radky = []
+        for z in self._vlastni_plan:
+            vyskyty = pz.rozbal(z, ted - timedelta(hours=1),
+                                ted + timedelta(days=1), rrulestr)
+            if not vyskyty:
+                continue          # až se přiblíží, ozveme se
+            potize = pz.chyby(z, skupiny, jmena)
+            if z.get("rrule") and rrulestr is None:
+                potize.append("chybí knihovna python-dateutil, "
+                              "opakování se neuplatní")
+            for x in potize:
+                klic = f"{z.get('uid')}|{x}"
+                if klic in self._plan_chyby:
+                    continue
+                self._plan_chyby.add(klic)
+                radky.append(x)
+        if radky:
+            await self._posli(g, "plan", "Plán", cas_s,
+                              chyba="; ".join(radky))
+
+    def _druhy_popisu(self, popisy: list[str]) -> list[str]:
+        """Z popisů zpátky na druhy, ať se dopad skládá na jednom místě."""
+        obracene = {v: k for k, v in pz.DRUHY.items()}
+        return [obracene[x] for x in popisy if x in obracene]
+
+    @staticmethod
+    def _cas_text(do_s: float, cas_s: float, ted) -> str:
+        """Kdy to skončí, řečeno hodinami, ne sekundami."""
+        kdy = ted + timedelta(seconds=do_s - cas_s)
+        if kdy.date() == ted.date():
+            return kdy.strftime("%H:%M")
+        return kdy.strftime("%-d.%-m. %H:%M")
 
     async def _posli(self, g: dict, druh: str, mistnost: str,
                      cas_s: float, **udaje) -> None:
@@ -1429,6 +1552,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             t_out=t_ven, rh_out=rh_ven, cil=m.cil,
             dest=dest, vitr_blokuje=vitr_blokuje,
             doma=doma or i_kdyz_nikdo,
+            # Povel z plánu. Narozdíl od „nikdo není doma" ho
+            # zaškrtnutí „Větrat i když nikdo není doma" neobejde:
+            # je to povel, ne informace o tom, kdo kde je.
+            plan_zavreno=bool(m.plan_zavreno or self.plan_zavrit_byt),
             # Noční režim se řídí klidem TÉHLE místnosti, ne oblasti.
             # Spánek v obýváku nemá kuchyni zavřít okno, když má klid
             # nastavený na spánek a sama se v ní nespí.
@@ -1883,7 +2010,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             spanek=bool(m.klid))
 
         utlum_pryc = 0.0
+        utlum_plan = 0.0
         pryc = float(g.get(CONF_PRYC_UTLUM, 0.0))
+        predstih = float(g.get(CONF_NOC_PREDSTIH, 60))
         if pryc > 0 and self._prazdno_od is not None:
             hodin = float(g.get(CONF_PRYC_PO, 2.0))
             # Plánovaná nepřítomnost se nemusí odsedět: kalendář ví
@@ -1891,15 +2020,26 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # skončí — útlum proto včas povolí, aby se stihlo nahřát.
             if cas_s - self._prazdno_od >= hodin * 3600 or self.plan_pryc:
                 utlum_pryc = pryc
+        # „Nikdo tu nebude" utlumí jednu místnost, i když je byt
+        # obsazený. Vlastní číslo pro to nezavádíme: bere se tentýž
+        # útlum jako pro prázdný byt, protože víc hodnot na totéž je
+        # jen víc míst, kde se dá nastavit něco jiného. Povolí se se
+        # stejným předstihem, aby se místnost stihla nahřát.
+        if pryc > 0 and not utlum_pryc and m.plan_prazdno:
+            do_s = m.plan_prazdno_do_s
+            if do_s is None or (do_s - cas_s) > predstih * 60:
+                utlum_plan = pryc
 
-        celkem = round(utlum_noc + utlum_pryc, 2)
+        celkem = round(utlum_noc + utlum_pryc + utlum_plan, 2)
         if celkem:
             povel = replace(povel, cil=round(povel.cil - celkem, 1)
                             if povel.cil is not None else None)
         m.atributy["topeni_utlum"] = [
             x for x in (f"noc {-utlum_noc:+.1f} °C" if utlum_noc else "",
                         f"nikdo doma -{utlum_pryc:.1f} °C" if utlum_pryc
-                        else "") if x] or None
+                        else "",
+                        f"plán: nikdo tu nebude -{utlum_plan:.1f} °C"
+                        if utlum_plan else "") if x] or None
 
         poslano = await vyk.topeni(
             hlavice, povel, cas_s,
@@ -1952,6 +2092,20 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         m.atributy["topeni_hlavice"] = ", ".join(skutecnost) or None
         m.atributy["odvzdusneni"] = odvzdusneni
 
+    def plan_skupiny(self) -> dict[str, list[str]]:
+        """Skupiny pro ostatní moduly. Jen jiné jméno pro totéž."""
+        return self._skupiny()
+
+    def _skupiny(self) -> dict[str, list[str]]:
+        """Skupiny místností pro plánování: jméno na seznam členů.
+
+        Členství se drží jmény místností, ne jejich identifikátory:
+        plán se čte podle jména a tohle je jediná věc, která se
+        v kalendáři i v zprávě ukáže člověku.
+        """
+        return {s.title: list(s.data.get(CONF_SKUPINA_MISTNOSTI) or [])
+                for s in self._podentity(PODENTITA_SKUPINA)}
+
     def plan_vlastni(self, druh: str, mistnost: str | None,
                      cas_s: float) -> pl.Udalost:
         """Co o téhle věci říká vlastní plán.
@@ -1963,11 +2117,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         ted = dt_util.now()
         okno_od = ted - timedelta(days=1)
         okno_do = ted + timedelta(days=14)
+        skupiny = self._skupiny()
         vyskyty = []
         for z in self._vlastni_plan:
-            if z.get("druh") != druh:
+            if not pz.obsahuje(z.get("druh", ""), druh):
                 continue
-            if (z.get("mistnost") or None) != (mistnost or None):
+            if not pz.patri(z, mistnost, skupiny):
                 continue
             vyskyty += pz.rozbal(z, okno_od, okno_do, rrulestr)
         nejblizsi = pz.nejblizsi(vyskyty, ted)
@@ -1988,10 +2143,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         protože přesně proto se zadává.
         """
         ted = dt_util.now()
+        skupiny = self._skupiny()
         for z in self._vlastni_plan:
             if z.get("druh") != "cil" or z.get("cil") is None:
                 continue
-            if (z.get("mistnost") or None) != mistnost:
+            if not pz.patri(z, mistnost, skupiny):
                 continue
             for od, do in pz.rozbal(z, ted - timedelta(days=1),
                                     ted + timedelta(days=1), rrulestr):
@@ -2009,26 +2165,34 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         Panel nic jiného než název nenabízí, takže se tady čte zpátky
         to, co píšeme my. Čemu nerozumíme, zůstane uložené a objeví se
         v kartě — tiše to zahodit by bylo horší.
+
+        Vrací druh, místnost, skupinu a cíl. Jméno před dvojtečkou se
+        porovná se skupinami: co není skupina, je místnost.
         """
         text = (nazev or "").strip()
-        mistnost = None
+        kdo = None
         if ":" in text:
             pred, _, za = text.partition(":")
             if pred.strip().lower() != "napohodu":
-                mistnost = pred.strip()
+                kdo = pred.strip()
             text = za.strip()
+        skupina = kdo if kdo in self._skupiny() else None
+        mistnost = None if skupina else kdo
         text = text.lower()
         if text.startswith("cíl"):
             cislo = text.replace("°c", "").replace(",", ".")
             cislo = "".join(z for z in cislo if z.isdigit() or z == ".")
             try:
-                return ("cil", mistnost, float(cislo))
+                return ("cil", mistnost, skupina, float(cislo))
             except ValueError:
-                return ("nerozumim", mistnost, None)
-        for druh, popis in pz.DRUHY.items():
+                return ("nerozumim", mistnost, skupina, None)
+        # Od nejdelšího popisu: „nikdo tu nebude, zavřená okna" začíná
+        # textem „nikdo tu nebude", takže od kratšího by se složený
+        # povel poznal jen jako jeho první polovina.
+        for druh, popis in pz.PODLE_DELKY:
             if text.startswith(popis):
-                return (druh, mistnost, None)
-        return ("nerozumim", mistnost, None)
+                return (druh, mistnost, skupina, None)
+        return ("nerozumim", mistnost, skupina, None)
 
     async def plan_zapis(self, zaznam: dict) -> None:
         self._vlastni_plan.append(zaznam)
@@ -2058,8 +2222,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     def nabidka_planu(self) -> list[pz.Volba]:
         """Co jde naplánovat z dashboardu."""
-        return pz.nabidka([p.title
-                           for p in self._podentity(PODENTITA_MISTNOST)])
+        return pz.nabidka(
+            [p.title for p in self._podentity(PODENTITA_MISTNOST)],
+            list(self._skupiny()))
 
     async def naplanuj(self, popis: str, od, do) -> str:
         """Založí událost ve vlastním kalendáři plánu.
@@ -2088,6 +2253,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "uid": uuid.uuid4().hex,
             "druh": volba.druh,
             "mistnost": volba.mistnost,
+            # Skupina se drží jménem, aby platila i pro místnost, která
+            # se do ní přidá později. Opis členů je záloha pro případ,
+            # že skupinu smažeš — plán pak nespadne.
+            "skupina": volba.skupina,
+            "clenove": (self._skupiny().get(volba.skupina, [])
+                        if volba.skupina else None),
             "cil": round(float(cil), 1) if volba.druh == "cil" else None,
             "od": od, "do": do, "rrule": pravidlo, "popis": "",
             # Lichý a sudý týden se v pravidle vyjádřit nedá, drží se
@@ -2099,7 +2270,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                  + (f", {int(kolikrat)}×" if kolikrat else "")
                  if pravidlo else "")
         self.plan_vysledek = (
-            f"{pz.nazev(volba.druh, volba.mistnost, cil)}: "
+            f"{pz.nazev(volba.druh, volba.mistnost or volba.skupina, cil)}: "
             f"{od:%-d.%-m. %H:%M} – {do:%-d.%-m. %H:%M}{kolik}")
         _LOGGER.info("NaPohodu: %s", self.plan_vysledek)
         return self.plan_vysledek

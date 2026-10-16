@@ -24,10 +24,14 @@ KLID_S = {
     "obnova": 20 * 60,
     "zaluzie": 5 * 60,
     "souhrn": 20 * 3600,
+    # Plán hlásí začátek a konec události, což je samo o sobě vzácné.
+    # Tlumí se jen proto, aby jedna událost neposlala zprávu dvakrát,
+    # když se v tu minutu zrovna něco přepočítá.
+    "plan": 10 * 60,
 }
 
 DRUHY = ("vitr", "dest", "nouzove", "vetrani", "zavirani", "obnova",
-         "zaluzie", "chyba", "souhrn")
+         "zaluzie", "chyba", "plan", "souhrn")
 VYCHOZI = ("vitr", "dest", "chyba", "souhrn")
 
 
@@ -113,6 +117,30 @@ def _obnova(m, u):
             f"předchozí zahodil.")
 
 
+def _plan(_m, u):
+    """Začátek a konec naplánované události, nebo chyba v plánu.
+
+    Chybu má smysl hlásit dopředu — dozvědět se o nepochopené události
+    ve chvíli, kdy měla zabrat, už k ničemu není. Proto se posílá,
+    jakmile spadne do nejbližšího dne.
+    """
+    if u.get("chyba"):
+        casti = [f"Plán — {u['chyba']}"]
+        if u.get("kdy"):
+            casti.append(f", začíná {u['kdy']}")
+        if u.get("nazev"):
+            casti.append(f". Název v kalendáři: „{u['nazev']}“")
+        return "".join(casti) + "."
+    casti = [f"Plán: {u.get('co', '')}"]
+    if u.get("konec"):
+        casti.append(" skončil")
+    elif u.get("do_kdy"):
+        casti.append(f", do {u['do_kdy']}")
+    if u.get("dopad"):
+        casti.append(f" — {u['dopad']}")
+    return "".join(casti) + "."
+
+
 def _souhrn(m, u):
     """Skládá se z toho, co místnost opravdu má.
 
@@ -139,5 +167,6 @@ SKLADBA = {
     "zavirani": _zavirani,
     "obnova": _obnova,
     "zaluzie": _zaluzie,
+    "plan": _plan,
     "souhrn": _souhrn,
 }

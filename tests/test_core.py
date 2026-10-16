@@ -48,6 +48,47 @@ def test_nepritomnost_zavira():
     assert r.akce is Akce.ZAVRIT
 
 
+def test_plan_zavrena_okna_zavira_i_kdyz_se_smi_vetrat_bez_lidi():
+    """Povel z kalendáře. Zaškrtnutí „Větrat i když nikdo není doma"
+    ho obejít nesmí: to je výjimka pro krátkodobou nepřítomnost
+    z čidla, ne pro plánovaně prázdné patro. Proto se posílá
+    `doma=True` — přesně tak to dělá koordinátor."""
+    r, _ = krok(stary(plan_zavreno=True, doma=True, co2=1500),
+                otevreno=True)
+    assert r.akce is Akce.ZAVRIT and "plán" in r.duvod
+
+
+def test_plan_zavrena_okna_nepustí_k_oknu_pojistky_ani_naraz():
+    """Zavřeno znamená zavřeno: ani zóna, ani nárazové větrání, ani
+    krizové CO2 s tím nehýbou."""
+    for kw in ({"co2": 3000}, {"narazove": True}, {"cizi_chlazeni": True},
+               {"t_in": 5.0}, {"predvetrat": True}):
+        r, _ = krok(stary(plan_zavreno=True, **kw))
+        assert r.akce is not Akce.OTEVRIT, kw
+
+
+def test_plan_zavrena_okna_zavira_hned():
+    """Nejkratší doba držení se nečeká — zavřít okno nikoho
+    neobtěžuje a o nic jiného u prázdného patra nejde. Čeká se jen na
+    dojezd pohonu, aby povel nešel do rozjezdu."""
+    v = stary(plan_zavreno=True)
+    # okno se otevřelo před pěti minutami: nejkratší držení (20 min)
+    # ještě neuplynulo, dojezd pohonu (2 min) ano
+    r, _ = krok(v, Pamet(otevreno=True, cas_povelu_s=v.cas_s - 300))
+    assert r.akce is Akce.ZAVRIT
+    # bez povelu z plánu by se čekalo
+    r2, _ = krok(stary(co2=500, t_in=16.0),
+                 Pamet(otevreno=True, cas_povelu_s=v.cas_s - 300))
+    assert r2.akce is Akce.NIC and r2.kod == "drzeni"
+
+
+def test_ruku_na_okne_plan_neprebije():
+    """Ruka na okně je nejsilnější důkaz, že tam někdo je."""
+    v = stary(plan_zavreno=True)
+    r, _ = krok(v, Pamet(otevreno=True, rucni_do_s=v.cas_s + 600))
+    assert r.akce is Akce.NIC and "nechávám to na tobě" in r.duvod
+
+
 def test_rucni_otevreni_bez_limitu():
     r, _ = krok(stary(vynuceno=True, t_out=-5))
     assert r.akce is Akce.OTEVRIT and r.limit_s is None

@@ -5,6 +5,10 @@ DOMAIN = "napohodu"
 PODENTITA_MISTNOST = "mistnost"
 PODENTITA_ZONA = "zona"
 PODENTITA_KLIMA = "klima"
+# Skupina místností jen pro plánování. Není to zóna: nesdílí vzduch
+# a do rozhodování nemluví, slouží jen k tomu, aby se jedna událost
+# dala zadat celému patru místo každé místnosti zvlášť.
+PODENTITA_SKUPINA = "skupina"
 
 # --- globální nastavení ---
 CONF_T_VENKU = "t_venku"
@@ -220,6 +224,9 @@ CONF_KLIMA_ENTITA = "klima_entita"
 CONF_KLIMA_UMI = "klima_umi"
 CONF_KLIMA_V_POKOJI = "klima_v_pokoji"
 CONF_KLIMA_POKOJE = "klima_pokoje"
+
+# --- skupina místností pro plánování ---
+CONF_SKUPINA_MISTNOSTI = "skupina_mistnosti"
 CONF_KLIMA_CHLADIT_OD = "chladit_od"
 CONF_KLIMA_TOPIT_OD = "topit_od"
 CONF_KLIMA_UTLUM_CHLAZENI = "utlum_chlazeni"
@@ -234,6 +241,6 @@ CONF_ZPRAVY = "zpravy_kam"
 CONF_ZPRAVY_DRUHY = "zpravy_druhy"
 CONF_SOUHRN_CAS = "souhrn_cas"
 DRUHY_ZPRAV = ["vitr", "dest", "nouzove", "vetrani", "zavirani", "obnova",
-               "zaluzie", "chyba", "souhrn"]
+               "zaluzie", "chyba", "plan", "souhrn"]
 
 INTERVAL_S = 60

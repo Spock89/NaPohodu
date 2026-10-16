@@ -2,21 +2,53 @@
 
 from datetime import datetime, timedelta
 
-from planovac import (DRUHY, nabidka, nazev, nejblizsi, parita,
-                      pravidlo, rozbal, zkontroluj)
+from planovac import (DRUHY, nabidka, nazev, nejblizsi, obsahuje,
+                      parita, patri, pravidlo, rozbal, zkontroluj)
 
 
 def test_nabidka_ma_vsechny_varianty_kazde_mistnosti():
     """Zapisuje se do vlastního kalendáře, takže není kam se netrefit
     a nabídku nemá smysl zkracovat podle toho, co je kde přiřazené."""
-    v = nabidka(["Ložnice", "Kuchyně"])
+    v = nabidka(["Ložnice"], ["1. patro"])
     assert [x.popis for x in v] == [
         "nikdo doma", "víc lidí",
         "Ložnice: je tu někdo", "Ložnice: nikdo tu nebude",
+        "Ložnice: zavřená okna",
+        "Ložnice: nikdo tu nebude, zavřená okna",
         "Ložnice: cílová teplota",
-        "Kuchyně: je tu někdo", "Kuchyně: nikdo tu nebude",
-        "Kuchyně: cílová teplota"]
+        "1. patro: je tu někdo", "1. patro: nikdo tu nebude",
+        "1. patro: zavřená okna",
+        "1. patro: nikdo tu nebude, zavřená okna",
+        "1. patro: cílová teplota"]
     assert {x.druh for x in v} <= set(DRUHY)
+    # skupina se pozná podle toho, že není místnost
+    skupinove = [x for x in v if x.skupina]
+    assert all(x.mistnost is None for x in skupinove)
+    assert len(skupinove) == 5
+
+
+def test_slozeny_povel_nese_oba():
+    """„Odjíždíme na týden" je jedna věc a mazat se má jednou."""
+    assert obsahuje("prazdno_zavreno", "prazdno")
+    assert obsahuje("prazdno_zavreno", "zavreno")
+    assert obsahuje("prazdno", "prazdno")
+    # a samo o sobě prázdno okno nezavírá
+    assert not obsahuje("prazdno", "zavreno")
+    assert not obsahuje("zavreno", "prazdno")
+
+
+def test_skupina_se_drzi_jmenem_a_opis_je_zaloha():
+    z = {"skupina": "1. patro", "clenove": ["Ložnice", "Dětská"]}
+    # přidaná místnost platí taky, protože skupina se drží jménem
+    ted = {"1. patro": ["Ložnice", "Dětská", "Pracovna"]}
+    assert patri(z, "Pracovna", ted)
+    assert not patri(z, "Kuchyně", ted)
+    # smazaná skupina plán nerozbije, jede podle opisu
+    assert patri(z, "Dětská", {})
+    assert not patri(z, "Pracovna", {})
+    # bez skupiny se porovnává místnost
+    assert patri({"mistnost": "Ložnice"}, "Ložnice", {})
+    assert not patri({"mistnost": "Ložnice"}, "Kuchyně", {})
 
 
 def test_prohozene_casy_se_nezalozi():

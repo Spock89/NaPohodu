@@ -246,7 +246,8 @@ POTREBUJE = {
 # Hlavní bloky stránky. Dají se při generování odškrtnout — výchozí
 # stav je všechno zapnuté.
 BLOKY = ["mistnosti", "cilova_teplota", "zaklad", "ladeni", "stineni",
-         "grafy", "zvlhcovace", "obsazenost", "ovladani", "podrobnosti"]
+         "grafy", "zvlhcovace", "obsazenost", "napoveda", "ovladani",
+         "podrobnosti"]
 
 # Home Assistant skládá sekce do mřížky po řádcích a řádek je vysoký
 # jako jeho nejvyšší sekce — pod krátkou tedy zůstane díra. Pořadí je
@@ -265,6 +266,7 @@ PORADI_SEKCI = [
     "Ovládání oken",          # s ovládáním žaluzií v jedné sekci
     "Zvlhčovače",             # se srovnáním v jedné sekci
     "Obsazenost a klid",      # se sdíleným vzduchem v jedné sekci
+    "Jak zadat plán ručně",
     "Grafy",
     "Ladění — topení",
     "Ladění — prach",
@@ -475,6 +477,45 @@ def _budiky_mistnosti(prah: dict | None, existuje, cil: str,
              "    cards:"] + karty + [""])
 
 
+def _napoveda_planu(mistnosti: list[str], skupiny: list[str]) -> list[str]:
+    """Nápověda k ručnímu zadání plánu, podle skutečného nastavení.
+
+    Obecný návod je tu k ničemu: jediné, co se dá splést, jsou přesná
+    jména — a ta zná jen tahle instalace. Proto se řádky vypisují
+    hotové k opsání, ne jako vzorec se zástupnými symboly.
+    """
+    if not mistnosti and not skupiny:
+        return []
+    radky = ["NaPohodu: nikdo doma", "NaPohodu: víc lidí"]
+    for kdo in list(mistnosti) + list(skupiny):
+        radky += [f"{kdo}: je tu někdo",
+                  f"{kdo}: nikdo tu nebude",
+                  f"{kdo}: zavřená okna",
+                  f"{kdo}: nikdo tu nebude, zavřená okna",
+                  f"{kdo}: cíl 21,5 °C"]
+    c = [SEKCE]
+    c += _hlavicka("Jak zadat plán ručně", "mdi:help-circle", "subtitle")
+    c.append("  - type: markdown")
+    c.append("    content: |-")
+    c.append("      Z **dashboardu** se význam ukládá k události, takže"
+             " na názvu nezáleží a nedá se pokazit překlepem.")
+    c.append("      V **panelu Kalendář** je název jediný nosič významu —"
+             " tam platí přesně tyhle tvary:")
+    c.append("      ```")
+    for r in radky:
+        c.append(f"      {r}")
+    c.append("      ```")
+    c.append("      Zakládej je v kalendáři **NaPohodu Plán**"
+             " (`calendar.napohodu_plan`); opakování v panelu funguje."
+             " Čemu integrace nerozumí, zůstane uložené a ozve se"
+             " zprávou — nespolkne se to tiše.")
+    c.append("      *Nikdo tu nebude = utlumí topení a okna nechá jet"
+             " dál. Zavřená okna = drží okno zavřené, i když je zbytek"
+             " bytu plný lidí.*")
+    c.append("")
+    return c
+
+
 def _jako_pohled(radky: list[str]) -> list[str]:
     """Udělá z karet celý pohled, ne jednu složenou kartu.
 
@@ -556,7 +597,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
               co2_cidla: dict | None = None,
               rh_cidla: dict | None = None, s_okny: set | None = None,
               s_klidem: set | None = None, jako_pohled: bool = False,
-              podoba: str = "karta") -> str:
+              podoba: str = "karta",
+              skupiny: list | None = None) -> str:
     """Poskládá kartu. `existuje` řekne, jestli entita opravdu je.
 
     `cidla` a `zaluzie` jsou entity, které integrace nevytváří — teploměr
@@ -903,6 +945,14 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
                   "    entities:",
                   "      - calendar.napohodu_plan"]
         c.append("")
+
+    c.append(ZNACKA_BLOKU + "napoveda")
+    # --- jak zadat plán ručně ---
+    # Z dashboardu se význam ukládá do záznamu, takže název je jen
+    # popisek. V panelu Kalendář je naopak jediný nosič významu —
+    # a tam se bez přesného tvaru nedá trefit. Proto se vypisuje
+    # podle skutečného nastavení, se jmény, která tahle instalace má.
+    c += _napoveda_planu([jm(m) for m in mistnosti], skupiny or [])
 
 
     c.append(ZNACKA_BLOKU + "ladeni")

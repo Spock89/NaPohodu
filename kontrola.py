@@ -974,7 +974,8 @@ bloky = {
     "pritomnost": pole("SCHEMA_PRITOMNOST", "SCHEMA_INDICIE"),
     "indicie": pole("SCHEMA_INDICIE", "class MistnostSubentryFlow"),
     "zona": pole("def _schema_zona", "class ZonaSubentryFlow"),
-    "klima": pole("def _schema_klima", "class KlimaSubentryFlow"),
+    "klima": pole("def _schema_klima", "def _schema_skupina"),
+    "skupina": pole("def _schema_skupina", "class SkupinaSubentryFlow"),
 }
 for jazyk in ("cs", "en"):
     t = json.loads((d / "translations" / f"{jazyk}.json").read_text())
@@ -989,6 +990,7 @@ for jazyk in ("cs", "en"):
         "indicie": t["config_subentries"]["mistnost"]["step"]["indicie"],
         "zona": t["config_subentries"]["zona"]["step"]["user"],
         "klima": t["config_subentries"]["klima"]["step"]["user"],
+        "skupina": t["config_subentries"]["skupina"]["step"]["user"],
     }
     for jm, polia in bloky.items():
         for k in sorted(polia):

@@ -141,3 +141,28 @@ def test_obnova_nese_skutecny_duvod():
     t = h.zprava("obnova", "Kuchyně", 1000,
                  co="otevřít — venku je příjemně, otevřeno")
     assert t and "příjemně" in t
+
+
+def test_plan_hlasi_dopad_ne_jen_jmeno():
+    """Zpráva o začátku má říct, co se stane, ne jen jak se to jmenuje."""
+    h = Hlasic(druhy=("plan",))
+    t = h.zprava("plan", "1. patro", 0,
+                 co="1. patro — zavřená okna", do_kdy="18:00",
+                 dopad="držím okna zavřená")
+    assert "zavřená okna" in t and "18:00" in t and "držím" in t
+
+
+def test_plan_konec_i_chyba():
+    h = Hlasic(druhy=("plan",))
+    assert "skončil" in h.zprava("plan", "Byt", 0, co="Byt", konec=True)
+    t = h.zprava("plan", "Plán", 10000,
+                 chyba="nerozumím názvu události", nazev="dovolená",
+                 kdy="zítra 8:00")
+    # chyba musí nést i to, co se v kalendáři jmenuje — jinak se
+    # nedá najít, která událost je špatně
+    assert "dovolená" in t and "zítra 8:00" in t
+
+
+def test_plan_bez_zaskrtnuti_nechodi():
+    """Nová kategorie nesmí začít chodit sama."""
+    assert Hlasic().zprava("plan", "Byt", 0, co="Byt") is None

@@ -676,10 +676,44 @@ Co to dělá:
   Kolik minut předem, se nastavuje šoupátkem; nula vypíná.
 - **je tu někdo** v místnosti — bere se za obsazenou, i když v ní
   nejsou čidla. Pro pokoje, jejichž využití se mění po týdnech.
+- **nikdo tu nebude** v místnosti — **utlumí topení** té místnosti,
+  i když je byt obsazený, a vypne čističku a zvlhčovač vázaný na
+  přítomnost. Bere se tentýž útlum jako pro prázdný byt (*Útlum
+  topení, když nikdo není doma*) a povolí se se stejným předstihem,
+  aby se místnost stihla nahřát. **S okny nehýbá** — jedna utlumená
+  místnost nemá ochromit větrání zbytku bytu.
+- **zavřená okna** v místnosti — druhý, samostatný povel: okno
+  zůstane zavřené, i když je zbytek bytu plný lidí. Zavírá se hned,
+  bez čekání na nejkratší dobu držení, a nepustí k oknu ani zónu, ani
+  nárazové větrání, ani pojistky. Zaškrtnutí *Větrat i když nikdo není
+  doma* ho neobejde: to je výjimka pro krátkodobou nepřítomnost
+  z čidla, ne pro plánovaně prázdné patro.
+
+Prázdno a zavřená okna jsou **dvě různé věci** a dají se zadat zvlášť
+i spolu (*nikdo tu nebude, zavřená okna* — na jeden odjezd jedna
+událost).
 
 **Skutečnost smí přítomnost jen přidat, nikdy ubrat.** Když čidlo vidí
-pohyb, je obsazeno, ať plán říká co chce. Opačně by stačil jeden
-zapomenutý záznam v kalendáři a člověk sedí ve studeném pokoji.
+pohyb, je obsazeno, ať plán říká co chce — a povel „zavřená okna" tím
+pro tu místnost taky padá. Opačně by stačil jeden zapomenutý záznam
+v kalendáři a člověk sedí ve studeném pokoji. Přepínač přítomnosti
+ruší plán celého bytu, ale **ne povel pro místnost nebo skupinu** —
+jinak by „v prvním patře zavřená okna" nešlo použít, dokud jsi doma,
+a přesně na to to je. **Ruka na okně vyhrává** po celou nastavenou
+dobu ručního zásahu: silnější důkaz, že tam někdo je, neexistuje.
+
+#### Skupiny místností
+
+Skupina (*1. patro*, *podkroví*) slouží **jen k plánování**: místo
+pěti událostí pro pět místností zadáš jednu pro celé patro. Není to
+zóna — nesdílí vzduch, nezastupuje se ve větrání a do rozhodování
+nijak nemluví. Přidává se v nastavení jako podentita *Skupina*
+s názvem a výběrem místností.
+
+Plán si skupinu drží **jménem**, takže místnost přidaná později už
+naplánovaná bude. Když skupinu smažeš, existující plán nespadne: jede
+dál podle seznamu členů z doby zadání a v kartě i ve zprávě se objeví,
+že skupina chybí.
 
 Chybějící nebo smazaná entita se tiše přeskočí — plán prostě neplatí
 a zbytek jede jako bez něj. Co plán zrovna říká a do kdy, je vidět
@@ -734,10 +768,21 @@ nezabírá místo v kalendáři.
 Posílá se přes notify entity, takže příjemce vybereš ze seznamu — u
 Telegramu vytváří integrace jednu entitu na každý chat. Zaškrtneš, co tě
 zajímá: zavření kvůli větru nebo dešti, nouzové provětrání, otevírání
-a zavírání, chyby pohonu, denní souhrn.
+a zavírání, chyby pohonu, plán, denní souhrn.
 
 Stejná zpráva se neopakuje dřív než za půl hodiny. Automatika, která
 upozorňuje pořád, se přestane číst.
+
+**Plán** hlásí začátek a konec události a říká dopad, ne jen jméno:
+„Plán: 1. patro — zavřená okna, do 18:00 — držím okna zavřená."
+Hlásí se to, co právě platí, takže se pokryjí i cizí kalendáře
+a rozvrhy, a složený povel pošle jednu zprávu místo dvou. Zvlášť
+chodí **chyby v zadání** — nepochopený název z panelu Kalendář,
+neznámá místnost nebo skupina, naplánovaná teplota mimo rozsah,
+chybějící knihovna pro opakování. Chyba se hlásí **jednou na záznam**
+(nepochopená událost v kalendáři vydrží týdny) a **dopředu**, jakmile
+spadne do nejbližšího dne — dozvědět se o ní ve chvíli, kdy měla
+zabrat, už k ničemu není.
 
 Denní souhrn se skládá z toho, co místnost opravdu má. Bez ovládaného
 okna a bez kontaktu o žádném okně neví, takže se v něm pohyby okna ani
@@ -754,9 +799,16 @@ které se dají na dashboardu chytat a přesouvat.
 Po přidání místnosti si přijdeš pro novou verzi.
 
 Při generování se dají **hlavní bloky odškrtnout** — místnosti, cílová
-teplota, ladění, stínění, grafy, zvlhčovače, obsazenost, ovládání,
-podrobnosti. Výchozí stav je všechno zapnuté a po odeslání se karta
-vypíše znovu, takže jde ubírat a přidávat, dokud to nesedí.
+teplota, ladění, stínění, grafy, zvlhčovače, obsazenost, nápověda
+k plánu, ovládání, podrobnosti. Výchozí stav je všechno zapnuté a po
+odeslání se karta vypíše znovu, takže jde ubírat a přidávat, dokud to
+nesedí.
+
+Blok **nápověda k plánu** vypíše přesné názvy událostí, které tahle
+instalace zná — se jmény tvých místností a skupin, hotové k opsání do
+panelu Kalendář. Obecný návod by k ničemu nebyl: z dashboardu se
+význam ukládá k události a na názvu nezáleží, kdežto v panelu je název
+jediný nosič významu, a splést se tam dá právě jen v přesném jméně.
 
 Generuje se jen to, co místnost **opravdu má**: pásmo a pojistky bez
 okna, noční posun bez hlavice ani prachové prahy bez čidla nemají co
@@ -1176,9 +1228,42 @@ starts, aiming at the clean CO2 level rather than the opening
 threshold. A room plan makes a room count as occupied even with no
 sensors in it.
 
+A room is given **two separate commands**, because they are two
+different things. *Nobody will be here* sets that room's heating back
+— by the same amount as an empty home, released with the same lead
+time — and switches off the purifier and the presence-bound
+humidifier, but **leaves the windows alone**: one room on setback must
+not cripple ventilation for the rest of the home. *Windows closed*
+holds the window shut even when the rest of the home is full of
+people: it closes at once, without waiting out the minimum hold, and
+lets neither the zone, nor burst ventilation, nor the safeties near
+it. The per-window *ventilate even when nobody is home* does not
+override it — that exception is for short-term absence from the
+sensor, not for a floor that is planned empty. Both can be entered in
+one event (*nobody will be here, windows closed*).
+
 **Reality may only add presence, never take it away:** if a sensor
-sees movement, the room is occupied, whatever the plan says. A missing
-or deleted entity is skipped silently.
+sees movement, the room is occupied, whatever the plan says — and the
+"windows closed" command falls with it for that room. The presence
+switch cancels the whole-home plan but **not** a room or group
+command, otherwise "windows closed on the first floor" could never be
+used while you are at home, which is exactly what it is for. **A hand
+on the window wins** for the full manual-override time: there is no
+stronger evidence that someone is there. A missing or deleted entity
+is skipped silently.
+
+#### Room groups
+
+A group (*1st floor*, *attic*) is **only for planning**: instead of
+five events for five rooms you enter one for the whole floor. It is
+not a zone — it shares no air, does not stand in for ventilation and
+has no say in any decision. It is added in the settings as a *Group*
+subentry with a name and a room picker.
+
+The plan holds the group **by name**, so a room added later is planned
+too. Deleting the group does not break an existing plan: it falls back
+to the member list from the time it was entered, and the card and a
+message say the group is gone.
 
 #### Own calendar
 
@@ -1254,6 +1339,14 @@ those three stay in absolute values.
 
 The thresholds are baked in when the card is generated. After moving a
 slider that defines one of the edges, generate the card again.
+
+The **plan help block** prints the exact event titles this
+installation understands, with the names of your own rooms and groups,
+ready to copy into the Calendar panel. A generic guide would be no
+use: from the dashboard the meaning is stored with the event and the
+title does not matter, while in the panel the title is the only
+carrier of meaning — and the exact name is the only thing there is to
+get wrong.
 
 ## What it does not do
 

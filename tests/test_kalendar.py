@@ -50,8 +50,11 @@ class Koordinator:
         return self.zaznamy
 
     def plan_z_nazvu(self, nazev):
-        return ("obsazeno", "Ložnice", None) if "Ložnice" in nazev \
-            else ("nikdo", None, None)
+        return ("obsazeno", "Ložnice", None, None) if "Ložnice" in nazev \
+            else ("nikdo", None, None, None)
+
+    def plan_skupiny(self):
+        return {}
 
     async def plan_zapis(self, z):
         self.zapsane.append(z)
