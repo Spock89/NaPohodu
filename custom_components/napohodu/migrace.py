@@ -54,10 +54,15 @@ STARSI_JMENA = {
 async def srovnej(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Srovná starší jména entit a klíčů.
 
-    Proběhne jednou za instalaci a zapíše si to. Integrace se načítá
-    znovu při každé změně nastavení, takže bez téhle poznámky by se
-    stejné hlášení opakovalo pokaždé — a hlášení, které chodí pořád,
-    se přestane číst.
+    Proběhne **jednou za instalaci**. Integrace se načítá znovu při
+    každé změně nastavení a změna, kterou srovnání samo udělá, další
+    načtení spustit může — bez téhle pojistky by se celé kolo mohlo
+    opakovat pořád dokola a log by zaplavilo jedno hlášení.
+
+    Poznámka se proto zapisuje **napřed**, ne až po práci. Když se
+    mezitím něco pokazí, zbude nanejvýš nesrovnaný řádek v registru:
+    to je kosmetická vada, kdežto nekonečné kolo načítání je porucha.
+    Spustit znovu jde službou `napohodu.srovnej_jmena`.
     """
     uloziste = Store(hass, 1, f"{DOMAIN}.migrace")
     try:
@@ -66,16 +71,33 @@ async def srovnej(hass: HomeAssistant, entry: ConfigEntry) -> None:
         hotovo = None
     if (hotovo or {}).get("srovnano"):
         return
-    # Nejdřív zbytky, pak jména: entita po zrušeném nastavení nemá
-    # smysl přejmenovávat a zároveň by blokovala jméno té živé.
-    _zbytky(hass, entry)
-    _jmena_entit(hass, entry)
-    await _klic_zaluzii(hass, entry)
     try:
         await uloziste.async_save({"srovnano": True})
     except Exception as e:      # pragma: no cover - zápis se nepovedl
         _LOGGER.warning("NaPohodu: poznámku o srovnání se nepodařilo "
                         "uložit (%s), příště se zopakuje", e)
+    await znovu(hass, entry)
+
+
+async def znovu(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Samotná práce. Volá se při prvním načtení a ze služby.
+
+    Každý krok si hlídá svoje chyby: srovnání jmen je úklid, ne
+    podmínka chodu, a shodit kvůli němu načtení integrace by bylo
+    nepoměrné.
+    """
+    # Nejdřív zbytky, pak jména: entita po zrušeném nastavení nemá
+    # smysl přejmenovávat a zároveň by blokovala jméno té živé.
+    for krok in (_zbytky, _jmena_entit):
+        try:
+            krok(hass, entry)
+        except Exception as e:      # pragma: no cover - cizí rozhraní
+            _LOGGER.error("NaPohodu: srovnání %s selhalo: %s",
+                          krok.__name__.strip("_"), e)
+    try:
+        await _klic_zaluzii(hass, entry)
+    except Exception as e:      # pragma: no cover - cizí rozhraní
+        _LOGGER.error("NaPohodu: srovnání klíče žaluzií selhalo: %s", e)
 
 
 def _zbytky(hass: HomeAssistant, entry: ConfigEntry) -> None:

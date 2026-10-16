@@ -963,8 +963,12 @@ přepíše na dnešní, a seznam žaluzií uložený pod dřívějším klíčem
 přepíše do dnešního. Každá změna jde do logu, protože kdo má starý
 identifikátor v automatizaci nebo ve vlastní kartě, musí si ho opravit.
 
-Že je hotovo, si integrace zapíše — načítá se znovu při každé změně
-nastavení a hlášení, které chodí pokaždé, se přestane číst.
+Že je hotovo, si integrace zapíše — a zapíše to **napřed**, ne až po
+práci: načítá se znovu při každé změně nastavení a změna, kterou
+srovnání samo udělá, další načtení spustit může. Kdyby se poznámka
+psala nakonec, mohlo by se celé kolo opakovat pořád dokola. Když se
+tím pádem něco nestihne, zbude nanejvýš nesrovnaný řádek v registru
+a spustit znovu jde službou `napohodu.srovnej_jmena`.
 
 Dál se pracuje jen s dnešními jmény. Na minulost tak nemusí myslet ani
 karta, ani rozhodování — a nová instalace nemá co srovnávat, takže se

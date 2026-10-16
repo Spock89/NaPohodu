@@ -279,6 +279,21 @@ async def zaregistruj(hass: HomeAssistant) -> None:
             "vysledky": vysledky,
         }
 
+    async def srovnej_jmena(call: ServiceCall) -> ServiceResponse:
+        """Spustí srovnání dřívějších jmen znovu.
+
+        Při instalaci proběhne samo a víckrát se o to nepokouší. Když
+        se tehdy něco nepovedlo, tahle služba je druhý pokus — a dá se
+        jí i zkontrolovat, že už není co srovnávat.
+        """
+        from .migrace import znovu
+
+        kolik = 0
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            await znovu(hass, entry)
+            kolik += 1
+        return {"srovnano": kolik}
+
     async def dashboard(call: ServiceCall) -> ServiceResponse:
         """Vygeneruje kartu z entit, které opravdu existují."""
         from unicodedata import normalize
@@ -341,6 +356,7 @@ async def zaregistruj(hass: HomeAssistant) -> None:
         ("smaz_stav", smaz_stav, SCHEMA_SMAZ),
         ("stineni_mistnosti", stineni_mistnosti, SCHEMA_MISTNOST),
         ("srovnej", srovnej, SCHEMA_SROVNEJ),
+        ("srovnej_jmena", srovnej_jmena, vol.Schema({})),
         ("dashboard", dashboard, vol.Schema({})),
     ):
         # každá zvlášť: dřív stačila jedna existující a nové se

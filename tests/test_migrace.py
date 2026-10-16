@@ -181,3 +181,52 @@ def test_srovnava_se_jen_jednou(migrace):
                          "kuchyne_odchylka"))
     asyncio.run(m.srovnej(hass, entry))
     assert len(r.prejmenovane) == 1
+
+
+def test_poznamka_se_zapise_drive_nez_prace(migrace):
+    """Změna, kterou srovnání udělá, může spustit další načtení.
+    Kdyby se poznámka psala až nakonec, mohlo by se celé kolo
+    opakovat pořád dokola a log by zaplavilo jedno hlášení."""
+    m, reg = migrace
+    from homeassistant.helpers.storage import Store
+
+    r = reg.Registr([reg.RegistrZapis("number.napohodu_loznice_zbytek",
+                                      "loznice_zruseno")])
+    porad = []
+
+    class Hlidane(Hass):
+        pass
+
+    hass = Hlidane(r)
+    puvodni = Store.async_save
+
+    async def zaznam(self, data):
+        porad.append(("poznámka", dict(data)))
+        return await puvodni(self, data)
+
+    Store.async_save = zaznam
+    try:
+        asyncio.run(m.srovnej(hass, _pokoje("loznice")))
+    finally:
+        Store.async_save = puvodni
+    assert porad and porad[0][1] == {"srovnano": True}
+    # a práce se přesto udělala
+    assert r.smazane == ["number.napohodu_loznice_zbytek"]
+
+
+def test_sluzba_spusti_srovnani_znovu(migrace):
+    """Když se při instalaci něco nepovedlo, musí jít zkusit to znovu
+    bez mazání poznámky ručně v souborech."""
+    m, reg = migrace
+    r = reg.Registr([reg.RegistrZapis("number.napohodu_loznice_zbytek",
+                                      "loznice_zruseno")])
+    hass = Hass(r)
+    entry = _pokoje("loznice")
+    asyncio.run(m.srovnej(hass, entry))
+    # po poznámce už srovnej nic nedělá, ale znovu() ano
+    r.zapisy.append(reg.RegistrZapis("number.napohodu_kuchyne_zbytek",
+                                     "kuchyne_zruseno"))
+    asyncio.run(m.srovnej(hass, entry))
+    assert len(r.smazane) == 1
+    asyncio.run(m.znovu(hass, entry))
+    assert len(r.smazane) == 2

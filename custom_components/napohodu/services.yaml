@@ -133,6 +133,15 @@ srovnej:
       selector:
         text:
 
+srovnej_jmena:
+  name: Srovnat dřívější jména entit
+  description: >
+    Smaže z registru šoupátka po nastavení, které už neexistuje, a
+    entitám s dřívějším jménem vrátí dnešní. Proběhne samo při první
+    instalaci; tahle služba je druhý pokus, když se tehdy něco
+    nepovedlo. Pustit se dá kdykoli — když není co srovnávat, nic se
+    nestane.
+
 dashboard:
   name: Vygenerovat kartu na dashboard
   description: >
