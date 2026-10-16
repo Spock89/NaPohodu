@@ -24,8 +24,10 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.storage import Store
 
-from .const import CONF_ZALUZIE, CONF_ZALUZIE_STARE, PODENTITA_MISTNOST
+from .const import (CONF_ZALUZIE, CONF_ZALUZIE_STARE, DOMAIN,
+                    PODENTITA_MISTNOST)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,9 +52,61 @@ STARSI_JMENA = {
 
 
 async def srovnej(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Srovná starší jména entit a klíčů. Smí se spustit opakovaně."""
+    """Srovná starší jména entit a klíčů.
+
+    Proběhne jednou za instalaci a zapíše si to. Integrace se načítá
+    znovu při každé změně nastavení, takže bez téhle poznámky by se
+    stejné hlášení opakovalo pokaždé — a hlášení, které chodí pořád,
+    se přestane číst.
+    """
+    uloziste = Store(hass, 1, f"{DOMAIN}.migrace")
+    try:
+        hotovo = await uloziste.async_load()
+    except Exception:      # pragma: no cover - poškozený soubor
+        hotovo = None
+    if (hotovo or {}).get("srovnano"):
+        return
+    # Nejdřív zbytky, pak jména: entita po zrušeném nastavení nemá
+    # smysl přejmenovávat a zároveň by blokovala jméno té živé.
+    _zbytky(hass, entry)
     _jmena_entit(hass, entry)
     await _klic_zaluzii(hass, entry)
+    try:
+        await uloziste.async_save({"srovnano": True})
+    except Exception as e:      # pragma: no cover - zápis se nepovedl
+        _LOGGER.warning("NaPohodu: poznámku o srovnání se nepodařilo "
+                        "uložit (%s), příště se zopakuje", e)
+
+
+def _zbytky(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Smaže šoupátka po nastavení, které už neexistuje.
+
+    Entita se pozná podle trvalého identifikátoru složeného z místnosti
+    a klíče nastavení. Když se nastavení zrušilo nebo přejmenovalo,
+    zůstane v registru řádek, který už nikdo nevyrobí: hlásí se jako
+    nedostupný, ručně ho smazat nejde a blokuje jméno tomu živému.
+
+    Maže se jen mezi šoupátky a jen to, co se z dnešní konfigurace
+    nemá jak vyrobit — tedy nikdy nic, co by příští načtení založilo
+    znovu.
+    """
+    from .number import CELY_BYT, MISTNOST
+
+    ziva = {f"{entry.entry_id}_{p.klic}" for p in CELY_BYT}
+    for pod in entry.subentries.values():
+        if pod.subentry_type == PODENTITA_MISTNOST:
+            ziva |= {f"{pod.subentry_id}_{p.klic}" for p in MISTNOST}
+
+    registr = er.async_get(hass)
+    for zapis in list(er.async_entries_for_config_entry(registr,
+                                                        entry.entry_id)):
+        if zapis.domain != "number" or zapis.unique_id in ziva:
+            continue
+        registr.async_remove(zapis.entity_id)
+        _LOGGER.warning(
+            "NaPohodu: %s smazáno — zbytek po nastavení, které už "
+            "neexistuje. Hlásilo se jako nedostupné a ručně smazat "
+            "nešlo.", zapis.entity_id)
 
 
 def _jmena_entit(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -79,9 +133,15 @@ def _jmena_entit(hass: HomeAssistant, entry: ConfigEntry) -> None:
                 continue
             cil = zapis.entity_id[: -len(stare)] + nove
             if registr.async_get(cil) is not None:
+                # Obě jména v registru znamenají, že to živé šoupátko
+                # je pod dnešním jménem a tohle je po něm zbytek.
+                # Smazat ho za člověka nejde: jistotu, která z nich je
+                # ta pravá, odsud nemáme.
                 _LOGGER.warning(
-                    "NaPohodu: %s by se mělo jmenovat %s, ale to už "
-                    "existuje — přejmenuj jedno z nich ručně",
+                    "NaPohodu: %s je zbytek po dřívějším jméně — "
+                    "šoupátko už existuje jako %s. Tu starou entitu "
+                    "můžeš smazat v Nastavení → Zařízení a služby → "
+                    "Entity; nic se tím nerozbije.",
                     zapis.entity_id, cil)
                 break
             registr.async_update_entity(zapis.entity_id, new_entity_id=cil)

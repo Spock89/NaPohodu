@@ -31,6 +31,16 @@ def migrace():
     sys.path.remove(str(KOREN / "custom_components"))
 
 
+@pytest.fixture(autouse=True)
+def cista_poznamka(migrace):
+    """Každý test začíná bez poznámky o srovnání."""
+    from homeassistant.helpers.storage import Store
+
+    Store._data.clear()
+    yield
+    Store._data.clear()
+
+
 class Podentita:
     def __init__(self, typ, nazev, data):
         self.subentry_type = typ
@@ -61,38 +71,75 @@ class Hass:
         self.config_entries = Zaznamy()
 
 
+def _pokoje(*jmena):
+    return Zapis([Podentita("mistnost", j, {}) for j in jmena])
+
+
 def test_prejmenuje_jen_drivejsi_jmena(migrace):
     """Vlastní jméno, které si někdo nastavil sám, zůstane."""
     m, reg = migrace
     r = reg.Registr([
-        reg.RegistrZapis("number.napohodu_loznice_odchylka_teploty"),
-        reg.RegistrZapis("number.napohodu_loznice_nocni_utlum_topeni"),
-        reg.RegistrZapis("number.napohodu_loznice_moje_vlastni_jmeno"),
+        reg.RegistrZapis("number.napohodu_loznice_odchylka_teploty",
+                         "loznice_odchylka"),
+        reg.RegistrZapis("number.napohodu_loznice_nocni_utlum_topeni",
+                         "loznice_noc_posun"),
+        reg.RegistrZapis("number.napohodu_loznice_moje_vlastni_jmeno",
+                         "loznice_mez_dolni"),
         # dnešní jméno se nesmí přepsat na nic jiného
-        reg.RegistrZapis("number.napohodu_kuchyne_moje_odchylka_teploty"),
+        reg.RegistrZapis("number.napohodu_kuchyne_moje_odchylka_teploty",
+                         "kuchyne_odchylka"),
         # jiná doména se netýká posuvníků
-        reg.RegistrZapis("sensor.napohodu_loznice_odchylka_teploty"),
+        reg.RegistrZapis("sensor.napohodu_loznice_odchylka_teploty", "x"),
     ])
-    entry = Zapis()
-    asyncio.run(m.srovnej(Hass(r), entry))
+    asyncio.run(m.srovnej(Hass(r), _pokoje("loznice", "kuchyne")))
     assert r.prejmenovane == [
         ("number.napohodu_loznice_odchylka_teploty",
          "number.napohodu_loznice_moje_odchylka_teploty"),
         ("number.napohodu_loznice_nocni_utlum_topeni",
          "number.napohodu_loznice_v_noci_posun_cilove_teploty"),
     ]
+    # šoupátko s vlastním jménem a cizí doména zůstaly
+    assert "number.napohodu_loznice_moje_vlastni_jmeno" not in r.smazane
+    assert "sensor.napohodu_loznice_odchylka_teploty" not in r.smazane
 
 
-def test_obsazene_jmeno_se_preskoci(migrace):
-    """Dvě entity na jeden identifikátor nejdou a hádat příponu by
-    vedlo k další podivnosti — radši se o tom jen ozve."""
+def test_zbytek_po_zrusenem_nastaveni_se_smaze(migrace):
+    """Hlásí se jako nedostupný, ručně smazat nejde a blokuje jméno
+    tomu živému. Přesně tahle dvojice zbyla po přejmenování pásma."""
     m, reg = migrace
     r = reg.Registr([
-        reg.RegistrZapis("number.napohodu_loznice_odchylka_teploty"),
-        reg.RegistrZapis("number.napohodu_loznice_moje_odchylka_teploty"),
+        # zbytek: klíč nastavení už neexistuje
+        reg.RegistrZapis("number.napohodu_obyvak_ve_dne_smi_klesnout_pod_cil_o",
+                         "obyvak_denni_hystereze"),
+        # živé šoupátko pod dnešním jménem
+        reg.RegistrZapis(
+            "number.napohodu_obyvak_ve_dne_otevrit_pri_odchylce_od_cile_o",
+            "obyvak_hyst_den_otevrit"),
     ])
-    asyncio.run(m.srovnej(Hass(r), Zapis()))
+    asyncio.run(m.srovnej(Hass(r), _pokoje("obyvak")))
+    assert r.smazane == [
+        "number.napohodu_obyvak_ve_dne_smi_klesnout_pod_cil_o"]
+    # to živé zůstalo a nepřejmenovalo se
     assert r.prejmenovane == []
+    assert r.async_get(
+        "number.napohodu_obyvak_ve_dne_otevrit_pri_odchylce_od_cile_o")
+
+
+def test_zive_soupatko_se_nesmaze(migrace):
+    """Jediná chyba tady by znamenala, že člověk přijde o nastavení."""
+    m, reg = migrace
+    import importlib
+    cisla = importlib.import_module("napohodu.number")
+    zive = [reg.RegistrZapis(f"number.napohodu_loznice_{i}",
+                             f"loznice_{p.klic}")
+            for i, p in enumerate(cisla.MISTNOST)]
+    zive += [reg.RegistrZapis(f"number.napohodu_byt_{i}", f"x_{p.klic}")
+             for i, p in enumerate(cisla.CELY_BYT)]
+    r = reg.Registr(zive)
+    entry = _pokoje("loznice")
+    entry.entry_id = "x"
+    asyncio.run(m.srovnej(Hass(r), entry))
+    assert r.smazane == []
 
 
 def test_zaluzie_se_prepisou_do_dnesniho_klice(migrace):
@@ -117,13 +164,20 @@ def test_vyplneny_dnesni_klic_se_neprepisuje(migrace):
     assert pod.data["zaluzie"] == ["cover.nove"]
 
 
-def test_srovnani_jde_spustit_opakovane(migrace):
-    """Načtení integrace se opakuje při každé změně nastavení."""
+def test_srovnava_se_jen_jednou(migrace):
+    """Integrace se načítá znovu při každé změně nastavení. Bez
+    poznámky by stejné hlášení chodilo pokaždé — a hlášení, které
+    chodí pořád, se přestane číst."""
     m, reg = migrace
     r = reg.Registr([
-        reg.RegistrZapis("number.napohodu_loznice_odchylka_teploty")])
+        reg.RegistrZapis("number.napohodu_loznice_odchylka_teploty",
+                         "loznice_odchylka")])
     hass = Hass(r)
-    entry = Zapis()
+    entry = _pokoje("loznice", "kuchyne")
     asyncio.run(m.srovnej(hass, entry))
+    # druhé načtení už do registru vůbec nesahá
+    r.zapisy.append(
+        reg.RegistrZapis("number.napohodu_kuchyne_odchylka_teploty",
+                         "kuchyne_odchylka"))
     asyncio.run(m.srovnej(hass, entry))
     assert len(r.prejmenovane) == 1

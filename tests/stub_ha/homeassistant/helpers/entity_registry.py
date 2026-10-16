@@ -9,12 +9,17 @@ class Registr:
     def __init__(self, zapisy=()):
         self.zapisy = list(zapisy)
         self.prejmenovane = []
+        self.smazane = []
 
     def async_get(self, entity_id):
         for z in self.zapisy:
             if z.entity_id == entity_id:
                 return z
         return None
+
+    def async_remove(self, entity_id):
+        self.smazane.append(entity_id)
+        self.zapisy = [z for z in self.zapisy if z.entity_id != entity_id]
 
     def async_update_entity(self, entity_id, new_entity_id=None, **_k):
         for z in self.zapisy:

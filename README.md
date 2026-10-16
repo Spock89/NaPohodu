@@ -957,16 +957,25 @@ vrátíme a kontrola ji najde.
 
 ### Srovnání při načtení
 
-Při každém načtení integrace proběhne **jednorázové srovnání**: entita,
+Při prvním načtení proběhne **jednorázové srovnání**: entita,
 která si drží identifikátor po dřívějším jméně šoupátka, se v registru
 přepíše na dnešní, a seznam žaluzií uložený pod dřívějším klíčem se
 přepíše do dnešního. Každá změna jde do logu, protože kdo má starý
 identifikátor v automatizaci nebo ve vlastní kartě, musí si ho opravit.
 
+Že je hotovo, si integrace zapíše — načítá se znovu při každé změně
+nastavení a hlášení, které chodí pokaždé, se přestane číst.
+
 Dál se pracuje jen s dnešními jmény. Na minulost tak nemusí myslet ani
 karta, ani rozhodování — a nová instalace nemá co srovnávat, takže se
 jí to nijak netýká. Entitu, kterou sis přejmenoval sám, srovnání
 nechává být; sahá jen na jména, která kdysi rozdávala integrace.
+
+Součástí srovnání je i **úklid zbytků**: šoupátko po nastavení, které
+už neexistuje, se z registru smaže. Takový řádek se hlásí jako
+nedostupný, ručně ho smazat nejde a blokuje jméno tomu živému. Maže se
+jen mezi šoupátky a jen to, co se z dnešní konfigurace nemá jak
+vyrobit — tedy nikdy nic, co by příští načtení založilo znovu.
 
 ## Instalace přes HACS
 
