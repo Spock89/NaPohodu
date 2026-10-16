@@ -285,13 +285,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         for pod_id, data in ulozene.items():
             vyk = self.vykonavaci.setdefault(
                 pod_id, vy.Vykonavac(self.hass, pod_id))
-            # starší formát ukládal jen mapu žaluzie -> stav
-            if "stavy" in data:
-                vyk.stav.posledni_stineni.update(data["stavy"])
-                vyk.stav.stineni_poloha.update(
-                    {k: float(x) for k, x in (data.get("polohy") or {}).items()})
-            else:
-                vyk.stav.posledni_stineni.update(data)
+            vyk.stav.posledni_stineni.update(data.get("stavy") or {})
+            vyk.stav.stineni_poloha.update(
+                {k: float(x) for k, x in (data.get("polohy") or {}).items()})
             # Ruční klid žaluzií přežije restart. Člověk si polohu
             # nastavil pět minut předtím a restart není důvod mu do ní
             # sáhnout.

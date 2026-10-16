@@ -18,7 +18,6 @@ MODULY = [
     "sekvence", "vykon", "entity", "coordinator", "config_flow",
     "services", "sensor", "binary_sensor", "number", "switch", "button",
     "karty", "zpravy", "klima", "select", "plan", "planovac",
-    "migrace",
     "datetime", "calendar",
 ]
 

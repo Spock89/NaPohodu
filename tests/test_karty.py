@@ -539,27 +539,6 @@ def test_jmena_posuvniku_sedi_s_identifikatory():
         assert klic in jmena, klic
 
 
-def test_karta_zna_jen_dnesni_jmena_posuvniku():
-    """Dřívější identifikátory srovná migrace při načtení integrace,
-    takže entita pod starým jménem po prvním spuštění neexistuje.
-    Karta se jich tedy nesmí ptát — řádek by tiše vypadl."""
-    import re
-    import pathlib
-
-    text = pathlib.Path(
-        "custom_components/napohodu/migrace.py").read_text()
-    blok = re.search(r"STARSI_JMENA = \{(.*?)\n\}", text, re.S)
-    starsi = dict(re.findall(r'"(\w+)":\s*"(\w+)"', blok.group(1)))
-    assert starsi, "tabulku dřívějších jmen nejde přečíst"
-
-    s = dashboard(["loznice"], [], vzdy, cidla={"loznice": "sensor.t"})
-    for stare, nove in starsi.items():
-        # podtržítko je součást slova, takže se hledá celé jméno
-        assert not re.search(rf"number\.napohodu_loznice_{stare}(?!\w)", s), \
-            stare
-        assert f"number.napohodu_loznice_{nove}" in s, nove
-
-
 def test_nova_instalace_ma_vsechny_posuvniky():
     import re
     from karty import POSUVNIKY

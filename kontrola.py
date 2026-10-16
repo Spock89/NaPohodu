@@ -303,14 +303,6 @@ for p in d.glob("*.py"):
         if len(re.findall(rf"\b{n}\b", kod_vse)) <= 1:
             chyby.append(f"{p.name}: funkci {n} nikdo nevolá, je to mrtvý kód")
 
-def _starsi_jmena():
-    """Tabulka z migrace, čtená z textu — importovat ji nejde, modul
-    sahá po Home Assistantu, který tady není."""
-    m = re.search(r"STARSI_JMENA = \{(.*?)\n\}",
-                  (d / "migrace.py").read_text(), re.S)
-    return dict(re.findall(r'"(\w+)":\s*"(\w+)"', m.group(1) if m else ""))
-
-
 # 1m) entity, na které se karta odkazuje, musí opravdu vznikat.
 # Identifikátor se skládá z PŘELOŽENÉHO jména, ne z klíče v kódu —
 # „srovnat_stineni" se jmenuje Srovnat žaluzie a entita končí na
@@ -385,20 +377,6 @@ try:
                    for x in ("", "pokoj_", "oblast_")):
                 chyby.append(
                     f"karty.py: {druh} {jm} vzniká, ale v kartě není")
-
-    # 1ao) v kartě se smí objevit jen dnešní jména. Dřívější se
-    # srovnají při načtení integrace, takže entita pod starým
-    # identifikátorem po prvním spuštění neexistuje — řádek by tiše
-    # vypadl, a jen té místnosti, která vznikla dřív. Hledá se
-    # v hotové kartě, ne ve zdroji: jména se skládají za běhu a
-    # „moje_odchylka_teploty" končí stejně jako „odchylka_teploty".
-    for _stare in sorted(_starsi_jmena()):
-        # Podtržítko je součást slova, takže (?!\w) odmítne i
-        # „..._otevrit_nad_co2", kde je starší jméno jen předponou.
-        if re.search(rf"number\.napohodu_pokoj_{_stare}(?!\w)", vse):
-            chyby.append(
-                f"karty.py: používá dřívější jméno {_stare!r} — po "
-                f"srovnání při načtení taková entita neexistuje")
 
 except Exception as e:      # pragma: no cover
     chyby.append(f"kontrola karty selhala: {e}")
@@ -682,30 +660,12 @@ for u in ast.parse(jadro_text).body:
                 f"ani se neukazuje — přidej pole, nebo ho vypiš "
                 f"v pevna_pravidla_bytu()")
 
-# 1ab) tabulka dřívějších jmen v migraci musí mířit na dnešní
-# posuvníky. Jméno, které nikam nevede, by při načtení přepsalo entitu
-# na identifikátor, který karta nikdy nehledá.
+# Karty se načtou jako modul: další stráže se ptají na jejich
+# tabulky, ne na text souboru.
 import importlib.util as _iu
 _spec = _iu.spec_from_file_location("_karty_k", d / "karty.py")
 _k = _iu.module_from_spec(_spec)
 _spec.loader.exec_module(_k)
-
-
-STARSI_JMENA = _starsi_jmena()
-if not STARSI_JMENA:
-    chyby.append("migrace.py: tabulku dřívějších jmen nejde přečíst")
-_dnesni = {x for x, _, _ in _k.POSUVNIKY}
-for _stare, _nove in STARSI_JMENA.items():
-    if _nove not in _dnesni:
-        chyby.append(
-            f"migrace.py: {_stare} míří na {_nove}, který mezi posuvníky "
-            f"není — entita by se přepsala na jméno, které karta nehledá")
-    if _stare == _nove:
-        chyby.append(f"migrace.py: {_stare} míří sám na sebe")
-    if _stare in _dnesni:
-        chyby.append(
-            f"migrace.py: {_stare} je dnešní jméno posuvníku, přepsat ho "
-            f"na jiné by smazalo platnou entitu")
 
 # 1ac) čas z formuláře chodí jako „22:00:00". Kdo ho převede přímo
 # na číslo, shodí načtení integrace.

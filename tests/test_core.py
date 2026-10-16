@@ -194,12 +194,11 @@ def test_hlaska_o_cekani_je_srozumitelna():
 
 
 def test_teplota_se_nijak_neupravuje():
-    """Dřív se při otevřeném okně dopočítávala korekce. Hodnota pak
-    neodpovídala ničemu, co jde ověřit, tak je pryč."""
+    """Rozhoduje se podle toho, co čidlo hlásí. Dopočítávaná korekce
+    by neodpovídala ničemu, co jde ověřit."""
     for otevreno in (False, True):
         r, _ = krok(stary(t_in=21, t_out=14.5), otevreno=otevreno)
         assert r.t_in_korig == 21
-        assert r.korekce == 0
 
 
 # ---------------------------------------------------------------- odolnost

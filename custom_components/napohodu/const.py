@@ -166,7 +166,6 @@ CONF_CO2_NOC = "co2_noc"              # v noci se otevírá až od tohoto
 CONF_CO2_NOC_KRIZE = "co2_noc_krize"  # tohle přebije i teplotní mez
 
 # stínění zóny: jména uložených stavů
-CONF_ZALUZIE_STARE = "zaluzie_zony"   # dřívější klíč, srovná ho migrace
 CONF_STINENI_MAPA = "stineni_mapa"   # {"cover.o1|zastinit": "zastíněno"}
 CONF_KLID_STINENI_MIN = "klid_stineni_min"
 CONF_STINENI_PREDSTIH = "stineni_predstih"

@@ -226,7 +226,7 @@ class Pamet:
     marne_t_out: float = 0.0
     # Kvůli čemu bylo okno marně otevřené: "chlazeni", "ohrev",
     # "vzduch" (CO2 nebo prach), "pohoda" (nic nevadilo, jen bylo venku
-    # příjemně). Prázdno je stav ze starší verze — neznámý důvod.
+    # příjemně). Prázdno znamená, že žádný marný pokus neproběhl.
     #
     # Rozhoduje dvě věci. Změna venku pomůže jen tím směrem, který by
     # ten důvod zachránil: chlazení chladnější vzduch, ohřev teplejší.
@@ -268,7 +268,6 @@ class Rozhodnuti:
     kod: str = ""
     limit_s: float | None = None
     t_in_korig: float = 0.0
-    korekce: float = 0.0     # ponecháno kvůli starším kartám, vždy nula
     rosny_bod: float = 0.0
     co2: float = 0.0
 
@@ -693,9 +692,8 @@ def _marne_proc(p: Pamet) -> str:
 def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     """Vrátí, co se má s oknem stát. Paměť se upravuje na místě."""
 
-    # Teplota se bere tak, jak ji čidlo hlásí. Dřív se při otevřeném
-    # okně dopočítávala korekce, ale hodnota pak neodpovídala ničemu,
-    # co jde ověřit — a za rok si na to nikdo nevzpomene.
+    # Teplota se bere tak, jak ji čidlo hlásí: dopočítávaná korekce
+    # by neodpovídala ničemu, co jde ověřit.
     t_in = v.t_in
     # V zimě rozhoduje nejchladnější čidlo (kondenzace, topení), v horku
     # naopak nejteplejší — nechceme pouštět vedro do přehřáté místnosti.
@@ -706,7 +704,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     def hotovo(akce: Akce, duvod: str, limit_s: float | None = None,
                kod: str = "") -> Rozhodnuti:
         return Rozhodnuti(akce, duvod, kod, limit_s, round(t_in, 2),
-                          0.0, round(dew, 1), v.co2)
+                          round(dew, 1), v.co2)
 
     def otevri(duvod: str, limit_s: float | None, *, hned: bool = False,
                kod: str = "") -> Rozhodnuti:

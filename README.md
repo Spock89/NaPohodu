@@ -948,38 +948,11 @@ konstanty, mrtvé moduly a funkce, proměnné čtené před přiřazením,
 chybějící překlady na obou obrazovkách, rozsahy posuvníků proti polím ve
 formuláři, výchozí hodnoty ve formuláři proti kódu, nastavení, které
 nejde vyplnit nebo nikdo nečte, jedno jméno pro jednu hodnotu, atributy
-vystavené bez toho, aby se nastavovaly, entity, na které se odkazuje
-karta, ale nevznikají, a dřívější jména entit použitá jinde než
-v jednorázovém srovnání.
+vystavené bez toho, aby se nastavovaly, a entity, na které se odkazuje
+karta, ale nevznikají.
 
 Každý hlídač byl přidán po skutečné chybě a ověřen tím, že ji naschvál
 vrátíme a kontrola ji najde.
-
-### Srovnání při načtení
-
-Při prvním načtení proběhne **jednorázové srovnání**: entita,
-která si drží identifikátor po dřívějším jméně šoupátka, se v registru
-přepíše na dnešní, a seznam žaluzií uložený pod dřívějším klíčem se
-přepíše do dnešního. Každá změna jde do logu, protože kdo má starý
-identifikátor v automatizaci nebo ve vlastní kartě, musí si ho opravit.
-
-Že je hotovo, si integrace zapíše — a zapíše to **napřed**, ne až po
-práci: načítá se znovu při každé změně nastavení a změna, kterou
-srovnání samo udělá, další načtení spustit může. Kdyby se poznámka
-psala nakonec, mohlo by se celé kolo opakovat pořád dokola. Když se
-tím pádem něco nestihne, zbude nanejvýš nesrovnaný řádek v registru
-a spustit znovu jde službou `napohodu.srovnej_jmena`.
-
-Dál se pracuje jen s dnešními jmény. Na minulost tak nemusí myslet ani
-karta, ani rozhodování — a nová instalace nemá co srovnávat, takže se
-jí to nijak netýká. Entitu, kterou sis přejmenoval sám, srovnání
-nechává být; sahá jen na jména, která kdysi rozdávala integrace.
-
-Součástí srovnání je i **úklid zbytků**: šoupátko po nastavení, které
-už neexistuje, se z registru smaže. Takový řádek se hlásí jako
-nedostupný, ručně ho smazat nejde a blokuje jméno tomu živému. Maže se
-jen mezi šoupátky a jen to, co se z dnešní konfigurace nemá jak
-vyrobit — tedy nikdy nic, co by příští načtení založilo znovu.
 
 ## Instalace přes HACS
 
