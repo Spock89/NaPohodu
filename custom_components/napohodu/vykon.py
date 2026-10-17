@@ -33,8 +33,12 @@ MIN_ODSTUP_S = 30.0
 class StavVykonu:
     """Co jsme naposledy poslali. Brání opakování a poskakování."""
 
-    posledni_povel: str | None = None
-    posledni_cas_s: float = -1e9
+    # Co a kdy jsme naposled poslali — pro každé okno zvlášť. Jedna
+    # hodnota na místnost znamenala, že druhé okno dostalo povel
+    # zahozený jako „to už jsme právě poslali", zatímco jádro si
+    # zapsalo pohyb a rozjelo držení. Okno pak zůstalo viset.
+    posledni_okna: dict[str, tuple[str, float]] = field(
+        default_factory=dict)
     pulz_do_s: float | None = None
     posledni_stineni: dict[str, str] = field(default_factory=dict)
     # poloha, na které žaluzie po povelu skutečně skončila — podle ní
@@ -158,8 +162,7 @@ class Vykonavac:
         po restartu srovnat všechno do polohy, kterou automatika žádá.
         Bez toho by integrace mlčela, protože si myslí, že už poslala.
         """
-        self.stav.posledni_povel = None
-        self.stav.posledni_cas_s = -1e9
+        self.stav.posledni_okna.clear()
         self.stav.posledni_stineni.clear()
         self.stav.stineni_poloha.clear()
         self.stav.rozejiti.clear()
@@ -194,9 +197,9 @@ class Vykonavac:
 
     async def _povel(self, entita: str, sluzba: str, cas_s: float,
                      duvod: str) -> str | None:
-        if (sluzba == self.stav.posledni_povel
-                and cas_s - self.stav.posledni_cas_s < MIN_ODSTUP_S):
-            return None            # totéž jsme právě poslali
+        drive, kdy = self.stav.posledni_okna.get(entita, (None, -1e9))
+        if sluzba == drive and cas_s - kdy < MIN_ODSTUP_S:
+            return None            # totéž jsme právě poslali tomuhle oknu
         try:
             await self.hass.services.async_call(
                 "cover", sluzba, {"entity_id": entita}, blocking=False)
@@ -204,8 +207,7 @@ class Vykonavac:
             self.stav.chyby.append(f"{sluzba}: {e}")
             _LOGGER.warning("NaPohodu: %s na %s selhalo: %s", sluzba, entita, e)
             return None
-        self.stav.posledni_povel = sluzba
-        self.stav.posledni_cas_s = cas_s
+        self.stav.posledni_okna[entita] = (sluzba, cas_s)
         _LOGGER.info("NaPohodu: %s na %s — %s", sluzba, entita, duvod)
         return f"{sluzba} ({duvod})"
 

@@ -1270,8 +1270,16 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                 f"noc: větrá {t_in:.1f} °C, CO2 {v.co2:.0f}", True)
 
         if v.co2 > prah or pm_spatne or v.vetrat:
-            return otevri(f"noc: otevírám, CO2 {v.co2:.0f}", 4 * 3600,
-                          kod="noc_otevri")
+            # Nárazový režim platí v noci stejně jako ve dne: v mrazu
+            # je každá minuta navíc drahá, ať je kolik chce hodin.
+            # Bez tohohle příznaku se noční větrání zavíralo až po
+            # nejkratší době držení, přestože bylo dávno vyvětráno —
+            # a čtyřhodinový strop v tom držel okno otevřené dál.
+            p.narazove_pulz = bool(v.narazove)
+            duvod = f"noc: otevírám, CO2 {v.co2:.0f}"
+            if p.narazove_pulz:
+                duvod += ", nárazově — zavřu, jakmile důvod pomine"
+            return otevri(duvod, 4 * 3600, kod="noc_otevri")
         return beze_zmeny(f"noc: klid, CO2 {v.co2:.0f}", False)
 
     # --- 7. spánek nebo vyvětráno ------------------------------------

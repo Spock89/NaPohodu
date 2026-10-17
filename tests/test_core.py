@@ -2586,3 +2586,26 @@ def test_prach_zvenci_zavira_pod_vlastnim_jmenem():
     r = krok_v(61, 48)
     assert r.akce is Akce.ZAVRIT and r.kod == "prach_zvenci"
     assert "tahá zvenčí" in r.duvod and "39 → 48" in r.duvod
+
+
+def test_nocni_otevreni_se_ucastni_narazoveho_rezimu():
+    """V mrazu je každá minuta navíc drahá i v noci. Bez příznaku se
+    noční větrání zavíralo až po nejkratší době držení, přestože bylo
+    dávno vyvětráno — a čtyřhodinový strop v tom okno držel dál."""
+    # noc, vysoké CO2, běžící nárazové větrání
+    v = stary(co2=1500, hodina=3.0, narazove=True, t_out=-5.0)
+    r, p = krok(v)
+    assert r.akce is Akce.OTEVRIT and p.narazove_pulz
+    assert "nárazově" in r.duvod
+
+    # vyvětráno: nárazové větrání už neběží (vzduch je čistý), ale
+    # příznak z otevření drží — zavírá se hned, bez čekání na držení
+    v2 = Vstup(cas_s=v.cas_s + 600, t_out=-5.0, co2=500, hodina=3.0)
+    r2, _ = krok(v2, p, otevreno=True, cas_povelu_s=v.cas_s)
+    assert r2.akce is Akce.ZAVRIT, r2.duvod
+
+
+def test_nocni_otevreni_bez_narazoveho_rezimu_priznak_nenese():
+    v = stary(co2=1500, hodina=3.0, t_out=12.0)
+    r, p = krok(v)
+    assert r.akce is Akce.OTEVRIT and not p.narazove_pulz

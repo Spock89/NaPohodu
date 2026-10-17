@@ -259,7 +259,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._klima_pamet.clear()
         for vyk in self.vykonavaci.values():
             vyk.stav.pulz_do_s = None          # dojezd pulzu
-            vyk.stav.posledni_cas_s = -1e9     # a odstup mezi povely
+            vyk.stav.posledni_okna.clear()     # a odstup mezi povely
         self.zvlhcuje.clear()
 
     def srovnej(self, pod_id: str | None = None) -> None:
@@ -1696,7 +1696,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # prvního — člověk otevřel okno a hned viděl, že mu zbývá
         # o půl hodiny míň, než si nastavil.
         if (ovladat and okna and stav_znamy
-                and vyk.stav.posledni_povel is not None
+                and vyk.stav.posledni_okna
                 and cas_s - pamet.cas_povelu_s > projezd * 2
                 and pamet.otevreno != skutecne):
             _LOGGER.info(

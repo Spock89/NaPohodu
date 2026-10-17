@@ -890,3 +890,40 @@ def test_hlavice_odjela_jinam_srovname():
     h.stavy["climate.l"] = FalesnyStav("heat", 18.0)
     bez(v.topeni(["climate.l"], PovelTopeni(None, 21.0, "topím"), 1000))
     assert [x[1] for x in h.volani] == ["set_temperature"]
+
+
+def test_druhe_okno_v_mistnosti_dostane_povel_taky():
+    """Odstup mezi stejnými povely se hlídal pro celou místnost, takže
+    druhé okno dostalo povel zahozený jako „to už jsme právě poslali",
+    zatímco jádro si zapsalo pohyb a rozjelo držení. Okno pak viselo
+    otevřené celou nejkratší dobu držení, bez chyby na pohonu."""
+    import asyncio
+
+    from vykon import Vykonavac
+
+    class Sluzby:
+        def __init__(self):
+            self.poslano = []
+
+        async def async_call(self, obor, sluzba, data, blocking=False):
+            self.poslano.append((sluzba, data["entity_id"]))
+
+    class Hass:
+        def __init__(self):
+            self.services = Sluzby()
+
+    hass = Hass()
+    v = Vykonavac(hass, "kuchyne", po_startu=False)
+    r = core.Rozhodnuti(akce=core.Akce.ZAVRIT, duvod="vyvětráno")
+    for okno in ("cover.kuchyne_1", "cover.kuchyne_2"):
+        asyncio.run(v.okno(okno, r, 1000.0, True))
+    assert hass.services.poslano == [
+        ("close_cover", "cover.kuchyne_1"),
+        ("close_cover", "cover.kuchyne_2")]
+
+    # a témuž oknu se totéž hned nezopakuje
+    asyncio.run(v.okno("cover.kuchyne_1", r, 1010.0, True))
+    assert len(hass.services.poslano) == 2
+    # po odstupu už ano
+    asyncio.run(v.okno("cover.kuchyne_1", r, 1040.0, True))
+    assert len(hass.services.poslano) == 3

@@ -1135,10 +1135,13 @@ def test_vynulovani_zrusi_i_cekani(nahradni_ha):
 
     class Stav:
         pulz_do_s = 999999.0
-        posledni_cas_s = 999999.0
+
+        def __init__(self):
+            self.posledni_okna = {"cover.x": ("close_cover", 999999.0)}
 
     class Vyk:
-        stav = Stav()
+        def __init__(self):
+            self.stav = Stav()
 
     class Falesny:
         vynuluj_stavy = ko.NaPohoduCoordinator.vynuluj_stavy
@@ -1170,7 +1173,7 @@ def test_vynulovani_zrusi_i_cekani(nahradni_ha):
     assert p.pm_venku_horsi_do_s == 0.0  # ani poznatek o prachu
     assert p.marne_od_s == 0.0
     assert k.vykonavaci["id"].stav.pulz_do_s is None
-    assert k.vykonavaci["id"].stav.posledni_cas_s < 0
+    assert not k.vykonavaci["id"].stav.posledni_okna
     # i stavy, které si koordinátor vede mimo paměť místností
     assert not k._cizi_zadost and not k._t_in_drive
     assert not k._zaluzie_rukou          # ani ruční klid žaluzií

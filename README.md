@@ -180,6 +180,12 @@ zavírání. Příznak zvenčí totiž platí, dokud je CO2 nad prahem otevřen�
 kdežto zavírá se až pod prahem zavření — kdyby se nárazové zavření
 ptalo jeho, nestihlo by se nikdy.
 
+Platí to **i pro noční větrání**, které má vlastní prahy a vlastní,
+čtyřhodinový strop: i to si příznak nese a zavře, jakmile je
+vyvětráno. Jinak by okno v mrazu viselo otevřené do rána, protože
+nárazový režim mezitím skončil s čistým vzduchem a zavírání by se
+vrátilo pod nejkratší dobu držení polohy.
+
 Zatímco nárazové větrání běží, vidí **každá místnost nejhorší CO2
 z celého bytu**. Proto se otevře i tam, kde je vzduch v pořádku: o ten
 průvan jde. Běh má vlastní hysterezi — spustí ho zóna nad svým prahem
