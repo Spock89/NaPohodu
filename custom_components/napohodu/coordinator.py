@@ -1582,6 +1582,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             hodina=hodina, cas_s=cas_s,
             zastupce=uprava.zastupce is not None,
             narazove=self.narazove_bezi,
+            # Samotné počasí, bez ohledu na vzduch: chlazení a ohřev
+            # nárazové větrání nespouští, ale zavřít hned se po nich
+            # chce stejně — v mrazu je každá minuta navíc drahá.
+            narazove_mozne=self.narazove,
             predvetrat=self.predvetrat,
         )
         nast = core.Nastaveni(

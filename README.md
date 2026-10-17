@@ -182,6 +182,13 @@ celého cyklu — a to včetně nejkratší doby držení polohy, kterou nárazo
 zavření obchází. Délka pulzu zůstává stejná jako jindy; mění se jen to,
 že může skončit dřív.
 
+Zavření hned platí **na každý důvod**, ne jen na vzduch. Nárazové
+větrání spouští jen CO2 a prach, protože jde o výměnu vzduchu; chlazení
+a ohřev ho nezapnou. Jakmile ale jejich důvod doběhne na druhou stranu
+— pokoj je na cíli, nebo venku přestalo pomáhat — je v tomhle počasí
+každá minuta navíc stejně drahá, ať se větralo kvůli čemukoli. Proto se
+i teplotní větrání zavírá okamžitě, kdykoli je nárazový režim možný.
+
 To, že jde o nárazový pulz, si pamatuje **samo větrání**, ne až okamžik
 zavírání. Příznak zvenčí totiž platí, dokud je CO2 nad prahem otevření,
 kdežto zavírá se až pod prahem zavření — kdyby se nárazové zavření
@@ -291,10 +298,18 @@ zkusí se to tak jako tak po nastavené době, ve výchozím stavu po hodině
 — ta doba je strop, ne zdržení.
 
 **Čekání ale skončí samo, jakmile zmizí důvod, kvůli kterému se
-větralo.** Teplota se vrátí do pásma, nebo se vzduch vyčistí i bez
-okna — pak není co odkládat a nečeká se ani na strop. Marný pokus
-zapsaný nad pokojem, který už nic nechce, by sliboval pokus, ke kterému
-nedojde, blokoval by i novou potřebu a držel žebřík pauz nahoře.
+větralo.** Marný pokus zapsaný nad pokojem, který už nic nechce, by
+sliboval pokus, ke kterému nedojde, blokoval by i novou potřebu
+a držel žebřík pauz nahoře.
+
+„Zmizel" znamená **návrat na cíl**, ne jen pod práh otevření.
+U teploty tedy pokoj na cílové teplotě, u vzduchu CO2 pod prahem
+zavření. Práh otevření je totiž tentýž, kterým se větrání spouští —
+kdyby se zapomínalo pod ním, bylo by jedno přesný opak druhého
+a čekání by nemělo kdy platit: pokoj o desetinu klesne, paměť se
+smaže, pokoj se ohřeje zpátky a otevře se znovu, přestože se venku
+nic nezměnilo. Cíl je mezi tím: víc než schovat se pod práh, míň než
+dojet až na hranu zavření.
 
 Ptá se to na ten konkrétní důvod, ne na to, jestli by se teď otevřelo.
 Venkovní vzduch, který zrovna nestačí, je překážka dočasná, ne zmizelý
@@ -302,8 +317,7 @@ důvod — na jeho změnu se čeká dál. A větrání **pro pohodu** je výjimk
 žádný důvod nemá, takže by nebylo co zmizet. Kontrola účinku ho dřív
 nebo později zavře jako marné, protože nic nezlepšuje; bez téhle
 výjimky by se okno v příjemném dni otevíralo a zavíralo pořád dokola.
-Teplotu zpátky do pásma musí vrátit celá odchylka otevření, takže
-o poskakování se stará tatáž hystereze jako jinde.
+O poskakování se tak stará tatáž hystereze jako jinde.
 
 Slunce do toho záměrně nevstupuje: čidlo nemá každý a při proměnlivé
 oblačnosti by to spíš mátlo.

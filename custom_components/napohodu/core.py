@@ -178,6 +178,11 @@ class Vstup:
     zastupce: bool = False
     # společné nárazové větrání: v mrazu otevřít všude naráz a krátce
     narazove: bool = False
+    # Nárazový režim je možný: venku je tak daleko od cíle, že je každá
+    # minuta otevřeného okna drahá. Narozdíl od `narazove` to neříká nic
+    # o vzduchu — platí i pro větrání kvůli teplotě, které nárazové
+    # větrání nespouští, ale zavřít hned se po něm chce stejně.
+    narazove_mozne: bool = False
     # Žádost od místnosti v zóně, která sama okno nemá. Zóna sdílí
     # vzduch, a tím i teplo — jedno okno má obsloužit obě.
     cizi_chlazeni: bool = False
@@ -525,7 +530,10 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     if v.smog:
         seznam.append("smog venku")
     if v.cas_s < p.pm_venku_horsi_do_s:
-        seznam.append("prach se tahá zvenčí, zjištěno z posledního větrání")
+        kolik = int((p.pm_venku_horsi_do_s - v.cas_s) / 60)
+        seznam.append(f"kvůli prachu nevětrám ještě {kolik} min "
+                      f"(z posledního větrání vyšlo, že se tahá "
+                      f"zvenčí) — na CO2 ani teplotu to vliv nemá")
     if (v.pm25_venku is not None and v.pm25 > 0
             and v.pm25_venku > v.pm25 - n.pm_rozdil):
         seznam.append(f"prach venku je horší nebo stejný "
@@ -645,9 +653,9 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
                           f"větráním to nespravím")
         elif v.cas_s < p.pm_venku_horsi_do_s:
             kolik = int((p.pm_venku_horsi_do_s - v.cas_s) / 60)
-            seznam.append(f"kvůli prachu neotevřu — při posledním větrání "
-                          f"stoupal, takže se tahá zvenčí (platí ještě "
-                          f"{kolik} min)")
+            seznam.append(f"kvůli prachu nevětrám ještě {kolik} min — při "
+                          f"posledním větrání stoupal, takže se tahá "
+                          f"zvenčí; kvůli CO2 nebo teplotě se otevře dál")
     return seznam
 
 
@@ -1022,7 +1030,12 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     #
     # Čte se dřív, než si to některá větev stihne přepsat: pulz se
     # při zavření ruší, a to je právě ten okamžik, kdy se ptáme.
-    narazove = bool(v.narazove or p.narazove_pulz)
+    # Stačí jedna ze tří věcí: běžící nárazové větrání, pulz, který
+    # se s ním otevřel, nebo samotné počasí. To poslední přibylo
+    # kvůli chlazení a ohřevu: ty nárazové větrání nespouští, protože
+    # to je věc vzduchu — ale jakmile důvod doběhne, je v mrazu každá
+    # minuta navíc stejně drahá, ať se větralo kvůli čemukoli.
+    narazove = bool(v.narazove or p.narazove_pulz or v.narazove_mozne)
 
     if v.co2 > n.co2_otevrit:
         p.vetra_se = True
@@ -1087,10 +1100,17 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     #
     # Teplotu zpátky do pásma musí vrátit celá odchylka otevření, takže
     # o poskakování se stará tatáž hystereze jako jinde.
+    # Zapomíná se, až když se stav vrátí **na cíl**, ne jen pod práh
+    # otevření. Práh otevření je totiž tentýž, kterým se větrání
+    # spouští: jedno je přesný opak druhého, takže čekání nemělo kdy
+    # platit — pokoj o desetinu klesl, paměť se smazala, pokoj se
+    # ohřál zpátky a otevřelo se znovu, přestože se venku nic
+    # nezměnilo. Cíl je mezi tím: víc než schovat se pod práh, míň než
+    # dojet až na hranu zavření.
     zmizel = (
-        t_max <= v.cil + h_otevrit if p.marne_proc == "chlazeni"
-        else t_in >= v.cil - h_otevrit if p.marne_proc == "ohrev"
-        else True if p.marne_proc == "vzduch"
+        t_max <= v.cil if p.marne_proc == "chlazeni"
+        else t_in >= v.cil if p.marne_proc == "ohrev"
+        else cisto if p.marne_proc == "vzduch"
         else False)                   # pohoda nebo neznámo z dřívějška
     if (p.marne_od_s > 0 and not p.otevreno and zmizel
             and not potreba and not v.cizi_chlazeni and not v.cizi_ohrev):
@@ -1221,10 +1241,12 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # otevřené pak nemá smysl, jen se tahá dovnitř, co nechceme.
     if p.otevreno and p.chladi and not chlazeni and t_max > v.cil:
         p.chladi = False
-        return zavri(f"venku {v.t_out:.1f} °C už nechladí", kod="teplota")
+        return zavri(f"venku {v.t_out:.1f} °C už nechladí", hned=narazove,
+                     kod="teplota")
     if p.otevreno and p.ohrivam and not ohrev and t_in < v.cil:
         p.ohrivam = False
-        return zavri(f"venku {v.t_out:.1f} °C už neohřívá", kod="teplota")
+        return zavri(f"venku {v.t_out:.1f} °C už neohřívá", hned=narazove,
+                     kod="teplota")
 
     p.chladi = chlazeni
     p.ohrivam = ohrev and not chlazeni
@@ -1242,7 +1264,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             # smyčku znamenalo čekat na nesmyslné hodnoty.
             kvuli_teplote = ("uvnitř" in brani or "pod cílem" in brani
                              or "nestačí" in brani)
-            return zavri(f"zavírám, {brani}",
+            return zavri(f"zavírám, {brani}", hned=narazove,
                          kod="teplota" if kvuli_teplote else "")
 
     # --- 6. noc a spánek: rozhoduje CO2 ------------------------------

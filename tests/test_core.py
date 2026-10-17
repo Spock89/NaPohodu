@@ -1703,15 +1703,42 @@ def _krok_po_marnem(p, **kw):
     return rozhodni(Vstup(**vstup), p, nast)
 
 
-def test_marny_pokus_se_zapomene_kdyz_dojde_do_pasma():
-    """Teplota u cíle znamená, že není co odkládat — karta jinak
+def test_marny_pokus_se_zapomene_az_na_cili():
+    """Teplota na cíli znamená, že není co odkládat — karta jinak
     slibovala pokus, ke kterému nedojde, a žebřík pauz zůstával
     nahoře."""
     p = _po_marnem("chlazeni")
-    r = _krok_po_marnem(p)
+    r = _krok_po_marnem(p, t_in=21.6, t_in_max=21.8)
     assert "nepomohlo, čekám" not in r.duvod
     assert p.marne_od_s == 0.0 and p.marne_proc == ""
     assert p.pulzy_za_sebou == 0 and p.pauza_do_s == 0.0
+
+
+def test_pod_prahem_otevreni_se_marny_pokus_jeste_nezapomina():
+    """Práh otevření je tentýž, kterým se větrání spouští: kdyby se
+    pod ním zapomínalo, bylo by jedno přesný opak druhého a čekání by
+    nemělo kdy platit. Pokoj o desetinu klesne, paměť se smaže, pokoj
+    se ohřeje zpátky a otevře se znovu, přestože se venku nic
+    nezměnilo."""
+    p = _po_marnem("chlazeni")
+    # 0,2 °C nad cílem: pod prahem otevření (cíl + 2,5), ale ne na cíli
+    r = _krok_po_marnem(p, t_in=22.0, t_in_max=22.2)
+    assert "nepomohlo, čekám" in r.duvod
+    assert p.marne_od_s > 0 and p.marne_proc == "chlazeni"
+
+
+def test_vzduch_se_zapomina_az_pod_prahem_zavreni():
+    """U vzduchu je tou „návratovou" hodnotou práh zavření: mezi ním
+    a prahem otevření je pásmo, kde by stačilo zakmitání o pár desítek
+    ppm a čekání by bylo pryč."""
+    p = _po_marnem("vzduch")
+    # mezi prahem zavření (700) a otevření (800) se ještě čeká
+    r = _krok_po_marnem(p, co2=750)
+    assert "nepomohlo, čekám" in r.duvod
+    p2 = _po_marnem("vzduch")
+    r2 = _krok_po_marnem(p2, co2=650)
+    assert "nepomohlo, čekám" not in r2.duvod
+    assert p2.marne_od_s == 0.0
 
 
 def test_nad_pasmem_se_marny_pokus_drzi():
@@ -2609,3 +2636,35 @@ def test_nocni_otevreni_bez_narazoveho_rezimu_priznak_nenese():
     v = stary(co2=1500, hodina=3.0, t_out=12.0)
     r, p = krok(v)
     assert r.akce is Akce.OTEVRIT and not p.narazove_pulz
+
+
+def test_chlazeni_se_v_narazovem_pocasi_zavira_hned():
+    """Nárazové větrání spouští jen vzduch, takže chlazení ho nikdy
+    nezapne. Jakmile ale důvod doběhne na druhou stranu, je v mrazu
+    každá minuta navíc stejně drahá — ať se větralo kvůli čemukoli."""
+    # chladili jsme, venku se oteplilo nad cíl: důvod zmizel
+    v = Vstup(cas_s=100000, t_in=22.6, t_in_max=22.6, cil=22.0,
+              t_out=27.0, co2=500, narazove_mozne=True)
+    p = Pamet(otevreno=True, chladi=True, cas_povelu_s=100000 - 300)
+    r = rozhodni(v, p, N)
+    assert r.akce is Akce.ZAVRIT and "nechladí" in r.duvod
+
+    # bez nárazového počasí se čeká na nejkratší dobu držení
+    v2 = Vstup(cas_s=100000, t_in=22.6, t_in_max=22.6, cil=22.0,
+               t_out=27.0, co2=500)
+    p2 = Pamet(otevreno=True, chladi=True, cas_povelu_s=100000 - 300)
+    r2 = rozhodni(v2, p2, N)
+    assert r2.akce is Akce.NIC and r2.kod == "drzeni"
+
+
+def test_hlaska_o_prachu_nerika_ze_se_neotevre_vubec():
+    """Poznatek zastaví jen větrání kvůli prachu. Když to hláška
+    neříká, vypadá to, že okno nepůjde otevřít vůbec."""
+    from core import duvody
+
+    v = Vstup(cas_s=100000, t_in=22.0, t_in_max=22.0, cil=22.0,
+              t_out=15.0, co2=500, rh_out=50.0)
+    p = Pamet(pm_venku_horsi_do_s=100000 + 44 * 60)
+    text = " | ".join(duvody(v, p, N))
+    assert "44 min" in text
+    assert "CO2 ani teplotu" in text
