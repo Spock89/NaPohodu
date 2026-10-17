@@ -168,6 +168,13 @@ nahoru nebo dolů — než se přepne na nárazové větrání. Ve výchozím
 stavu patnáct stupňů, takže při cíli 22 °C jde o venkovní teplotu pod
 7 °C nebo nad 37 °C.
 
+Rozhoduje **místnost, pro kterou je větrání nejdražší**: pokoj, který
+chce 22 a má venku 3, platí za otevřené okno plnou cenu bez ohledu na
+to, že dílna vedle chce jen 18 a je jí to skoro jedno. V zimě tedy
+rozhoduje nejvyšší cíl, v létě nejnižší. V sekci *Nastavení pro celý
+byt* je vidět i skutečný rozdíl a jméno té místnosti, takže se nedá
+splést, proti čemu se práh poměřuje.
+
 Za tím prahem se **neotvírá kvůli příjemnému počasí**, protože venku
 žádné není. Větrá se jen z důvodu — kvůli CO2, prachu nebo teplotě — a
 **zavře se hned, jakmile důvod pomine**, místo aby se čekalo na dojetí

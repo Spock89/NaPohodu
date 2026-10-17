@@ -135,6 +135,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._overene_jednotky: set[str] = set()
         self.narazove: bool = False
         self.narazove_bezi: bool = False
+        # jak daleko je venku od cíle a která místnost o tom rozhodla
+        self.narazove_rozdil: float = 0.0
+        self.narazove_kdo: str = ""
         self.narazove_co2: float = 0.0
         self.narazove_pm: float = 0.0
         # co říká plán obsazenosti; přepočítává se každý cyklus
@@ -833,7 +836,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "Nárazový režim: "
             + (f"od rozdílu {odstup_naraz:.1f} "
                f"°C mezi venkem a cílem" if naraz else "vypnutý")
-            + f" (teď {'běží' if self.narazove else 'neběží'})",
+            + f" (teď {'běží' if self.narazove else 'neběží'}"
+            + (f", rozdíl {self.narazove_rozdil:.1f} °C"
+               + (f" — rozhoduje {self.narazove_kdo}"
+                  if self.narazove_kdo else "") if naraz else "")
+            + ")",
             f"Další pokus po marném větrání: po změně venku o "
             f"{float(g.get(CONF_ZMENA_PODMINEK, 2.0)):.1f} °C, "
             f"nejpozději za {int(g.get(CONF_NEJDRIV_ZNOVU, 60))} min",
@@ -1222,14 +1229,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # Rozhoduje, jestli větrání stojí teplo — tedy jestli je venku
         # chladněji než cíl. Pevná venkovní teplota by v lednu a v květnu
         # znamenala něco jiného.
-        nejnizsi_cil = min((m.cil for m in self.mistnosti.values()),
-                           default=22.0)
         # Nárazový režim platí na obě strany: v mrazu i v horku je
         # venkovní vzduch tak jiný, že dlouhé větrání škodí. Hystereze
         # půl stupně brání přepínání, když se teplota motá kolem prahu.
         odstup = self.hodnota(self.entry.entry_id, CONF_NARAZOVE_ODSTUP,
                               float(g.get(CONF_NARAZOVE_ODSTUP, 15.0)))
-        rozdil = abs(t_out - nejnizsi_cil) if t_out is not None else 0.0
+        rozdil, kdo = self._narazove_rozdil(
+            t_out, {m.nazev: m.cil for m in self.mistnosti.values()})
+        self.narazove_rozdil, self.narazove_kdo = rozdil, kdo
         prah = odstup - 0.5 if self.narazove else odstup
         self.narazove = bool(g.get(CONF_NARAZOVE, False)) and rozdil > prah
         if self.narazove:
@@ -2365,6 +2372,24 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 return None
             kdy = dt_util.start_of_local_day(den)
         return cas_s + (dt_util.as_utc(kdy) - dt_util.utcnow()).total_seconds()
+
+    @staticmethod
+    def _narazove_rozdil(t_out: float | None,
+                         cile: dict[str, float]) -> tuple[float, str]:
+        """Jak daleko je venku od toho, co byt chce — a kdo rozhoduje.
+
+        Rozhoduje místnost, pro kterou je větrání **nejdražší**: pokoj,
+        který chce 22 a má venku 3, platí za otevřené okno plnou cenu
+        bez ohledu na to, že dílna vedle chce jen 18 a je jí to skoro
+        jedno. Na obě strany to funguje stejně — v zimě vyhraje pokoj
+        s nejvyšším cílem, v létě ten s nejnižším.
+        """
+        if t_out is None:
+            return 0.0, ""
+        if not cile:
+            return abs(t_out - 22.0), ""
+        kdo = max(cile, key=lambda x: abs(t_out - cile[x]))
+        return abs(t_out - cile[kdo]), kdo
 
     @staticmethod
     def _narazove_vzduch(okruhy: list[dict]) -> list[tuple]:

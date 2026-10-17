@@ -1044,6 +1044,8 @@ def test_prehled_bytu_uvadi_narazovy_rezim(nahradni_ha):
         hodnota = staticmethod(lambda a, b, vych: vych)
         entry = Zapis()
         narazove = True
+        narazove_rozdil = 17.5
+        narazove_kdo = "Kuchyně"
         topna_sezona = False
 
     radky = Falesny()._prehled_bytu({
@@ -1052,6 +1054,8 @@ def test_prehled_bytu_uvadi_narazovy_rezim(nahradni_ha):
     text = " | ".join(radky)
     assert "Nárazový režim" in text and "15.0" in text
     assert "běží" in text
+    # skutečná čísla, ať se nemusí hádat, proti čemu se práh poměřuje
+    assert "17.5" in text and "Kuchyně" in text
     assert "změně venku o 2.0" in text
     assert "Topná sezóna" in text
 
@@ -1921,3 +1925,25 @@ def test_ucinek_uvadi_prach_jen_kdyz_se_kvuli_nemu_vetra(nahradni_ha):
     assert "PM2.5" in kus
     assert '"PM" in (pamet.posledni_duvod' in kus
     assert "pm_pri_otevreni is not None" in kus
+
+
+def test_narazovy_rezim_rozhoduje_nejdrazsi_mistnost(nahradni_ha):
+    """Pokoj, který chce 22 a má venku 3, platí za otevřené okno plnou
+    cenu bez ohledu na to, že dílna vedle chce jen 18 a je jí to skoro
+    jedno. Minimum tu dělalo přesný opak: nejlhostejnější místnost
+    vetovala režim i tam, kde je větrání nejdražší."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    rozdil = ko.NaPohoduCoordinator._narazove_rozdil
+
+    cile = {"Kuchyně": 21.5, "Dílna": 18.0, "Ložnice": 20.0}
+    # zima: rozhoduje nejvyšší cíl
+    assert rozdil(3.0, cile) == (18.5, "Kuchyně")
+    # horko: rozhoduje nejnižší
+    v, kdo = rozdil(36.0, cile)
+    assert kdo == "Dílna" and v == 18.0
+    # bez venkovní teploty se nerozhoduje
+    assert rozdil(None, cile) == (0.0, "")
+    # a bez místností zbyde rozumný odhad
+    assert rozdil(3.0, {}) == (19.0, "")
