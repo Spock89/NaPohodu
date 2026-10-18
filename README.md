@@ -384,6 +384,12 @@ pásma a **venkovní teplota je taky v pásmu kolem cíle**. Jinak by se
 otevíralo i při devětadvaceti venku, jen proto, že v pokoji je zrovna
 dobře.
 
+Okno otevřené pro pohodu se zavírá, až je **vzduch opravdu čistý** —
+pod prahem zavření, ne už pod prahem otevření. Mezi těmi dvěma se
+pořád větrá, takže okno, do kterého mezitím přišel důvod kvůli CO2, by
+se jinak zavřelo o sto ppm dřív, než je vyvětráno; při nárazovém
+větrání by navíc uťalo pulz, který běží za celý byt.
+
 Zaškrtávátkem **Otevírat i pro pohodu** se to dá u místnosti vypnout
 úplně; pak se okno hýbe jen kvůli CO2, prachu, chlazení nebo ohřevu.
 

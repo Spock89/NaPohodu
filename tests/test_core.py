@@ -415,7 +415,7 @@ def test_daleko_od_cile_se_neotvira_pro_pohodu():
               komfort_start=21.5)
     r = rozhodni(stary(co2=500, t_in=21.0, t_in_max=21.2, t_out=-5.0,
                        rh_out=50.0, cil=20.0, hodina=14.0), p, nast)
-    assert r.akce is Akce.ZAVRIT and "mimo pásmo" in r.duvod
+    assert r.akce is Akce.ZAVRIT and "jen pro pohodu" in r.duvod
 
 
 # ------------------------------------- komfort a pokles čidla v okně
@@ -840,7 +840,7 @@ def test_komfort_potrebuje_prijemno_venku():
     r = rozhodni(Vstup(co2=480, t_in=21.0, t_in_max=21.2, t_out=17.0,
                        cil=21.0, hodina=14.0,
                        cas_s=100000), p, N)
-    assert r.akce is Akce.ZAVRIT and "mimo pásmo" in r.duvod
+    assert r.akce is Akce.ZAVRIT and "jen pro pohodu" in r.duvod
 
     # blíž k cíli se nechá otevřeno
     p2 = Pamet(otevreno=True, cas_povelu_s=0, rezim="komfort",
@@ -1502,9 +1502,9 @@ def test_narazovy_rezim_plati_soumerne():
     # venku 10 je pod cílem, takže otevřením se k cíli nepřiblížíme —
     # zavírá se, ale z jiného důvodu než kvůli nárazovému režimu
     assert "nárazov" not in zkus(10.0).duvod
-    assert "mimo pásmo" in zkus(5.0).duvod     # mráz
+    assert "jen pro pohodu" in zkus(5.0).duvod   # mráz
     # v horku: suchý vzduch, ať do toho nemluví rosný bod
-    assert "mimo pásmo" in zkus(40.0, rh=10.0).duvod
+    assert "jen pro pohodu" in zkus(40.0, rh=10.0).duvod
 
 
 def test_narazovy_pulz_zavre_hned_po_splneni():
@@ -2668,3 +2668,25 @@ def test_hlaska_o_prachu_nerika_ze_se_neotevre_vubec():
     text = " | ".join(duvody(v, p, N))
     assert "44 min" in text
     assert "CO2 ani teplotu" in text
+
+
+def test_komfortni_okno_s_duvodem_doveltra_nez_zavre():
+    """Okno otevřené pro pohodu, do kterého mezitím přišel důvod kvůli
+    CO2, se zavíralo, jakmile CO2 kleslo pod práh **otevření** — tedy
+    o sto ppm dřív, než bylo vyvětráno. Při nárazovém větrání tím
+    utnulo pulz, který běžel za celý byt."""
+    # venku se ochladilo, takže pro pohodu už by se neotevřelo
+    spolecne = dict(t_in=21.4, t_in_max=21.4, cil=22.5, t_out=11.2,
+                    rh_out=50.0, hodina=20.0)
+
+    # CO2 mezi prahem zavření (700) a otevření (800): pořád se větrá
+    p = Pamet(otevreno=True, rezim="komfort", komfort_start=21.4,
+              cas_povelu_s=0)
+    r = rozhodni(stary(co2=793, **spolecne), p, N)
+    assert r.akce is not Akce.ZAVRIT, r.duvod
+
+    # pod prahem zavření je vyvětráno a zavřít se smí
+    p2 = Pamet(otevreno=True, rezim="komfort", komfort_start=21.4,
+               cas_povelu_s=0)
+    r2 = rozhodni(stary(co2=650, **spolecne), p2, N)
+    assert r2.akce is Akce.ZAVRIT, r2.duvod

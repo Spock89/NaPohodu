@@ -1162,21 +1162,17 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         else:
             p.marne_od_s = 0.0        # zkusíme to znovu
 
-    # daleko od cíle: venkovní vzduch se od cílové teploty liší tak,
-    # že se větrá jen z důvodu
-    daleko_venku = (v.t_out is not None
-                    and abs(v.t_out - v.cil) > n.narazove_odstup)
+    # Jak blízko cíli musí být venku, aby se dalo mluvit o příjemném
+    # počasí. Dvě čísla říkají totéž z různých stran — práh nárazového
+    # režimu („venku je tak jinak, že se větrá jen z důvodu") a šířka
+    # pásma kolem cíle — a platí to přísnější z nich.
+    mez_pohody = min(n.narazove_odstup, h_otevrit)
 
     brani = ""
     if v.smog:
         brani = "smog venku"
     elif dew > t_in - 2:
         brani = f"rosný bod {dew:.1f}"
-    elif not chlazeni and not ohrev and daleko_venku:
-        # Za prahem je venku tak jiný vzduch, že „venku je příjemně"
-        # neplatí ani zdaleka — otevírá se jen z důvodu, ne pro pohodu.
-        brani = (f"venku {v.t_out:.1f} °C, mimo pásmo kolem cíle "
-                 f"— pro pohodu neotvírám")
     elif not chlazeni and (noc or _v_pasmu(v.hodina, n.noc_od, n.noc_do)):
         # Nočních hodin se to drží i tam, kde se klid neřeší. Že je
         # venku příjemně, není ve tři ráno důvod nechat okno otevřené —
@@ -1209,12 +1205,14 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # kvůli CO2, prachu, chlazení nebo ohřevu.
         brani = "pro pohodu se neotvírá"
     elif (not chlazeni and not ohrev
-            and abs(v.t_out - v.cil) > h_otevrit):
+            and v.t_out is not None
+            and abs(v.t_out - v.cil) > mez_pohody):
         # „Venku je příjemně" musí znamenat, že venkovní teplota je
         # blízko cíle. Jinak by se pro pohodu otevřelo i při
         # devětadvaceti venku, jen proto, že pokoj je v pásmu.
-        brani = (f"venku {v.t_out:.1f} °C, mimo pásmo kolem cíle "
-                 f"— pro pohodu neotvírám")
+        brani = (f"venku {v.t_out:.1f} °C, to je od cíle {v.cil:.1f} °C "
+                 f"dál než {mez_pohody:.1f} — jen pro pohodu otevřeno "
+                 f"nenechám")
 
     if not brani:
         if p.rezim != "komfort" or p.komfort_start is None:
@@ -1254,7 +1252,13 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     if p.rezim == "komfort":
         p.rezim = "pulz"
         p.komfort_start = None
-        if not potreba:
+        # Zavírá se, až když je vzduch opravdu čistý, ne už pod prahem
+        # otevření. Mezi prahem zavření a otevření se totiž pořád
+        # větrá: okno otevřené pro pohodu, do kterého mezitím přišel
+        # důvod kvůli CO2, se takhle zavíralo o sto ppm dřív, než
+        # bylo vyvětráno — a při nárazovém větrání utnulo pulz, který
+        # běžel za celý byt.
+        if cisto:
             # Zavření kvůli teplotě se pozná podle kódu: koordinátor
             # na něj nasadí pauzu, aby se okno hned neotevřelo znovu.
             # Bez toho lítalo tam a sem i ve dne, protože malý pokoj
