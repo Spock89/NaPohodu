@@ -1268,7 +1268,8 @@ def test_ohrev_dojede_na_horni_hranu():
                komfort_start=19.0)
     r2 = rozhodni(stary(co2=500, t_in=24.5, t_in_max=24.8, t_out=26.0,
                         rh_out=50.0, cil=23.0, hodina=14.0), p2, N)
-    assert r2.akce is Akce.ZAVRIT and "dost teplo" in r2.duvod
+    # konec ohřevu se pojmenuje podle toho, co se povedlo
+    assert r2.akce is Akce.ZAVRIT and "ohřáto na 24.5" in r2.duvod
 
 
 def test_ohrev_potrebuje_tepleji_venku():
@@ -2690,3 +2691,43 @@ def test_komfortni_okno_s_duvodem_doveltra_nez_zavre():
                cas_povelu_s=0)
     r2 = rozhodni(stary(co2=650, **spolecne), p2, N)
     assert r2.akce is Akce.ZAVRIT, r2.duvod
+
+
+def test_konec_chlazeni_se_nehlasi_jako_nepovedeny_ohrev():
+    """Po povedeném vychlazení přicházela stížnost, že to nejde
+    vyhřát: zavření se vysvětlovalo větví pro ohřev, protože pokoj byl
+    po dojezdu pod cílem. Úspěch a selhání nejsou totéž."""
+    # chladilo se, pokoj dojel pod cíl, venku je zima
+    p = Pamet(otevreno=True, chladi=True, rezim="komfort",
+              komfort_start=23.0, cas_povelu_s=0)
+    r = rozhodni(stary(co2=500, t_in=20.0, t_in_max=20.2, t_out=5.8,
+                       rh_out=50.0, cil=22.0, hodina=7.0), p, N)
+    assert r.akce is Akce.ZAVRIT
+    assert "vychlazeno" in r.duvod and "ohřev" not in r.duvod
+
+    # a dokud se ještě chladí, zavření to nespustí (venku 12 °C je
+    # nad spodní mezí pro chlazení a dost pod cílem)
+    p2 = Pamet(otevreno=True, chladi=True, rezim="komfort",
+               komfort_start=23.0, cas_povelu_s=0)
+    r2 = rozhodni(stary(co2=500, t_in=23.0, t_in_max=23.2, t_out=12.0,
+                        rh_out=50.0, cil=22.0, hodina=7.0), p2, N)
+    assert r2.akce is not Akce.ZAVRIT, r2.duvod
+
+
+def test_konec_chlazeni_neutne_vetrani_kvuli_co2():
+    """Zavření po dojezdu teploty nesmí zavřít okno, které zároveň
+    větrá kvůli vzduchu."""
+    p = Pamet(otevreno=True, chladi=True, rezim="komfort",
+              komfort_start=23.0, cas_povelu_s=0)
+    r = rozhodni(stary(co2=1200, t_in=20.0, t_in_max=20.2, t_out=5.8,
+                       rh_out=50.0, cil=22.0, hodina=7.0), p, N)
+    assert r.akce is not Akce.ZAVRIT, r.duvod
+
+
+def test_duvod_zavreni_nezacina_slovem_zavirám():
+    """Slovo přidává zpráva i karta, takže se jinak píše dvakrát."""
+    p = Pamet(otevreno=True, rezim="komfort", komfort_start=21.0,
+              cas_povelu_s=0)
+    r = rozhodni(stary(co2=500, t_in=21.0, t_in_max=21.0, t_out=5.0,
+                       rh_out=50.0, cil=22.0, hodina=14.0), p, N)
+    assert r.akce is Akce.ZAVRIT and not r.duvod.startswith("zavírám")

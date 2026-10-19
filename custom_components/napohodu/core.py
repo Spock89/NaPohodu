@@ -1237,14 +1237,27 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # Venkovní vzduch přestal pomáhat: chladili jsme a venku se
     # oteplilo, nebo jsme ohřívali a venku se ochladilo. Držet okno
     # otevřené pak nemá smysl, jen se tahá dovnitř, co nechceme.
-    if p.otevreno and p.chladi and not chlazeni and t_max > v.cil:
+    # Zavírá se jen tehdy, když zároveň není co vyvětrat: jinak by
+    # konec chlazení utnul větrání kvůli CO2, které pořád běží.
+    if p.otevreno and p.chladi and not chlazeni and cisto:
         p.chladi = False
-        return zavri(f"venku {v.t_out:.1f} °C už nechladí", hned=narazove,
-                     kod="teplota")
-    if p.otevreno and p.ohrivam and not ohrev and t_in < v.cil:
+        # Úspěch a selhání nejsou totéž. Pokoj na cíli znamená, že
+        # chlazení dojelo, kdežto „venku už nechladí" je důvod, proč
+        # se v něm nedá pokračovat. Dřív se obojí hlásilo tím druhým,
+        # a po povedeném vychlazení tak přišla stížnost, že to nejde
+        # vyhřát.
+        if t_max > v.cil:
+            return zavri(f"venku {v.t_out:.1f} °C už nechladí",
+                         hned=narazove, kod="teplota")
+        return zavri(f"vychlazeno na {t_max:.1f} °C, cíl {v.cil:.1f} °C",
+                     hned=narazove, kod="teplota")
+    if p.otevreno and p.ohrivam and not ohrev and cisto:
         p.ohrivam = False
-        return zavri(f"venku {v.t_out:.1f} °C už neohřívá", hned=narazove,
-                     kod="teplota")
+        if t_in < v.cil:
+            return zavri(f"venku {v.t_out:.1f} °C už neohřívá",
+                         hned=narazove, kod="teplota")
+        return zavri(f"ohřáto na {t_in:.1f} °C, cíl {v.cil:.1f} °C",
+                     hned=narazove, kod="teplota")
 
     p.chladi = chlazeni
     p.ohrivam = ohrev and not chlazeni
@@ -1268,7 +1281,9 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             # smyčku znamenalo čekat na nesmyslné hodnoty.
             kvuli_teplote = ("uvnitř" in brani or "pod cílem" in brani
                              or "nestačí" in brani)
-            return zavri(f"zavírám, {brani}", hned=narazove,
+            # Bez „zavírám" na začátku: slovo přidává zpráva i karta,
+            # takže se jinak píše dvakrát za sebou.
+            return zavri(brani, hned=narazove,
                          kod="teplota" if kvuli_teplote else "")
 
     # --- 6. noc a spánek: rozhoduje CO2 ------------------------------

@@ -384,6 +384,13 @@ pásma a **venkovní teplota je taky v pásmu kolem cíle**. Jinak by se
 otevíralo i při devětadvaceti venku, jen proto, že v pokoji je zrovna
 dobře.
 
+Konec chlazení nebo ohřevu se pojmenuje podle toho, **co se stalo**:
+pokoj na cíli znamená, že se dojelo („vychlazeno na 20,2 °C, cíl
+22 °C"), kdežto „venku už nechladí" je důvod, proč se nedá
+pokračovat. Hlásit obojí tím druhým znamenalo, že po povedeném
+vychlazení přišla stížnost, že to nejde vyhřát — pokoj byl po dojezdu
+pod cílem, a tak se zavření vysvětlilo větví pro ohřev.
+
 Okno otevřené pro pohodu se zavírá, až je **vzduch opravdu čistý** —
 pod prahem zavření, ne už pod prahem otevření. Mezi těmi dvěma se
 pořád větrá, takže okno, do kterého mezitím přišel důvod kvůli CO2, by
