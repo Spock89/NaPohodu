@@ -884,7 +884,16 @@ vygeneruj kartu znovu, jinak budou barvy platit pro staré nastavení.
 
 Když se nic neděje, atribut `duvody` u stavu místnosti vyjmenuje
 **všechny** překážky naráz, ne jen tu první. Odstranit jednu a divit se,
-že to nepomohlo, je snadné — proto celý seznam.
+že to nepomohlo, je snadné — proto celý seznam. Patří do něj i absolutní
+pojistky, a to v kteroukoli hodinu — ty totiž drží okno zavřené celý
+den, nejen v noci.
+
+Atribut `co_dal` říká, co příští změnu spustí. Práh „otevřu nad CO2"
+se v něm počítá stejnou funkcí jako v samotném rozhodování, takže
+slibuje přesně to číslo, při kterém se okno opravdu otevře — i když ho
+noc, spánek, zastupování, předvětrání nebo rozdělané větrání posunou.
+Testy to ověřují obráceně: hledají půlením, při jakém CO2 se okno
+doopravdy pohne, a porovnají to s textem.
 
 Atribut `dnes` shrne den: kolikrát se okno hýbalo, jak dlouho bylo
 otevřeno, nejvyšší CO2, nejnižší teplota. Podle toho se pozná, jestli

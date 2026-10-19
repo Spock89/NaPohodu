@@ -1566,7 +1566,7 @@ def test_narazove_slibuje_jen_to_co_udela():
     radky = ocekavani(Vstup(co2=900, t_in=19.0, t_in_max=19.2, t_out=2.0,
                             rh_out=50.0, cil=20.5, hodina=8.0,
                             narazove=False, cas_s=100000), p, nast)
-    assert any("nárazové větrání" in r for r in radky)
+    assert any("nárazový režim" in r for r in radky)
 
 
 
@@ -2731,3 +2731,33 @@ def test_duvod_zavreni_nezacina_slovem_zavirám():
     r = rozhodni(stary(co2=500, t_in=21.0, t_in_max=21.0, t_out=5.0,
                        rh_out=50.0, cil=22.0, hodina=14.0), p, N)
     assert r.akce is Akce.ZAVRIT and not r.duvod.startswith("zavírám")
+
+
+def test_drzeni_rika_ktery_pohyb_hlida():
+    """Doba držení hlídá vždycky jen ten jeden pohyb, který přichází
+    v úvahu. Bez pojmenování to byla věta bez podmětu — „nejdřív za
+    patnáct minut co?" — a v nárazovém počasí navíc slibovala čekání,
+    ke kterému u zavření nedojde."""
+    from core import ocekavani
+
+    def drzeni(v, p):
+        return [r for r in ocekavani(v, p, Nastaveni())
+                if "držím stav" in r]
+
+    # otevřeno v nárazovém počasí: zavírá se hned, tak se nehlídá nic
+    v = Vstup(co2=500, t_in=20.7, t_in_max=20.7, t_out=5.5, rh_out=50.0,
+              cil=22.0, hodina=9.0, cas_s=100000, narazove_mozne=True)
+    p = Pamet(otevreno=True, chladi=True, cas_povelu_s=100000 - 300)
+    assert drzeni(v, p) == []
+
+    # otevřeno jindy: čeká se na zavření
+    v2 = Vstup(co2=500, t_in=20.7, t_in_max=20.7, t_out=15.0, rh_out=50.0,
+               cil=22.0, hodina=9.0, cas_s=100000)
+    p2 = Pamet(otevreno=True, chladi=True, cas_povelu_s=100000 - 300)
+    assert drzeni(v2, p2) and drzeni(v2, p2)[0].startswith("zavřu nejdřív")
+
+    # zavřeno: čeká se na otevření
+    v3 = Vstup(co2=900, t_in=22.0, t_in_max=22.0, t_out=15.0, rh_out=50.0,
+               cil=22.0, hodina=9.0, cas_s=100000)
+    p3 = Pamet(otevreno=False, cas_povelu_s=100000 - 300)
+    assert drzeni(v3, p3)[0].startswith("otevřu nejdřív")

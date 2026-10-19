@@ -488,6 +488,29 @@ def _je_noc(hodina: float, n: Nastaveni, spanek: bool) -> bool:
 # o kolik pod původní teplotu smí místnost zůstat, než se znovu otevře
 
 
+def prah_otevreni(v: Vstup, p: Pamet, n: Nastaveni) -> float:
+    """Nad jakým CO2 se okno otevře.
+
+    Jedno místo pro rozhodování i pro hlášky. Dřív si každá hláška
+    počítala práh sama zjednodušeným pravidlem a slibovala jiné číslo,
+    než podle kterého se rozhodovalo — ve spánku, při zastupování
+    i rozdělaném větrání.
+    """
+    if _je_noc(v.hodina, n, v.spanek):
+        # Ve spánku a při zastupování se v noci otevírá až při krizi:
+        # rámus okna vzbudí spolehlivěji než oxid uhličitý.
+        return n.co2_noc_krize if (v.spanek or v.zastupce) else n.co2_noc
+    # Rozdělané větrání pokračuje k prahu zavření, ne k prahu otevření.
+    prah = n.co2_zavrit if p.vetra_se else n.co2_otevrit
+    if v.predvetrat:
+        # Před návštěvou se větrá až na čistou hodnotu.
+        prah = n.co2_zavrit
+    if v.zastupce and not v.narazove:
+        # větrá za nás soused, sami otevřeme až když to nestačí
+        prah = max(prah, n.co2_noc)
+    return prah
+
+
 def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     """Vyjmenuje všechno, co právě brání větrání.
 
@@ -516,11 +539,21 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         seznam.append("noční klid")
         if v.zastupce:
             seznam.append("větrá za nás soused")
-        if tin <= n.mez_dolni:
-            seznam.append(f"pojistka: pod {n.mez_dolni:.1f} °C")
-        prah = n.co2_noc
-    else:
-        prah = n.co2_zavrit if p.vetra_se else n.co2_otevrit
+
+    # Pojistky platí celý den, ne jen v noci — a platí jen proti
+    # vzduchu, který tlačí špatným směrem. Vypisovaly se dřív jen
+    # v nočním bloku, takže přes den se okno nehnulo a v seznamu
+    # překážek nestálo nic.
+    if not v.vetrat and v.t_out is not None:
+        if tin < n.mez_dolni and v.t_out < tin:
+            seznam.append(f"pojistka: {tin:.1f} °C pod mezí "
+                          f"{n.mez_dolni:.1f} °C")
+        elif (v.t_in_max or tin) > n.mez_horni and v.t_out > (v.t_in_max
+                                                              or tin):
+            seznam.append(f"pojistka: {(v.t_in_max or tin):.1f} °C nad "
+                          f"mezí {n.mez_horni:.1f} °C")
+
+    prah = prah_otevreni(v, p, n)
 
     if v.co2 <= prah:
         seznam.append(f"CO2 {v.co2:.0f} pod prahem {prah:.0f}")
@@ -585,7 +618,6 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     """
     seznam = []
     t_in = v.t_in
-    noc = _je_noc(v.hodina, n, v.spanek)
 
     if v.cas_s < p.rucni_do_s:
         # Dokud platí ruční zásah, automatika do okna nemluví — další
@@ -597,8 +629,16 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
                 f"{n.co2_noc_krize:.0f} ppm (teď {v.co2:.0f})"]
 
     zbyva = n.min_drzeni_s - (v.cas_s - p.cas_povelu_s)
-    if zbyva > 0:
-        seznam.append(f"nejdřív za {int(zbyva / 60)} min (držím stav)")
+    # Doba držení hlídá vždycky jen ten jeden pohyb, který přichází
+    # v úvahu: u otevřeného okna zavření, u zavřeného otevření. Bez
+    # pojmenování to byla věta bez podmětu — „nejdřív za 15 minut co?"
+    # A v nárazovém počasí se zavírá hned, takže u otevřeného okna
+    # nehlídá nic a nemá cenu ji vypisovat.
+    hned_zavru = p.otevreno and (v.narazove_mozne or v.narazove
+                                 or p.narazove_pulz)
+    if zbyva > 0 and not hned_zavru:
+        seznam.append(f"{'zavřu' if p.otevreno else 'otevřu'} nejdřív "
+                      f"za {int(zbyva / 60)} min (držím stav)")
     elif p.pauza_do_s > v.cas_s:
         seznam.append(f"couvám po marném větrání, zkusím za "
                       f"{int((p.pauza_do_s - v.cas_s) / 60)} min")
@@ -620,10 +660,10 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         # takže se musí vyjmenovat, co zbývá — jinak člověk kouká na
         # nízké CO2 a nechápe, proč je pořád otevřeno.
         chybi = []
-        # Totéž co v rozhodování: platí běžící pulz, ne jen to, jestli
-        # je zrovna čím nárazové větrání spustit.
-        if v.narazove or p.narazove_pulz:
-            seznam.append("nárazové větrání: zavřu hned, jak důvod "
+        # Totéž co v rozhodování: stačí běžící pulz nebo samotné
+        # počasí. Zavřít hned se po chlazení chce stejně jako po CO2.
+        if v.narazove or p.narazove_pulz or v.narazove_mozne:
+            seznam.append("nárazový režim: zavřu hned, jak důvod "
                           "pomine")
         if v.co2 >= n.co2_zavrit:
             chybi.append(f"CO2 pod {n.co2_zavrit:.0f} (teď {v.co2:.0f})")
@@ -640,11 +680,18 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
 
         if chybi:
             seznam.append("k vyvětráno chybí: " + ", ".join(chybi))
+        elif p.chladi or p.ohrivam:
+            # Vzduch je hotový a otevřeno drží jen teplota. Obecné
+            # „čekám na pokles teploty nebo na dojezd větrání" tady
+            # jen opakovalo řádek o chlazení a navíc slibovalo dojezd
+            # větrání, které už žádné neběží.
+            seznam.append("vzduch vyvětraný, otevřeno drží už jen "
+                          + ("chlazení" if p.chladi else "ohřev"))
         else:
             seznam.append("vyvětráno, čekám na pokles teploty "
                           "nebo na dojezd větrání")
     else:
-        prah = n.co2_noc if noc else n.co2_otevrit
+        prah = prah_otevreni(v, p, n)
         seznam.append(f"otevřu nad CO2 {prah:.0f} (teď {v.co2:.0f})")
         if (v.pm25_venku is not None and v.pm25 > 0
                 and v.pm25_venku > v.pm25 - n.pm_rozdil):
@@ -1041,15 +1088,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         p.vetra_se = True
     if v.co2 < n.co2_zavrit:
         p.vetra_se = False
-    prah_startu = n.co2_zavrit if p.vetra_se else n.co2_otevrit
-    if v.predvetrat:
-        # Před návštěvou se větrá až na čistou hodnotu, ne jen pod
-        # práh otevření: cílem je mít rezervu, než se byt zaplní.
-        prah_startu = n.co2_zavrit
-    if v.zastupce and not v.narazove:
-        # větrá za nás soused, sami otevřeme až když to nestačí.
-        # Při nárazovém větrání naopak otevíráme všude, o to jde.
-        prah_startu = max(prah_startu, n.co2_noc)
+    prah_startu = prah_otevreni(v, p, n)
 
     potreba = v.co2 > prah_startu or v.vetrat or pm_spatne
     cisto = v.co2 < n.co2_zavrit and not v.vetrat and pm_cisto
@@ -1296,8 +1335,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # Lepší pomalejší výměna přes dveře než průvan nad postelí.
         # Ve spánku to platí vždycky: rámus okna vzbudí spolehlivěji
         # než oxid uhličitý.
-        prah = (n.co2_noc_krize if (v.spanek or v.zastupce)
-                else n.co2_noc)
+        prah = prah_otevreni(v, p, n)
 
         if p.otevreno:
             # Jedna hladina pro zavření, tatáž jako ve dne. Dřív se ve
