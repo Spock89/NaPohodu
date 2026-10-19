@@ -279,6 +279,17 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 # poznat proč.
                 self._zaluzie_rukou.pop(klic, None)
 
+    def zaluzie_rukou(self, pod_id: str, cas_s: float) -> None:
+        """Od teď se žaluziím místnosti chvíli nesahá.
+
+        Používá to kontrola polohy i tlačítka rolí. Tlačítko je stejně
+        vědomá volba jako ruka na ovladači, takže se po něm automatika
+        drží zpátky úplně stejně — a hlavně se tím nespoléhá na to, že
+        se stisk náhodou pozná jako ruční přestavení.
+        """
+        self._zaluzie_rukou[pod_id] = cas_s
+        self._uloziste_stineni.async_delay_save(self._uloz_stineni, 10)
+
     async def async_nacti(self) -> None:
         """Obnoví průměry i polohy žaluzií, ať se nezačíná od nuly."""
         self.prumery = pm.Prumery.ze_slovniku(await self._uloziste.async_load())
@@ -291,6 +302,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             vyk.stav.posledni_stineni.update(data.get("stavy") or {})
             vyk.stav.stineni_poloha.update(
                 {k: float(x) for k, x in (data.get("polohy") or {}).items()})
+            vyk.stav.stineni_tilt.update(
+                {k: float(x)
+                 for k, x in (data.get("naklopeni") or {}).items()})
             # Ruční klid žaluzií přežije restart. Člověk si polohu
             # nastavil pět minut předtím a restart není důvod mu do ní
             # sáhnout.
@@ -359,7 +373,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             if not v.stav.posledni_stineni and rukou is None:
                 continue
             out[k] = {"stavy": dict(v.stav.posledni_stineni),
-                      "polohy": dict(v.stav.stineni_poloha)}
+                      "polohy": dict(v.stav.stineni_poloha),
+                      "naklopeni": dict(v.stav.stineni_tilt)}
             if rukou is not None:
                 out[k]["rukou_s"] = rukou
         return out
@@ -2590,17 +2605,20 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             st = self._stav(z)
             jede = st is not None and st.state in ("opening", "closing")
             byval = vyk_m.zkontroluj_polohu(
-                z, self._poloha_krytu(z), cas_s, jede)
+                z, self._poloha_krytu(z), cas_s, jede,
+                tilt=self._naklopeni_krytu(z))
             if byval:
                 prestaveno.append(f"{z}: bylo {byval}")
         m.atributy["prestaveno_rukou"] = prestaveno or None
+        # Rozdíl, který se ještě potvrzuje. Povel se na takovou žaluzii
+        # neposílá, ať se ruční zásah nepřebije dřív, než se pozná.
+        m.atributy["zaluzie_overuji"] = sorted(vyk_m.stav.rozejiti) or None
         if prestaveno:
             # Polohu si člověk u žaluzií vybírá vědomě, takže se jí
             # chvíli nesahá. Ukládá se okamžik, ne hotový termín: když
             # se šoupátkem pohne, odpočet se přepočítá a neukazuje čas
             # podle hodnoty, která už neplatí.
-            self._zaluzie_rukou[p.subentry_id] = cas_s
-            self._uloziste_stineni.async_delay_save(self._uloz_stineni, 10)
+            self.zaluzie_rukou(p.subentry_id, cas_s)
 
         klid_rukou = self.hodnota(
             p.subentry_id, CONF_RUCNI_KLID_ZALUZIE,
@@ -2836,6 +2854,23 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if hodnota is None:
             return 100.0 if st.state == "open" else (
                 0.0 if st.state == "closed" else None)
+        try:
+            return float(hodnota)
+        except (TypeError, ValueError):
+            return None
+
+    def _naklopeni_krytu(self, eid: str) -> float | None:
+        """Naklopení lamel v procentech, nebo nic, když ho pohon nehlásí.
+
+        U lamelových žaluzií je to jediná osa, která se doopravdy hýbe —
+        výška zůstává na sto procentech celý den.
+        """
+        st = self._stav(eid)
+        if st is None:
+            return None
+        hodnota = st.attributes.get("current_tilt_position")
+        if hodnota is None:
+            return None
         try:
             return float(hodnota)
         except (TypeError, ValueError):

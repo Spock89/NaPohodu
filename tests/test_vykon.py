@@ -927,3 +927,91 @@ def test_druhe_okno_v_mistnosti_dostane_povel_taky():
     # po odstupu už ano
     asyncio.run(v.okno("cover.kuchyne_1", r, 1040.0, True))
     assert len(hass.services.poslano) == 3
+
+
+# ------------------------------------- ruční zásah do žaluzií, tři chyby
+
+def test_povel_necka_na_potvrzeni_rozejiti(monkeypatch):
+    """Hlavní chyba: automatika vrátila ruční zásah dřív, než se pozná.
+
+    Potvrzení rozejití trvá jeden tik. Do té mezery se vešel povel na
+    jinou roli — žaluzie se vrátila zpátky, poloha zase souhlasila
+    a ruční klid se nikdy nerozběhl. Zvenčí to vypadalo, že se
+    s žaluziemi hýbe hned po ruce.
+    """
+    p = _naparuj_stineni(monkeypatch)
+    h, v = vyk(po_startu=False)
+    bez(v.stineni({"cover.o2": "zastíněno"}, 1000, 0))
+    v.zkontroluj_polohu("cover.o2", 5.0, 1400)      # dojezd se ustálil
+    p.clear()
+
+    # ruka přestavila žaluzii; první tik zatím jen počítá
+    assert v.zkontroluj_polohu("cover.o2", 60.0, 1460) is None
+    assert v.stav.rozejiti.get("cover.o2") == 1
+
+    # ve stejném tiku chce automatika jinou roli — a nesmí ji poslat
+    assert bez(v.stineni({"cover.o2": "odstíněno"}, 1460, 0)) is None
+    assert p == []
+
+    # druhý tik rozejití potvrdí a ruční zásah je vidět
+    assert v.zkontroluj_polohu("cover.o2", 60.0, 1520) == "zastíněno"
+
+
+def test_druhy_rucni_zasah_se_pozna_i_bez_pamatovaneho_stavu():
+    """Po prvním zásahu se pojmenovaný stav zapomene. Druhý zásah se
+    tím ale menším nestává — dřív se vrátilo None a klid se nerozběhl.
+    """
+    h, v = vyk()
+    v.stav.stineni_poloha["cover.o2"] = 60.0      # polohu známe
+    v.stav.stineni_cas_s = 0.0                    # pojmenovaný stav ne
+    assert v.zkontroluj_polohu("cover.o2", 25.0, POZDE) is None
+    byval = v.zkontroluj_polohu("cover.o2", 25.0, POZDE + 60)
+    assert byval == "60 %"                        # aspoň odkud se hýbalo
+
+
+def test_rucni_naklopeni_lamel_se_pozna():
+    """U lamelových žaluzií se výška nemění; celý zásah je v naklopení.
+
+    Dokud se porovnávala jen výška, ruční naklopení nebylo vidět vůbec
+    a automatika lamely při další změně role beze všeho přetočila.
+    """
+    h, v = vyk()
+    _s_polohou(v, poloha=100.0)
+    v.stav.stineni_tilt["cover.o2"] = 10.0        # zastíněno, lamely zavřené
+    assert v.zkontroluj_polohu("cover.o2", 100.0, POZDE, tilt=80.0) is None
+    assert v.zkontroluj_polohu(
+        "cover.o2", 100.0, POZDE + 60, tilt=80.0) == "zastíněno"
+    assert "cover.o2" not in v.stav.stineni_tilt
+
+
+def test_male_kolisani_naklopeni_neni_rucni_zasah():
+    """Pohony hlásí naklopení v hrubých krocích, drobný rozdíl nic
+    neznamená — jinak by automatika po pár minutách zmlkla sama."""
+    h, v = vyk()
+    _s_polohou(v, poloha=100.0)
+    v.stav.stineni_tilt["cover.o2"] = 40.0
+    for i in range(4):
+        assert v.zkontroluj_polohu(
+            "cover.o2", 100.0, POZDE + 60 * i, tilt=42.0) is None
+    assert v.stav.posledni_stineni["cover.o2"] == "zastíněno"
+
+
+def test_naklopeni_se_po_povelu_prevezme(monkeypatch):
+    """Sekvence naklopení nehlásí, takže se po povelu zapomene
+    a převezme z toho, co pohon ohlásí sám."""
+    _naparuj_stineni(monkeypatch)
+    h, v = vyk(po_startu=False)
+    v.stav.stineni_tilt["cover.o2"] = 10.0
+    bez(v.stineni({"cover.o2": "odstíněno"}, 1000, 0))
+    assert "cover.o2" not in v.stav.stineni_tilt
+    # první změřené naklopení se vezme za správné
+    assert v.zkontroluj_polohu("cover.o2", 5.0, 1400, tilt=85.0) is None
+    assert v.stav.stineni_tilt["cover.o2"] == 85.0
+    assert v.stav.posledni_stineni["cover.o2"] == "odstíněno"
+
+
+def test_zapomen_maze_i_naklopeni():
+    h, v = vyk()
+    v.stav.stineni_tilt["cover.o2"] = 40.0
+    v.zapomen()
+    assert v.stav.stineni_tilt == {}

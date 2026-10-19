@@ -123,6 +123,7 @@ JEN_KDYZ_JE = {"ucinek", "plan_bytu", "plan"}
 ATRIBUTY_STINENI_OBCAS = [
     ("prestaveno_rukou", "přestaveno rukou"),
     ("zaluzie_rucni_klid", "ruční klid"),
+    ("zaluzie_overuji", "ověřuji rozejití"),
     ("zaluzie_chybi", "chybějící entita"),
 ]
 

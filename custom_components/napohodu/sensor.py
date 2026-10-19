@@ -152,7 +152,7 @@ class SlunceMistnosti(NaPohoduEntity, SensorEntity):
         return {k: v for k, v in m.atributy.items()
                 if k in ("role_stineni", "zadana_poloha", "stineni_stav",
                          "zaluzie_poloha", "prestaveno_rukou",
-                         "zaluzie_rucni_klid",
+                         "zaluzie_rucni_klid", "zaluzie_overuji",
                          "zaluzie_chybi", "stineni_mapa", "stineni",
                          "stineni_duvody", "stineni_co_dal",
                          "vraceni_vychoziho")}
@@ -286,7 +286,7 @@ class StineniMistnosti(NaPohoduEntity, SensorEntity):
         return {k: v for k, v in m.atributy.items()
                 if k in ("role_stineni", "zadana_poloha", "stineni_stav",
                          "zaluzie_poloha", "prestaveno_rukou",
-                         "zaluzie_rucni_klid",
+                         "zaluzie_rucni_klid", "zaluzie_overuji",
                          "zaluzie_chybi", "stineni_mapa", "stineni",
                          "stineni_duvody", "stineni_co_dal",
                          "vraceni_vychoziho")}

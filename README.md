@@ -460,10 +460,25 @@ u okna, jen s vlastním číslem: polohu žaluzií si člověk vybírá vědomě
 tak bývá ta doba delší. Nula znamená, že automatika pokračuje hned.
 
 Pozná se to tak, že se skutečná poloha rozejde s tou, kterou jsme
-poslali. Tři pojistky brání falešnému poplachu: za jízdy se nekontroluje
-vůbec, chvíli po povelu taky ne, protože pohon dojíždí a hlásí polohu
-se zpožděním, a rozejití se musí potvrdit dvakrát za sebou — jednorázový
-přeskok je skoro vždycky dojezd, ne ruka.
+poslali — a hlídají se **obě osy**, výška i naklopení lamel. U lamelové
+žaluzie se výška celý den nemění a celý rozdíl mezi „zastínit"
+a „odstínit" je v naklopení; kdyby se porovnávala jen výška, ruční
+naklopení lamel by nebylo vidět vůbec. Co pohon nehlásí, to se nehlídá,
+takže u pohonů bez naklápění rozhoduje dál jen poloha.
+
+Tři pojistky brání falešnému poplachu: za jízdy se nekontroluje vůbec,
+chvíli po povelu taky ne, protože pohon dojíždí a hlásí polohu se
+zpožděním, a rozejití se musí potvrdit dvakrát za sebou — jednorázový
+přeskok je skoro vždycky dojezd, ne ruka. Naklopení se přitom posuzuje
+hruběji než výška, protože ho pohony hlásí ve velkých krocích.
+
+Dokud se rozejití potvrzuje, **povel na tu žaluzii nejde**. Jinak by se
+do té jedné minuty vešel povel na jinou roli, ruční zásah by se vrátil
+zpátky a smazal by se tím i důkaz: poloha by zase souhlasila a klid by
+se nerozběhl. V kartě je ta chvíle vidět jako *ověřuji rozejití*.
+
+Stisk tlačítka role se bere stejně jako ruka na ovladači — klid se
+rozbíhá i po něm, protože i to je vědomá volba.
 
 Klid přežije restart, protože restart není důvod sahat do polohy, kterou
 si někdo nastavil pět minut předtím. Obejde ho jen tlačítko **Srovnat

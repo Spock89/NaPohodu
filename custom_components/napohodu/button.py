@@ -118,6 +118,12 @@ class Stineni(NaPohoduEntity, ButtonEntity):
 
     Vzniká jen pro role, které máš u místnosti skutečně přiřazené —
     tlačítko, které nic nedělá, by jen zaplevelilo kartu.
+
+    Bere se to stejně jako ruka na ovladači: automatika se pak chvíli
+    do žaluzií neplete. Dřív se stisk choval stejně jen omylem — poloha
+    se rozešla s tou zapsanou, takže se po dvou minutách vyhodnotil
+    jako „někdo ji přestavil". Teď se klid rozbíhá rovnou a poloha se
+    převezme z toho, kam žaluzie doopravdy dojede.
     """
 
     _attr_icon = "mdi:blinds-horizontal"
@@ -134,6 +140,13 @@ class Stineni(NaPohoduEntity, ButtonEntity):
         vyk = self.coordinator.vykonavaci.get(self.pod_id)
         if vyk is not None:
             vyk.stav.posledni_stineni.update(cile)
+            for zaluzie in cile:
+                vyk.stav.stineni_poloha.pop(zaluzie, None)
+                vyk.stav.stineni_tilt.pop(zaluzie, None)
+                vyk.stav.rozejiti.pop(zaluzie, None)
+        self.coordinator.zaluzie_rukou(
+            self.pod_id, dt_util.utcnow().timestamp())
+        await self.coordinator.async_request_refresh()
 
 
 class Okno(NaPohoduEntity, ButtonEntity):

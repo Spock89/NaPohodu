@@ -1308,6 +1308,7 @@ def test_rucni_klid_zaluzii_prezije_restart(nahradni_ha):
         def __init__(self):
             self.posledni_stineni = {}
             self.stineni_poloha = {}
+            self.stineni_tilt = {}
 
     class Vyk:
         def __init__(self):

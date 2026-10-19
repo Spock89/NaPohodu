@@ -44,6 +44,9 @@ class StavVykonu:
     # poloha, na které žaluzie po povelu skutečně skončila — podle ní
     # se pozná ruční přestavení
     stineni_poloha: dict[str, float] = field(default_factory=dict)
+    # totéž pro naklopení lamel: u lamelových žaluzií se výška nemění
+    # a ruční zásah je vidět jenom tady
+    stineni_tilt: dict[str, float] = field(default_factory=dict)
     rozejiti: dict[str, int] = field(default_factory=dict)
     # role a splněné podmínky se drží pro každou žaluzii zvlášť —
     # dvě okna v pokoji můžou mít různé nastavení a tím i různý průběh
@@ -88,40 +91,60 @@ class Vykonavac:
     # ------------------------------------------------------------ okno
 
     TOLERANCE_POLOHY = 1.2      # pohon polohu neudrží přesněji
+    TOLERANCE_TILTU = 5.0       # naklopení hlásí pohony v hrubých krocích
     ODKLAD_KONTROLY_S = 180.0   # než pohon dojede a ustálí se
     ROZEJITI_KRAT = 2           # dvakrát po sobě, ať to není jen dojezd
 
     def zkontroluj_polohu(self, zaluzie: str, poloha: float | None,
                           cas_s: float = 0.0,
-                          jede: bool = False) -> str | None:
+                          jede: bool = False,
+                          tilt: float | None = None) -> str | None:
         """Ověří, že žaluzie je tam, kam jsme ji poslali.
 
         Bez toho by ruční přestavení zůstalo skryté: paměť tvrdí, že je
         zastíněno, takže se po západu slunce už nic nepošle.
+
+        Hlídají se **obě osy** — výška i naklopení lamel. U lamelových
+        žaluzií se výška skoro nemění a celý rozdíl mezi „zastínit"
+        a „odstínit" je v naklopení; dokud se porovnávala jen výška,
+        ruční naklopení lamel nebylo vidět vůbec. Co pohon nehlásí,
+        to se nehlídá.
 
         Tři pojistky proti falešnému poplachu. Za jízdy se nekontroluje
         vůbec. Chvíli po povelu taky ne, protože pohon dojíždí a hlásí
         polohu se zpožděním. A rozejití se musí potvrdit dvakrát za
         sebou — jednorázový přeskok je skoro vždycky dojezd, ne ruka.
         """
-        ocekavana = self.stav.stineni_poloha.get(zaluzie)
-        if poloha is None or jede:
+        if jede:
             return None
         if cas_s - self.stav.stineni_cas_s < self.ODKLAD_KONTROLY_S:
             return None
-        if ocekavana is None:
-            # Proti čemu porovnávat, když jsme sami nic neposlali:
-            # po startu se pojmenovaný stav jen převezme, takže poloha
-            # nikde zapsaná není, a po ručním přestavení se zahodí.
-            # Bez tohohle zůstalo ruční přestavení navždy neviditelné —
-            # stačilo jednou a kontrola už se nikdy nespustila. Teď se
-            # za správnou bere ta, kde žaluzie právě stojí, a od ní se
-            # měří dál.
-            self.stav.stineni_poloha[zaluzie] = poloha
-            self.stav.poloha_predbezna.discard(zaluzie)
+
+        osy = (("poloha", poloha, self.stav.stineni_poloha,
+                self.TOLERANCE_POLOHY),
+               ("naklopení", tilt, self.stav.stineni_tilt,
+                self.TOLERANCE_TILTU))
+        znam = [x for x in osy if x[1] is not None]
+        if not znam:
             return None
 
-        if abs(poloha - ocekavana) <= self.TOLERANCE_POLOHY:
+        rozesly = []
+        for jmeno, ted, pametka, tolerance in znam:
+            ocekavana = pametka.get(zaluzie)
+            if ocekavana is None:
+                # Proti čemu porovnávat, když jsme sami nic neposlali:
+                # po startu se pojmenovaný stav jen převezme, takže
+                # poloha nikde zapsaná není, a po ručním přestavení se
+                # zahodí. Bez tohohle zůstalo ruční přestavení navždy
+                # neviditelné — stačilo jednou a kontrola už se nikdy
+                # nespustila. Teď se za správnou bere ta, kde žaluzie
+                # právě stojí, a od ní se měří dál.
+                pametka[zaluzie] = ted
+                continue
+            if abs(ted - ocekavana) > tolerance:
+                rozesly.append((jmeno, ted, ocekavana, pametka))
+
+        if not rozesly:
             self.stav.rozejiti.pop(zaluzie, None)
             self.stav.poloha_predbezna.discard(zaluzie)
             return None
@@ -133,27 +156,36 @@ class Vykonavac:
         # jinak by se stav dokola nastavoval znovu.
         if zaluzie in self.stav.poloha_predbezna:
             self.stav.poloha_predbezna.discard(zaluzie)
-            self.stav.stineni_poloha[zaluzie] = poloha
             self.stav.rozejiti.pop(zaluzie, None)
-            _LOGGER.debug("NaPohodu: %s se ustálila na %.1f %% "
-                          "(čekal jsem %.1f), beru to za správné",
-                          zaluzie, poloha, ocekavana)
+            for jmeno, ted, ocekavana, pametka in rozesly:
+                pametka[zaluzie] = ted
+                _LOGGER.debug("NaPohodu: %s — %s se ustálila na %.1f %% "
+                              "(čekal jsem %.1f), beru to za správné",
+                              zaluzie, jmeno, ted, ocekavana)
             return None
 
         kolikrat = self.stav.rozejiti.get(zaluzie, 0) + 1
         self.stav.rozejiti[zaluzie] = kolikrat
         if kolikrat < self.ROZEJITI_KRAT:
-            _LOGGER.debug("NaPohodu: %s je na %.1f %% místo %.1f %%, "
-                          "čekám na potvrzení", zaluzie, poloha, ocekavana)
+            for jmeno, ted, ocekavana, _p in rozesly:
+                _LOGGER.debug("NaPohodu: %s — %s je %.1f %% místo %.1f %%, "
+                              "čekám na potvrzení",
+                              zaluzie, jmeno, ted, ocekavana)
             return None
 
         byval = self.stav.posledni_stineni.pop(zaluzie, None)
         self.stav.stineni_poloha.pop(zaluzie, None)
+        self.stav.stineni_tilt.pop(zaluzie, None)
         self.stav.rozejiti.pop(zaluzie, None)
-        _LOGGER.info("NaPohodu: %s je na %.1f %%, čekal jsem %.1f %% — "
+        jmeno, ted, ocekavana, _p = rozesly[0]
+        _LOGGER.info("NaPohodu: %s — %s je %.1f %%, čekal jsem %.1f %% — "
                      "někdo ji přestavil, zapomínám stav %s",
-                     zaluzie, poloha, ocekavana, byval)
-        return byval
+                     zaluzie, jmeno, ted, ocekavana, byval)
+        # Pojmenovaný stav znát nemusíme — po předchozím ručním zásahu
+        # je zahozený. Ruční zásah se tím ale menším nestává, a dokud
+        # se tady vracelo None, nerozběhl se kvůli druhému přestavení
+        # žádný klid a automatika do žaluzie znovu mluvila.
+        return byval or f"{ocekavana:.0f} %"
 
     def zapomen(self) -> None:
         """Zahodí paměť o posledních povelech.
@@ -165,6 +197,7 @@ class Vykonavac:
         self.stav.posledni_okna.clear()
         self.stav.posledni_stineni.clear()
         self.stav.stineni_poloha.clear()
+        self.stav.stineni_tilt.clear()
         self.stav.rozejiti.clear()
         self.stav.poloha_predbezna.clear()
         self.stav.stineni_cas_s = -1e9
@@ -342,8 +375,15 @@ class Vykonavac:
             _LOGGER.debug("NaPohodu: po startu přebírám polohy %s", cile)
             return None
 
+        # Žaluzie, u které se poloha právě rozešla s tou naší, se
+        # nechává být, dokud se nepotvrdí, jestli za to byla ruka.
+        # Potvrzení trvá jeden tik — a dřív se do něj vešel povel,
+        # který ruční zásah vrátil zpátky a zároveň smazal důkaz:
+        # poloha po povelu zase souhlasila, takže se klid nerozběhl
+        # a vypadalo to, že automatika hýbe žaluzií hned po ruce.
         zbyva = {z: n for z, n in cile.items()
-                 if self.stav.posledni_stineni.get(z) != n}
+                 if self.stav.posledni_stineni.get(z) != n
+                 and z not in self.stav.rozejiti}
         if not zbyva:
             return None
 
@@ -364,6 +404,9 @@ class Vykonavac:
                 if poloha is not None:
                     self.stav.stineni_poloha[z] = float(poloha)
                     self.stav.poloha_predbezna.add(z)
+                # Naklopení sekvence nehlásí, takže se po povelu
+                # zapomene a převezme z toho, co pohon ohlásí sám.
+                self.stav.stineni_tilt.pop(z, None)
                 hotovo.append(nazev)
                 _LOGGER.info("NaPohodu: žaluzie %s -> %s", z, nazev)
             else:
