@@ -32,12 +32,14 @@ class Podentita:
     def __init__(self, typ, nazev, data=None):
         self.subentry_type = typ
         self.title = nazev
-        self.subentry_id = nazev
+        # Skutečné identifikátory jsou náhodné řetězce, ne jména —
+        # a zóna si členy drží právě jimi.
+        self.subentry_id = f"01K{abs(hash(nazev)) % 10**12:012d}"
         self.data = data or {}
 
 
 def _instalace(c):
-    return [
+    mistnosti = [
         Podentita(c.PODENTITA_MISTNOST, "Obývák", {
             c.CONF_OKNA: ["cover.o"], c.CONF_ZALUZIE: ["cover.z"],
             c.CONF_TEPLOTY: ["sensor.t"], c.CONF_CO2: ["sensor.c"],
@@ -45,12 +47,18 @@ def _instalace(c):
         Podentita(c.PODENTITA_MISTNOST, "Dílna", {
             c.CONF_TEPLOTY: ["sensor.t2"], c.CONF_CLIMATE: "climate.d",
             c.CONF_PORADI: 1}),
-        Podentita(c.PODENTITA_ZONA, "Kuchyň a obývák",
-                  {c.CONF_MISTNOSTI: ["Obývák", "Dílna"]}),
+        Podentita(c.PODENTITA_ZONA, "Kuchyň a obývák", {}),
         Podentita(c.PODENTITA_SKUPINA, "1. patro",
                   {c.CONF_SKUPINA_MISTNOSTI: ["Dílna"]}),
         Podentita(c.PODENTITA_SCENA, "Home Office", {}),
     ]
+    # zóna vyjmenuje členy identifikátory, jak to dělá formulář
+    zona = next(p for p in mistnosti
+                if p.subentry_type == c.PODENTITA_ZONA)
+    zona.data[c.CONF_MISTNOSTI] = [
+        p.subentry_id for p in mistnosti
+        if p.subentry_type == c.PODENTITA_MISTNOST]
+    return mistnosti
 
 
 def test_vybaveni_a_okna(pod):
@@ -98,3 +106,26 @@ def test_obe_cesty_davaji_tutez_kartu(pod):
     # a to podstatné v ní opravdu je
     assert "number.napohodu_dilna_ve_dne_otevrit_pri_odchylce_od_cile_o" in a
     assert "- entity: sensor.napohodu_dilna_stav" not in a
+
+
+def test_zona_si_cleny_drzi_identifikatorem(pod):
+    """Zóna ukládá členy jako identifikátory podentit, ne jako jména.
+
+    Dokud se z identifikátoru dělal klíč rovnou, nesedl na žádnou
+    místnost a šoupátko pro místnost bez okna v kartě nevzniklo —
+    přestože se podle něj rozhoduje.
+    """
+    p, c = pod
+    inst = _instalace(c)
+    zona = next(x for x in inst if x.subentry_type == c.PODENTITA_ZONA)
+    assert all(x.startswith("01K") for x in zona.data[c.CONF_MISTNOSTI])
+    assert "vetrani_zonou" in p.podklady(inst)["vybaveni"]["dilna"]
+
+
+def test_zona_se_jmeny_ze_starsiho_nastaveni(pod):
+    """Starší nastavení mají místo identifikátoru jméno."""
+    p, c = pod
+    inst = _instalace(c)
+    zona = next(x for x in inst if x.subentry_type == c.PODENTITA_ZONA)
+    zona.data[c.CONF_MISTNOSTI] = ["Obývák", "Dílna"]
+    assert "vetrani_zonou" in p.podklady(inst)["vybaveni"]["dilna"]

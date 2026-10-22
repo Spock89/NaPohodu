@@ -35,10 +35,16 @@ def podklady(podentity, stav=None) -> dict:
     }
     poradi: dict[str, float] = {}
     zony: list[list[str]] = []
+    # Zóna si členy drží identifikátorem podentity, ne jménem — na
+    # rozdíl od skupiny. Převod se musí udělat až nakonec, protože
+    # pořadí podentit nikdo nezaručuje a zóna může přijít dřív než
+    # místnosti, které vyjmenovává.
+    podle_id: dict[str, str] = {}
 
     for pod in podentity:
         if pod.subentry_type == PODENTITA_MISTNOST:
             k = klic(pod.title)
+            podle_id[pod.subentry_id] = k
             out["mistnosti"].append(k)
             out["nazvy"][k] = pod.title
             if pod.data.get(CONF_ZVLHCOVAC):
@@ -100,7 +106,9 @@ def podklady(podentity, stav=None) -> dict:
     # určuje svým vlastním číslem. Patří jí tedy to šoupátko, i když
     # vlastní okno nemá.
     for cleni in zony:
-        klice = [klic(x) for x in cleni]
+        # Starší nastavení mají místo identifikátoru jméno, proto se
+        # zkusí obojí — stejně jako to dělá koordinátor.
+        klice = [podle_id.get(x) or klic(x) for x in cleni]
         if not any(x in out["s_okny"] for x in klice):
             continue
         for x in klice:
