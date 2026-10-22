@@ -118,6 +118,18 @@ ATRIBUTY_STAVU = [
 # řádek se vůbec nezobrazí, místo aby svítil „Neznámý".
 JEN_KDYZ_JE = {"ucinek", "plan_bytu", "plan"}
 
+# Řádky, které mluví o okně. V místnosti, kde se okno neovládá, se
+# nevyrobí vůbec — dřív se vyrobily a každý z nich napsal jinými slovy
+# totéž, že se tu okno neovládá. Tři řádky, které říkají jen „tenhle
+# řádek sem nepatří", jsou horší než žádný.
+JEN_S_OKNEM = {
+    "venku",                # „Venku u tohoto okna" — čidlo u okna
+    "provedeno", "co_bylo", "co_dal", "ucinek", "duvody",
+    "rucni_zasah", "kontakt_hlasi", "otevreno_min",
+    "narazove_vetrani", "cekani_po_marnem", "pauza_po_pulzu_min",
+    "vetrani_za_sebou", "prach_zvenci",
+}
+
 # Totéž u stínění: ruka, klid po ní a chybějící entita jsou výjimečné
 # stavy, ne každodenní údaje.
 ATRIBUTY_STINENI_OBCAS = [
@@ -205,9 +217,15 @@ ZLOMY_LADENI = {
 # posunem. Generovat je stejně znamená stránku plnou nastavení, která
 # nic neovlivní — a hledá se v tom pak to, co ovlivní.
 POTREBUJE = {
-    "ve_dne_otevrit_pri_odchylce_od_cile_o": "okno",
+    # Při jaké odchylce se začne větrat platí i pro místnost bez okna,
+    # pokud je v zóně s místností, která okno má: požádá o vyvětrání
+    # souseda a hranici si určuje tímhle svým číslem. Bez té druhé
+    # značky se šoupátko v kartě nevyrobilo, přestože se podle něj
+    # rozhoduje. Zavírací hrana se u žádosti nepoužívá — ta končí
+    # na cíli, ne na protější hraně pásma.
+    "ve_dne_otevrit_pri_odchylce_od_cile_o": ("okno", "vetrani_zonou"),
     "ve_dne_zavrit_az_za_cilem_o": "okno",
-    "v_noci_otevrit_pri_odchylce_od_cile_o": "okno",
+    "v_noci_otevrit_pri_odchylce_od_cile_o": ("okno", "vetrani_zonou"),
     "v_noci_zavrit_az_za_cilem_o": "okno",
     "venku_musi_byt_za_dojezdem_o": "okno",
     "pojistka_nevychladit_pod": "okno",
@@ -609,10 +627,14 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     # Co která místnost má. Bez toho se generují i nastavení, která
     # v ní nic neovlivní — neznámá místnost se bere jako vybavená vším.
     vybaveni = vybaveni or {}
-    VSE = set(POTREBUJE.values())
+    VSE = set()
+    for x in POTREBUJE.values():
+        VSE |= {x} if isinstance(x, str) else set(x)
 
-    def ma(m: str, co: str) -> bool:
-        return co in vybaveni.get(m, VSE)
+    def ma(m: str, co) -> bool:
+        mam = vybaveni.get(m, VSE)
+        potreba = {co} if isinstance(co, str) else set(co)
+        return bool(potreba & mam)
 
     # Hrany barevných pásem pro ručičky. Počítá je integrace z toho,
     # podle čeho se rozhoduje; karta je jen přepíše do YAML.
@@ -682,10 +704,14 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
 
     # přepínače ovládání hned pod cílovou teplotou, ať je po ruce
     polozky = []
-    for klic, popis in (("ovladat_okno", "okna"),
-                        ("ovladat_stineni", "žaluzie"),
-                        ("ovladat_topeni", "topení")):
+    for klic, popis, kde in (("ovladat_okno", "okna", s_okny),
+                             ("ovladat_stineni", "žaluzie", None),
+                             ("ovladat_topeni", "topení", None)):
         for m in mistnosti:
+            # Přepínač „ovládat okna" tam, kde žádné okno není, nemá co
+            # zapnout ani vypnout.
+            if kde is not None and m not in kde:
+                continue
             eid = f"switch.napohodu_{m}_{klic}"
             if existuje(eid):
                 polozky += _radek(eid, f"{jm(m)} — {popis}")
@@ -756,7 +782,10 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         stav = f"sensor.napohodu_{m}_stav"
         if not existuje(stav):
             continue
-        polozky = _radek(stav, "Rozhodnutí")
+        # „Rozhodnutí" je rozhodnutí o okně. Místnost, která okno
+        # neovládá, ho sice taky spočítané má, ale nic podle něj
+        # nedělá — v kartě by to byla věta o něčem, co se nestane.
+        polozky = _radek(stav, "Rozhodnutí") if m in s_okny else []
         if m in s_okny:
             polozky += _radek(f"binary_sensor.napohodu_{m}_okno", "Okno")
         for a, n, s in ATRIBUTY_STAVU:
@@ -766,6 +795,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             if a == "zvlhcovac_bezi" and m not in se_zvlhcovacem:
                 continue
             if a == "cisticka_bezi" and m not in s_cistickou:
+                continue
+            if a in JEN_S_OKNEM and m not in s_okny:
                 continue
             if a in JEN_KDYZ_JE:
                 polozky += _atribut_kdyz_je(stav, a, n, s)
@@ -1046,10 +1077,13 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     # Identifikátor entity vzniká z přeloženého jména, ne z klíče
     # v kódu — „srovnat_stineni" se jmenuje Srovnat žaluzie, takže
     # entita končí na srovnat_zaluzie.
-    for klic, popis in (("srovnat_okno", "okna"),
-                        ("srovnat_zaluzie", "žaluzie"),
-                        ("srovnat_topeni", "topení")):
+    for klic, popis, kde in (("srovnat_okno", "okna", s_okny),
+                             ("srovnat_zaluzie", "žaluzie", None),
+                             ("srovnat_topeni", "topení", None)):
         for m in mistnosti:
+            # Srovnávat okno tam, kde žádné není, nemá co srovnat.
+            if kde is not None and m not in kde:
+                continue
             eid = f"button.napohodu_{m}_{klic}"
             if existuje(eid):
                 polozky += _radek(eid, f"{jm(m)} — {popis}")
@@ -1114,7 +1148,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             continue
         c.append(SEKCE)
         c += _hlavicka(f"{jm(m)} — podrobnosti", "mdi:magnify", "subtitle")
-        c += _markdown([(stav, a, n, jed) for a, n, jed in ATRIBUTY_PODROBNE])
+        c += _markdown([(stav, a, n, jed) for a, n, jed in ATRIBUTY_PODROBNE
+                        if not (a in JEN_S_OKNEM and m not in s_okny)])
 
     karty = _jen_zapnute([x for x in c if x is not None],
                          bloky)

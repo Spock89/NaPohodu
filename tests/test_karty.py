@@ -1,5 +1,7 @@
 """Testy generátoru karet."""
 
+import re
+
 import yaml
 
 from karty import dashboard
@@ -809,3 +811,80 @@ def test_napoveda_vypisuje_skutecna_jmena():
 def test_napoveda_bez_mistnosti_nevznika():
     s = dashboard([], [], vzdy)
     assert "Jak zadat plán ručně" not in s
+
+
+# ------------------------------- místnost bez okna: co do karty nepatří
+
+def _atributy_mistnosti(text: str) -> dict:
+    """Které atributy stavu se v kartě vypisují, po místnostech."""
+    out: dict[str, set] = {}
+    radky = text.splitlines()
+    for i, r in enumerate(radky):
+        m = re.search(r"napohodu_(\w+)_stav'?,?\s*'(\w+)'", r)
+        if m:                          # markdown: state_attr(...)
+            out.setdefault(m.group(1), set()).add(m.group(2))
+            continue
+        m = re.match(r"\s*attribute: (\w+)", r)
+        if m and i:
+            kdo = re.search(r"napohodu_(\w+)_stav", radky[i - 1])
+            if kdo:
+                out.setdefault(kdo.group(1), set()).add(m.group(1))
+    return out
+
+
+def _bez_okna_karta(vybaveni=None, **kw):
+    return dashboard(
+        ["obyvak", "dilna"], ["kuchyn_a_obyvak"],
+        lambda e: True,
+        nazvy={"obyvak": "Obývák", "dilna": "Dílna"},
+        s_okny={"obyvak"},
+        vybaveni=vybaveni or {"obyvak": {"okno", "co2"}, "dilna": set()},
+        **kw)
+
+
+def test_bez_okna_zadne_hlasky_o_oknu():
+    """Tři řádky, které jinými slovy říkají totéž — že okno nemáme —
+    jsou horší než žádný. Prvek okna se v takové místnosti nevyrobí."""
+    a = _atributy_mistnosti(_bez_okna_karta())
+    for klic in ("co_dal", "co_bylo", "duvody", "provedeno", "venku",
+                 "rucni_zasah", "otevreno_min", "vetrani_za_sebou",
+                 "prach_zvenci", "narazove_vetrani"):
+        assert klic not in a["dilna"], klic
+        assert klic in a["obyvak"], klic
+
+
+def test_bez_okna_zustava_to_spolecne():
+    """Teplota, CO2, topení a žádost sousedům s oknem nesouvisí."""
+    a = _atributy_mistnosti(_bez_okna_karta())
+    for klic in ("co2", "teplota_rozhodna", "vlhkost", "topeni",
+                 "zadost_sousedum", "zastupce"):
+        assert klic in a["dilna"], klic
+
+
+def test_okno_se_bez_okna_nevyrobi():
+    text = _bez_okna_karta()
+    radky = {x.strip() for x in text.splitlines()}
+    assert "- entity: binary_sensor.napohodu_dilna_okno" not in radky
+    assert "- entity: binary_sensor.napohodu_obyvak_okno" in radky
+    # přepínač ovládání ani řádek s rozhodnutím o okně
+    assert "- entity: switch.napohodu_dilna_ovladat_okno" not in radky
+    assert "- entity: switch.napohodu_obyvak_ovladat_okno" in radky
+    assert "- entity: sensor.napohodu_dilna_stav" not in radky
+    assert "- entity: sensor.napohodu_obyvak_stav" in radky
+    assert "- entity: button.napohodu_dilna_srovnat_okno" not in radky
+    assert "- entity: button.napohodu_obyvak_srovnat_okno" in radky
+
+
+def test_odchylka_pro_vetrani_zonou():
+    """Místnost bez okna v zóně s oknem o vyvětrání požádá souseda
+    a hranici si určuje svým číslem — to šoupátko jí tedy patří."""
+    bez = _bez_okna_karta()
+    assert "number.napohodu_dilna_ve_dne_otevrit_pri_odchylce" not in bez
+
+    s_zonou = _bez_okna_karta(
+        vybaveni={"obyvak": {"okno", "co2"}, "dilna": {"vetrani_zonou"}})
+    for klic in ("ve_dne_otevrit_pri_odchylce_od_cile_o",
+                 "v_noci_otevrit_pri_odchylce_od_cile_o"):
+        assert f"number.napohodu_dilna_{klic}" in s_zonou, klic
+    # zavírací hrana ne: žádost končí na cíli, ne na protější hraně
+    assert "number.napohodu_dilna_ve_dne_zavrit_az_za_cilem_o" not in s_zonou

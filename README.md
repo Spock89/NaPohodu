@@ -339,6 +339,20 @@ jen zapamatuje a nastavenou hodnotu nepřepíše.
 
 Totéž platí pro zaškrtávátka, která mají protějšek ve formuláři.
 
+Generovaná karta ukazuje **jen to, co místnost opravdu má**. Místnost
+bez ovládaného okna tedy nemá řádek o rozhodnutí, o posledním povelu,
+o tom, co změnu spustí, ani diagnostiku větrání — a nemá ani přepínač
+ovládání oken a tlačítko na jejich srovnání. Dřív tam ty řádky byly
+a každý jinými slovy psal totéž, že se tu okno neovládá.
+
+Jedna výjimka ale platí obráceně: místnost **bez okna v zóně, kde
+nějaké okno je**, si o vyvětrání řekne sousedovi, a hranici, od jaké
+odchylky od cíle, si určuje svým vlastním číslem. Šoupátka *otevřít
+při odchylce od cíle* proto na kartě má, ve dne i v noci, přestože
+vlastní okno neovládá. Zavírací hrana jí naopak nepatří — cizí žádost
+končí na cíli, ne na protější hraně pásma, aby se vedle netopilo
+proti otevřenému oknu.
+
 ### Teplotní pásmo a pojistky
 
 Teplotní větrání stojí na jedné myšlence se dvěma časy. Kolem cílové

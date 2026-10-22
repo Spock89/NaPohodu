@@ -511,6 +511,23 @@ def prah_otevreni(v: Vstup, p: Pamet, n: Nastaveni) -> float:
     return prah
 
 
+def _co_drzi(v: Vstup, pm_spatne: bool) -> str | None:
+    """Co kromě CO2 drží okno otevřené — nebo ho otevřelo.
+
+    Ruční žádost a nouzové větrání se o CO2 nestarají, takže u nich
+    stojí v hlášce číslo, které samo o sobě říká opak: „větrá se,
+    CO2 583" u prahu zavření 700 vypadá jako chyba, dokud není vidět,
+    že to drží něco jiného.
+    """
+    if v.vynuceno:
+        return "nouzové větrání"
+    if v.vetrat:
+        return "ruční větrání"
+    if pm_spatne:
+        return "prach"
+    return None
+
+
 def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     """Vyjmenuje všechno, co právě brání větrání.
 
@@ -639,7 +656,10 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     if zbyva > 0 and not hned_zavru:
         seznam.append(f"{'zavřu' if p.otevreno else 'otevřu'} nejdřív "
                       f"za {int(zbyva / 60)} min (držím stav)")
-    elif p.pauza_do_s > v.cas_s:
+    elif p.pauza_do_s > v.cas_s and not p.otevreno:
+        # Couvání se týká dalšího otevření. U otevřeného okna slibovalo
+        # pokus za hodinu, zatímco se zrovna větralo — dvě věty, které
+        # si přímo odporují.
         seznam.append(f"couvám po marném větrání, zkusím za "
                       f"{int((p.pauza_do_s - v.cas_s) / 60)} min")
 
@@ -1345,6 +1365,13 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                     and not v.vetrat and not v.vynuceno):
                 return zavri(f"noc: vyvětráno, CO2 {v.co2:.0f}",
                              hned=narazove, kod="noc_hotovo")
+            # Když okno drží něco jiného než vzduch, musí to být
+            # v hlášce. Jinak u ní stojí nízké CO2 a vypadá to, že se
+            # větrá kvůli němu — přestože by se při něm dávno zavřelo.
+            drzi = _co_drzi(v, pm_spatne)
+            if drzi:
+                return beze_zmeny(
+                    f"noc: větrá, drží to {drzi}, CO2 {v.co2:.0f}", True)
             return beze_zmeny(
                 f"noc: větrá {t_in:.1f} °C, CO2 {v.co2:.0f}", True)
 
@@ -1355,7 +1382,13 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             # nejkratší době držení, přestože bylo dávno vyvětráno —
             # a čtyřhodinový strop v tom držel okno otevřené dál.
             p.narazove_pulz = bool(v.narazove)
-            duvod = f"noc: otevírám, CO2 {v.co2:.0f}"
+            # V noci se otevírá i kvůli prachu a kvůli ruční žádosti,
+            # ne jen kvůli CO2. Dokud tu stálo pokaždé „CO2 572", dalo
+            # se z hlášky vyčíst, že se otevřelo kvůli hodnotě, která
+            # je hluboko pod nočním prahem — a nešlo poznat proč.
+            spoust = _co_drzi(v, pm_spatne) if v.co2 <= prah else None
+            duvod = (f"noc: otevírám, {spoust}, CO2 {v.co2:.0f}"
+                     if spoust else f"noc: otevírám, CO2 {v.co2:.0f}")
             if p.narazove_pulz:
                 duvod += ", nárazově — zavřu, jakmile důvod pomine"
             return otevri(duvod, 4 * 3600, kod="noc_otevri")
@@ -1391,6 +1424,10 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             # Větrání kvůli vzduchu čeká na vyvětrání; o prochladnutí
             # se stará pojistka výš, ne hrana pásma. Dřív se zavíralo
             # na dolní hraně i s dusnem a hned se otevíralo znovu.
+            drzi = _co_drzi(v, pm_spatne)
+            if drzi:
+                return beze_zmeny(
+                    f"větrá se, drží to {drzi}, CO2 {v.co2:.0f}", True)
             return beze_zmeny(f"větrá se, CO2 {v.co2:.0f}", True)
 
         dt = max(t_in - v.t_out, 1.0)
@@ -1409,6 +1446,10 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         duvod = f"CO2 {v.co2:.0f}"
         if pm_spatne:
             duvod = f"PM2.5 {v.pm25:.0f}" + ("" if v.pm_platny else " (bez ventilátoru)")
+        elif v.vetrat and v.co2 <= prah_startu:
+            # Ruční žádost otevírá bez ohledu na CO2, takže samotné
+            # číslo CO2 jako důvod mate: je pod prahem otevření.
+            duvod = f"ruční větrání, CO2 {v.co2:.0f}"
         dolni = 30
         p.narazove_pulz = zkraceno
         if zkraceno:

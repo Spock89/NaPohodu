@@ -254,6 +254,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
         nazvy, poradi = {}, {}
         se_zvlhcovacem, zvlhcovace, s_cistickou = set(), {}, set()
         pm_cidla, prahy, vybaveni = {}, {}, {}
+        zony: list[list[str]] = []
         for pod in self.config_entry.subentries.values():
             if pod.subentry_type == c.PODENTITA_MISTNOST:
                 k = klic(pod.title)
@@ -312,6 +313,19 @@ class NaPohoduOptionsFlow(OptionsFlow):
             elif pod.subentry_type == c.PODENTITA_ZONA:
                 nazvy[klic(pod.title)] = pod.title
                 oblasti.append(klic(pod.title))
+                zony.append(list(pod.data.get(c.CONF_MISTNOSTI) or []))
+
+        # Místnost bez okna v zóně, kde nějaké okno je, si o vyvětrání
+        # řekne sousedovi — a hranici, od jaké odchylky od cíle, si
+        # určuje svým vlastním číslem. Patří jí tedy to šoupátko, i když
+        # vlastní okno nemá.
+        for cleni in zony:
+            klice = [klic(x) for x in cleni]
+            if not any(k in s_okny for k in klice):
+                continue
+            for k in klice:
+                if k in vybaveni and k not in s_okny:
+                    vybaveni[k].add("vetrani_zonou")
 
         g = {**self.config_entry.data, **self.config_entry.options}
         try:

@@ -245,3 +245,53 @@ def test_tvrda_prekazka_nikdy_neskonci_otevrenim():
                                          for x in tvrde):
             spatne.append(f"otevírá, přestože {duv}")
     assert not spatne, sorted(set(spatne))
+
+
+# ------------------------------------ ruční větrání v hlášce, ne CO2
+
+def test_noc_pojmenuje_rucni_vetrani():
+    """CO2 pod nočním prahem neotevře; otevřít může ruční žádost.
+
+    Dokud tu stálo „noc: otevírám, CO2 572", vypadalo to, že se
+    otevřelo kvůli hodnotě hluboko pod prahem, a nešlo poznat proč.
+    """
+    v = vstup(hodina=3.9, co2=572.0, t_in=17.4, t_in_max=17.4, t_out=6.7,
+              cil=22.5)
+    assert rozhodni(v, pamet(), N).akce is Akce.NIC       # samotné CO2 ne
+
+    v2 = dataclasses.replace(v, vetrat=True)
+    r = rozhodni(v2, pamet(), N)
+    assert r.akce is Akce.OTEVRIT
+    assert "ruční větrání" in r.duvod
+
+
+def test_otevrene_okno_rekne_co_ho_drzi():
+    """Při nízkém CO2 je „větrá se, CO2 583" samo o sobě protimluv."""
+    for hodina, cekam in ((3.9, "noc: větrá"), (12.0, "větrá se")):
+        v = vstup(hodina=hodina, co2=583.0, t_in=17.9, t_in_max=17.9,
+                  t_out=6.7, cil=22.5, vetrat=True)
+        r = rozhodni(v, pamet(otevreno=True, vetra_se=True), N)
+        assert cekam in r.duvod, r.duvod
+        assert "drží to ruční větrání" in r.duvod, r.duvod
+
+
+def test_den_pojmenuje_rucni_vetrani_misto_co2():
+    v = vstup(hodina=12.0, co2=450.0, t_in=21.0, t_in_max=21.0, t_out=6.7,
+              cil=22.5, vetrat=True)
+    r = rozhodni(v, pamet(), N)
+    assert r.akce is Akce.OTEVRIT
+    assert "ruční větrání" in r.duvod, r.duvod
+
+
+def test_couvani_se_u_otevreneho_okna_nevypisuje():
+    """„Zkusím za 52 min" u okna, které zrovna větrá, je protimluv."""
+    v = vstup(hodina=3.9, co2=583.0, t_in=17.9, t_in_max=17.9, t_out=6.7,
+              cil=22.5, vetrat=True)
+    p = pamet(otevreno=True, vetra_se=True,
+              pauza_do_s=v.cas_s + 52 * 60)
+    radky = ocekavani(v, p, N)
+    assert not any("couvám" in x for x in radky), radky
+
+    # u zavřeného okna ten řádek dál platí
+    zavreno = pamet(otevreno=False, pauza_do_s=v.cas_s + 52 * 60)
+    assert any("couvám" in x for x in ocekavani(v, zavreno, N))
