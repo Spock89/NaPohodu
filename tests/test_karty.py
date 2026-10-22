@@ -888,3 +888,20 @@ def test_odchylka_pro_vetrani_zonou():
         assert f"number.napohodu_dilna_{klic}" in s_zonou, klic
     # zavírací hrana ne: žádost končí na cíli, ne na protější hraně
     assert "number.napohodu_dilna_ve_dne_zavrit_az_za_cilem_o" not in s_zonou
+
+
+def test_scena_ma_vlastni_kalendar_v_karte():
+    """Scéna se zadává kliknutím na den, takže patří měsíční pohled."""
+    text = dashboard(
+        ["obyvak"], [], lambda e: True, nazvy={"obyvak": "Obývák"},
+        s_okny={"obyvak"}, sceny=["Home Office"])
+    assert "calendar.napohodu_home_office" in text
+    assert "initial_view: dayGridMonth" in text
+    assert "Scéna: Home Office" in text
+    # a v nápovědě se neplete mezi tvary názvů událostí
+    assert "Home Office: nikdo tu nebude" not in text
+
+
+def test_bez_scen_nic_navic():
+    text = dashboard(["obyvak"], [], lambda e: True, s_okny={"obyvak"})
+    assert "dayGridMonth" not in text

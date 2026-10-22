@@ -11,6 +11,7 @@ dashboard, který sis nakreslil sám.
 from __future__ import annotations
 
 import math
+import unicodedata
 
 # pořadí a názvy, aby karta dávala smysl a nebyla jen výpisem
 # Pořadí, názvy a jedna řádka, co to dělá — bez ní člověk za měsíc
@@ -482,7 +483,19 @@ def _budiky_mistnosti(prah: dict | None, existuje, cil: str,
              "    cards:"] + karty + [""])
 
 
-def _napoveda_planu(mistnosti: list[str], skupiny: list[str]) -> list[str]:
+def klic_jmena(nazev: str) -> str:
+    """Jméno na identifikátor entity. Totéž co `const.klic`.
+
+    Vlastní kopie schválně: tenhle modul musí jít naimportovat sám
+    o sobě, bez zbytku integrace, aby se karta dala skládat i v testu.
+    """
+    bez = unicodedata.normalize(
+        "NFKD", nazev).encode("ascii", "ignore").decode()
+    return "".join(z if z.isalnum() else "_" for z in bez.lower()).strip("_")
+
+
+def _napoveda_planu(mistnosti: list[str], skupiny: list[str],
+                    sceny: list[str] | None = None) -> list[str]:
     """Nápověda k ručnímu zadání plánu, podle skutečného nastavení.
 
     Obecný návod je tu k ničemu: jediné, co se dá splést, jsou přesná
@@ -517,6 +530,13 @@ def _napoveda_planu(mistnosti: list[str], skupiny: list[str]) -> list[str]:
     c.append("      *Nikdo tu nebude = utlumí topení a okna nechá jet"
              " dál. Zavřená okna = drží okno zavřené, i když je zbytek"
              " bytu plný lidí.*")
+    if sceny:
+        c.append("      **Scény** se takhle nezadávají: každá má"
+                 " vlastní kalendář (" + ", ".join(
+                     f"`calendar.napohodu_{klic_jmena(x)}`"
+                     for x in sceny) + ") a den se v něm jen označí."
+                 " Celodenní událost znamená „použij okno dne té"
+                 " scény\".")
     c.append("")
     return c
 
@@ -603,7 +623,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
               rh_cidla: dict | None = None, s_okny: set | None = None,
               s_klidem: set | None = None, jako_pohled: bool = False,
               podoba: str = "karta",
-              skupiny: list | None = None) -> str:
+              skupiny: list | None = None,
+              sceny: list | None = None) -> str:
     """Poskládá kartu. `existuje` řekne, jestli entita opravdu je.
 
     `cidla` a `zaluzie` jsou entity, které integrace nevytváří — teploměr
@@ -964,13 +985,30 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
                   "      - calendar.napohodu_plan"]
         c.append("")
 
+        # Scény mají vlastní kalendáře a zadávají se kliknutím na den,
+        # takže patří do měsíčního pohledu, ne do seznamu. Jeden
+        # kalendář na scénu — sloučené by se nedalo poznat, do které
+        # se kliká.
+        for nazev in (sceny or []):
+            eid = f"calendar.napohodu_{klic_jmena(nazev)}"
+            if not existuje(eid):
+                continue
+            c += _hlavicka(f"Scéna: {nazev}", "mdi:calendar-star",
+                           "subtitle")
+            c += ["  - type: calendar",
+                  "    initial_view: dayGridMonth",
+                  "    entities:",
+                  f"      - {eid}",
+                  ""]
+
     c.append(ZNACKA_BLOKU + "napoveda")
     # --- jak zadat plán ručně ---
     # Z dashboardu se význam ukládá do záznamu, takže název je jen
     # popisek. V panelu Kalendář je naopak jediný nosič významu —
     # a tam se bez přesného tvaru nedá trefit. Proto se vypisuje
     # podle skutečného nastavení, se jmény, která tahle instalace má.
-    c += _napoveda_planu([jm(m) for m in mistnosti], skupiny or [])
+    c += _napoveda_planu([jm(m) for m in mistnosti], skupiny or [],
+                         sceny or [])
 
 
     c.append(ZNACKA_BLOKU + "ladeni")

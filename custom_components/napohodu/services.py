@@ -19,7 +19,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.storage import Store
 
 from . import sekvence as sq
-from .const import DOMAIN
+from .const import DOMAIN, klic
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -281,17 +281,12 @@ async def zaregistruj(hass: HomeAssistant) -> None:
 
     async def dashboard(call: ServiceCall) -> ServiceResponse:
         """Vygeneruje kartu z entit, které opravdu existují."""
-        from unicodedata import normalize
 
         from . import karty
-        from .const import (PODENTITA_MISTNOST, PODENTITA_SKUPINA,
-                            PODENTITA_ZONA)
+        from .const import (PODENTITA_MISTNOST, PODENTITA_SCENA,
+                            PODENTITA_SKUPINA, PODENTITA_ZONA)
 
-        def klic(nazev: str) -> str:
-            bez = normalize("NFKD", nazev).encode("ascii", "ignore").decode()
-            return "".join(z if z.isalnum() else "_" for z in bez.lower()).strip("_")
-
-        mistnosti, oblasti, skupiny = [], [], []
+        mistnosti, oblasti, skupiny, sceny = [], [], [], []
         nazvy = {}
         for entry in hass.config_entries.async_entries(DOMAIN):
             for pod in entry.subentries.values():
@@ -300,12 +295,14 @@ async def zaregistruj(hass: HomeAssistant) -> None:
                     nazvy[klic(pod.title)] = pod.title
                 elif pod.subentry_type == PODENTITA_SKUPINA:
                     skupiny.append(pod.title)
+                elif pod.subentry_type == PODENTITA_SCENA:
+                    sceny.append(pod.title)
                 elif pod.subentry_type == PODENTITA_ZONA:
                     oblasti.append(klic(pod.title))
 
         text = karty.dashboard(
             mistnosti, oblasti, lambda e: hass.states.get(e) is not None,
-            nazvy=nazvy, skupiny=skupiny)
+            nazvy=nazvy, skupiny=skupiny, sceny=sceny)
         return {"yaml": text, "mistnosti": mistnosti, "oblasti": oblasti}
 
     async def srovnej(call: ServiceCall) -> ServiceResponse:

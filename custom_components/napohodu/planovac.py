@@ -18,6 +18,7 @@ nebo do týdenního rozvrhu, který je přesně na to.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import timedelta
 
 
 @dataclass(frozen=True)
@@ -82,6 +83,7 @@ DRUHY = {
     "zavreno": "zavřená okna",
     "prazdno_zavreno": "nikdo tu nebude, zavřená okna",
     "cil": "cílová teplota",
+    "scena": "scéna",
 }
 
 # Složený povel se rozpadne na jednotlivé. Jeden záznam je lepší než
@@ -95,6 +97,55 @@ def obsahuje(druh_zaznamu: str, hledany: str) -> bool:
     return hledany in ROZPAD.get(druh_zaznamu, (druh_zaznamu,))
 
 
+# --------------------------------------------------------------- scéna
+# Scéna je pojmenovaná sada dopadů: pro každou místnost buď cílová
+# teplota, nebo „nikdo tu nebude", nebo „zavřená okna". V kalendáři
+# scény pak stačí označit den — událost nenese nic než odkaz na ni,
+# takže se nedá splést název ani rozsypat překlepem.
+
+
+def dopad_sceny(definice: dict | None) -> dict:
+    """Rozpad scény na jednotlivé povely místnostem.
+
+    Vrací stejné druhy, jaké umí plán sám, takže se dál nikde nemusí
+    vědět, že scéna existuje: „prazdno" a „zavreno" jako seznamy
+    místností, „cil" jako místnost na teplotu.
+    """
+    d = definice or {}
+    return {
+        "prazdno": list(d.get("prazdno") or []),
+        "zavreno": list(d.get("zavreno") or []),
+        "cil": {k: float(v) for k, v in (d.get("cil") or {}).items()
+                if v is not None},
+    }
+
+
+def scena_plati(zaznam: dict, definice: dict | None,
+                druh: str, mistnost: str | None) -> bool:
+    """Dělá tahle scéna tomuhle pokoji tenhle povel?
+
+    Definice se bere živá, aby se změna scény promítla do všech
+    naplánovaných dní. Když se scéna smaže, nastoupí opis uložený
+    při zadání — běžící plán se tím nerozsype, jen zamrzne v podobě,
+    v jaké byl zadán. Totéž pravidlo jako u skupin.
+    """
+    if zaznam.get("druh") != "scena":
+        return False
+    d = dopad_sceny(definice if definice is not None
+                    else zaznam.get("opis"))
+    if druh == "cil":
+        return mistnost in d["cil"]
+    return mistnost in d.get(druh, [])
+
+
+def scena_cil(zaznam: dict, definice: dict | None,
+              mistnost: str) -> float | None:
+    """Jakou teplotu scéna téhle místnosti nastavuje."""
+    d = dopad_sceny(definice if definice is not None
+                    else zaznam.get("opis"))
+    return d["cil"].get(mistnost)
+
+
 def patri(zaznam: dict, mistnost: str | None,
           skupiny: dict | None = None) -> bool:
     """Vztahuje se záznam na tuhle místnost?
@@ -103,6 +154,10 @@ def patri(zaznam: dict, mistnost: str | None,
     přidání místnosti. Opis členů z doby zadání je záloha: když
     skupinu smažeš, plán nespadne a jede dál podle něj.
     """
+    if zaznam.get("druh") == "scena":
+        # Scéna se na místnosti neváže jménem, ale svou definicí.
+        # Řeší se zvlášť, viz scena_plati.
+        return False
     if zaznam.get("skupina"):
         clenove = (skupiny or {}).get(zaznam["skupina"])
         if clenove is None:
@@ -193,22 +248,69 @@ def rozbal(zaznam: dict, od, do, rrulestr=None) -> list[tuple]:
     delka = konec - zacatek
     pravidlo_text = zaznam.get("rrule")
     if not pravidlo_text:
-        return [(zacatek, konec)] if konec > od and zacatek < do else []
+        vyskyty = [(zacatek, konec)]
+        return [x for x in _po_dnech(vyskyty, zaznam)
+                if x[1] > od and x[0] < do]
     if rrulestr is None:
-        return [(zacatek, konec)] if konec > od and zacatek < do else []
+        vyskyty = [(zacatek, konec)]
+        return [x for x in _po_dnech(vyskyty, zaznam)
+                if x[1] > od and x[0] < do]
     try:
         rada = rrulestr(pravidlo_text, dtstart=zacatek)
     except Exception:          # pragma: no cover - cizí knihovna
-        return [(zacatek, konec)] if konec > od and zacatek < do else []
+        vyskyty = [(zacatek, konec)]
+        return [x for x in _po_dnech(vyskyty, zaznam)
+                if x[1] > od and x[0] < do]
     par = zaznam.get("parita")
     if par is not None:
-        return [(x, x + delka)
-                for x in _lichy_nebo_sudy(rada, int(par), do,
-                                          int(zaznam.get("kolikrat") or 0))
-                if x + delka > od and x < do]
-    # Okno se posune o délku události, aby se do něj dostal i výskyt,
-    # který začal dřív a ještě běží.
-    return [(x, x + delka) for x in rada.between(od - delka, do, inc=True)]
+        vyskyty = [(x, x + delka)
+                   for x in _lichy_nebo_sudy(rada, int(par), do,
+                                             int(zaznam.get("kolikrat") or 0))]
+    else:
+        # Okno se posune o délku události, aby se do něj dostal i výskyt,
+        # který začal dřív a ještě běží.
+        vyskyty = [(x, x + delka)
+                   for x in rada.between(od - delka, do, inc=True)]
+    return [x for x in _po_dnech(vyskyty, zaznam)
+            if x[1] > od and x[0] < do]
+
+
+def _po_dnech(vyskyty: list[tuple], zaznam: dict) -> list[tuple]:
+    """Celodenní událost rozpadne na denní okna scény.
+
+    V kalendáři scény se den označí kliknutím a žádný čas se nezadává.
+    Platit celou noc ale nemá smysl — scéna si nese vlastní okno dne,
+    třeba 7:00–18:00, a celodenní událost znamená „použij ho". Když
+    takhle označíš tři dny v kuse, vznikne okno pro každý z nich; bez
+    toho by scéna běžela i obě noci mezi nimi.
+
+    Okno se ukládá k záznamu při zadání, takže rozbalení nepotřebuje
+    znát scénu a funguje i po jejím smazání.
+    """
+    okno = zaznam.get("okno")
+    if not zaznam.get("celodenni") or not okno:
+        return vyskyty
+    try:
+        od_h, od_m = [int(x) for x in str(okno[0]).split(":")[:2]]
+        do_h, do_m = [int(x) for x in str(okno[1]).split(":")[:2]]
+    except (ValueError, IndexError, TypeError):   # pragma: no cover
+        return vyskyty
+
+    out = []
+    for zacatek, konec in vyskyty:
+        den = zacatek.replace(hour=0, minute=0, second=0, microsecond=0)
+        # Poslední den je v kalendáři nevlastní: celodenní událost na
+        # jeden den končí ráno toho dalšího.
+        posledni = (konec - timedelta(microseconds=1)).replace(
+            hour=0, minute=0, second=0, microsecond=0)
+        while den <= posledni:
+            a = den.replace(hour=od_h, minute=od_m)
+            b = den.replace(hour=do_h, minute=do_m)
+            if b <= a:                      # okno přes půlnoc
+                b += timedelta(days=1)
+            out.append((a, b))
+            den += timedelta(days=1)
+    return out
 
 
 def _lichy_nebo_sudy(rada, par: int, do, kolikrat: int) -> list:
@@ -265,7 +367,8 @@ def dopad(druhy) -> str:
     return ", ".join(texty)
 
 
-def chyby(zaznam: dict, skupiny: dict, mistnosti, mez=(10.0, 30.0)) -> list:
+def chyby(zaznam: dict, skupiny: dict, mistnosti, mez=(10.0, 30.0),
+          sceny: dict | None = None) -> list:
     """Co je na záznamu špatně. Prázdno znamená, že je v pořádku.
 
     Hlásí se dopředu, dokud se s tím dá něco dělat. Tiše to spolknout
@@ -276,6 +379,12 @@ def chyby(zaznam: dict, skupiny: dict, mistnosti, mez=(10.0, 30.0)) -> list:
     druh = zaznam.get("druh") or ""
     if druh == "nerozumim":
         out.append("nerozumím názvu události")
+    if druh == "scena" and sceny is not None \
+            and zaznam.get("scena") not in sceny:
+        # Scéna se dá smazat, naplánované dny po ní zůstanou. Nespadne
+        # to, jedou podle opisu — ale člověk to má vědět.
+        out.append(f"scéna „{zaznam.get('nazev_sceny') or '?'}“ už "
+                   f"neexistuje, jedu podle opisu z doby zadání")
     if zaznam.get("skupina") and zaznam["skupina"] not in skupiny:
         out.append(f"skupina „{zaznam['skupina']}“ už neexistuje, "
                    f"jedu podle členů z doby zadání")

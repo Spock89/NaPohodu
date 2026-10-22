@@ -58,6 +58,7 @@ from .const import (
     CONF_REZERVA_VENKU, CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU,
     CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_RUCNI_KLID,
     CONF_RUCNI_KLID_ZALUZIE,
+    CONF_SCENA_DO, CONF_SCENA_OD, CONF_SCENA_PRAZDNO, CONF_SCENA_ZAVRENO,
     CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SEZONA_REZIM,
     CONF_SKUPINA_OBRACENE, CONF_SKUPINA_PRITOMNOST,
     CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG, CONF_SOUHRN_CAS,
@@ -73,8 +74,9 @@ from .const import (
     CONF_ZIMA_O_KOLIK, CONF_ZIMA_PRAH, CONF_ZMENA_PODMINEK,
     CONF_ZNACKA_MIMO, CONF_ZNACKA_OKNO, CONF_ZPRAVY, CONF_ZPRAVY_DRUHY,
     CONF_ZVLHCOVAC, CONF_ZVLHCOVAC_KDY, CONF_ZVLHCOVAC_VE_SPANKU, DOMAIN,
-    INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST,
-    PODENTITA_SKUPINA, PODENTITA_ZONA, ZASKLENI_PODIL,
+    INTERVAL_S, PODENTITA_KLIMA, PODENTITA_MISTNOST, PODENTITA_SCENA,
+    PODENTITA_SKUPINA, PODENTITA_ZONA, PREFIX_SCENA_CIL, ZASKLENI_PODIL,
+    klic,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -276,13 +278,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         Bez pod_id platí pro všechno. Skutečné povely se pošlou jen tam,
         kde je zapnuté ovládání — tlačítko nic neobchází.
         """
-        for klic, vyk in self.vykonavaci.items():
-            if pod_id is None or klic == pod_id:
+        for pid, vyk in self.vykonavaci.items():
+            if pod_id is None or pid == pod_id:
                 vyk.zapomen()
                 # Tlačítko je výslovný pokyn, takže ruší i ruční klid
                 # žaluzií. Bez toho by stisk nic neudělal a nebylo by
                 # poznat proč.
-                self._zaluzie_rukou.pop(klic, None)
+                self._zaluzie_rukou.pop(pid, None)
 
     def zaluzie_rukou(self, pod_id: str, cas_s: float) -> None:
         """Od teď se žaluziím místnosti chvíli nesahá.
@@ -351,8 +353,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         ted = dt_util.utcnow().timestamp()
         for pid in self.zvlhcuje:
             self._dozvuk.setdefault(pid, ted)
-        for klic, v in (ulozene.pop("_formular", None) or {}).items():
-            a, _, b = klic.partition("|")
+        for ulozeny, v in (ulozene.pop("_formular", None) or {}).items():
+            a, _, b = ulozeny.partition("|")
             self._formular[(a, b)] = v
         pole = {f.name for f in fields(core.Pamet)}
         for pid, zaznam in ulozene.items():
@@ -1420,7 +1422,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                                 ted + timedelta(days=1), rrulestr)
             if not vyskyty:
                 continue          # až se přiblíží, ozveme se
-            potize = pz.chyby(z, skupiny, jmena)
+            potize = pz.chyby(z, skupiny, jmena,
+                              sceny=self.sceny())
             if z.get("rrule") and rrulestr is None:
                 potize.append("chybí knihovna python-dateutil, "
                               "opakování se neuplatní")
@@ -2168,6 +2171,31 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         m.atributy["topeni_hlavice"] = ", ".join(skutecnost) or None
         m.atributy["odvzdusneni"] = odvzdusneni
 
+    def sceny(self) -> dict[str, dict]:
+        """Scény podle identifikátoru: co dělají které místnosti.
+
+        Definice se čte živá, takže úprava scény se promítne do všech
+        dní, které jsou podle ní naplánované — přesně proto se scéna
+        zadává jednou a den se jen označí.
+        """
+        out = {}
+        for scena in self._podentity(PODENTITA_SCENA):
+            cile = {}
+            for pokoj in self._podentity(PODENTITA_MISTNOST):
+                hodnota = scena.data.get(
+                    PREFIX_SCENA_CIL + klic(pokoj.title))
+                if hodnota is not None:
+                    cile[pokoj.title] = float(hodnota)
+            out[scena.subentry_id] = {
+                "nazev": scena.title,
+                "okno": [scena.data.get(CONF_SCENA_OD) or "07:00",
+                         scena.data.get(CONF_SCENA_DO) or "18:00"],
+                "prazdno": list(scena.data.get(CONF_SCENA_PRAZDNO) or []),
+                "zavreno": list(scena.data.get(CONF_SCENA_ZAVRENO) or []),
+                "cil": cile,
+            }
+        return out
+
     def plan_skupiny(self) -> dict[str, list[str]]:
         """Skupiny pro ostatní moduly. Jen jiné jméno pro totéž."""
         return self._skupiny()
@@ -2214,12 +2242,20 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         okno_od = ted - timedelta(days=1)
         okno_do = ted + timedelta(days=14)
         skupiny = self._skupiny()
+        sceny = self.sceny()
         vyskyty = []
         for z in self._vlastni_plan:
-            if not pz.obsahuje(z.get("druh", ""), druh):
-                continue
-            if not pz.patri(z, mistnost, skupiny):
-                continue
+            if z.get("druh") == "scena":
+                # Scéna se rozpadne na tytéž druhy, jaké umí plán sám,
+                # takže se o ní dál nikde nemusí vědět.
+                if not pz.scena_plati(z, sceny.get(z.get("scena")),
+                                      druh, mistnost):
+                    continue
+            else:
+                if not pz.obsahuje(z.get("druh", ""), druh):
+                    continue
+                if not pz.patri(z, mistnost, skupiny):
+                    continue
             vyskyty += pz.rozbal(z, okno_od, okno_do, rrulestr)
         nejblizsi = pz.nejblizsi(vyskyty, ted)
         if nejblizsi is None:
@@ -2240,16 +2276,36 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         """
         ted = dt_util.now()
         skupiny = self._skupiny()
+        sceny = self.sceny()
+        # Okno se bere stejně široké jako u ostatních druhů plánu:
+        # celodenní scéna může začít včera večer a ještě běžet.
+        okno_od = ted - timedelta(days=1)
+        okno_do = ted + timedelta(days=1)
+        # Kdyby platilo víc věcí naráz, vyhrává to konkrétnější:
+        # cíl zadaný přímo téhle místnosti přebije scénu, a mezi
+        # dvěma scénami ta, která začala později. Teploty se nikdy
+        # nesčítají, prostě se vybere jedna.
+        nalezy = []
         for z in self._vlastni_plan:
-            if z.get("druh") != "cil" or z.get("cil") is None:
+            if z.get("druh") == "scena":
+                cil = pz.scena_cil(z, sceny.get(z.get("scena")), mistnost)
+                if cil is None:
+                    continue
+                prednost = 0
+            elif z.get("druh") == "cil" and z.get("cil") is not None:
+                if not pz.patri(z, mistnost, skupiny):
+                    continue
+                cil = float(z["cil"])
+                prednost = 1
+            else:
                 continue
-            if not pz.patri(z, mistnost, skupiny):
-                continue
-            for od, do in pz.rozbal(z, ted - timedelta(days=1),
-                                    ted + timedelta(days=1), rrulestr):
+            for od, do in pz.rozbal(z, okno_od, okno_do, rrulestr):
                 if od <= ted < do:
-                    return float(z["cil"])
-        return None
+                    nalezy.append((prednost, od, float(cil)))
+                    break
+        if not nalezy:
+            return None
+        return max(nalezy, key=lambda x: (x[0], x[1]))[2]
 
     def plan_zaznamy(self) -> list[dict]:
         """Uložené záznamy plánu i s časy jako datum, ne text."""

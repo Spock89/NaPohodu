@@ -174,3 +174,88 @@ def test_prazdno_samo_okno_nezavira(koord):
                            "do": ted + timedelta(hours=1), "rrule": None}])
     assert k.plan_vlastni("prazdno", "Ložnice", 1000.0).bezi
     assert not k.plan_vlastni("zavreno", "Ložnice", 1000.0).bezi
+
+
+# ------------------------------------------------------------ scény
+
+def test_scena_pres_plan_vlastni(koord):
+    """Scéna se do zbytku integrace promítne jako běžné druhy plánu.
+
+    Nikde jinde se pak o scénách nemusí vědět: útlum, zavřená okna
+    i cílová teplota se čtou stejnými dotazy jako dřív.
+    """
+    from napohodu import const as c
+
+    ted = _ted(koord)
+    scena = Podentita(
+        c.PODENTITA_SCENA, "Home Office",
+        {c.CONF_NAZEV: "Home Office",
+         c.CONF_SCENA_OD: "00:00", c.CONF_SCENA_DO: "23:59",
+         c.CONF_SCENA_PRAZDNO: ["Ložnice"],
+         c.CONF_SCENA_ZAVRENO: ["Ložnice"],
+         c.PREFIX_SCENA_CIL + "dilna": 22.0})
+    den = ted.replace(hour=0, minute=0, second=0, microsecond=0)
+    k = _instance(koord, [{
+        "uid": "u1", "druh": "scena", "scena": "Home Office",
+        "celodenni": True, "okno": ["00:00", "23:59"],
+        "opis": {"prazdno": [], "zavreno": [], "cil": {}},
+        "od": den, "do": den + timedelta(days=1), "rrule": None,
+    }], podentity=(scena,
+                   Podentita(c.PODENTITA_MISTNOST, "Dílna"),
+                   Podentita(c.PODENTITA_MISTNOST, "Ložnice")))
+
+    assert k.sceny()["Home Office"]["cil"] == {"Dílna": 22.0}
+
+    # ložnice: prázdno i zavřená okna, dílna nic z toho
+    assert k.plan_vlastni("prazdno", "Ložnice", 0.0).bezi is True
+    assert k.plan_vlastni("zavreno", "Ložnice", 0.0).bezi is True
+    assert k.plan_vlastni("prazdno", "Dílna", 0.0).bezi is False
+
+    # dílna má cíl, ložnice ne
+    assert k.plan_cil_mistnosti("Dílna") == 22.0
+    assert k.plan_cil_mistnosti("Ložnice") is None
+
+
+def test_smazana_scena_jede_podle_opisu(koord):
+    """Smazaná scéna nesmí shodit dny, které jsou podle ní zadané."""
+    from napohodu import const as c
+
+    ted = _ted(koord)
+    den = ted.replace(hour=0, minute=0, second=0, microsecond=0)
+    k = _instance(koord, [{
+        "uid": "u1", "druh": "scena", "scena": "uz_neexistuje",
+        "celodenni": True, "okno": ["00:00", "23:59"],
+        "opis": {"prazdno": ["Ložnice"], "zavreno": [], "cil":
+                 {"Dílna": 21.0}},
+        "od": den, "do": den + timedelta(days=1), "rrule": None,
+    }], podentity=(Podentita(c.PODENTITA_MISTNOST, "Dílna"),))
+
+    assert k.plan_vlastni("prazdno", "Ložnice", 0.0).bezi is True
+    assert k.plan_cil_mistnosti("Dílna") == 21.0
+
+
+def test_konkretnejsi_cil_prebije_scenu(koord):
+    """Když platí scéna i cíl zadaný té místnosti, vyhraje ten cíl."""
+    from napohodu import const as c
+
+    ted = _ted(koord)
+    den = ted.replace(hour=0, minute=0, second=0, microsecond=0)
+    spolecne = dict(celodenni=True, okno=["00:00", "23:59"],
+                    od=den, do=den + timedelta(days=1), rrule=None)
+    scena = Podentita(
+        c.PODENTITA_SCENA, "Home Office",
+        {c.CONF_NAZEV: "Home Office",
+         c.PREFIX_SCENA_CIL + "dilna": 22.0})
+    k = _instance(koord, [
+        {"uid": "s", "druh": "scena", "scena": "Home Office",
+         "opis": {"prazdno": [], "zavreno": [], "cil": {}}, **spolecne},
+        {"uid": "c", "druh": "cil", "mistnost": "Dílna", "cil": 19.5,
+         "od": ted - timedelta(hours=1), "do": ted + timedelta(hours=1),
+         "rrule": None},
+    ], podentity=(scena, Podentita(c.PODENTITA_MISTNOST, "Dílna")))
+
+    assert k.plan_cil_mistnosti("Dílna") == 19.5
+
+    # bez toho konkrétního cíle platí scéna
+    k._vlastni_plan = k._vlastni_plan[:1]
+    assert k.plan_cil_mistnosti("Dílna") == 22.0

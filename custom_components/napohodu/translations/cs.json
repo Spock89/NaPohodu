@@ -856,6 +856,52 @@
           }
         }
       }
+    },
+    "scena": {
+      "title": "Scéna",
+      "entry_type": "Scéna",
+      "initiate_flow": {
+        "user": "scena",
+        "reconfigure": "Upravit scénu"
+      },
+      "step": {
+        "user": {
+          "title": "Scéna",
+          "description": "Scéna je pojmenovaná sada dopadů na místnosti — třeba **home office**: v pracovně se topí na cíl, ve zbytku bytu ne.\n\nDny, kdy platí, se pak **označí kliknutím v jejím vlastním kalendáři** (`calendar.napohodu_<název>`). Událost nenese nic než odkaz na scénu, takže se nedá pokazit názvem a úprava scény se promítne do všech naplánovaných dní.\n\nCelodenní událost znamená „použij okno dne\". Událost se zadaným časem si ho přebije.\n\nKdyž scénu smažeš, naplánované dny nespadnou: dojedou podle opisu z doby, kdy se zadávaly.",
+          "data": {
+            "nazev": "Název scény",
+            "scena_od": "Okno dne — od",
+            "scena_do": "Okno dne — do",
+            "scena_prazdno": "Místnosti, kde nikdo nebude",
+            "scena_zavreno": "Místnosti se zavřenými okny"
+          },
+          "data_description": {
+            "nazev": "Jak se scéna jmenuje. Pod tímhle jménem vznikne i její kalendář, do kterého se pak označují dny.",
+            "scena_od": "Odkdy scéna platí u celodenní události.",
+            "scena_do": "Dokdy scéna platí u celodenní události.",
+            "scena_prazdno": "Tyhle místnosti se po dobu scény berou za prázdné a utlumí se v nich topení. Okna to nezavírá.",
+            "scena_zavreno": "Tady se po dobu scény drží okna zavřená. Je to povel, ne informace o obsazenosti."
+          }
+        },
+        "reconfigure": {
+          "title": "Scéna",
+          "description": "Scéna je pojmenovaná sada dopadů na místnosti — třeba **home office**: v pracovně se topí na cíl, ve zbytku bytu ne.\n\nDny, kdy platí, se pak **označí kliknutím v jejím vlastním kalendáři** (`calendar.napohodu_<název>`). Událost nenese nic než odkaz na scénu, takže se nedá pokazit názvem a úprava scény se promítne do všech naplánovaných dní.\n\nCelodenní událost znamená „použij okno dne\". Událost se zadaným časem si ho přebije.\n\nKdyž scénu smažeš, naplánované dny nespadnou: dojedou podle opisu z doby, kdy se zadávaly.",
+          "data": {
+            "nazev": "Název scény",
+            "scena_od": "Okno dne — od",
+            "scena_do": "Okno dne — do",
+            "scena_prazdno": "Místnosti, kde nikdo nebude",
+            "scena_zavreno": "Místnosti se zavřenými okny"
+          },
+          "data_description": {
+            "nazev": "Jak se scéna jmenuje. Pod tímhle jménem vznikne i její kalendář, do kterého se pak označují dny.",
+            "scena_od": "Odkdy scéna platí u celodenní události.",
+            "scena_do": "Dokdy scéna platí u celodenní události.",
+            "scena_prazdno": "Tyhle místnosti se po dobu scény berou za prázdné a utlumí se v nich topení. Okna to nezavírá.",
+            "scena_zavreno": "Tady se po dobu scény drží okna zavřená. Je to povel, ne informace o obsazenosti."
+          }
+        }
+      }
     }
   },
   "selector": {

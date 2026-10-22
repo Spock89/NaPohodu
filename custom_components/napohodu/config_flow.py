@@ -10,7 +10,6 @@ být libovolně a dají se kdykoli upravit bez restartu.
 from __future__ import annotations
 
 import logging
-import unicodedata
 from typing import Any
 
 import voluptuous as vol
@@ -154,6 +153,7 @@ class NaPohoduConfigFlow(ConfigFlow, domain=c.DOMAIN):
             c.PODENTITA_ZONA: ZonaSubentryFlow,
             c.PODENTITA_KLIMA: KlimaSubentryFlow,
             c.PODENTITA_SKUPINA: SkupinaSubentryFlow,
+            c.PODENTITA_SCENA: ScenaSubentryFlow,
         }
 
     @staticmethod
@@ -243,13 +243,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
             bloky = {b for b in karty.BLOKY if user_input.get(b, True)}
 
 
-        def klic(nazev: str) -> str:
-            bez = unicodedata.normalize(
-                "NFKD", nazev).encode("ascii", "ignore").decode()
-            return "".join(z if z.isalnum() else "_"
-                           for z in bez.lower()).strip("_")
-
-        mistnosti, oblasti, skupiny = [], [], []
+        mistnosti, oblasti, skupiny, sceny = [], [], [], []
         cidla, zaluzie = {}, {}
         co2_cidla, rh_cidla = {}, {}
         s_okny, s_klidem = set(), set()
@@ -259,7 +253,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
         zony: list[list[str]] = []
         for pod in self.config_entry.subentries.values():
             if pod.subentry_type == c.PODENTITA_MISTNOST:
-                k = klic(pod.title)
+                k = c.klic(pod.title)
                 mistnosti.append(k)
                 nazvy[k] = pod.title
                 if pod.data.get(c.CONF_ZVLHCOVAC):
@@ -312,9 +306,11 @@ class NaPohoduOptionsFlow(OptionsFlow):
                     s_klidem.add(k)
             elif pod.subentry_type == c.PODENTITA_SKUPINA:
                 skupiny.append(pod.title)
+            elif pod.subentry_type == c.PODENTITA_SCENA:
+                sceny.append(pod.title)
             elif pod.subentry_type == c.PODENTITA_ZONA:
-                nazvy[klic(pod.title)] = pod.title
-                oblasti.append(klic(pod.title))
+                nazvy[c.klic(pod.title)] = pod.title
+                oblasti.append(c.klic(pod.title))
                 zony.append(list(pod.data.get(c.CONF_MISTNOSTI) or []))
 
         # Místnost bez okna v zóně, kde nějaké okno je, si o vyvětrání
@@ -322,7 +318,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
         # určuje svým vlastním číslem. Patří jí tedy to šoupátko, i když
         # vlastní okno nemá.
         for cleni in zony:
-            klice = [klic(x) for x in cleni]
+            klice = [c.klic(x) for x in cleni]
             if not any(k in s_okny for k in klice):
                 continue
             for k in klice:
@@ -347,7 +343,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
                 venku=g.get(c.CONF_T_VENKU),
                 co2_cidla=co2_cidla, rh_cidla=rh_cidla,
                 s_okny=s_okny, s_klidem=s_klidem, podoba=podoba,
-                skupiny=skupiny)
+                skupiny=skupiny, sceny=sceny)
         except Exception as e:  # pragma: no cover
             # Chyba v generování nesmí položit celý dialog nastavení.
             _LOGGER.exception("NaPohodu: kartu se nepodařilo poskládat")
@@ -1123,6 +1119,63 @@ class SkupinaSubentryFlow(ConfigSubentryFlow):
             step_id="reconfigure",
             data_schema=self.add_suggested_values_to_schema(
                 _schema_skupina(self._mistnosti()), pod.data))
+
+
+def _schema_scena(mistnosti: list[dict]) -> vol.Schema:
+    """Scéna: pojmenovaná sada dopadů na místnosti.
+
+    Dny se pak jen označí v jejím vlastním kalendáři. Cíl se zadává
+    každé místnosti zvlášť, protože jedno číslo pro všechny by u home
+    office znamenalo vytopit i pokoje, kde nikdo nebude.
+
+    Okno dne platí pro celodenní události. Událost se zadaným časem
+    si ho přebije, když má člověk jednou kratší den.
+    """
+    jmena = [{"value": m["label"], "label": m["label"]} for m in mistnosti]
+    pole = {
+        vol.Required(c.CONF_NAZEV): selector.TextSelector(),
+        vol.Optional(c.CONF_SCENA_OD, default="07:00"):
+            selector.TimeSelector(),
+        vol.Optional(c.CONF_SCENA_DO, default="18:00"):
+            selector.TimeSelector(),
+        vol.Optional(c.CONF_SCENA_PRAZDNO): _vyber(jmena),
+        vol.Optional(c.CONF_SCENA_ZAVRENO): _vyber(jmena),
+    }
+    for m in mistnosti:
+        pole[vol.Optional(c.PREFIX_SCENA_CIL + c.klic(m["label"]))] = _cislo(
+            10, 28, 0.5, "°C")
+    return vol.Schema(pole)
+
+
+class ScenaSubentryFlow(ConfigSubentryFlow):
+    """Přidání a úprava scény."""
+
+    def _mistnosti(self) -> list[dict]:
+        try:
+            entry = self._get_entry()
+        except Exception:  # pragma: no cover
+            return []
+        return [{"value": p.subentry_id, "label": p.title}
+                for p in entry.subentries.values()
+                if p.subentry_type == c.PODENTITA_MISTNOST]
+
+    async def async_step_user(self, user_input=None) -> SubentryFlowResult:
+        if user_input is not None:
+            return self.async_create_entry(
+                title=user_input[c.CONF_NAZEV], data=user_input)
+        return self.async_show_form(
+            step_id="user", data_schema=_schema_scena(self._mistnosti()))
+
+    async def async_step_reconfigure(self, user_input=None) -> SubentryFlowResult:
+        pod = self._get_reconfigure_subentry()
+        if user_input is not None:
+            return self.async_update_and_abort(
+                self._get_entry(), pod, data=user_input,
+                title=user_input[c.CONF_NAZEV])
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=self.add_suggested_values_to_schema(
+                _schema_scena(self._mistnosti()), pod.data))
 
 
 class KlimaSubentryFlow(ConfigSubentryFlow):

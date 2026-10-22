@@ -9,7 +9,7 @@ akce `calendar.create_event` neumí.
 import asyncio
 import pathlib
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -107,3 +107,36 @@ def test_mazani_bere_celou_radu(kalendar):
     asyncio.run(e.async_delete_event("a", recurrence_id="a-2",
                                      recurrence_range="THISANDFUTURE"))
     assert k.smazane == ["a"]
+
+
+# ------------------------------------------------------- kalendář scény
+
+def test_kalendar_sceny_cte_jen_svoje(kalendar):
+    """Dva kalendáře scén si nesmějí plést dny."""
+    k = kalendar.KalendarSceny.__new__(kalendar.KalendarSceny)
+    k._pod_id = "id_ho"
+
+    class Koord:
+        def sceny(self):
+            return {"id_ho": {"nazev": "Home Office",
+                              "okno": ["07:00", "18:00"]}}
+
+        def plan_zaznamy(self):
+            den = datetime(2026, 10, 26, tzinfo=timezone.utc)
+            spolecne = dict(celodenni=True, okno=["07:00", "18:00"],
+                            od=den, do=den + timedelta(days=1),
+                            rrule=None)
+            return [{"uid": "a", "druh": "scena", "scena": "id_ho",
+                     **spolecne},
+                    {"uid": "b", "druh": "scena", "scena": "id_jine",
+                     **spolecne},
+                    {"uid": "c", "druh": "prazdno", "mistnost": "Dílna",
+                     **spolecne}]
+
+    k.coordinator = Koord()
+    udalosti = k._udalosti(datetime(2026, 10, 20, tzinfo=timezone.utc),
+                           datetime(2026, 11, 5, tzinfo=timezone.utc))
+    assert [u.uid for u in udalosti] == ["a"]
+    assert udalosti[0].summary == "Home Office"
+    assert udalosti[0].start.hour == 7
+    assert udalosti[0].end.hour == 18

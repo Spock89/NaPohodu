@@ -787,6 +787,39 @@ jinak by „v prvním patře zavřená okna" nešlo použít, dokud jsi doma,
 a přesně na to to je. **Ruka na okně vyhrává** po celou nastavenou
 dobu ručního zásahu: silnější důkaz, že tam někdo je, neexistuje.
 
+#### Scény
+
+Scéna je **pojmenovaná sada dopadů na místnosti**. Typický případ je
+*home office*: v pracovně se topí na cíl, ve zbytku bytu se tlumí.
+Zakládá se v nastavení jako podentita *Scéna* — název, okno dne
+a pro každou místnost buď cílová teplota, nebo „nikdo tu nebude",
+nebo „zavřená okna". Tedy nic, co by plán neuměl už dřív; scéna to
+jen svazuje pod jedno jméno.
+
+Hlavní je, jak se zadávají dny. Každá scéna má **vlastní kalendář**
+(`calendar.napohodu_<název>`) a den se v něm jen **označí kliknutím**.
+Událost nenese nic než odkaz na scénu, takže na jejím názvu nezáleží
+a nedá se pokazit překlepem — a to je přesně ta jediná křehká věc, na
+kterou se při ručním zadávání do společného kalendáře dá narazit.
+Nahodilé dny roztroušené po měsíci se tím zadávají po jednom kliknutí.
+
+**Celodenní událost** znamená „použij okno dne té scény". Platit celou
+noc by u home office nedávalo smysl a zadávat pokaždé čas by
+z jednoho kliknutí udělalo formulář. Označíš-li takhle tři dny v kuse,
+vznikne okno pro každý z nich, ne jedno přes obě noci mezi nimi.
+Událost se zadaným časem si okno přebije. Opakování v panelu funguje
+stejně jako u plánu.
+
+Scéna se čte **živá**, takže když ji upravíš, změna platí pro všechny
+dny, které jsou podle ní naplánované — proto se zadává jednou. Když ji
+smažeš, naplánované dny nespadnou: dojedou podle opisu z doby zadání
+a v kartě i ve zprávě se objeví, že scéna chybí. Totéž pravidlo jako
+u skupin.
+
+Kdyby si dvě scény nebo scéna a jednotlivý povel odporovaly, platí to
+konkrétnější: povel zadaný přímo místnosti přebije scénu. Teploty se
+nikdy nesčítají.
+
 #### Skupiny místností
 
 Skupina (*1. patro*, *podkroví*) slouží **jen k plánování**: místo

@@ -27,7 +27,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import planovac as pz
-from .const import DOMAIN
+from .const import DOMAIN, PODENTITA_SCENA
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,6 +41,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                             pridat: AddEntitiesCallback) -> None:
     k = hass.data[DOMAIN][entry.entry_id]
     pridat([KalendarPlanu(k, entry)])
+    # Každá scéna má vlastní kalendář. Den se v něm označí kliknutím
+    # a nic se nepojmenovává — význam nese kalendář sám, takže
+    # odpadá jediná křehká věc ručního zadávání, totiž trefit se
+    # do názvu události.
+    for pod in entry.subentries.values():
+        if pod.subentry_type == PODENTITA_SCENA:
+            pridat([KalendarSceny(k, entry, pod)],
+                   config_subentry_id=pod.subentry_id)
 
 
 class KalendarPlanu(CoordinatorEntity, CalendarEntity):
@@ -124,5 +132,106 @@ class KalendarPlanu(CoordinatorEntity, CalendarEntity):
         výjimek a to je na plán obsazenosti zbytečná složitost —
         jednodušší je řadu smazat a založit znovu.
         """
+        await self.coordinator.plan_smaz(uid)
+        self.async_update_event_listeners()
+
+
+class KalendarSceny(CoordinatorEntity, CalendarEntity):
+    """Dny, kdy platí jedna scéna.
+
+    Událost nenese nic než odkaz na scénu. Co scéna dělá, se čte z ní
+    samotné, takže úprava scény se promítne do všech naplánovaných
+    dní — přesně proto se zadává jednou a den se jen označí.
+
+    Celodenní událost znamená „použij okno dne té scény". Platit celou
+    noc by u home office nedávalo smysl a zadávat pokaždé čas by
+    z jednoho kliknutí udělalo formulář.
+    """
+
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:calendar-star"
+    _attr_supported_features = (CalendarEntityFeature.CREATE_EVENT
+                                | CalendarEntityFeature.DELETE_EVENT)
+
+    def __init__(self, k, entry: ConfigEntry, pod) -> None:
+        super().__init__(k)
+        self._pod_id = pod.subentry_id
+        # Jméno entity nese zařízení, aby z toho vzniklo
+        # `calendar.napohodu_<scéna>` — stejně jako u všech ostatních
+        # entit scény, místnosti i zóny.
+        self._attr_name = None
+        self._attr_unique_id = f"{entry.entry_id}_{pod.subentry_id}_scena"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, pod.subentry_id)},
+            name=f"NaPohodu {pod.title}",
+            manufacturer="NaPohodu", model="Scéna")
+
+    def _definice(self) -> dict:
+        return self.coordinator.sceny().get(self._pod_id) or {}
+
+    def _moje(self) -> list[dict]:
+        return [z for z in self.coordinator.plan_zaznamy()
+                if z.get("druh") == "scena"
+                and z.get("scena") == self._pod_id]
+
+    @property
+    def event(self) -> CalendarEvent | None:
+        ted = dt_util.now()
+        vse = self._udalosti(ted - timedelta(days=1), ted + timedelta(days=30))
+        bezici = [u for u in vse if u.start <= ted < u.end]
+        if bezici:
+            return bezici[0]
+        budouci = [u for u in vse if u.start > ted]
+        return min(budouci, key=lambda u: u.start) if budouci else None
+
+    async def async_get_events(self, hass: HomeAssistant, start: datetime,
+                               end: datetime) -> list[CalendarEvent]:
+        return self._udalosti(start, end)
+
+    def _udalosti(self, od: datetime, do: datetime) -> list[CalendarEvent]:
+        nazev = self._definice().get("nazev") or "scéna"
+        out = []
+        for z in self._moje():
+            for a, b in pz.rozbal(z, od, do, rrulestr):
+                out.append(CalendarEvent(
+                    start=a, end=b, uid=z["uid"], summary=nazev,
+                    description=z.get("popis") or ""))
+        return sorted(out, key=lambda u: u.start)
+
+    async def async_create_event(self, **kw) -> None:
+        """Den označený v kalendáři scény.
+
+        Celodenní událost pozná podle toho, že panel pošle datum bez
+        času. Okno dne se k záznamu uloží opsané, ne odkazem: rozbalení
+        pak nepotřebuje znát scénu a funguje i po jejím smazání.
+        """
+        zacatek = kw.get("dtstart") or kw.get("start")
+        konec = kw.get("dtend") or kw.get("end")
+        celodenni = not isinstance(zacatek, datetime)
+        if celodenni:
+            zacatek = dt_util.start_of_local_day(zacatek)
+            konec = dt_util.start_of_local_day(konec)
+        d = self._definice()
+        await self.coordinator.plan_zapis({
+            "uid": uuid.uuid4().hex,
+            "druh": "scena",
+            "scena": self._pod_id,
+            "nazev_sceny": d.get("nazev"),
+            # Opis pro případ, že scénu smažeš: plán se tím nerozsype,
+            # jen zamrzne v podobě, v jaké byl zadán. Stejné pravidlo
+            # jako u skupin.
+            "opis": {"prazdno": d.get("prazdno") or [],
+                     "zavreno": d.get("zavreno") or [],
+                     "cil": d.get("cil") or {}},
+            "celodenni": celodenni,
+            "okno": d.get("okno") or ["07:00", "18:00"],
+            "od": zacatek, "do": konec,
+            "rrule": kw.get("rrule"),
+            "popis": kw.get("description") or "",
+        })
+        self.async_update_event_listeners()
+
+    async def async_delete_event(self, uid: str, recurrence_id=None,
+                                 recurrence_range=None) -> None:
         await self.coordinator.plan_smaz(uid)
         self.async_update_event_listeners()

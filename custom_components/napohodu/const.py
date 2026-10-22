@@ -1,5 +1,20 @@
 """Konstanty integrace NaPohodu."""
 
+import unicodedata
+
+
+def klic(nazev: str) -> str:
+    """Jméno na identifikátor: bez diakritiky, malé, podtržítka.
+
+    Jedno místo pro celou integraci. Z téhle funkce vznikají jména
+    entit i klíče ve scénách, takže dvě skoro stejné kopie by znamenaly
+    dvě sady klíčů, které se jednou rozejdou.
+    """
+    bez = unicodedata.normalize(
+        "NFKD", nazev).encode("ascii", "ignore").decode()
+    return "".join(z if z.isalnum() else "_" for z in bez.lower()).strip("_")
+
+
 DOMAIN = "napohodu"
 
 PODENTITA_MISTNOST = "mistnost"
@@ -9,6 +24,10 @@ PODENTITA_KLIMA = "klima"
 # a do rozhodování nemluví, slouží jen k tomu, aby se jedna událost
 # dala zadat celému patru místo každé místnosti zvlášť.
 PODENTITA_SKUPINA = "skupina"
+# Scéna: pojmenovaná sada dopadů na místnosti, kterou pak stačí
+# naklikat do jejího vlastního kalendáře. Význam nese kalendář,
+# ne název události, takže se nedá pokazit překlepem.
+PODENTITA_SCENA = "scena"
 
 # --- globální nastavení ---
 CONF_T_VENKU = "t_venku"
@@ -233,6 +252,17 @@ CONF_SKUPINA_MISTNOSTI = "skupina_mistnosti"
 # Smí obsazenost jen ubrat: co vidí místnost sama, skupina nepřebije.
 CONF_SKUPINA_PRITOMNOST = "skupina_pritomnost"
 CONF_SKUPINA_OBRACENE = "skupina_obracene"
+
+# --- scéna ---
+# Výchozí okno dne. Celodenní událost v kalendáři scény znamená
+# „použij tohle okno" — běžný home office je pak jedno kliknutí.
+CONF_SCENA_OD = "scena_od"
+CONF_SCENA_DO = "scena_do"
+CONF_SCENA_PRAZDNO = "scena_prazdno"
+CONF_SCENA_ZAVRENO = "scena_zavreno"
+# Cílová teplota se zadává každé místnosti zvlášť, klíč je
+# „scena_cil_" plus klíč místnosti.
+PREFIX_SCENA_CIL = "scena_cil_"
 CONF_KLIMA_CHLADIT_OD = "chladit_od"
 CONF_KLIMA_TOPIT_OD = "topit_od"
 CONF_KLIMA_UTLUM_CHLAZENI = "utlum_chlazeni"

@@ -856,6 +856,52 @@
           }
         }
       }
+    },
+    "scena": {
+      "title": "Scene",
+      "entry_type": "Scene",
+      "initiate_flow": {
+        "user": "scene",
+        "reconfigure": "Edit scene"
+      },
+      "step": {
+        "user": {
+          "title": "Scene",
+          "description": "A scene is a named set of effects on rooms — for example **home office**: the study is heated to target, the rest of the flat is not.\n\nThe days it applies are then **marked by clicking in its own calendar**. An event carries nothing but a reference to the scene, so it cannot be broken by a typo, and editing the scene applies to every planned day.\n\nAn all-day event means \"use the day window\". An event with a time overrides it.",
+          "data": {
+            "nazev": "Scene name",
+            "scena_od": "Day window — from",
+            "scena_do": "Day window — to",
+            "scena_prazdno": "Rooms where nobody will be",
+            "scena_zavreno": "Rooms with windows kept closed"
+          },
+          "data_description": {
+            "nazev": "The scene's name. Its calendar is created under this name.",
+            "scena_od": "When the scene starts for an all-day event.",
+            "scena_do": "When the scene ends for an all-day event.",
+            "scena_prazdno": "These rooms count as empty while the scene runs and their heating is set back. It does not close windows.",
+            "scena_zavreno": "Windows are kept closed here while the scene runs."
+          }
+        },
+        "reconfigure": {
+          "title": "Scene",
+          "description": "A scene is a named set of effects on rooms — for example **home office**: the study is heated to target, the rest of the flat is not.\n\nThe days it applies are then **marked by clicking in its own calendar**. An event carries nothing but a reference to the scene, so it cannot be broken by a typo, and editing the scene applies to every planned day.\n\nAn all-day event means \"use the day window\". An event with a time overrides it.",
+          "data": {
+            "nazev": "Scene name",
+            "scena_od": "Day window — from",
+            "scena_do": "Day window — to",
+            "scena_prazdno": "Rooms where nobody will be",
+            "scena_zavreno": "Rooms with windows kept closed"
+          },
+          "data_description": {
+            "nazev": "The scene's name. Its calendar is created under this name.",
+            "scena_od": "When the scene starts for an all-day event.",
+            "scena_do": "When the scene ends for an all-day event.",
+            "scena_prazdno": "These rooms count as empty while the scene runs and their heating is set back. It does not close windows.",
+            "scena_zavreno": "Windows are kept closed here while the scene runs."
+          }
+        }
+      }
     }
   },
   "selector": {

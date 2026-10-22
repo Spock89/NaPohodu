@@ -5,7 +5,11 @@ d = pathlib.Path(__file__).parent / "custom_components" / "napohodu"
 chyby = []
 
 # 1) konstanty, na které se někdo odkazuje
-konst = dict(re.findall(r'^(\w+) = "?([\w.]*)"?', (d / "const.py").read_text(), re.M))
+_const_text = (d / "const.py").read_text()
+konst = dict(re.findall(r'^(\w+) = "?([\w.]*)"?', _const_text, re.M))
+# V const.py žije i sdílená funkce `klic`. Bez tohohle řádku by každý
+# její import vypadal jako odkaz na neexistující konstantu.
+konst.update({x: "" for x in re.findall(r"^def (\w+)\(", _const_text, re.M)})
 for p in d.glob("*.py"):
     if p.name == "const.py":
         continue
