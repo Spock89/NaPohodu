@@ -1563,8 +1563,12 @@ def test_posuvniky_se_opravdu_ctou(nahradni_ha):
 
 
 def test_zadost_bez_okna_konci_na_cili(nahradni_ha):
-    """Hlavice v té místnosti míří na cíl, takže přetah pod něj by
-    znamenal topit proti otevřenému oknu vedle."""
+    """Hlavice v té místnosti míří na cíl, takže přetah za něj by
+    znamenal topit proti otevřenému oknu vedle.
+
+    Protože to nejde nastavit, musí to být vidět v kartě — hlídá to
+    test_pravidlo_bez_okna_je_videt v test_cyklus.py.
+    """
     import pathlib
     ko = pathlib.Path(
         "custom_components/napohodu/coordinator.py").read_text()

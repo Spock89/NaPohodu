@@ -219,12 +219,14 @@ ZLOMY_LADENI = {
 # posunem. Generovat je stejně znamená stránku plnou nastavení, která
 # nic neovlivní — a hledá se v tom pak to, co ovlivní.
 POTREBUJE = {
-    # Při jaké odchylce se začne větrat platí i pro místnost bez okna,
-    # pokud je v zóně s místností, která okno má: požádá o vyvětrání
-    # souseda a hranici si určuje tímhle svým číslem. Bez té druhé
-    # značky se šoupátko v kartě nevyrobilo, přestože se podle něj
-    # rozhoduje. Zavírací hrana se u žádosti nepoužívá — ta končí
-    # na cíli, ne na protější hraně pásma.
+    # Při jaké odchylce se začne větrat platí i pro místnost bez
+    # okna, pokud je v zóně s místností, která okno má: požádá
+    # o vyvětrání souseda a tímhle svým číslem si řekne kdy.
+    #
+    # Zavírací hrana jí ale nepatří: žádost dojede na cíl, ne za něj,
+    # aby si pak netopila proti otevřenému oknu vedle. Šoupátko by
+    # tedy nic nedělalo. Že to tak je, říká místnosti karta mezi
+    # pravidly, která nejdou nastavit — jinak se na to zapomene.
     "ve_dne_otevrit_pri_odchylce_od_cile_o": ("okno", "vetrani_zonou"),
     "ve_dne_zavrit_az_za_cilem_o": "okno",
     "v_noci_otevrit_pri_odchylce_od_cile_o": ("okno", "vetrani_zonou"),
@@ -446,8 +448,12 @@ def _budiky_mistnosti(prah: dict | None, existuje, cil: str,
     Ručička, která v místnosti nemá čidlo, se nevyrobí — řada se jen
     zúží.
     """
-    dolni = float(prah["mez_dolni"]) if prah else 18.0
-    horni = float(prah["mez_horni"]) if prah else 27.0
+    # Pojistky zná jen místnost, která okno ovládá. Jinde se ručička
+    # cíle nakreslí bez barevných pásem — vybarvit ji podle meze,
+    # která v té místnosti nic nedělá, by bylo horší než nevybarvit.
+    s_mezemi = bool(prah) and prah.get("mez_dolni") is not None
+    dolni = float(prah["mez_dolni"]) if s_mezemi else 18.0
+    horni = float(prah["mez_horni"]) if s_mezemi else 27.0
     pasmo = (max(float(prah["pasmo_den"]), float(prah["pasmo_noc"]))
              if prah else 2.5)
     uzsi = (min(float(prah["pasmo_den"]), float(prah["pasmo_noc"]))
@@ -462,7 +468,7 @@ def _budiky_mistnosti(prah: dict | None, existuje, cil: str,
         karty += _budik(cil, "Cíl", math.floor(dolni - 2),
                         math.ceil(horni + 2),
                         [(math.floor(dolni - 2), POD), (dolni, V_PASMU),
-                         (horni, KRAJ)] if prah else [])
+                         (horni, KRAJ)] if s_mezemi else [])
     if odchylka and existuje(odchylka):
         # Souměrně kolem cíle. Červená začíná na dvojnásobku pásma:
         # pojistky jsou v absolutních stupních, takže jejich odstup od

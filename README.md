@@ -352,13 +352,23 @@ o tom, co změnu spustí, ani diagnostiku větrání — a nemá ani přepínač
 ovládání oken a tlačítko na jejich srovnání. Dřív tam ty řádky byly
 a každý jinými slovy psal totéž, že se tu okno neovládá.
 
+Žádat o vyvětrání má ale smysl jen tam, kde je koho: místnost, která
+je v oblasti sama nebo s ní nikdo okno neovládá, žádnou žádost
+nezakládá.
+
 Jedna výjimka ale platí obráceně: místnost **bez okna v zóně, kde
 nějaké okno je**, si o vyvětrání řekne sousedovi, a hranici, od jaké
 odchylky od cíle, si určuje svým vlastním číslem. Šoupátka *otevřít
 při odchylce od cíle* proto na kartě má, ve dne i v noci, přestože
-vlastní okno neovládá. Zavírací hrana jí naopak nepatří — cizí žádost
-končí na cíli, ne na protější hraně pásma, aby se vedle netopilo
-proti otevřenému oknu.
+vlastní okno neovládá.
+
+Zavírací hrana jí naopak nepatří: **cizí žádost dojede na cíl, ne za
+něj.** Hlavice v té místnosti míří na cíl, takže přetah za něj by
+znamenal topit proti otevřenému oknu vedle. Šoupátko *zavřít až za
+cílem* by tedy nic nedělalo a negeneruje se — a protože se tohle
+nenastavuje, stojí to v kartě té místnosti mezi pravidly, která
+nejdou nastavit. Nenastavitelné chování, které není nikde vidět, se
+zapomene a hledá se znovu.
 
 ### Teplotní pásmo a pojistky
 

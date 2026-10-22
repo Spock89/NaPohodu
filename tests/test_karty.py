@@ -886,8 +886,11 @@ def test_odchylka_pro_vetrani_zonou():
     for klic in ("ve_dne_otevrit_pri_odchylce_od_cile_o",
                  "v_noci_otevrit_pri_odchylce_od_cile_o"):
         assert f"number.napohodu_dilna_{klic}" in s_zonou, klic
-    # zavírací hrana ne: žádost končí na cíli, ne na protější hraně
-    assert "number.napohodu_dilna_ve_dne_zavrit_az_za_cilem_o" not in s_zonou
+    # zavírací hrana ne: žádost dojede na cíl, ne za něj, takže by
+    # to šoupátko nic nedělalo. Místo něj to říká pevné pravidlo.
+    for klic in ("ve_dne_zavrit_az_za_cilem_o",
+                 "v_noci_zavrit_az_za_cilem_o"):
+        assert f"number.napohodu_dilna_{klic}" not in s_zonou, klic
 
 
 def test_scena_ma_vlastni_kalendar_v_karte():

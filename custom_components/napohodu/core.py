@@ -1519,19 +1519,32 @@ def pevna_pravidla_bytu() -> list[str]:
 
 
 def pevna_pravidla(spanek: bool, noc: bool, co2_noc: float,
-                   co2_krize: float, co2_zavrit: float) -> list[str]:
+                   co2_krize: float, co2_zavrit: float,
+                   bez_okna_v_zone: bool = False) -> list[str]:
     """Pravidla bez nastavení, která závisí na stavu místnosti."""
+    out = []
+    if bez_okna_v_zone:
+        # Tohle je přesně ten druh chování, na které se zapomene:
+        # šoupátko „zavřít až za cílem" se téhle místnosti
+        # negeneruje, protože by nic nedělalo — a bez téhle věty není
+        # jak přijít na to proč.
+        out.append(
+            "Okno tady neovládám, o vyvětrání žádám sousedy v oblasti. "
+            "Začne se při odchylce od cíle, kterou si nastavíš, ale "
+            "**dojede se na cíl, ne za něj**: hlavice tady míří na cíl, "
+            "takže přetah za něj by znamenal topit proti otevřenému "
+            "oknu vedle. Proto tu „zavřít až za cílem“ není.")
     if spanek:
-        return [
+        return out + [
             f"Ve spánku rozhoduje jen CO2: otevře nad {co2_krize:.0f}, "
             f"zavře pod {co2_zavrit:.0f} ppm. Teplota okno neotvírá ani "
             f"nezavírá, drží ji jen pojistky.",
         ]
     if noc:
-        return [f"V noci otevře CO2 nad {co2_noc:.0f} ppm a zavře "
-                f"vyvětrání pod {co2_zavrit:.0f} ppm; teplotu řeší "
-                f"noční pásmo a pojistky."]
-    return []
+        return out + [f"V noci otevře CO2 nad {co2_noc:.0f} ppm a zavře "
+                      f"vyvětrání pod {co2_zavrit:.0f} ppm; teplotu řeší "
+                      f"noční pásmo a pojistky."]
+    return out
 
 
 def proc_neotevira(v: "Vstup", n: "Nastaveni", t_in: float,

@@ -323,3 +323,138 @@ def test_bez_okna_zadna_rada_k_pojistkam(ha):
 
     assert k.mistnosti["id_Dílna"].atributy["konflikt_mezi"] is None
     assert k.mistnosti["id_Obývák"].atributy["konflikt_mezi"]
+
+
+def test_pravidlo_bez_okna_je_videt(ha):
+    """Nenastavitelné chování musí být někde napsané.
+
+    Místnost bez okna žádá o vyvětrání sousedy a dojede na cíl, ne za
+    něj — proto se jí „zavřít až za cílem" negeneruje. Bez téhle věty
+    v kartě není jak přijít na to proč, a hledá se to znovu a znovu.
+    """
+    ko = ha
+    from napohodu import const as c
+
+    k, _ = _koordinator(ko, c)
+    asyncio.run(k.async_nacti())
+    asyncio.run(k._async_update_data())
+
+    pravidla = k.mistnosti["id_Dílna"].atributy["pevna_pravidla"]
+    assert any("žádám sousedy" in x for x in pravidla), pravidla
+    assert any("dojede se na cíl" in x for x in pravidla), pravidla
+
+    # místnosti s vlastním oknem se to neplete
+    assert not any("žádám sousedy" in x for x in
+                   k.mistnosti["id_Obývák"].atributy["pevna_pravidla"])
+
+
+def test_zadost_bez_okna_konci_na_cili(ha):
+    """A opravdu na cíli skončí, ne o kus dál."""
+    ko = ha
+    from napohodu import const as c
+
+    stavy = _stavy()
+    stavy["sensor.venku"] = Stav("26.0", {"unit_of_measurement": "°C"})
+    stavy["sensor.t_obyvak"] = Stav("22.0", {"unit_of_measurement": "°C"})
+    stavy["sensor.t_dilna"] = Stav("17.0", {"unit_of_measurement": "°C"})
+    k, _ = _koordinator(ko, c, _instalace(c), stavy)
+    k.hodnoty[("id_Dílna", c.CONF_HYST_DEN_ZAVRIT)] = 2.0
+    asyncio.run(k.async_nacti())
+    asyncio.run(k._async_update_data())
+    dilna = k.mistnosti["id_Dílna"]
+    assert dilna.atributy["zadost_sousedum"] == "ohrev"
+
+    # těsně nad cílem už žádost končí, i když je pásmo nastavené široké
+    stavy["sensor.t_dilna"] = Stav(f"{dilna.cil + 0.2:.1f}",
+                                   {"unit_of_measurement": "°C"})
+    k.hass.states._h.update(stavy)
+    asyncio.run(k._async_update_data())
+    assert k.mistnosti["id_Dílna"].atributy.get("zadost_sousedum") is None
+
+
+def test_nocni_pasmo_rozhoduje_o_nocnim_chlazeni(ha):
+    """V noci se kvůli teplotě otevírá jen pro chlazení — a rozhoduje
+    o tom noční pásmo, ne denní.
+
+    Zkouší se to na samotné místnosti s oknem. Když je horko i vedle,
+    otevře okno její žádost a vlastní pásmo se ke slovu nedostane —
+    na to se dá snadno naletět a prohlásit nastavení za zbytečné.
+    """
+    ko = ha
+    from napohodu import const as c
+
+    puvodni = ko.dt_util.now
+    ko.dt_util.now = lambda: puvodni().replace(hour=2, minute=0)
+    try:
+        vysledky = {}
+        for pasmo in (0.0, 8.0):
+            stavy = _stavy()
+            stavy["sensor.t_obyvak"] = Stav(
+                "31.0", {"unit_of_measurement": "°C"})
+            stavy["sensor.venku"] = Stav(
+                "20.0", {"unit_of_measurement": "°C"})
+            k, hass = _koordinator(ko, c, _instalace(c), stavy)
+            k.hodnoty[("id_Obývák", "ovladat")] = 1.0
+            k.hodnoty[("id_Obývák", c.CONF_HYST_NOC_OTEVRIT)] = pasmo
+            asyncio.run(k.async_nacti())
+            asyncio.run(k._async_update_data())
+            vysledky[pasmo] = [x for x in hass.services.volano
+                               if x[0] == "cover"]
+    finally:
+        ko.dt_util.now = puvodni
+
+    # úzké pásmo otevře, široké ne
+    assert vysledky[0.0], "s nulovým nočním pásmem se mělo otevřít"
+    assert not vysledky[8.0], "s osmistupňovým pásmem se otevřít nemělo"
+
+
+def _byt_jako_doopravdy(c):
+    """Obývák bez ovládaného okna (jen kontakt) v zóně s kuchyní,
+    dílna úplně mimo zónu."""
+    obyvak = Podentita(c.PODENTITA_MISTNOST, "Obývák", {
+        c.CONF_TEPLOTY: ["sensor.t_obyvak"], c.CONF_CO2: ["sensor.co2"],
+        c.CONF_KONTAKT_M: ["binary_sensor.kontakt"],
+        c.CONF_CLIMATE: "climate.hlavice"})
+    kuchyne = Podentita(c.PODENTITA_MISTNOST, "Kuchyně", {
+        c.CONF_OKNA: ["cover.kuchyne"],
+        c.CONF_TEPLOTY: ["sensor.t_kuchyne"]})
+    dilna = Podentita(c.PODENTITA_MISTNOST, "Dílna",
+                      {c.CONF_TEPLOTY: ["sensor.t_dilna"]})
+    zona = Podentita(c.PODENTITA_ZONA, "Kuchyň a obývák",
+                     {c.CONF_MISTNOSTI: [obyvak.subentry_id,
+                                         kuchyne.subentry_id]})
+    return [obyvak, kuchyne, dilna, zona]
+
+
+def test_nezada_tam_kde_neni_koho_prosit(ha):
+    """Místnost mimo zónu nemá koho požádat o vyvětrání.
+
+    Zapisovala si žádost i tak a v kartě pak stálo „žádám sousedy
+    o ohřev", přestože žádní sousedé s oknem neexistují.
+    """
+    ko = ha
+    from napohodu import const as c
+
+    stavy = _stavy()
+    stavy["sensor.t_kuchyne"] = Stav("22.0", {"unit_of_measurement": "°C"})
+    stavy["sensor.t_obyvak"] = Stav("17.0", {"unit_of_measurement": "°C"})
+    stavy["sensor.t_dilna"] = Stav("17.0", {"unit_of_measurement": "°C"})
+    stavy["sensor.venku"] = Stav("24.0", {"unit_of_measurement": "°C"})
+    stavy["cover.kuchyne"] = Stav("closed", {"current_position": 0})
+    stavy["binary_sensor.kontakt"] = Stav("off")
+
+    k, _ = _koordinator(ko, c, _byt_jako_doopravdy(c), stavy)
+    asyncio.run(k.async_nacti())
+    asyncio.run(k._async_update_data())
+
+    # obývák v zóně s kuchyní požádá
+    obyvak = k.mistnosti["id_Obývák"]
+    assert obyvak.atributy["zadost_sousedum"] == "ohrev"
+    assert "žádám sousedy" in obyvak.rozhodnuti.duvod
+
+    # dílna mimo zónu nemá koho, takže mlčí
+    dilna = k.mistnosti["id_Dílna"]
+    assert dilna.atributy.get("zadost_sousedum") is None
+    assert dilna.rozhodnuti.duvod == "okno tady neovládáme"
+    assert not any("žádám sousedy" in x for x in
+                   (dilna.atributy.get("pevna_pravidla") or []))

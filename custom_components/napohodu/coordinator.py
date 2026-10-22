@@ -774,10 +774,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             pod_id, CONF_HYST_NOC_OTEVRIT if noc else CONF_HYST_DEN_OTEVRIT,
             float(d.get(CONF_HYST_NOC_OTEVRIT if noc
                         else CONF_HYST_DEN_OTEVRIT, 2.5)))
-
-        # Končí se na cíli, ne na protější hraně pásma. Hlavice v téhle
-        # místnosti míří na cíl, takže přetah pod něj by znamenal topit
-        # proti otevřenému oknu vedle.
+        # Žádost končí na cíli, ne na protější hraně pásma — proto
+        # tahle místnost nemá „zavřít až za cílem" a to šoupátko se jí
+        # negeneruje. Hlavice v ní míří na cíl, takže přetah pod něj
+        # by znamenal topit proti otevřenému oknu vedle. Pravidlo
+        # nejde nastavit, a proto je vypsané v kartě mezi pevnými —
+        # nenastavitelné chování, které není nikde vidět, se zapomene.
         bezi = self._cizi_zadost.get(pod_id, "")
         if bezi == "chlazeni" and t_max > m.cil:
             return "chlazeni"
@@ -1179,7 +1181,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # žádost předá sousedům s oknem.
             o["cizi_chlazeni"] = o["cizi_ohrev"] = False
             o["cizi_za"] = []
-            for x in o["cleni"]:
+            # Žádat má smysl jen tam, kde je komu. Místnost, která je
+            # v oblasti sama nebo s ní nikdo okno neovládá, si žádost
+            # zapisovala taky — a v kartě pak stálo „žádám sousedy
+            # o ohřev", přestože žádní sousedé s oknem neexistují.
+            for x in (o["cleni"] if s_okny else []):
                 # Vyvětrat si sama neumí ani místnost, která okno má,
                 # ale má vypnutý přepínač Ovládat okno — dřív se dívalo
                 # jen na seznam oken a taková místnost o nic nepožádala.
@@ -1199,6 +1205,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 if jak:
                     o[f"cizi_{jak}"] = True
                     o["cizi_za"].append(x.title)
+            if not s_okny:
+                # Ať po změně nastavení nezůstane viset stará žádost.
+                for x in o["cleni"]:
+                    self._cizi_zadost.pop(x.subentry_id, None)
 
             # Drahé je větrání tam, kde se otevírá — místnost bez okna
             # k tomu nemá co říct. Bez oken se bere celá oblast.
@@ -1942,7 +1952,19 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if "nouzov" in (r.duvod or ""):
             sh["nouzove"] += 1
 
-        m.rozhodnuti = r
+        # Rozhodnutí o okně v místnosti, kde se okno neovládá, není
+        # pravda o ničem: nikam se nepošle a mluví o pojistkách, které
+        # se jí ani negenerují. Ve stavu entity proto stojí to, co se
+        # s ní doopravdy děje — žádost sousedům, nebo nic.
+        if okna and ovladat:
+            m.rozhodnuti = r
+        else:
+            zadost = self._cizi_zadost.get(p.subentry_id, "")
+            m.rozhodnuti = replace(r, duvod=(
+                f"žádám sousedy o {'chlazení' if zadost == 'chlazeni' else 'ohřev'}"
+                if zadost else
+                "okno tady neovládáme" if not okna else
+                "okno tady neovládám, přepínač je vypnutý"), kod="")
         m.okno_otevreno = skutecne
         # Která teplota zrovna rozhoduje. Vyjmenuje se jednou: text
         # v kartě, číslo pro ručičku i odchylka od cíle musí ukazovat
@@ -1954,7 +1976,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         m.atributy.update({
             "co2": v.co2, "uvnitr": r.t_in_korig,
             "venku": t_ven, "rosny_bod": r.rosny_bod, "rezim": pamet.rezim,
-            "navrh": r.akce.value, "kod": r.kod, "provedeno": provedeno,
+            # Návrh je návrh pro okno. Kde se okno neovládá, není co
+            # navrhovat — a vymyšlené „otevřít" tam jen mate.
+            "navrh": r.akce.value if (okna and ovladat) else None,
+            "kod": r.kod, "provedeno": provedeno,
             "ovladani": ("zapnuto" if ovladat else "jen sleduje")
             + ("" if stav_znamy else " (okno nehlásí stav)"),
             "oblast": okruh["nazev"] if okruh["pod"] else None,
@@ -2044,10 +2069,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Hrany barevných pásem pro ručičky. Karta je jen přepíše
             # do YAML, počítat se mají tam, kde se podle nich i
             # rozhoduje — jinak by to byla druhá pravda.
+            # Pojistky patří do stupnice jen tam, kde se okno ovládá:
+            # jinde by ručička barvila pásma podle meze, která se
+            # v té místnosti negeneruje a nic v ní nedělá.
             "pasma_ukazatelu": {
                 "cil": round(m.cil, 1),
-                "mez_dolni": nast.mez_dolni,
-                "mez_horni": nast.mez_horni,
+                **({"mez_dolni": nast.mez_dolni,
+                    "mez_horni": nast.mez_horni} if okna else {}),
                 "pasmo_den": nast.hyst_den_otevrit,
                 "pasmo_noc": nast.hyst_noc_otevrit,
                 "co2_otevrit": nast.co2_otevrit,
@@ -2059,7 +2087,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             "pevna_pravidla": core.pevna_pravidla(
                 bool(m.klid),
                 core._je_noc(self._hodina_ted, nast, bool(m.klid)),
-                nast.co2_noc, nast.co2_noc_krize, nast.co2_zavrit),
+                nast.co2_noc, nast.co2_noc_krize, nast.co2_zavrit,
+                bez_okna_v_zone=bool(not okna and okruh["pod"])),
             "vitr": self.vitr_stav,
             # Údaje o oknu se vynechají tam, kde žádné není — zpráva
             # i karta se pak skládají z toho, co doopravdy existuje.
