@@ -48,6 +48,9 @@ class StavVykonu:
     # a ruční zásah je vidět jenom tady
     stineni_tilt: dict[str, float] = field(default_factory=dict)
     rozejiti: dict[str, int] = field(default_factory=dict)
+    # kdy se rozejití poprvé objevilo — čekání na jeho potvrzení musí
+    # mít konec, jinak zaseknutý pohon umlčí žaluzii natrvalo
+    rozejiti_od: dict[str, float] = field(default_factory=dict)
     # role a splněné podmínky se drží pro každou žaluzii zvlášť —
     # dvě okna v pokoji můžou mít různé nastavení a tím i různý průběh
     posledni_role: dict = field(default_factory=dict)
@@ -90,6 +93,11 @@ class Vykonavac:
 
     # ------------------------------------------------------------ okno
 
+    # Jak dlouho se nejdéle čeká na potvrzení rozejití. Potvrzení
+    # trvá jeden cyklus; tohle je strop pro případ, že pohon zamrzne
+    # v hlášení „jede" a potvrzení nikdy nepřijde. Bez stropu by se
+    # s takovou žaluzií přestalo hýbat nadobro.
+    DRZENI_ROZEJITI_S = 300.0
     TOLERANCE_POLOHY = 1.2      # pohon polohu neudrží přesněji
     TOLERANCE_TILTU = 5.0       # naklopení hlásí pohony v hrubých krocích
     ODKLAD_KONTROLY_S = 180.0   # než pohon dojede a ustálí se
@@ -146,6 +154,7 @@ class Vykonavac:
 
         if not rozesly:
             self.stav.rozejiti.pop(zaluzie, None)
+            self.stav.rozejiti_od.pop(zaluzie, None)
             self.stav.poloha_predbezna.discard(zaluzie)
             return None
 
@@ -157,6 +166,7 @@ class Vykonavac:
         if zaluzie in self.stav.poloha_predbezna:
             self.stav.poloha_predbezna.discard(zaluzie)
             self.stav.rozejiti.pop(zaluzie, None)
+            self.stav.rozejiti_od.pop(zaluzie, None)
             for jmeno, ted, ocekavana, pametka in rozesly:
                 pametka[zaluzie] = ted
                 _LOGGER.debug("NaPohodu: %s — %s se ustálila na %.1f %% "
@@ -166,6 +176,7 @@ class Vykonavac:
 
         kolikrat = self.stav.rozejiti.get(zaluzie, 0) + 1
         self.stav.rozejiti[zaluzie] = kolikrat
+        self.stav.rozejiti_od.setdefault(zaluzie, cas_s)
         if kolikrat < self.ROZEJITI_KRAT:
             for jmeno, ted, ocekavana, _p in rozesly:
                 _LOGGER.debug("NaPohodu: %s — %s je %.1f %% místo %.1f %%, "
@@ -177,6 +188,7 @@ class Vykonavac:
         self.stav.stineni_poloha.pop(zaluzie, None)
         self.stav.stineni_tilt.pop(zaluzie, None)
         self.stav.rozejiti.pop(zaluzie, None)
+        self.stav.rozejiti_od.pop(zaluzie, None)
         jmeno, ted, ocekavana, _p = rozesly[0]
         _LOGGER.info("NaPohodu: %s — %s je %.1f %%, čekal jsem %.1f %% — "
                      "někdo ji přestavil, zapomínám stav %s",
@@ -186,6 +198,27 @@ class Vykonavac:
         # se tady vracelo None, nerozběhl se kvůli druhému přestavení
         # žádný klid a automatika do žaluzie znovu mluvila.
         return byval or f"{ocekavana:.0f} %"
+
+    def cekam_na_potvrzeni(self, zaluzie: str, cas_s: float) -> bool:
+        """Drží se u téhle žaluzie povel, než se rozejití potvrdí?
+
+        Potvrzení trvá jeden cyklus. Strop je tu pro pohon, který
+        zamrzne v hlášení „jede": bez něj by se čekalo napořád a ta
+        žaluzie by se už nikdy nepohnula.
+        """
+        od = self.stav.rozejiti_od.get(zaluzie)
+        if od is None:
+            return False
+        if cas_s - od < self.DRZENI_ROZEJITI_S:
+            return True
+        # Došla trpělivost. Zahodí se i počítadlo, ať se neseká
+        # a případné další rozejití se počítá od začátku.
+        self.stav.rozejiti.pop(zaluzie, None)
+        self.stav.rozejiti_od.pop(zaluzie, None)
+        _LOGGER.info("NaPohodu: %s — rozejití se nepotvrdilo do %.0f min, "
+                     "beru to za vlastní polohu a jedu dál",
+                     zaluzie, self.DRZENI_ROZEJITI_S / 60)
+        return False
 
     def zapomen(self) -> None:
         """Zahodí paměť o posledních povelech.
@@ -199,6 +232,7 @@ class Vykonavac:
         self.stav.stineni_poloha.clear()
         self.stav.stineni_tilt.clear()
         self.stav.rozejiti.clear()
+        self.stav.rozejiti_od.clear()
         self.stav.poloha_predbezna.clear()
         self.stav.stineni_cas_s = -1e9
         self.stav.prvni_beh = False    # tlačítko chce pohyb, ne mlčení
@@ -383,7 +417,7 @@ class Vykonavac:
         # a vypadalo to, že automatika hýbe žaluzií hned po ruce.
         zbyva = {z: n for z, n in cile.items()
                  if self.stav.posledni_stineni.get(z) != n
-                 and z not in self.stav.rozejiti}
+                 and not self.cekam_na_potvrzeni(z, cas_s)}
         if not zbyva:
             return None
 

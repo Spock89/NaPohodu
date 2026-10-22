@@ -258,7 +258,7 @@ def test_graf_teplot_je_jeden_pro_vsechny():
                   cidla={"kuchyne": "sensor.t_kuchyne",
                          "obyvak": "sensor.t_obyvak"},
                   venku="sensor.venku")
-    assert s.count("title: Teploty") == 1
+    assert s.count('title: "Teploty"') == 1
     assert "sensor.venku" in s
 
 
@@ -412,13 +412,13 @@ def test_graf_co2_a_vlhkosti():
                   co2_cidla={"kuchyne": "sensor.co2"},
                   rh_cidla={"kuchyne": "sensor.rh"})
     assert "CO2 v místnostech" in s and "sensor.co2" in s
-    assert "title: Vlhkost" in s and "sensor.rh" in s
+    assert 'title: "Vlhkost"' in s and "sensor.rh" in s
 
 
 def test_graf_jedne_veliciny_staci_jedna_cara():
     """Vlhkost v jediné místnosti má taky co říct."""
     s = dashboard(["loznice"], [], vzdy, rh_cidla={"loznice": "sensor.rh"})
-    assert "title: Vlhkost" in s
+    assert 'title: "Vlhkost"' in s
 
 
 def test_prepinace_ovladani_hned_pod_teplotou():
@@ -905,3 +905,26 @@ def test_scena_ma_vlastni_kalendar_v_karte():
 def test_bez_scen_nic_navic():
     text = dashboard(["obyvak"], [], lambda e: True, s_okny={"obyvak"})
     assert "dayGridMonth" not in text
+
+
+def test_jmena_s_dvojteckou_nerozbiji_yaml():
+    """Dvojtečka v názvu rozbije celou stránku, ne jen ten řádek.
+
+    Názvy místností, skupin i scén píše člověk, takže se do nich
+    dvojtečka i uvozovky dostanou dřív nebo později.
+    """
+    import yaml as _y
+
+    for podoba in ("karta", "stranka"):
+        text = dashboard(
+            ["obyvak", "dilna"], ["zona"], lambda e: True,
+            nazvy={"obyvak": 'Obývák: "velký"', "dilna": "Dílna",
+                   "zona": "Kuchyň: a obývák"},
+            s_okny={"obyvak"},
+            zaluzie={"obyvak": ["cover.a"]},
+            cidla={"obyvak": "sensor.t1", "dilna": "sensor.t2"},
+            rh_cidla={"obyvak": "sensor.r1", "dilna": "sensor.r2"},
+            skupiny=["1. patro: sever"],
+            sceny=["Scéna: Home Office", 'Návštěva "velká"'],
+            podoba=podoba)
+        _y.safe_load(text)      # nesmí vyhodit výjimku

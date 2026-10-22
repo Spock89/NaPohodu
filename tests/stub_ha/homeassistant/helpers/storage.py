@@ -11,3 +11,7 @@ class Store:
 
     async def async_save(self, data):
         Store._data[self.klic] = data
+
+    def async_delay_save(self, funkce, zpozdeni=0):
+        """Odložené uložení. V testu se ukládá rovnou."""
+        Store._data[self.klic] = funkce()

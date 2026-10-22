@@ -90,6 +90,8 @@ class KalendarPlanu(CoordinatorEntity, CalendarEntity):
         """
         out = []
         for z in self.coordinator.plan_zaznamy():
+            if z.get("druh") == "scena":
+                continue      # scéna má vlastní kalendář, tady by jen dublovala
             for a, b in pz.rozbal(z, od, do, rrulestr):
                 out.append(CalendarEvent(
                     start=a, end=b, uid=z["uid"],

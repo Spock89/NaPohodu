@@ -282,8 +282,19 @@ PORADI_SEKCI = [
 ]
 
 
+def _text(x) -> str:
+    """Volný text jako bezpečný řetězec v YAML.
+
+    Dvojtečka v názvu rozbije celou stránku, ne jen ten řádek —
+    a názvy místností, skupin i scén si píše člověk. Uvozovky se proto
+    dávají vždycky, i s odescapováním toho, co by je samo ukončilo.
+    """
+    return '"' + str(x).replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
 def _radek(eid: str, nazev: str, odsazeni: str = "      ") -> list[str]:
-    return [f"{odsazeni}- entity: {eid}", f'{odsazeni}  name: "{nazev}"']
+    return [f"{odsazeni}- entity: {eid}",
+            f"{odsazeni}  name: {_text(nazev)}"]
 
 
 def _atribut(eid: str, atribut: str, nazev: str,
@@ -291,9 +302,9 @@ def _atribut(eid: str, atribut: str, nazev: str,
     r = ["      - type: attribute",
          f"        entity: {eid}",
          f"        attribute: {atribut}",
-         f'        name: "{nazev}"']
+         f"        name: {_text(nazev)}"]
     if pripona:
-        r.append(f'        suffix: "{pripona}"')
+        r.append(f"        suffix: {_text(pripona)}")
     return r
 
 
@@ -344,14 +355,13 @@ def _karta(polozky: list[str], nazev: str | None = None) -> list[str]:
         return []
     r = ["  - type: entities"]
     if nazev:
-        # Dvojtečka v názvu rozbíjí YAML, proto uvozovky vždycky.
-        r.append(f'    title: "{nazev}"')
+        r.append(f"    title: {_text(nazev)}")
     r += ["    show_header_toggle: false", "    entities:"] + polozky
     return r
 
 
 def _hlavicka(text: str, ikona: str, styl: str = "title") -> list[str]:
-    return ["  - type: heading", f"    heading: {text}",
+    return ["  - type: heading", f"    heading: {_text(text)}",
             f"    heading_style: {styl}", f"    icon: {ikona}", ""]
 
 
@@ -365,10 +375,10 @@ def _graf(nadpis: str, hodin: int, polozky: list[tuple[str, str]],
     radky = [(e, n) for e, n in polozky if existuje(e)]
     if len(radky) < min_radku:
         return []
-    r = ["  - type: history-graph", f"    title: {nadpis}",
+    r = ["  - type: history-graph", f"    title: {_text(nadpis)}",
          f"    hours_to_show: {hodin}", "    entities:"]
     for e, n in radky:
-        r += [f"      - entity: {e}", f'        name: "{n}"']
+        r += [f"      - entity: {e}", f"        name: {_text(n)}"]
     return r + [""]
 
 
@@ -413,7 +423,7 @@ def _budik(eid: str, nazev: str, min_: float, max_: float,
     hýbou, nevážou na absolutní stupně. Tomu slouží odchylka od cíle.
     """
     r = ["      - type: gauge", f"        entity: {eid}",
-         f'        name: "{nazev}"', f"        min: {min_}",
+         f"        name: {_text(nazev)}", f"        min: {min_}",
          f"        max: {max_}", "        needle: true"]
     if pasma is True:
         # Nouzová varianta: bez nastavení z běžící integrace zbyde

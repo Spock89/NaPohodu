@@ -112,6 +112,8 @@ class VysledekMistnosti:
     plan_prazdno_do_s: float | None = None
     # jméno skupiny, jejíž čidlo hlásí, že tu nikdo není
     skupina_prazdno: str | None = None
+    # naplánovaná cílová teplota, pokud zrovna nějaká platí
+    plan_cil: float | None = None
     atributy: dict = field(default_factory=dict)
 
 
@@ -608,9 +610,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 f"{dolni:.1f} °C"]
             return dolni
         self.pouzity["tyden"] = (prumer, zdroj)
-        posun = self.hodnoty.get((self.entry.entry_id, "posun"), 0.0)
+        # Posun pro celý byt tu kdysi byl, ale šoupátko k němu nikdy
+        # nevzniklo — hodnota se četla z klíče, který nikdo nezapisoval,
+        # takže byla vždycky nula. Posouvá se tedy jen po místnostech,
+        # šoupátkem „moje odchylka teploty".
         zaklad = core.cil_adaptivni(
-            prumer, posun,
+            prumer, 0.0,
             float(g.get(CONF_CIL_MIN, 20.0)),
             float(g.get(CONF_CIL_MAX, 27.0)),
         )
@@ -627,8 +632,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self.cil_rozpad.append(
                 f"zimní přitápění +{pritop:.2f} °C "
                 f"(venku ⌀ {prumer:.1f}, práh {g.get(CONF_ZIMA_PRAH, 7.0)} °C)")
-        if posun:
-            self.cil_rozpad.append(f"společný posun {posun:+.1f} °C")
         return round(zaklad + pritop, 2)
 
     # ------------------------------------------------------------ hlavní
@@ -1089,6 +1092,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 plan_prazdno=bool(plan_neni.bezi and not obsazeno),
                 plan_prazdno_do_s=plan_neni.do_s,
                 skupina_prazdno=skupina_prazdna,
+                plan_cil=(round(plan_cil, 1) if plan_cil is not None
+                          else None),
             )
             okno_m = sl.Okno(nazev=p.title,
                              azimut=float(d.get(CONF_AZIMUT, 180)))
@@ -1178,9 +1183,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 # Vyvětrat si sama neumí ani místnost, která okno má,
                 # ale má vypnutý přepínač Ovládat okno — dřív se dívalo
                 # jen na seznam oken a taková místnost o nic nepožádala.
+                #
+                # Hodnota přepínače se vede pod klíčem „ovladat", ne pod
+                # jménem entity. Dokud se tu četlo „ovladat_okno",
+                # nestál za tím klíčem nikdy nikdo, vracela se výchozí
+                # jednička a tahle větev byla mrtvá: místnost s vypnutým
+                # ovládáním souseda o nic nepožádala, přesně jak to
+                # komentář nad ní zakazuje.
                 if (podklady[x.subentry_id]["d"].get(CONF_OKNA)
                         and self.hodnoty.get(
-                            (x.subentry_id, "ovladat_okno"), 1.0) > 0):
+                            (x.subentry_id, "ovladat"), 1.0) > 0):
                     continue
                 jak = self._zadost_bez_okna(
                     x.subentry_id, podklady[x.subentry_id]["d"])
@@ -1383,6 +1395,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         for m in self.mistnosti.values():
             pridej(m.nazev, "nikdo tu nebude", m.plan_prazdno)
             pridej(m.nazev, "zavřená okna", m.plan_zavreno)
+            # Naplánovaná teplota je taky plán a taky někdy začne
+            # a skončí. Bez tohohle řádku scéna, která nedělá nic
+            # jiného než že nastaví cíl, proběhla úplně potichu.
+            if m.plan_cil is not None:
+                pridej(m.nazev, f"cíl {m.plan_cil:.1f} °C".replace(".", ","),
+                       True)
 
         do_kdy = {"Byt": self.plan_nikdo.do_s or self.plan_vic.do_s}
         for m in self.mistnosti.values():
@@ -1433,9 +1451,38 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     continue
                 self._plan_chyby.add(klic)
                 radky.append(x)
+        # Scéna a skupina si místnosti drží jménem. Když se místnost
+        # přejmenuje nebo smaže, povel pro ni tiše zmizí — jediná
+        # hlídka na to je tahle, protože v samotném záznamu plánu ten
+        # název nestojí.
+        for nazev, cleni in skupiny.items():
+            for x in cleni:
+                if x not in jmena:
+                    radky += self._jednou_o_planu(
+                        f"skupina|{nazev}|{x}",
+                        f"skupina „{nazev}“ má místnost „{x}“, "
+                        f"která v nastavení není")
+        for scena in self.sceny().values():
+            chybi = [x for x in (list(scena["prazdno"])
+                                 + list(scena["zavreno"])
+                                 + list(scena["cil"]))
+                     if x not in jmena]
+            for x in sorted(set(chybi)):
+                radky += self._jednou_o_planu(
+                    f"scena|{scena['nazev']}|{x}",
+                    f"scéna „{scena['nazev']}“ má místnost „{x}“, "
+                    f"která v nastavení není")
+
         if radky:
             await self._posli(g, "plan", "Plán", cas_s,
                               chyba="; ".join(radky))
+
+    def _jednou_o_planu(self, klic: str, text: str) -> list[str]:
+        """Tutéž výtku k plánu řekne jednou, ne každou minutu."""
+        if klic in self._plan_chyby:
+            return []
+        self._plan_chyby.add(klic)
+        return [text]
 
     def _druhy_popisu(self, popisy: list[str]) -> list[str]:
         """Z popisů zpátky na druhy, ať se dopad skládá na jednom místě."""
@@ -2733,7 +2780,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         m.atributy["prestaveno_rukou"] = prestaveno or None
         # Rozdíl, který se ještě potvrzuje. Povel se na takovou žaluzii
         # neposílá, ať se ruční zásah nepřebije dřív, než se pozná.
-        m.atributy["zaluzie_overuji"] = sorted(vyk_m.stav.rozejiti) or None
+        m.atributy["zaluzie_overuji"] = sorted(
+            z for z in vyk_m.stav.rozejiti
+            if vyk_m.cekam_na_potvrzeni(z, cas_s)) or None
         if prestaveno:
             # Polohu si člověk u žaluzií vybírá vědomě, takže se jí
             # chvíli nesahá. Ukládá se okamžik, ne hotový termín: když

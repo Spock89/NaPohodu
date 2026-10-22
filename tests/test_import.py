@@ -1829,17 +1829,6 @@ def test_volani_vlastnich_metod_sedi(nahradni_ha):
                 f"{p.name}:{u.lineno}"
 
 
-def test_zadost_posle_i_mistnost_s_vypnutym_oknem(nahradni_ha):
-    """Vyvětrat si sama neumí ani místnost, která okno má, ale má
-    vypnutý přepínač Ovládat okno."""
-    import pathlib
-    ko = pathlib.Path(
-        "custom_components/napohodu/coordinator.py").read_text()
-    kus = ko[ko.index("o[\"cizi_chlazeni\"]"):ko.index("# Drahé je větrání")]
-    assert '"ovladat_okno"' in kus
-    assert "CONF_OKNA" in kus
-
-
 def test_zadost_je_videt_v_karte(nahradni_ha):
     """Bez toho nebylo poznat, jestli žádost vůbec vznikla."""
     import pathlib

@@ -1015,3 +1015,42 @@ def test_zapomen_maze_i_naklopeni():
     v.stav.stineni_tilt["cover.o2"] = 40.0
     v.zapomen()
     assert v.stav.stineni_tilt == {}
+
+
+def test_cekani_na_potvrzeni_ma_strop(monkeypatch):
+    """Zaseknutý pohon nesmí žaluzii umlčet natrvalo.
+
+    Pohon, který zamrzne v hlášení „jede", nikdy rozejití nepotvrdí.
+    Bez stropu by se na potvrzení čekalo napořád a povel by už na tu
+    žaluzii nikdy nešel.
+    """
+    p = _naparuj_stineni(monkeypatch)
+    h, v = vyk(po_startu=False)
+    bez(v.stineni({"cover.o2": "zastíněno"}, 1000, 0))
+    v.zkontroluj_polohu("cover.o2", 5.0, 1400)     # dojezd se ustálil
+    p.clear()
+
+    v.zkontroluj_polohu("cover.o2", 60.0, 1500)    # 1. tik, čeká se
+    assert v.stav.rozejiti.get("cover.o2") == 1
+    for cas in range(1560, 5000, 60):              # pohon hlásí jízdu
+        v.zkontroluj_polohu("cover.o2", 60.0, cas, jede=True)
+
+    # do stropu se drží
+    assert bez(v.stineni({"cover.o2": "odstíněno"}, 1700, 0)) is None
+    assert p == []
+    # po stropu se jede dál
+    assert bez(v.stineni({"cover.o2": "odstíněno"}, 1900, 0)) is not None
+    assert p == [("cover.o2", "odstíněno")]
+    assert "cover.o2" not in v.stav.rozejiti
+
+
+def test_potvrzene_rozejiti_strop_nepotrebuje(monkeypatch):
+    """Běžný případ se potvrdí hned v dalším cyklu."""
+    p = _naparuj_stineni(monkeypatch)
+    h, v = vyk(po_startu=False)
+    bez(v.stineni({"cover.o2": "zastíněno"}, 1000, 0))
+    v.zkontroluj_polohu("cover.o2", 5.0, 1400)
+    p.clear()
+    assert v.zkontroluj_polohu("cover.o2", 60.0, 1460) is None
+    assert v.zkontroluj_polohu("cover.o2", 60.0, 1520) == "zastíněno"
+    assert v.stav.rozejiti_od == {}

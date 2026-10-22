@@ -833,6 +833,11 @@ naplánovaná bude. Když skupinu smažeš, existující plán nespadne: jede
 dál podle seznamu členů z doby zadání a v kartě i ve zprávě se objeví,
 že skupina chybí.
 
+Scéna i skupina si místnosti drží jménem, takže přejmenovaná nebo
+smazaná místnost z nich tiše vypadne. Jediné, co to pozná, je hlídka
+v plánu: ozve se zprávou, že scéna nebo skupina ukazuje na místnost,
+která v nastavení není.
+
 Chybějící nebo smazaná entita se tiše přeskočí — plán prostě neplatí
 a zbytek jede jako bez něj. Co plán zrovna říká a do kdy, je vidět
 v kartě místnosti, i s tím, ze kterého kalendáře to je. Když je plán

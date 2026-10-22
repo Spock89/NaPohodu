@@ -1023,6 +1023,47 @@ for m in re.finditer(
 
     projdi(t)
 
+# 1ao) výchozí hodnota u výběru času musí být ve tvaru „HH:MM:SS".
+# Home Assistant ji takhle i vrací, takže kratší zápis znamená, že se
+# výchozí a uložená hodnota liší tvarem — a porovnání nebo převod
+# jednou narazí.
+for m in re.finditer(r'default="(\d\d:\d\d(?::\d\d)?)"\):\s*\n?\s*'
+                     r'selector\.TimeSelector',
+                     (d / "config_flow.py").read_text()):
+    if len(m.group(1)) != 8:
+        chyby.append("config_flow.py: výchozí čas "
+                     f"{m.group(1)!r} má být ve tvaru HH:MM:SS")
+
+
+# 1ap) karta se smí skládat jen z jedněch podkladů. Dvě místa, která
+# si je dávají dohromady sama, se jednou rozejdou — a tatáž instalace
+# pak dá pokaždé jinou kartu.
+for soubor in ("config_flow.py", "services.py"):
+    t = (d / soubor).read_text()
+    for m in re.finditer(r"karty\.dashboard\((.*?)\)\n", t, re.S):
+        if "**" not in m.group(1):
+            chyby.append(f"{soubor}: karta se skládá mimo podklady.py — "
+                         f"podklady si musí vzít z podklady.podklady()")
+
+
+# 1aq) klíč, pod kterým se čte hodnota přepínače nebo posuvníku,
+# musí někdo i zapisovat. Jméno entity a klíč hodnoty se u přepínačů
+# liší, takže překlep projde syntaxí, pyflakes i testy — jen se podle
+# něj nikdy nic nepozná a celá větev je mrtvá.
+klice_hodnot = set(re.findall(r'_klic_hodnoty = "(\w+)"',
+                              (d / "switch.py").read_text()))
+for k in sorted(posuvniky_klice):
+    if k in hodnoty_konst:
+        klice_hodnot.add(hodnoty_konst[k])
+klice_hodnot |= set(re.findall(r'CONF_\w+', (d / "number.py").read_text()))
+for p2 in d.glob("*.py"):
+    for m in re.finditer(r'hodnoty\.get\(\s*\([^,]+,\s*"(\w+)"\)', 
+                         p2.read_text()):
+        if m.group(1) not in klice_hodnot:
+            chyby.append(f"{p2.name}: čte hodnotu {m.group(1)!r}, "
+                         "kterou nikdo nezapisuje")
+
+
 # 5) verze v manifestu — ať se nestane, že vydám balíček se starým číslem
 manifest = json.loads((d / "manifest.json").read_text())
 ocekavana = (pathlib.Path(__file__).parent / "VERZE").read_text().strip() \
@@ -1039,3 +1080,4 @@ if chyby:
         print("  ", c)
     sys.exit(1)
 print("balíček je celistvý")
+

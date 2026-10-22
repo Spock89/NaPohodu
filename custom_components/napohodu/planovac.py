@@ -232,7 +232,13 @@ def nazev(druh: str, kdo: str | None = None,
 
 # Skládaný povel musí jít na řadu dřív než jeho části, jinak by se
 # „nikdo tu nebude, zavřená okna" poznalo jen jako prázdno.
-PODLE_DELKY = sorted(DRUHY.items(), key=lambda x: -len(x[1]))
+#
+# Scéna se z názvu nepozná schválně: význam jí dává kalendář, ve
+# kterém událost leží, ne text. Záznam napsaný rukou jako „scéna" by
+# neměl na co odkazovat a tiše by nedělal nic — takhle se ozve jako
+# nepochopená událost.
+PODLE_DELKY = sorted(((k, v) for k, v in DRUHY.items() if k != "scena"),
+                     key=lambda x: -len(x[1]))
 
 
 def rozbal(zaznam: dict, od, do, rrulestr=None) -> list[tuple]:

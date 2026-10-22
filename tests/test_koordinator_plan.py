@@ -259,3 +259,41 @@ def test_konkretnejsi_cil_prebije_scenu(koord):
     # bez toho konkrétního cíle platí scéna
     k._vlastni_plan = k._vlastni_plan[:1]
     assert k.plan_cil_mistnosti("Dílna") == 22.0
+
+
+def test_scena_jen_s_cilem_neni_potichu(koord):
+    """Scéna, která nastaví jen teplotu, musí být poznat.
+
+    Zprávy se staví z dopadu, ne ze záznamu. Dokud mezi dopady nebyla
+    naplánovaná teplota, proběhla taková scéna úplně potichu.
+    """
+    poslano = []
+
+    k = object.__new__(koord.NaPohoduCoordinator)
+    k.plan_nikdo = koord.pl.Udalost()
+    k.plan_vic = koord.pl.Udalost()
+    k._plan_zpravy_prvni = False
+    k._plan_bezelo = {}
+    k._plan_chyby = set()
+    k._vlastni_plan = []
+    k.entry = Zapis2(())
+    k.mistnosti = {"x": koord.VysledekMistnosti(nazev="Dílna",
+                                                plan_cil=22.0)}
+
+    async def posli(g, druh, kdo, cas_s, **kw):
+        poslano.append((kdo, kw))
+
+    k._posli = posli
+    asyncio.run(k._plan_zpravy({}, 1000.0))
+    assert poslano and poslano[0][0] == "Dílna"
+    assert "cíl 22,0 °C" in poslano[0][1]["co"]
+
+    # podruhé se totéž neopakuje
+    poslano.clear()
+    asyncio.run(k._plan_zpravy({}, 1060.0))
+    assert poslano == []
+
+    # a konec plánu se ohlásí
+    k.mistnosti["x"].plan_cil = None
+    asyncio.run(k._plan_zpravy({}, 1120.0))
+    assert poslano and poslano[0][1].get("konec") is True

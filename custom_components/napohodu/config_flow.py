@@ -27,7 +27,7 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
-from . import const as c, karty
+from . import const as c, karty, podklady
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -243,107 +243,17 @@ class NaPohoduOptionsFlow(OptionsFlow):
             bloky = {b for b in karty.BLOKY if user_input.get(b, True)}
 
 
-        mistnosti, oblasti, skupiny, sceny = [], [], [], []
-        cidla, zaluzie = {}, {}
-        co2_cidla, rh_cidla = {}, {}
-        s_okny, s_klidem = set(), set()
-        nazvy, poradi = {}, {}
-        se_zvlhcovacem, zvlhcovace, s_cistickou = set(), {}, set()
-        pm_cidla, prahy, vybaveni = {}, {}, {}
-        zony: list[list[str]] = []
-        for pod in self.config_entry.subentries.values():
-            if pod.subentry_type == c.PODENTITA_MISTNOST:
-                k = c.klic(pod.title)
-                mistnosti.append(k)
-                nazvy[k] = pod.title
-                if pod.data.get(c.CONF_ZVLHCOVAC):
-                    se_zvlhcovacem.add(k)
-                    zvlhcovace[k] = list(pod.data[c.CONF_ZVLHCOVAC])
-                if pod.data.get(c.CONF_CISTICKA):
-                    s_cistickou.add(k)
-                # Co místnost opravdu má. Podle toho se generují jen
-                # nastavení, která v ní něco ovlivní.
-                znacky = set()
-                if pod.data.get(c.CONF_OKNA):
-                    znacky |= {"okno", "co2"}
-                if pod.data.get(c.CONF_ZALUZIE):
-                    znacky.add("zaluzie")
-                if pod.data.get(c.CONF_CLIMATE):
-                    znacky.add("topeni")
-                if pod.data.get(c.CONF_CO2):
-                    znacky.add("co2")
-                if pod.data.get(c.CONF_PM25) or pod.data.get(
-                        c.CONF_CISTICKA):
-                    znacky.add("prach")
-                vybaveni[k] = znacky
-                pm = pod.data.get(c.CONF_PM25) or []
-                if pm:
-                    pm_cidla[k] = pm[0]
-                # Hrany barevných pásem pro ručičky. Berou se z běžící
-                # integrace, protože tam se podle nich i rozhoduje —
-                # počítat je tady podruhé by znamenalo druhou pravdu,
-                # která se jednou rozejde.
-                stav = self.hass.states.get(f"sensor.napohodu_{k}_stav")
-                meze = (stav.attributes.get("pasma_ukazatelu")
-                        if stav else None)
-                if meze:
-                    prahy[k] = dict(meze)
-                poradi[k] = float(pod.data.get(c.CONF_PORADI, 0) or 0)
-                teploty = pod.data.get(c.CONF_TEPLOTY) or []
-                if teploty:
-                    cidla[k] = teploty[0]
-                co2 = pod.data.get(c.CONF_CO2) or []
-                if co2:
-                    co2_cidla[k] = co2[0]
-                rh = pod.data.get(c.CONF_RH_VNITRNI)
-                if rh:
-                    rh_cidla[k] = rh
-                zaluzie[k] = pod.data.get(c.CONF_ZALUZIE) or []
-                if pod.data.get(c.CONF_OKNA):
-                    s_okny.add(k)
-                # klid má smysl jen tam, kde je spánkový přepínač
-                if pod.data.get(c.CONF_SPANEK):
-                    s_klidem.add(k)
-            elif pod.subentry_type == c.PODENTITA_SKUPINA:
-                skupiny.append(pod.title)
-            elif pod.subentry_type == c.PODENTITA_SCENA:
-                sceny.append(pod.title)
-            elif pod.subentry_type == c.PODENTITA_ZONA:
-                nazvy[c.klic(pod.title)] = pod.title
-                oblasti.append(c.klic(pod.title))
-                zony.append(list(pod.data.get(c.CONF_MISTNOSTI) or []))
-
-        # Místnost bez okna v zóně, kde nějaké okno je, si o vyvětrání
-        # řekne sousedovi — a hranici, od jaké odchylky od cíle, si
-        # určuje svým vlastním číslem. Patří jí tedy to šoupátko, i když
-        # vlastní okno nemá.
-        for cleni in zony:
-            klice = [c.klic(x) for x in cleni]
-            if not any(k in s_okny for k in klice):
-                continue
-            for k in klice:
-                if k in vybaveni and k not in s_okny:
-                    vybaveni[k].add("vetrani_zonou")
+        p = podklady.podklady(self.config_entry.subentries.values(),
+                              self.hass.states.get)
+        mistnosti, oblasti = p.pop("mistnosti"), p.pop("oblasti")
 
         g = {**self.config_entry.data, **self.config_entry.options}
         try:
-            # Pořadí z nastavení, při stejném čísle jak místnosti vznikly.
-            # Pozice se musí zapamatovat předem: při řazení Python
-            # seznam vyprázdní a dotaz na index by spadl.
-            puvodni = {k: i for i, k in enumerate(mistnosti)}
-            mistnosti.sort(key=lambda k: (poradi.get(k, 0), puvodni[k]))
             text = karty.dashboard(
                 mistnosti, oblasti,
                 lambda e: self.hass.states.get(e) is not None,
-                cidla=cidla, zaluzie=zaluzie, nazvy=nazvy,
-                se_zvlhcovacem=se_zvlhcovacem, zvlhcovace=zvlhcovace,
-                s_cistickou=s_cistickou,
-                pm_cidla=pm_cidla, prahy=prahy,
-                vybaveni=vybaveni, bloky=bloky,
-                venku=g.get(c.CONF_T_VENKU),
-                co2_cidla=co2_cidla, rh_cidla=rh_cidla,
-                s_okny=s_okny, s_klidem=s_klidem, podoba=podoba,
-                skupiny=skupiny, sceny=sceny)
+                bloky=bloky, venku=g.get(c.CONF_T_VENKU),
+                podoba=podoba, **p)
         except Exception as e:  # pragma: no cover
             # Chyba v generování nesmí položit celý dialog nastavení.
             _LOGGER.exception("NaPohodu: kartu se nepodařilo poskládat")
@@ -1134,9 +1044,9 @@ def _schema_scena(mistnosti: list[dict]) -> vol.Schema:
     jmena = [{"value": m["label"], "label": m["label"]} for m in mistnosti]
     pole = {
         vol.Required(c.CONF_NAZEV): selector.TextSelector(),
-        vol.Optional(c.CONF_SCENA_OD, default="07:00"):
+        vol.Optional(c.CONF_SCENA_OD, default="07:00:00"):
             selector.TimeSelector(),
-        vol.Optional(c.CONF_SCENA_DO, default="18:00"):
+        vol.Optional(c.CONF_SCENA_DO, default="18:00:00"):
             selector.TimeSelector(),
         vol.Optional(c.CONF_SCENA_PRAZDNO): _vyber(jmena),
         vol.Optional(c.CONF_SCENA_ZAVRENO): _vyber(jmena),
