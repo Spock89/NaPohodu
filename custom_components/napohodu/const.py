@@ -53,6 +53,9 @@ CONF_VITR = "vitr"
 CONF_NARAZ = "naraz_vetru"
 CONF_DEST = "dest"
 CONF_DOMA = "doma"
+# Někdo má čidlo, které hlásí opačně — zapnuto znamená „nikdo doma".
+# Otáčí se jen hodnota, ne neznámý stav.
+CONF_DOMA_OBRACENE = "doma_obracene"
 # Plán obsazenosti: kalendář nebo týdenní rozvrh. Význam dává pole,
 # do kterého se entita vloží, ne název události — překlep v názvu by
 # tiše nic neudělal a přišlo by se na to v lednu.
@@ -104,6 +107,7 @@ CONF_PM10_VENKU = "pm10_venku"
 CONF_PM_PLATNY = "pm_platny"
 CONF_SPANEK = "spanek"
 CONF_PRITOMNOST = "pritomnost"
+CONF_PRITOMNOST_OBRACENE = "pritomnost_obracene"
 # Plán pro jednu místnost. Hodí se tam, kde nejsou čidla a obsazenost
 # se mění po týdnech.
 CONF_PLAN_OBSAZENO = "plan_obsazeno"
@@ -223,8 +227,12 @@ CONF_KLIMA_UMI = "klima_umi"
 CONF_KLIMA_V_POKOJI = "klima_v_pokoji"
 CONF_KLIMA_POKOJE = "klima_pokoje"
 
-# --- skupina místností pro plánování ---
+# --- skupina místností pro plánování a společnou obsazenost ---
 CONF_SKUPINA_MISTNOSTI = "skupina_mistnosti"
+# Čidlo, které platí pro celou skupinu — třeba jedno „nikdo v patře".
+# Smí obsazenost jen ubrat: co vidí místnost sama, skupina nepřebije.
+CONF_SKUPINA_PRITOMNOST = "skupina_pritomnost"
+CONF_SKUPINA_OBRACENE = "skupina_obracene"
 CONF_KLIMA_CHLADIT_OD = "chladit_od"
 CONF_KLIMA_TOPIT_OD = "topit_od"
 CONF_KLIMA_UTLUM_CHLAZENI = "utlum_chlazeni"

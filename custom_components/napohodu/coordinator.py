@@ -33,7 +33,8 @@ from .const import (
     CONF_AZIMUT, CONF_CHLAZENI_MIN_VENKU, CONF_CIL_MAX, CONF_CIL_MIN,
     CONF_CISTICKA, CONF_CISTICKA_OD, CONF_CLIMATE, CONF_CO2, CONF_CO2_NOC,
     CONF_CO2_NOC_KRIZE, CONF_CO2_OTEVRIT, CONF_CO2_ZAVRIT, CONF_DEST,
-    CONF_DEST_PRAH, CONF_DOBEH, CONF_DOMA, CONF_DVERE,
+    CONF_DEST_PRAH, CONF_DOBEH, CONF_DOMA, CONF_DOMA_OBRACENE,
+    CONF_DVERE,
     CONF_HYST_DEN_OTEVRIT, CONF_HYST_DEN_ZAVRIT, CONF_HYST_NOC_OTEVRIT,
     CONF_HYST_NOC_ZAVRIT, CONF_INDICIE_DOBEH, CONF_INDICIE_STAV,
     CONF_INDICIE_VYKON, CONF_I_KDYZ_NIKDO, CONF_KLID_STINENI_MIN,
@@ -52,11 +53,13 @@ from .const import (
     CONF_PLAN_CIL, CONF_PLAN_KOLIKRAT,
     CONF_PRACH_DOSAH, CONF_PREDVETRAT,
     CONF_PRACH_MISTNOSTI, CONF_PRAH_VYKONU, CONF_PRITOMNOST,
+    CONF_PRITOMNOST_OBRACENE,
     CONF_PROJEZD_M, CONF_PRO_POHODU, CONF_PRYC_PO, CONF_PRYC_UTLUM,
     CONF_REZERVA_VENKU, CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU,
     CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_RUCNI_KLID,
     CONF_RUCNI_KLID_ZALUZIE,
     CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SEZONA_REZIM,
+    CONF_SKUPINA_OBRACENE, CONF_SKUPINA_PRITOMNOST,
     CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG, CONF_SOUHRN_CAS,
     CONF_SKUPINA_MISTNOSTI, CONF_SOUKROMI_KDY, CONF_SOUSEDI, CONF_SPANEK,
     CONF_STINENI_CHOVANI,
@@ -105,6 +108,8 @@ class VysledekMistnosti:
     plan_zavreno: bool = False
     plan_prazdno: bool = False
     plan_prazdno_do_s: float | None = None
+    # jméno skupiny, jejíž čidlo hlásí, že tu nikdo není
+    skupina_prazdno: str | None = None
     atributy: dict = field(default_factory=dict)
 
 
@@ -458,12 +463,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         except (TypeError, ValueError):
             return nahrada
 
-    def _zapnuto(self, eid: str | None) -> bool | None:
+    def _zapnuto(self, eid: str | None,
+                 obracene: bool = False) -> bool | None:
         """Je entita zapnutá? Nevím znamená None, ne vypnuto.
 
         Po startu hlásí spousta entit chvíli unknown nebo unavailable.
         Brát to jako vypnuto znamenalo třeba „nikdo doma" hned po
         restartu, a žaluzie se rozjely do polohy pro prázdný byt.
+
+        `obracene` otočí význam u čidel, která hlásí opačně — zapnuto
+        znamená „nikdo doma". Otáčí se jen hodnota, ne to třetí
+        „nevím": z neznámého stavu nesmí vzniknout tvrzení ani tak,
+        ani onak, jinak by se po restartu zase vyprázdnil celý byt.
         """
         st = self._stav(eid)
         if st is None:
@@ -473,10 +484,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return None
         # zone.home a podobné hlásí počet lidí, ne zapnuto
         try:
-            return float(stav) > 0
+            zapnuto = float(stav) > 0
         except ValueError:
-            pass
-        return stav in ("on", "true", "home", "open", "playing")
+            zapnuto = stav in ("on", "true", "home", "open", "playing")
+        return (not zapnuto) if obracene else zapnuto
 
     def _stari_s(self, eid: str | None) -> tuple[float, float]:
         """Jak dlouho je entita v současném stavu a kdy se naposledy ozvala."""
@@ -937,11 +948,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._zkontroluj_jednotku(g.get(CONF_T_VENKU), ("°C",), "teplota")
         self._zkontroluj_jednotku(g.get(CONF_DEST),
                                   ("mm/h", "in/h"), "déšť")
-        doma = self._zapnuto(g.get(CONF_DOMA))
+        obracene = bool(g.get(CONF_DOMA_OBRACENE))
+        doma = self._zapnuto(g.get(CONF_DOMA), obracene)
         zdroj_doma = g.get(CONF_DOMA)
         st_doma = self._stav(zdroj_doma)
         self.doma_popis = (
-            f"{zdroj_doma} = {st_doma.state}" if st_doma is not None
+            f"{zdroj_doma} = {st_doma.state}"
+            + (" (obráceně)" if obracene else "")
+            if st_doma is not None
             else "přítomnost nenastavena, beru jako doma")
         doma = True if doma is None else doma
 
@@ -1008,6 +1022,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                   else (noc_od <= hodina < noc_do))
 
         # ---------- 1. základ každé místnosti ----------
+        # Skupinová čidla se vyhodnotí jednou za cyklus: jedno čidlo
+        # mluví za celé patro, takže se nemá proč číst u každé
+        # místnosti zvlášť.
+        skupiny_bez_lidi = self._skupiny_bez_lidi()
         self.mistnosti = {}
         podklady: dict[str, dict] = {}
         for p in self._podentity(PODENTITA_MISTNOST):
@@ -1035,6 +1053,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             elif plan_neni.bezi and not pr.indicie_aktivni(sig, nast_pr):
                 obsazeno = False
 
+            # Čidlo celé skupiny — třeba jedno „nikdo v patře". Smí
+            # obsazenost jen ubrat, a jen tam, kde to místnost sama
+            # nevyvrací: vlastní čidlo, indicie i spánkový přepínač
+            # jsou blíž pravdě než jedno čidlo na chodbě.
+            skupina_prazdna = None
+            if (not plan_je.bezi and not pr.vlastni_dukaz(sig, nast_pr)):
+                skupina_prazdna = skupiny_bez_lidi.get(p.title)
+                if skupina_prazdna:
+                    obsazeno = False
+
             # „Zavřená okna" je druhý, samostatný povel. Není to
             # informace o obsazenosti: platí i tehdy, když je zbytek
             # bytu plný lidí, a naopak „nikdo tu nebude" samo o sobě
@@ -1058,6 +1086,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 plan_zavreno=zavreno,
                 plan_prazdno=bool(plan_neni.bezi and not obsazeno),
                 plan_prazdno_do_s=plan_neni.do_s,
+                skupina_prazdno=skupina_prazdna,
             )
             okno_m = sl.Okno(nazev=p.title,
                              azimut=float(d.get(CONF_AZIMUT, 180)))
@@ -1067,6 +1096,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 "teplota_max": self._max(d.get(CONF_TEPLOTY)),
                 "co2_vlastni": self._max(d.get(CONF_CO2)),
                 "indicie": pr.indicie_aktivni(sig, nast_pr),
+                # Která skupina místnost prohlásila za prázdnou. Bez
+                # jména by se nedalo zjistit, odkud se to vzalo.
+                "skupina_prazdna": skupina_prazdna,
                 # Proč je místnost brána za obsazenou, když tam není
                 # čidlo — bez toho by se nedalo zjistit, odkud se to
                 # vzalo.
@@ -2060,8 +2092,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             do_s = m.plan_prazdno_do_s
             if do_s is None or (do_s - cas_s) > predstih * 60:
                 utlum_plan = pryc
+        # Čidlo skupiny dělá totéž co plán „nikdo tu nebude", jen to
+        # neví dopředu, takže se nedá povolit s předstihem — skončí
+        # ve chvíli, kdy čidlo zase někoho uvidí. Útlum je tentýž:
+        # dvě čísla na totéž jsou jen dvě místa, kde se dá nastavit
+        # něco jiného.
+        utlum_skupina = 0.0
+        if pryc > 0 and not utlum_pryc and not utlum_plan \
+                and m.skupina_prazdno:
+            utlum_skupina = pryc
 
-        celkem = round(utlum_noc + utlum_pryc + utlum_plan, 2)
+        celkem = round(utlum_noc + utlum_pryc + utlum_plan
+                       + utlum_skupina, 2)
         if celkem:
             povel = replace(povel, cil=round(povel.cil - celkem, 1)
                             if povel.cil is not None else None)
@@ -2070,7 +2112,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                         f"nikdo doma -{utlum_pryc:.1f} °C" if utlum_pryc
                         else "",
                         f"plán: nikdo tu nebude -{utlum_plan:.1f} °C"
-                        if utlum_plan else "") if x] or None
+                        if utlum_plan else "",
+                        f"{m.skupina_prazdno}: nikdo tam není "
+                        f"-{utlum_skupina:.1f} °C"
+                        if utlum_skupina else "") if x] or None
 
         poslano = await vyk.topeni(
             hlavice, povel, cas_s,
@@ -2126,6 +2171,26 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
     def plan_skupiny(self) -> dict[str, list[str]]:
         """Skupiny pro ostatní moduly. Jen jiné jméno pro totéž."""
         return self._skupiny()
+
+    def _skupiny_bez_lidi(self) -> dict[str, str]:
+        """Místnosti, jejichž skupina právě hlásí, že tam nikdo není.
+
+        Vrací jméno místnosti na jméno skupiny, ať je v kartě poznat,
+        která to řekla. Čidlo musí říct **ne** — neznámý stav nic
+        netvrdí, protože po restartu chvíli mlčí kdeco a vyprázdnit
+        kvůli tomu celé patro by znamenalo studený byt.
+        """
+        out: dict[str, str] = {}
+        for s in self._podentity(PODENTITA_SKUPINA):
+            eid = s.data.get(CONF_SKUPINA_PRITOMNOST)
+            if not eid:
+                continue
+            nekdo = self._zapnuto(eid, bool(s.data.get(CONF_SKUPINA_OBRACENE)))
+            if nekdo is not False:
+                continue
+            for m in (s.data.get(CONF_SKUPINA_MISTNOSTI) or []):
+                out.setdefault(m, s.title)
+        return out
 
     def _skupiny(self) -> dict[str, list[str]]:
         """Skupiny místností pro plánování: jméno na seznam členů.
@@ -2801,7 +2866,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     def _signaly(self, d: dict, doma: bool, hodina: float,
                  noc_od: float, noc_do: float) -> pr.Signaly:
-        cidlo = self._zapnuto(d.get(CONF_PRITOMNOST))
+        cidlo = self._zapnuto(d.get(CONF_PRITOMNOST),
+                              bool(d.get(CONF_PRITOMNOST_OBRACENE)))
         od_s, stari_s = self._stari_s(d.get(CONF_PRITOMNOST))
         je_noc = (hodina >= noc_od or hodina < noc_do) if noc_od > noc_do \
             else (noc_od <= hodina < noc_do)

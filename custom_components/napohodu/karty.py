@@ -151,6 +151,7 @@ ATRIBUTY_PODROBNE = [
     ("rucni_zasah", "Sáhl jsi na okno", None),
     ("kontakt_hlasi", "Kontakt hlásí otevřeno", None),
     ("otevreno_min", "Otevřeno už", " min"),
+    ("skupina_prazdna", "Skupina hlásí prázdno", None),
     ("zastupce", "Větrá za nás", None),
     ("zadost_sousedum", "Žádám sousedy o", None),
     ("narazove_vetrani", "Nárazové větrání běží", None),

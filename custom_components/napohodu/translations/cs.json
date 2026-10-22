@@ -11,6 +11,7 @@
           "naraz_vetru": "Náraz větru",
           "dest": "Intenzita deště",
           "doma": "Někdo je doma",
+          "doma_obracene": "Čidlo hlásí obráceně",
           "plan_nikdo_doma": "Plán: nikdo doma",
           "plan_vic_lidi": "Plán: víc lidí",
           "predvetrat_min": "Předvětrat před plánovanou návštěvou",
@@ -52,6 +53,7 @@
           "naraz_vetru": "Nárazy větru. Mají přednost před průměrem, protože poškodí pohon dřív.",
           "dest": "Intenzita deště. Zkracuje větrání a při silném dešti okna zavře.",
           "doma": "Když je vypnuté, okna se zavřou a místnosti se považují za prázdné.",
+          "doma_obracene": "Zaškrtni, když entita znamená opak — zapnuto je „nikdo doma\". Otáčí se jen hodnota; neznámý stav se dál bere jako doma.",
           "cil_min": "Pod tuto teplotu cíl neklesne ani v největším mrazu.",
           "cil_max": "Nad tuto teplotu cíl nevystoupá ani v největším vedru.",
           "noc_od": "Od kdy platí noční klid. Okna se pak otevírají méně a jen když je opravdu dusno.",
@@ -113,6 +115,7 @@
           "naraz_vetru": "Náraz větru",
           "dest": "Intenzita deště",
           "doma": "Někdo je doma",
+          "doma_obracene": "Čidlo hlásí obráceně",
           "plan_nikdo_doma": "Plán: nikdo doma",
           "plan_vic_lidi": "Plán: víc lidí",
           "predvetrat_min": "Předvětrat před plánovanou návštěvou",
@@ -154,6 +157,7 @@
           "naraz_vetru": "Nárazy větru. Mají přednost před průměrem, protože poškodí pohon dřív.",
           "dest": "Intenzita deště. Zkracuje větrání a při silném dešti okna zavře.",
           "doma": "Když je vypnuté, okna se zavřou a místnosti se považují za prázdné.",
+          "doma_obracene": "Zaškrtni, když entita znamená opak — zapnuto je „nikdo doma\". Otáčí se jen hodnota; neznámý stav se dál bere jako doma.",
           "cil_min": "Pod tuto teplotu cíl neklesne ani v největším mrazu.",
           "cil_max": "Nad tuto teplotu cíl nevystoupá ani v největším vedru.",
           "noc_od": "Od kdy platí noční klid. Okna se pak otevírají méně a jen když je opravdu dusno.",
@@ -354,6 +358,7 @@
             "zdroj_klidu": "Klid podle",
             "spanek": "Spánkový přepínač",
             "pritomnost": "Čidlo pohybu",
+            "pritomnost_obracene": "Čidlo hlásí obráceně",
             "plan_obsazeno": "Plán: je tu někdo",
             "plan_prazdno": "Plán: nikdo tu nebude",
             "dobeh_min": "Doběh po pohybu",
@@ -365,6 +370,7 @@
             "zdroj_klidu": "V klidu se okny hýbe co nejméně, aby nerušila.",
             "spanek": "Přepínač, kterým dáváš najevo, že se v místnosti spí.",
             "pritomnost": "Čidlo pohybu. Samo o sobě nestačí, protože nevidí sedícího člověka.",
+            "pritomnost_obracene": "Zaškrtni, když entita znamená opak — zapnuto je „nikdo tu není\". Otáčí se jen hodnota, neznámý stav nic netvrdí.",
             "dobeh_min": "Jak dlouho po posledním pohybu se místnost ještě považuje za obsazenou.",
             "max_stari_h": "Když se čidlo tak dlouho neozve, nejspíš mu došla baterie a přestane se mu věřit.",
             "stineni_pryc": "Co se má stát se žaluziemi, když nikdo není doma.",
@@ -406,6 +412,7 @@
             "zdroj_obsazenosti": "Obsazenost podle",
             "spanek": "Spánkový přepínač",
             "pritomnost": "Čidlo pohybu",
+            "pritomnost_obracene": "Čidlo hlásí obráceně",
             "plan_obsazeno": "Plán: je tu někdo",
             "plan_prazdno": "Plán: nikdo tu nebude",
             "dobeh_min": "Doběh po pohybu",
@@ -483,6 +490,7 @@
             "zdroj_obsazenosti": "Obsazená místnost se udržuje na cíli. Prázdná se nechá být.",
             "spanek": "Přepínač, kterým dáváš najevo, že se v místnosti spí.",
             "pritomnost": "Čidlo pohybu. Samo o sobě nestačí, protože nevidí sedícího člověka.",
+            "pritomnost_obracene": "Zaškrtni, když entita znamená opak — zapnuto je „nikdo tu není\". Otáčí se jen hodnota, neznámý stav nic netvrdí.",
             "dobeh_min": "Jak dlouho po posledním pohybu se místnost ještě považuje za obsazenou.",
             "max_stari_h": "Když se čidlo tak dlouho neozve, nejspíš mu došla baterie a přestane se mu věřit.",
             "stineni_pryc": "Co se má stát se žaluziemi, když nikdo není doma.",
@@ -604,6 +612,7 @@
             "zdroj_obsazenosti": "Obsazenost podle",
             "spanek": "Spánkový přepínač",
             "pritomnost": "Čidlo pohybu",
+            "pritomnost_obracene": "Čidlo hlásí obráceně",
             "plan_obsazeno": "Plán: je tu někdo",
             "plan_prazdno": "Plán: nikdo tu nebude",
             "dobeh_min": "Doběh po pohybu",
@@ -659,6 +668,7 @@
             "zdroj_obsazenosti": "Obsazená místnost se udržuje na cíli. Prázdná se nechá být.",
             "spanek": "Přepínač, kterým dáváš najevo, že se v místnosti spí.",
             "pritomnost": "Čidlo pohybu. Samo o sobě nestačí, protože nevidí sedícího člověka.",
+            "pritomnost_obracene": "Zaškrtni, když entita znamená opak — zapnuto je „nikdo tu není\". Otáčí se jen hodnota, neznámý stav nic netvrdí.",
             "dobeh_min": "Jak dlouho po posledním pohybu se místnost ještě považuje za obsazenou.",
             "max_stari_h": "Když se čidlo tak dlouho neozve, nejspíš mu došla baterie a přestane se mu věřit.",
             "stineni_pryc": "Co se má stát se žaluziemi, když nikdo není doma.",
@@ -818,11 +828,15 @@
           "description": "Skupina slouží **jen k plánování**: místo pěti událostí pro pět místností zadáš jednu pro celé patro.\n\nNení to zóna — nesdílí vzduch, nezastupuje se ve větrání a do rozhodování nijak nemluví.\n\nPlán si skupinu drží jménem, takže místnost přidaná později už naplánovaná bude. Když skupinu smažeš, existující plán nespadne: jede dál podle seznamu členů z doby, kdy se zadával.",
           "data": {
             "nazev": "Název skupiny",
-            "skupina_mistnosti": "Místnosti ve skupině"
+            "skupina_mistnosti": "Místnosti ve skupině",
+            "skupina_obracene": "Čidlo hlásí obráceně",
+            "skupina_pritomnost": "Čidlo přítomnosti ve skupině"
           },
           "data_description": {
             "nazev": "Jak se skupina jmenuje v plánu — třeba „1. patro\". Pod tímhle jménem se objeví v nabídce plánovače a v názvu události v kalendáři.",
-            "skupina_mistnosti": "Které místnosti skupina zahrnuje. Mění se jen to, co se dá naplánovat jednou událostí — na rozhodování o oknech, topení ani stínění skupina žádný vliv nemá."
+            "skupina_mistnosti": "Které místnosti skupina zahrnuje. Mění se jen to, co se dá naplánovat jednou událostí — na rozhodování o oknech, topení ani stínění skupina žádný vliv nemá.",
+            "skupina_obracene": "Zaškrtni, když zapnuto znamená „nikdo tam není“.",
+            "skupina_pritomnost": "Jedno čidlo za celé patro: zapnuto znamená, že tam někdo je. Když řekne, že tam nikdo není, utlumí se topení ve všech jejích místnostech — ale jen tam, kde to místnost sama nevyvrací vlastním čidlem, indicií nebo spánkem. Okna nezavírá, to je povel z kalendáře."
           }
         },
         "reconfigure": {
@@ -830,11 +844,15 @@
           "description": "Skupina slouží **jen k plánování**: místo pěti událostí pro pět místností zadáš jednu pro celé patro.\n\nNení to zóna — nesdílí vzduch, nezastupuje se ve větrání a do rozhodování nijak nemluví.\n\nPlán si skupinu drží jménem, takže místnost přidaná později už naplánovaná bude. Když skupinu smažeš, existující plán nespadne: jede dál podle seznamu členů z doby, kdy se zadával.",
           "data": {
             "nazev": "Název skupiny",
-            "skupina_mistnosti": "Místnosti ve skupině"
+            "skupina_mistnosti": "Místnosti ve skupině",
+            "skupina_obracene": "Čidlo hlásí obráceně",
+            "skupina_pritomnost": "Čidlo přítomnosti ve skupině"
           },
           "data_description": {
             "nazev": "Jak se skupina jmenuje v plánu — třeba „1. patro\". Pod tímhle jménem se objeví v nabídce plánovače a v názvu události v kalendáři.",
-            "skupina_mistnosti": "Které místnosti skupina zahrnuje. Mění se jen to, co se dá naplánovat jednou událostí — na rozhodování o oknech, topení ani stínění skupina žádný vliv nemá."
+            "skupina_mistnosti": "Které místnosti skupina zahrnuje. Mění se jen to, co se dá naplánovat jednou událostí — na rozhodování o oknech, topení ani stínění skupina žádný vliv nemá.",
+            "skupina_obracene": "Zaškrtni, když zapnuto znamená „nikdo tam není“.",
+            "skupina_pritomnost": "Jedno čidlo za celé patro: zapnuto znamená, že tam někdo je. Když řekne, že tam nikdo není, utlumí se topení ve všech jejích místnostech — ale jen tam, kde to místnost sama nevyvrací vlastním čidlem, indicií nebo spánkem. Okna nezavírá, to je povel z kalendáře."
           }
         }
       }

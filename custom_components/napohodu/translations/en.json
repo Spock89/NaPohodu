@@ -11,6 +11,7 @@
           "naraz_vetru": "Wind gust",
           "dest": "Rain intensity",
           "doma": "Someone is home",
+          "doma_obracene": "Sensor reports inverted",
           "plan_nikdo_doma": "Plan: nobody home",
           "plan_vic_lidi": "Plan: more people",
           "predvetrat_min": "Pre-ventilate before a planned visit",
@@ -52,6 +53,7 @@
           "naraz_vetru": "Wind gusts. They take precedence over the average, because they damage the drive sooner.",
           "dest": "Rain intensity. It shortens ventilation and closes the windows in heavy rain.",
           "doma": "When this is off, the windows close and the rooms count as empty.",
+          "doma_obracene": "Tick when the entity means the opposite — on is \"nobody home\". Only the value flips; an unknown state still counts as home.",
           "cil_min": "The target never drops below this, even in hard frost.",
           "cil_max": "The target never rises above this, even in a heatwave.",
           "noc_od": "When quiet hours begin. Windows then open less often and only when the air is really stale.",
@@ -113,6 +115,7 @@
           "naraz_vetru": "Wind gust",
           "dest": "Rain intensity",
           "doma": "Someone is home",
+          "doma_obracene": "Sensor reports inverted",
           "plan_nikdo_doma": "Plan: nobody home",
           "plan_vic_lidi": "Plan: more people",
           "predvetrat_min": "Pre-ventilate before a planned visit",
@@ -154,6 +157,7 @@
           "naraz_vetru": "Wind gusts. They take precedence over the average, because they damage the drive sooner.",
           "dest": "Rain intensity. It shortens ventilation and closes the windows in heavy rain.",
           "doma": "When this is off, the windows close and the rooms count as empty.",
+          "doma_obracene": "Tick when the entity means the opposite — on is \"nobody home\". Only the value flips; an unknown state still counts as home.",
           "cil_min": "The target never drops below this, even in hard frost.",
           "cil_max": "The target never rises above this, even in a heatwave.",
           "noc_od": "When quiet hours begin. Windows then open less often and only when the air is really stale.",
@@ -354,6 +358,7 @@
             "zdroj_klidu": "Quiet based on",
             "spanek": "Sleep switch",
             "pritomnost": "Motion sensor",
+            "pritomnost_obracene": "Sensor reports inverted",
             "plan_obsazeno": "Plan: someone is here",
             "plan_prazdno": "Plan: nobody will be here",
             "dobeh_min": "Run-on after motion",
@@ -365,6 +370,7 @@
             "zdroj_klidu": "During quiet hours windows move as little as possible.",
             "spanek": "A switch you use to say that someone is sleeping in the room.",
             "pritomnost": "A motion sensor. On its own it is not enough, because it does not see a person sitting still.",
+            "pritomnost_obracene": "Tick when the entity means the opposite — on is \"nobody here\". Only the value flips; unknown claims nothing.",
             "dobeh_min": "How long after the last motion the room still counts as occupied.",
             "max_stari_h": "If a sensor stays silent for this long, its battery has most likely died and it stops being trusted.",
             "stineni_pryc": "What the blinds should do when nobody is home.",
@@ -406,6 +412,7 @@
             "zdroj_obsazenosti": "Occupancy based on",
             "spanek": "Sleep switch",
             "pritomnost": "Motion sensor",
+            "pritomnost_obracene": "Sensor reports inverted",
             "plan_obsazeno": "Plan: someone is here",
             "plan_prazdno": "Plan: nobody will be here",
             "dobeh_min": "Run-on after motion",
@@ -483,6 +490,7 @@
             "zdroj_obsazenosti": "An occupied room is kept at the target. An empty one is left be.",
             "spanek": "A switch you use to say that someone is sleeping in the room.",
             "pritomnost": "A motion sensor. On its own it is not enough, because it does not see a person sitting still.",
+            "pritomnost_obracene": "Tick when the entity means the opposite — on is \"nobody here\". Only the value flips; unknown claims nothing.",
             "dobeh_min": "How long after the last motion the room still counts as occupied.",
             "max_stari_h": "If a sensor stays silent for this long, its battery has most likely died and it stops being trusted.",
             "stineni_pryc": "What the blinds should do when nobody is home.",
@@ -604,6 +612,7 @@
             "zdroj_obsazenosti": "Occupancy based on",
             "spanek": "Sleep switch",
             "pritomnost": "Motion sensor",
+            "pritomnost_obracene": "Sensor reports inverted",
             "plan_obsazeno": "Plan: someone is here",
             "plan_prazdno": "Plan: nobody will be here",
             "dobeh_min": "Run-on after motion",
@@ -659,6 +668,7 @@
             "zdroj_obsazenosti": "An occupied room is kept at the target. An empty one is left be.",
             "spanek": "A switch you use to say that someone is sleeping in the room.",
             "pritomnost": "A motion sensor. On its own it is not enough, because it does not see a person sitting still.",
+            "pritomnost_obracene": "Tick when the entity means the opposite — on is \"nobody here\". Only the value flips; unknown claims nothing.",
             "dobeh_min": "How long after the last motion the room still counts as occupied.",
             "max_stari_h": "If a sensor stays silent for this long, its battery has most likely died and it stops being trusted.",
             "stineni_pryc": "What the blinds should do when nobody is home.",
@@ -818,11 +828,15 @@
           "description": "A group is **only for planning**: instead of five events for five rooms you enter one for the whole floor.\n\nIt is not a zone — it shares no air, does not stand in for ventilation and has no say in any decision.\n\nThe plan holds the group by name, so a room added later is planned too. Deleting the group does not break an existing plan: it falls back to the member list from the time it was entered.",
           "data": {
             "nazev": "Group name",
-            "skupina_mistnosti": "Rooms in the group"
+            "skupina_mistnosti": "Rooms in the group",
+            "skupina_obracene": "Sensor reports inverted",
+            "skupina_pritomnost": "Group presence sensor"
           },
           "data_description": {
             "nazev": "What the group is called in the plan — \"1st floor\", say. It appears under this name in the planner and in the calendar event title.",
-            "skupina_mistnosti": "Which rooms the group covers. It only changes what can be planned in one event — a group has no influence on decisions about windows, heating or shading."
+            "skupina_mistnosti": "Which rooms the group covers. It only changes what can be planned in one event — a group has no influence on decisions about windows, heating or shading.",
+            "skupina_obracene": "Tick when on means \"nobody is there\".",
+            "skupina_pritomnost": "One sensor for a whole floor: on means somebody is there. When it says nobody is, heating is set back in all of its rooms — but only where the room itself does not say otherwise. It never closes windows; that is a calendar command."
           }
         },
         "reconfigure": {
@@ -830,11 +844,15 @@
           "description": "A group is **only for planning**: instead of five events for five rooms you enter one for the whole floor.\n\nIt is not a zone — it shares no air, does not stand in for ventilation and has no say in any decision.\n\nThe plan holds the group by name, so a room added later is planned too. Deleting the group does not break an existing plan: it falls back to the member list from the time it was entered.",
           "data": {
             "nazev": "Group name",
-            "skupina_mistnosti": "Rooms in the group"
+            "skupina_mistnosti": "Rooms in the group",
+            "skupina_obracene": "Sensor reports inverted",
+            "skupina_pritomnost": "Group presence sensor"
           },
           "data_description": {
             "nazev": "What the group is called in the plan — \"1st floor\", say. It appears under this name in the planner and in the calendar event title.",
-            "skupina_mistnosti": "Which rooms the group covers. It only changes what can be planned in one event — a group has no influence on decisions about windows, heating or shading."
+            "skupina_mistnosti": "Which rooms the group covers. It only changes what can be planned in one event — a group has no influence on decisions about windows, heating or shading.",
+            "skupina_obracene": "Tick when on means \"nobody is there\".",
+            "skupina_pritomnost": "One sensor for a whole floor: on means somebody is there. When it says nobody is, heating is set back in all of its rooms — but only where the room itself does not say otherwise. It never closes windows; that is a calendar command."
           }
         }
       }

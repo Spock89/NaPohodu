@@ -1,7 +1,7 @@
 """Testy obsazenosti, klidu a oblačnosti."""
 
-from pritomnost import (NastaveniPritomnosti, Signaly,
-                        ZdrojObsazenosti, klid, oblacnost, obsazeno)
+from pritomnost import (NastaveniPritomnosti, Signaly, ZdrojObsazenosti,
+                        klid, oblacnost, obsazeno, vlastni_dukaz)
 from slunce import dni
 
 # tvoje dvě místnosti
@@ -221,7 +221,36 @@ def test_prave_zhasla_televize_jeste_plati():
 def test_klid_je_jen_spanek():
     """Tři zdroje klidu vedly na to, že nikdo nevěděl, který platí.
     Noční hodiny zůstávají zvlášť, ty platí pro celý byt."""
-    n = NastaveniPritomnosti()
     assert klid(Signaly(spanek=True)) is True
     assert klid(Signaly(spanek=False, je_noc=True)) is False
     assert klid(Signaly(spanek=None)) is False
+
+
+# --------------------------------- co místnost vidí sama, to nikdo nepřebije
+
+def test_vlastni_dukaz():
+    """Čidlo patra nesmí vyprázdnit pokoj, kde někdo sedí."""
+    n = NastaveniPritomnosti(obsazenost=ZdrojObsazenosti.CIDLO,
+                             indicie=(Indicie("light.lampa"),))
+    # nikdo: čidlo mlčí dost dlouho, žádná indicie
+    s = Signaly(cidlo=False, cidlo_od_s=9999, cidlo_stari_s=10)
+    assert vlastni_dukaz(s, n) is False
+
+    # čidlo vidí pohyb
+    assert vlastni_dukaz(Signaly(cidlo=True, cidlo_stari_s=10), n) is True
+    # indicie
+    s2 = Signaly(cidlo=False, cidlo_od_s=9999, cidlo_stari_s=10,
+                 indicie={"light.lampa": StavIndicie(True, 10, 10)})
+    assert vlastni_dukaz(s2, n) is True
+    # spánkový přepínač
+    assert vlastni_dukaz(
+        Signaly(cidlo=False, cidlo_od_s=9999, cidlo_stari_s=10,
+                spanek=True), n) is True
+
+
+def test_vlastni_dukaz_neznamy_stav_netvrdi_nic():
+    """Čidlo, které se dlouho neozvalo, není důkaz ani tak, ani onak."""
+    n = NastaveniPritomnosti(obsazenost=ZdrojObsazenosti.CIDLO,
+                             max_stari_s=3600)
+    s = Signaly(cidlo=True, cidlo_od_s=10, cidlo_stari_s=99999)
+    assert vlastni_dukaz(s, n) is False

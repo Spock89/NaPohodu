@@ -92,6 +92,8 @@ SCHEMA_GLOBAL = vol.Schema(
         vol.Optional(c.CONF_NARAZ): _ent(["sensor"]),
         vol.Optional(c.CONF_DEST): _ent(["sensor"]),
         vol.Optional(c.CONF_DOMA): _ent(["input_boolean", "binary_sensor", "person"]),
+        vol.Optional(c.CONF_DOMA_OBRACENE, default=False):
+            selector.BooleanSelector(),
         # Plán: kalendář i týdenní rozvrh umí říct, co platí teď a kdy
         # se to změní, takže se berou oba a klidně víc najednou.
         vol.Optional(c.CONF_PLAN_NIKDO): _ent(["calendar", "schedule"], True),
@@ -635,6 +637,8 @@ SCHEMA_PRITOMNOST = vol.Schema(
         ),
         vol.Optional(c.CONF_SPANEK): _ent(["input_boolean", "binary_sensor"]),
         vol.Optional(c.CONF_PRITOMNOST): _ent(["binary_sensor"]),
+        vol.Optional(c.CONF_PRITOMNOST_OBRACENE, default=False):
+            selector.BooleanSelector(),
         # Plán místnosti. Přebíjí plán bytu a hodí se tam, kde nejsou
         # čidla a obsazenost se mění po týdnech.
         vol.Optional(c.CONF_PLAN_OBSAZENO): _ent(["calendar", "schedule"], True),
@@ -1066,17 +1070,26 @@ def _schema_klima(mistnosti: list[dict]) -> vol.Schema:
 
 
 def _schema_skupina(mistnosti: list[dict]) -> vol.Schema:
-    """Skupina místností jen pro plánování.
+    """Skupina místností: společné plánování a společná obsazenost.
 
-    Není to zóna a na rozhodování nemá žádný vliv — jediné, k čemu
-    slouží, je zadat jednu událost celému patru místo každé místnosti
-    zvlášť. Proto tady nic jiného než jméno a seznam členů není.
+    Není to zóna — vzduch se v ní nesdílí a větrání se podle ní
+    nerozhoduje. Slouží k tomu, aby se jedna událost dala zadat celému
+    patru místo každé místnosti zvlášť, a aby se celé patro dalo
+    jedním čidlem označit za prázdné.
+
+    To čidlo smí obsazenost jen ubrat: co místnost vidí sama, skupina
+    nepřebije. Jinak by stačil jeden ztuhlý senzor a vychladl by pokoj,
+    ve kterém někdo sedí.
     """
     jmena = [{"value": m["label"], "label": m["label"]} for m in mistnosti]
     return vol.Schema(
         {
             vol.Required(c.CONF_NAZEV): selector.TextSelector(),
             vol.Required(c.CONF_SKUPINA_MISTNOSTI): _vyber(jmena),
+            vol.Optional(c.CONF_SKUPINA_PRITOMNOST): _ent(
+                ["binary_sensor", "input_boolean", "person", "group"]),
+            vol.Optional(c.CONF_SKUPINA_OBRACENE, default=False):
+                selector.BooleanSelector(),
         }
     )
 

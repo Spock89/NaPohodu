@@ -690,6 +690,31 @@ ignoruje.
 Obsazenost a klid jsou dvě nezávislé věci. Ložnice bývá neobsazená, ale
 v noci vyžaduje klid.
 
+Čidlo, které hlásí **obráceně** — zapnuto znamená „nikdo doma" — se
+nemusí obcházet šablonou. U přepínače přítomnosti bytu i u čidla
+pohybu místnosti je zaškrtávátko *Čidlo hlásí obráceně*. Otáčí se jen
+hodnota, ne ten třetí stav: entita, která hlásí `unknown`, dál netvrdí
+nic a bere se jako doma. Jinak by se byt vyprázdnil po každém
+restartu, než se entity rozkoukají.
+
+### Jedno čidlo za celé patro
+
+Skupina místností umí kromě plánování i **společnou obsazenost**. Do
+skupiny se vloží jedno čidlo přítomnosti — typicky jedno za patro —
+a když řekne, že tam nikdo není, utlumí se topení ve všech jejích
+místnostech, stejným útlumem jako u prázdného bytu.
+
+Platí u toho jedno pravidlo: **skupina smí obsazenost jen ubrat.** Co
+místnost vidí sama — vlastní čidlo pohybu, indicie nebo zapnutý
+spánkový přepínač — to jí skupina nepřebije. Jinak by stačil jeden
+ztuhlý senzor na chodbě a vychladl by pokoj, ve kterém někdo sedí.
+Čidlo, které mlčí nebo hlásí `unknown`, netvrdí taky nic.
+
+Okna skupina nezavírá. Čidlo je informace, ne povel — a „zavřená okna"
+zůstává věcí kalendáře, aby jedno patro neochromilo větrání zbytku
+bytu. V kartě je pod podrobnostmi místnosti vidět řádek *Skupina hlásí
+prázdno* se jménem té skupiny, aby bylo poznat, odkud se to vzalo.
+
 ### Plán obsazenosti
 
 Čidla vědí, co je teď. **Plán ví, co bude** — a na tom rozdílu záleží,

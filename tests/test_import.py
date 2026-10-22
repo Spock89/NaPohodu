@@ -1948,3 +1948,86 @@ def test_narazovy_rezim_rozhoduje_nejdrazsi_mistnost(nahradni_ha):
     assert rozdil(None, cile) == (0.0, "")
     # a bez místností zbyde rozumný odhad
     assert rozdil(3.0, {}) == (19.0, "")
+
+
+# ----------------------------------- obrácené čidlo a čidlo celé skupiny
+
+def test_obracene_cidlo_otaci_jen_hodnotu(nahradni_ha):
+    """Zapnuto znamená „nikdo doma" — ale neznámý stav dál nic netvrdí.
+
+    Kdyby se otáčelo i to „nevím", vyprázdnil by se byt po každém
+    restartu, než se entity rozkoukají.
+    """
+    import importlib
+    ko = importlib.import_module("napohodu.coordinator")
+
+    class Stav:
+        def __init__(self, s):
+            self.state = s
+
+    class Falesny:
+        _zapnuto = ko.NaPohoduCoordinator._zapnuto
+
+        def _stav(self, eid):
+            return Stav(eid) if eid else None
+
+    f = Falesny()
+    assert f._zapnuto("on") is True
+    assert f._zapnuto("on", True) is False
+    assert f._zapnuto("off") is False
+    assert f._zapnuto("off", True) is True
+    # počet lidí v zóně
+    assert f._zapnuto("2", True) is False
+    assert f._zapnuto("0", True) is True
+    # neznámé zůstává neznámé, otočené i neotočené
+    for stav in ("unknown", "unavailable", "none", ""):
+        assert f._zapnuto(stav) is None
+        assert f._zapnuto(stav, True) is None
+
+
+def test_skupina_bez_lidi(nahradni_ha):
+    """Čidlo patra vyjmenuje své místnosti; mlčící čidlo netvrdí nic."""
+    import importlib
+    ko = importlib.import_module("napohodu.coordinator")
+    c = importlib.import_module("napohodu.const")
+
+    class Stav:
+        def __init__(self, s):
+            self.state = s
+
+    patro = FalesnaPodentita(
+        c.PODENTITA_SKUPINA, "1. patro",
+        {c.CONF_SKUPINA_MISTNOSTI: ["Ložnice", "Dílna"],
+         c.CONF_SKUPINA_PRITOMNOST: "binary_sensor.patro"})
+
+    class Falesny:
+        _zapnuto = ko.NaPohoduCoordinator._zapnuto
+        _skupiny_bez_lidi = ko.NaPohoduCoordinator._skupiny_bez_lidi
+
+        def __init__(self, stav):
+            self._stav_cidla = stav
+
+        def _podentity(self, typ):
+            return [patro]
+
+        def _stav(self, eid):
+            return Stav(self._stav_cidla)
+
+    # čidlo říká „nikdo"
+    assert Falesny("off")._skupiny_bez_lidi() == {
+        "Ložnice": "1. patro", "Dílna": "1. patro"}
+    # někdo tam je
+    assert Falesny("on")._skupiny_bez_lidi() == {}
+    # čidlo mlčí — netvrdíme nic
+    assert Falesny("unavailable")._skupiny_bez_lidi() == {}
+
+    # obrácené čidlo: zapnuto znamená „nikdo tam není"
+    patro.data[c.CONF_SKUPINA_OBRACENE] = True
+    assert Falesny("on")._skupiny_bez_lidi() == {
+        "Ložnice": "1. patro", "Dílna": "1. patro"}
+    assert Falesny("off")._skupiny_bez_lidi() == {}
+    patro.data.pop(c.CONF_SKUPINA_OBRACENE)
+
+    # skupina bez čidla do toho nemluví
+    patro.data.pop(c.CONF_SKUPINA_PRITOMNOST)
+    assert Falesny("off")._skupiny_bez_lidi() == {}

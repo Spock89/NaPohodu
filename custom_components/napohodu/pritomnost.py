@@ -129,6 +129,20 @@ def _cidlo_verohodne(s: Signaly, n: NastaveniPritomnosti) -> bool | None:
                       n.dobeh_s, n.max_stari_s)
 
 
+def vlastni_dukaz(s: Signaly, n: NastaveniPritomnosti) -> bool:
+    """Vidí místnost sama někoho?
+
+    Co místnost vidí na vlastní oči, to jí zvenčí nikdo nepřebije —
+    ani čidlo celého patra, ani plán. Jinak by stačil jeden ztuhlý
+    senzor na chodbě a vychladl by pokoj, ve kterém někdo sedí.
+    """
+    if indicie_aktivni(s, n):
+        return True
+    if s.spanek:
+        return True
+    return _cidlo_verohodne(s, n) is True
+
+
 def obsazeno(s: Signaly, n: NastaveniPritomnosti) -> bool:
     """Má se o místnost starat?"""
     if not s.doma:
