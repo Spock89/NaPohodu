@@ -270,3 +270,56 @@ def test_zadost_posle_i_mistnost_s_vypnutym_oknem(ha):
     asyncio.run(k2._async_update_data())
     zona2 = next(iter(k2.zony.values()))
     assert "Obývák" in (zona2.atributy.get("teplo_za") or [])
+
+
+def test_prahy_zony_bere_jen_od_toho_kdo_meri(ha):
+    """Místnost bez čidla nesmí tiše přetlačit práh celé zóny.
+
+    Prahy se po zóně berou nejcitlivější, aby o společném vzduchu
+    nerozhodovaly dvě místnosti jinak. Jenže místnost bez čidla svůj
+    práh nikde nevidí — v kartě se jí negeneruje, protože v ní sama
+    nic neovlivní — a přesto tudy jeho výchozí hodnota přebíjela
+    nastavení těch, které čidlo mají.
+    """
+    ko = ha
+    from napohodu import const as c
+
+    k, _ = _koordinator(ko, c)
+    # obývák má čidlo CO2 a chce větrat až od 1200, dílna nemá nic
+    k.hodnoty[("id_Obývák", c.CONF_CO2_OTEVRIT)] = 1200.0
+    k.hodnoty[("id_Dílna", c.CONF_CO2_OTEVRIT)] = 700.0
+    asyncio.run(k.async_nacti())
+    asyncio.run(k._async_update_data())
+
+    prahy = k.mistnosti["id_Obývák"].atributy["prahy_z_oblasti"]
+    assert prahy["otevrit"] == 1200.0
+
+    # jakmile čidlo dostane i dílna, mluví do toho zas
+    pod = _instalace(c)
+    pod[1].data[c.CONF_CO2] = ["sensor.co2_dilna"]
+    stavy = _stavy()
+    stavy["sensor.co2_dilna"] = Stav("500", {"unit_of_measurement": "ppm"})
+    k2, _ = _koordinator(ko, c, pod, stavy)
+    k2.hodnoty[("id_Obývák", c.CONF_CO2_OTEVRIT)] = 1200.0
+    k2.hodnoty[("id_Dílna", c.CONF_CO2_OTEVRIT)] = 700.0
+    asyncio.run(k2.async_nacti())
+    asyncio.run(k2._async_update_data())
+    prahy2 = k2.mistnosti["id_Obývák"].atributy["prahy_z_oblasti"]
+    assert prahy2["otevrit"] == 700.0
+
+
+def test_bez_okna_zadna_rada_k_pojistkam(ha):
+    """Rada na nastavení, které člověk v kartě nevidí, je horší než
+    žádná: místnosti bez okna se pojistky negenerují."""
+    ko = ha
+    from napohodu import const as c
+
+    k, _ = _koordinator(ko, c)
+    # pojistka nad cílem — klasický konflikt
+    k.hodnoty[("id_Dílna", c.CONF_MEZ_DOLNI)] = 24.0
+    k.hodnoty[("id_Obývák", c.CONF_MEZ_DOLNI)] = 24.0
+    asyncio.run(k.async_nacti())
+    asyncio.run(k._async_update_data())
+
+    assert k.mistnosti["id_Dílna"].atributy["konflikt_mezi"] is None
+    assert k.mistnosti["id_Obývák"].atributy["konflikt_mezi"]

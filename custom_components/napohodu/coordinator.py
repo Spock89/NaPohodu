@@ -1223,21 +1223,38 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # rozhodovat jinak — jinak by jedna otevírala a druhá zavírala.
             # Bere se nejcitlivější nastavení: stačí jedna místnost,
             # které je dusno, a větrá celá oblast.
-            def nej(klic, vychozi):
+            #
+            # Mluví do toho ale jen ty místnosti, které tu veličinu
+            # samy měří nebo kvůli ní otevírají okno. Místnost bez
+            # čidla svůj práh nikde nevidí — v kartě se jí negeneruje,
+            # protože v ní sama nic neovlivní — a přesto tudy jeho
+            # výchozí hodnota tiše přetlačovala nastavení těch, které
+            # čidlo mají. Když nemá čidlo nikdo, platí všichni: lepší
+            # výchozí hodnota než žádná.
+            def kdo_mluvi(klice: tuple) -> list:
+                mluvi = [x for x in o["cleni"]
+                         if any(podklady[x.subentry_id]["d"].get(k)
+                                for k in klice)]
+                return mluvi or list(o["cleni"])
+
+            s_co2 = kdo_mluvi((CONF_CO2, CONF_OKNA))
+            s_prachem = kdo_mluvi((CONF_PM25, CONF_CISTICKA, CONF_OKNA))
+
+            def nej(klic, vychozi, kdo):
                 return min(self.hodnota(x.subentry_id, klic,
                                         float(podklady[x.subentry_id]["d"]
                                               .get(klic, vychozi)))
-                           for x in o["cleni"])
+                           for x in kdo)
 
             o["prahy"] = {
-                CONF_CO2_OTEVRIT: nej(CONF_CO2_OTEVRIT, 800),
-                CONF_CO2_ZAVRIT: nej(CONF_CO2_ZAVRIT, 700),
-                CONF_CO2_NOC: nej(CONF_CO2_NOC, 1000),
-                CONF_CO2_NOC_KRIZE: nej(CONF_CO2_NOC_KRIZE, 1250),
+                CONF_CO2_OTEVRIT: nej(CONF_CO2_OTEVRIT, 800, s_co2),
+                CONF_CO2_ZAVRIT: nej(CONF_CO2_ZAVRIT, 700, s_co2),
+                CONF_CO2_NOC: nej(CONF_CO2_NOC, 1000, s_co2),
+                CONF_CO2_NOC_KRIZE: nej(CONF_CO2_NOC_KRIZE, 1250, s_co2),
                 # Prach má nárazové větrání spouštět stejně jako CO2,
                 # takže se jeho prahy berou po okruhu týmž pravidlem.
-                CONF_PM_SPATNE: nej(CONF_PM_SPATNE, 35.0),
-                CONF_PM_CISTO: nej(CONF_PM_CISTO, 20.0),
+                CONF_PM_SPATNE: nej(CONF_PM_SPATNE, 35.0, s_prachem),
+                CONF_PM_CISTO: nej(CONF_PM_CISTO, 20.0, s_prachem),
             }
             # Ultrazvukový zvlhčovač rozprašuje minerály a čidlo je
             # vidí jako prach. Okruh, kam jeho aerosol dosáhne, se do
@@ -1749,10 +1766,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # Každá mez sama o sobě vypadá rozumně, konflikt s cílem je
         # vidět až dohromady. Bez tohohle by okno jen nefungovalo
         # a nebylo by poznat proč.
+        #
+        # Jen tam, kde se okno opravdu ovládá. Místnost bez okna
+        # dostávala radu, ať sníží pojistku — jenže ta se jí v kartě
+        # negeneruje, protože v ní stejně nic neovlivní. Rada na
+        # nastavení, které člověk nikde nevidí, je horší než žádná.
         potize = core.konflikt_mezi(
             m.cil, nast.hyst_den_otevrit, nast.hyst_den_zavrit,
             nast.mez_dolni, nast.mez_horni, t_ven,
-            nast.rezerva_venku, nast.chlazeni_min_venku)
+            nast.rezerva_venku, nast.chlazeni_min_venku) if okna else []
         m.atributy["konflikt_mezi"] = potize or None
         if potize and self._konflikt_hlasen.get(p.subentry_id) != potize:
             self._konflikt_hlasen[p.subentry_id] = potize

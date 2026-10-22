@@ -753,10 +753,16 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     # Volby místnosti, které nejsou číslo: otevírání pro pohodu
     # a zvlhčování ve spánku. Posuvník z nich udělat nejde.
     polozky = []
-    for klic, popis in (("otevirat_i_pro_pohodu", "otevírat pro pohodu"),
-                        ("zvlhcovat_i_ve_spanku", "zvlhčovat ve spánku")):
+    for klic, popis, kde in (
+            # Otevírání pro pohodu se týká okna; bez něj nemá co
+            # otevřít. Zvlhčování ve spánku zase zvlhčovače.
+            ("otevirat_i_pro_pohodu", "otevírat pro pohodu", s_okny),
+            ("zvlhcovat_i_ve_spanku", "zvlhčovat ve spánku",
+             se_zvlhcovacem)):
         pred = len(polozky)
         for m in mistnosti:
+            if kde is not None and m not in kde:
+                continue
             eid = f"switch.napohodu_{m}_{klic}"
             if existuje(eid):
                 polozky += _radek(eid, f"{jm(m)} — {popis}")

@@ -339,6 +339,13 @@ jen zapamatuje a nastavenou hodnotu nepřepíše.
 
 Totéž platí pro zaškrtávátka, která mají protějšek ve formuláři.
 
+Prahy vzduchu se po oblasti berou nejcitlivější, ale **mluví do nich
+jen ty místnosti, které tu veličinu samy měří** nebo kvůli ní otevírají
+okno. Místnost bez čidla svůj práh v kartě nevidí — negeneruje se jí,
+protože v ní sama nic neovlivní — a nemá tedy ani tudy přetlačovat
+nastavení těch, které čidlo mají. Když nemá čidlo nikdo v oblasti,
+platí všichni.
+
 Generovaná karta ukazuje **jen to, co místnost opravdu má**. Místnost
 bez ovládaného okna tedy nemá řádek o rozhodnutí, o posledním povelu,
 o tom, co změnu spustí, ani diagnostiku větrání — a nemá ani přepínač
