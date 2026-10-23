@@ -295,3 +295,89 @@ def test_couvani_se_u_otevreneho_okna_nevypisuje():
     # u zavřeného okna ten řádek dál platí
     zavreno = pamet(otevreno=False, pauza_do_s=v.cas_s + 52 * 60)
     assert any("couvám" in x for x in ocekavani(v, zavreno, N))
+
+
+# ------------------------------- nárazový režim: slib „zavřu hned"
+
+def test_narazove_zavira_hned_na_kazdy_duvod():
+    """Když karta slíbí „zavřu hned, jak důvod pomine", musí to platit.
+
+    Marné větrání, pojistka i prach tažený zvenčí dřív čekaly na
+    nejkratší dobu držení polohy, zatímco ostatní důvody zavíraly
+    hned. Na kartě pak stálo „nárazový režim: zavřu hned" a vedle
+    toho „chci zavřít, držím stav ještě 2 min".
+    """
+    nast = Nastaveni(hyst_den_otevrit=2.0, hyst_den_zavrit=2.0,
+                     min_drzeni_s=62 * 60, mez_dolni=18.0, mez_horni=27.0)
+
+    def kolo(chladi=True, **kw):
+        zakl = dict(cas_s=100000.0, co2=564.0, t_in=20.5, t_in_max=20.5,
+                    t_out=8.7, rh_out=70.0, cil=21.8, hodina=14.0,
+                    narazove_mozne=True)
+        zakl.update(kw)
+        v = Vstup(**zakl)
+        p = Pamet(cas_povelu_s=v.cas_s - 30 * 60)   # držení ještě běží
+        p.otevreno = True
+        p.chladi = chladi
+        p.rezim = "komfort" if chladi else "pulz"
+        p.komfort_start = 22.0
+        p.ucinek_od_s = v.cas_s - 30 * 60
+        p.ucinek_co2, p.ucinek_t_in = 564.0, 22.0
+        return rozhodni(v, p, nast)
+
+    # marné větrání
+    r = kolo(t_in=23.5, t_in_max=23.5)
+    assert r.akce is Akce.ZAVRIT and r.kod == "bez_ucinku", r.duvod
+    # pojistka
+    r = kolo(t_in=17.5, t_in_max=17.5)
+    assert r.akce is Akce.ZAVRIT and r.kod == "pojistka", r.duvod
+    # a vyvětráno, které hned zavíralo už dřív
+    r = kolo(chladi=False, co2=450.0)
+    assert r.akce is Akce.ZAVRIT, r.duvod
+
+
+def test_bez_naraz_rezimu_drzeni_plati():
+    """Mimo nárazový režim se nejkratší doba držení neobchází."""
+    nast = Nastaveni(hyst_den_otevrit=2.0, hyst_den_zavrit=2.0,
+                     min_drzeni_s=62 * 60)
+    v = Vstup(cas_s=100000.0, co2=564.0, t_in=23.5, t_in_max=23.5,
+              t_out=8.7, rh_out=70.0, cil=21.8, hodina=14.0)
+    p = Pamet(cas_povelu_s=v.cas_s - 30 * 60)
+    p.otevreno, p.chladi, p.rezim = True, True, "komfort"
+    p.komfort_start = 22.0
+    p.ucinek_od_s = v.cas_s - 30 * 60
+    p.ucinek_co2, p.ucinek_t_in = 564.0, 22.0
+    r = rozhodni(v, p, nast)
+    assert r.kod == "drzeni", r.duvod
+    assert p.pulzy_za_sebou == 0, "drženo, tak se marnost nepočítá"
+
+
+def test_chlazeni_rika_ze_jede_za_cil():
+    """Teplota pod cílem a okno pořád otevřené — musí být vidět proč."""
+    v = vstup(co2=450.0, t_in=20.2, t_in_max=20.2, t_out=8.7, cil=21.8)
+    p = pamet(otevreno=True, chladi=True, rezim="komfort")
+    radky = ocekavani(v, p, Nastaveni(hyst_den_zavrit=2.0))
+    chlazeni = [x for x in radky if x.startswith("chladím")]
+    assert chlazeni, radky
+    assert "za cíl 21.8" in chlazeni[0], chlazeni[0]
+
+
+def test_pojistka_prizna_prebitou_krizi():
+    """Karta slibuje, že se při krizi otevře i ve spánku. Pojistka ten
+    slib přebije — a musí to říct, jinak je ta hláška lež."""
+    from core import Vstup, Pamet, Nastaveni, Akce, rozhodni
+
+    n = Nastaveni()
+    p = Pamet(cas_povelu_s=-1e9)
+    v = Vstup(cas_s=200000.0, co2=1600.0, t_in=27.5, t_in_max=27.5,
+              t_out=31.0, rh_out=45.0, cil=24.0, hodina=3.0,
+              spanek=True, doma=True)
+    r = rozhodni(v, p, n)
+    assert r.akce is Akce.NIC
+    assert "nad mezí" in r.duvod
+    assert "krizovým prahem" in r.duvod, r.duvod
+
+    # pod krizovým prahem se nic dodávat nemá
+    v2 = Vstup(**{**v.__dict__, "co2": 900.0})
+    r2 = rozhodni(v2, Pamet(cas_povelu_s=-1e9), n)
+    assert "krizovým" not in r2.duvod, r2.duvod

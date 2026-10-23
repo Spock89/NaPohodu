@@ -18,6 +18,12 @@ from enum import Enum
 # otevřené okno dalo považovat za užitečné. Pod tím je to v šumu čidla.
 UCINEK_CO2_PPM = 50.0
 UCINEK_TEPLOTA = 0.3
+# Nejmenší pokles prachu, který se bere za postup. Není to odstup, na
+# který se větrání spouští: ten říká, kdy se to vyplatí začít, kdežto
+# tady jde o to, jestli se za jeden úsek vůbec něco pohnulo. Prach
+# klesá řádově mikrogram za dvě minuty, takže po celém odstupu by se
+# každý úsek jevil jako marný a prachové větrání by nikdy neuspělo.
+UCINEK_PM = 1.0
 
 # Couvání po neúspěšném pulzu: když větrání nezabírá, zkoušet to pořád
 # dokola nemá cenu. Netýká se teplotního kmitání, to řeší tloušťka
@@ -206,6 +212,9 @@ class Pamet:
     pm_venku_horsi_do_s: float = 0.0
     # zrovna se zjistilo, že se prach tahá zvenčí
     pm_tahne_zvenci: bool = False
+    # běží větrání kvůli prachu? Podle toho se pozná „začít" od
+    # „dojet": začít se vyplatí až s odstupem, dojet i bez něj
+    prach_se_resi: bool = False
     # po ručním zásahu se čeká na nový podnět, ať se s člověkem
     # automatika nepřetahuje
     rucni_do_s: float = 0.0
@@ -241,6 +250,10 @@ class Pamet:
     marne_proc: str = ""
     ucinek_co2: float = 0.0
     ucinek_t_in: float = 0.0
+    # prach na začátku úseku. Větrá-li se kvůli prachu, posuzuje se
+    # účinek na něm: CO2 a teplota o prachovém větrání nevypovídají nic
+    # a vycházelo z nich, že nezabírá, i když prach pěkně klesal.
+    ucinek_pm: float = 0.0
     # kolikátý úsek sledování běží; první čeká na dobu držení, další
     # jsou kratší, aby se obrat poznal včas
     ucinek_kolikaty: int = 0
@@ -528,6 +541,22 @@ def _co_drzi(v: Vstup, pm_spatne: bool) -> str | None:
     return None
 
 
+def prah_zavreni(v: Vstup, n: Nastaveni) -> float:
+    """Pod kterou hodnotou se vzduch bere za vyvětraný.
+
+    Před návštěvou se otevírá už na prahu zavření, aby bylo čisto
+    dřív, než se byt zaplní. Kdyby se na tomtéž prahu i zavíralo,
+    mělo by pásmo **nulovou šířku**: o jedno ppm výš otevřít, o jedno
+    níž zavřít — a okno by kmitalo, jak rychle dovolí nejkratší doba
+    držení polohy. Pásmo se proto celé posune dolů o svoji šířku:
+    „vyvětrat před návštěvou do čista" znamená dojet níž, ne zavřít
+    hned. Šířku pásma si pořád určuješ ty, svými dvěma prahy.
+    """
+    if v.predvetrat:
+        return n.co2_zavrit - (n.co2_otevrit - n.co2_zavrit)
+    return n.co2_zavrit
+
+
 def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
     """Vyjmenuje všechno, co právě brání větrání.
 
@@ -665,12 +694,16 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
 
     if p.otevreno:
         h_otevrit, h_zavrit = _hyst(v, n)
+        # Že se dojíždí kus ZA cíl, musí být z řádku poznat. Jinak
+        # člověk vidí teplotu pod cílem, okno pořád otevřené a nechápe,
+        # na co se čeká — přitom je to celá podstata pásma: zavřít
+        # přesně na cíli znamená, že se teplota hned vrátí zpátky.
         if p.chladi:
-            seznam.append(f"chladím, zavřu na {v.cil - h_zavrit:.1f} °C "
-                          f"(teď {t_in:.1f})")
+            seznam.append(f"chladím až na {v.cil - h_zavrit:.1f} °C, "
+                          f"tedy kus za cíl {v.cil:.1f} (teď {t_in:.1f})")
         elif p.ohrivam:
-            seznam.append(f"ohřívám, zavřu na {v.cil + h_zavrit:.1f} °C "
-                          f"(teď {t_in:.1f})")
+            seznam.append(f"ohřívám až na {v.cil + h_zavrit:.1f} °C, "
+                          f"tedy kus za cíl {v.cil:.1f} (teď {t_in:.1f})")
         else:
             # Větrání kvůli vzduchu čeká na vyvětrání; o teplotu se
             # starají pojistky, ne hrana pásma.
@@ -685,8 +718,9 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         if v.narazove or p.narazove_pulz or v.narazove_mozne:
             seznam.append("nárazový režim: zavřu hned, jak důvod "
                           "pomine")
-        if v.co2 >= n.co2_zavrit:
-            chybi.append(f"CO2 pod {n.co2_zavrit:.0f} (teď {v.co2:.0f})")
+        if v.co2 >= prah_zavreni(v, n):
+            chybi.append(f"CO2 pod {prah_zavreni(v, n):.0f} "
+                         f"(teď {v.co2:.0f})")
         if v.vetrat:
             chybi.append("vypnout ruční větrání")
         venku_lepsi = (v.pm25_venku is None
@@ -776,6 +810,16 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     dew = (rosny_bod(v.t_out, v.rh_out)
            if v.t_out is not None and v.rh_out is not None else -99.0)
 
+    # Nárazový režim: zavírá se hned, bez čekání na nejkratší dobu
+    # držení polohy. Čte se dřív, než si to některá větev stihne přepsat: pulz se
+    # při zavření ruší, a to je právě ten okamžik, kdy se ptáme.
+    # Stačí jedna ze tří věcí: běžící nárazové větrání, pulz, který
+    # se s ním otevřel, nebo samotné počasí. To poslední přibylo
+    # kvůli chlazení a ohřevu: ty nárazové větrání nespouští, protože
+    # to je věc vzduchu — ale jakmile důvod doběhne, je v mrazu každá
+    # minuta navíc stejně drahá, ať se větralo kvůli čemukoli.
+    narazove = bool(v.narazove or p.narazove_pulz or v.narazove_mozne)
+
     def hotovo(akce: Akce, duvod: str, limit_s: float | None = None,
                kod: str = "") -> Rozhodnuti:
         return Rozhodnuti(akce, duvod, kod, limit_s, round(t_in, 2),
@@ -813,6 +857,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             p.ucinek_od_s = v.cas_s
             p.ucinek_co2 = v.co2
             p.ucinek_t_in = t_in
+            p.ucinek_pm = v.pm25
         elif not chci_otevreno:
             # Pozorování patří k jednomu otevření. Bez nulování se
             # počítalo od prvního otevření v historii a vycházely z toho
@@ -821,6 +866,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             p.ucinek_kolikaty = 0
             p.ucinek_bez_zlepseni = 0
             p.chladi = False
+            p.prach_se_resi = False
         p.otevreno = chci_otevreno
         p.cas_povelu_s = v.cas_s
         p.pohyby += 1
@@ -831,6 +877,32 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         p.posledni_t_in = t_in
         return hotovo(Akce.OTEVRIT if chci_otevreno else Akce.ZAVRIT,
                       duvod, limit_s, kod)
+
+    def _marny(duvod: str, kod: str = "bez_ucinku") -> Rozhodnuti:
+        """Zavření pro marné větrání i s tím, co si k němu pamatujeme.
+
+        Počítadlo marných pulzů a čas posledního pokusu se zapisují
+        **až když povel opravdu projde**. Dokud se zapisovaly rovnou,
+        přičítalo se každou minutu, co zavření čekalo na nejkratší
+        dobu držení polohy — za tři minuty držení narostlo počítadlo
+        o tři a pauzy před dalším pokusem se tím zbytečně natahovaly.
+
+        Důvod marnosti se bere ještě před povelem: zavření shazuje
+        příznak chlazení, takže potom už by se nepoznal.
+        """
+        proc = _marne_proc(p)
+        # V nárazovém režimu se zavírá hned, stejně jako u všech
+        # ostatních důvodů. Marné větrání je k tomu ten nejsilnější
+        # důvod: stojí teplo a nevrací za to nic. Dřív tu doba držení
+        # platila dál, takže karta slibovala „zavřu hned, jak důvod
+        # pomine" a přitom čekala — a nešlo poznat, proč.
+        r = zavri(duvod, hned=narazove, kod=kod)
+        if r.akce is Akce.ZAVRIT:
+            p.pulzy_za_sebou += 1
+            p.marne_od_s = v.cas_s
+            p.marne_t_out = v.t_out
+            p.marne_proc = proc
+        return r
 
     def beze_zmeny(duvod: str, chci_otevreno: bool | None = None) -> Rozhodnuti:
         # obnova povelu, kdyby se stav rozešel se skutečností (ne v noci)
@@ -913,6 +985,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         p.ucinek_od_s = v.cas_s
         p.ucinek_co2 = v.co2
         p.ucinek_t_in = t_in
+        p.ucinek_pm = v.pm25
 
     # --- 3b. zabírá to vůbec? ----------------------------------------
     # Marně otevřené okno v zimě stojí teplo a nic za to nevrací.
@@ -938,38 +1011,96 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     dalsi_usek = min(max(n.min_drzeni_s / UCINEK_DILU,
                          UCINEK_NEJKRATSI_S), n.min_drzeni_s)
     ucinek_po = n.min_drzeni_s if prvni else dalsi_usek
+    # Na poznatek, že se prach tahá zvenčí, tahle kontrola nesahá:
+    # ten je měřený a má svůj vlastní výrok. Jinak mu „dávám tomu
+    # ještě jeden úsek“ dalo přednost a okno zůstalo o úsek dýl
+    # otevřené přesně proto, že tahalo prach dovnitř. Bere se trvalejší
+    # z obou příznaků — ten druhý se spotřebuje v tom kole, kdy se
+    # zavírá, takže z něj tady není co přečíst.
+    tahne_zvenci = v.cas_s < p.pm_venku_horsi_do_s
     if (p.otevreno and n.min_drzeni_s > 0 and p.ucinek_od_s > 0
-            and v.co2 <= n.co2_noc_krize
+            and v.co2 <= n.co2_noc_krize and not tahne_zvenci
             and not v.vetrat and not v.vynuceno):
         uplynulo = v.cas_s - p.ucinek_od_s
         lepsi_co2 = v.co2 <= p.ucinek_co2 - UCINEK_CO2_PPM
-        blize = (abs(t_in - v.cil)
-                 <= abs(p.ucinek_t_in - v.cil) - UCINEK_TEPLOTA)
+        # Pokrok se měří k tomu, kam větrání doopravdy míří: chlazení
+        # dojíždí na dolní hranu pásma, ohřev na horní — ne na cíl.
+        # Dokud se počítala vzdálenost od cíle, vypadalo úspěšné
+        # chlazení jako zhoršení přesně ve chvíli, kdy pokoj cíl přešel
+        # a mířil na hranu pásma. Okno se pak zavřelo s hláškou
+        # „zhoršuje se to", přestože se vychladilo o dva stupně.
+        # Příznaky chlazení a ohřevu jsou tu ještě z minulého kola,
+        # tedy z toho větrání, které zrovna běží — a právě o to jde.
+        kam = _hyst(v, n)[1]
+        mira = (v.cil - kam if p.chladi
+                else v.cil + kam if p.ohrivam else v.cil)
+        blize = (abs(t_in - mira)
+                 <= abs(p.ucinek_t_in - mira) - UCINEK_TEPLOTA)
         horsi_co2 = v.co2 >= p.ucinek_co2 + UCINEK_CO2_PPM
-        dal = (abs(t_in - v.cil)
-               >= abs(p.ucinek_t_in - v.cil) + UCINEK_TEPLOTA)
+        dal = (abs(t_in - mira)
+               >= abs(p.ucinek_t_in - mira) + UCINEK_TEPLOTA)
+        # Větrá-li se kvůli prachu, posuzuje se i prach. Jinak prachové
+        # větrání nemělo jak uspět: CO2 při něm nemusí klesat (nemusí
+        # být vysoké) a teplota se při otevřeném okně vždycky vzdaluje,
+        # takže už první úsek vyšel jako „zhoršuje se to“. Zavřelo se,
+        # prach zůstal, za čtvrt hodiny se otevřelo znovu — a takhle
+        # pořád, klidně stokrát za den.
+        #
+        # Příznak je tu ještě z minulého kola, tedy z toho větrání,
+        # které zrovna běží — stejně jako u chlazení a ohřevu.
+        prach = p.prach_se_resi and v.pm_platny
+        lepsi_pm = prach and v.pm25 <= p.ucinek_pm - UCINEK_PM
+        # Opačný směr se tu neposuzuje: rostoucí prach při otevřeném
+        # okně znamená, že se tahá zvenčí, a to má svůj vlastní výrok
+        # o pár řádků níž. Kdyby ho tahle kontrola předběhla, zavřelo
+        # by se sice správně, ale pod hláškou „zhoršuje se to“, ze
+        # které se nic nepozná.
+        #
+        # Prachové větrání se nezastaví na venkovní hodnotě, ale na
+        # tom, kde přestane klesat: poslední mikrogramy se dobírají
+        # tak pomalu, že se za ně nevyplatí držet okno. Dojetí má svůj
+        # vlastní výrok. Za marné se označit nesmí a „zhoršuje se to“
+        # se o něm říct nedá — prach zrovna spadl o pět mikrogramů,
+        # jen už dál nejde. Dřív to obojí platilo a okno se otevíralo
+        # pořád dokola: větrání kleslo s prachem na venkovní hodnotu,
+        # zavřelo se jako marné, paměť marnosti smazal čistý vzduch
+        # a za čtvrt hodiny se jelo znovu.
+        # Rostoucí prach je něco jiného než dojetí a jmenuje se „tahá
+        # se zvenčí" — proto se tu žádá, aby prach vůči začátku úseku
+        # nestoupl.
+        dojel_prach = (prach and not lepsi_pm and v.pm25 <= p.ucinek_pm
+                       and v.co2 < prah_zavreni(v, n) and not v.vetrat)
         # Za zhoršení se bere jen stav, kdy se nezlepšilo vůbec nic.
         # V zimě teplota při větrání klesá vždycky, takže sama o sobě
         # zhoršení neznamená — jinak by se zavřelo i větrání, které
         # zrovna úspěšně snižuje CO2.
-        zhorseni = (horsi_co2 or dal) and not lepsi_co2 and not blize
+        pomohlo = lepsi_co2 or blize or lepsi_pm
+        zhorseni = ((horsi_co2 or dal) and not pomohlo
+                    and not dojel_prach)
         konec_useku = uplynulo >= ucinek_po
 
+        def _mereni() -> str:
+            kus = (f"CO2 {p.ucinek_co2:.0f} → {v.co2:.0f}, teplota "
+                   f"{p.ucinek_t_in:.1f} → {t_in:.1f} °C")
+            if prach:
+                kus += f", PM2.5 {p.ucinek_pm:.0f} → {v.pm25:.0f}"
+            return kus
+
+        if konec_useku and dojel_prach:
+            venku = ("" if v.pm25_venku is None
+                     else f" (venku {v.pm25_venku:.0f})")
+            p.pulzy_za_sebou = 0        # povedlo se, couvání se ruší
+            return zavri(f"prach už dál neklesá, PM2.5 {v.pm25:.0f}"
+                         + venku, hned=narazove, kod="cisto")
+
         if zhorseni and uplynulo >= dalsi_usek:
-            p.pulzy_za_sebou += 1
-            p.marne_od_s = v.cas_s
-            p.marne_t_out = v.t_out
-            p.marne_proc = _marne_proc(p)
             # Zavírá se hned, jak se zhoršení pozná — nejkratší doba
             # držení polohy ale platí dál, ta je od toho, aby okno
             # nelítalo, a obcházet ji by znamenalo ji zrušit.
-            return zavri(
-                f"zhoršuje se to: za {int(uplynulo / 60)} min CO2 "
-                f"{p.ucinek_co2:.0f} → {v.co2:.0f}, teplota "
-                f"{p.ucinek_t_in:.1f} → {t_in:.1f} °C",
-                kod="bez_ucinku")
+            return _marny(f"zhoršuje se to: za {int(uplynulo / 60)} min "
+                          + _mereni())
 
-        if konec_useku and not lepsi_co2 and not blize:
+        if konec_useku and not pomohlo and not dojel_prach:
             # První úsek bez zlepšení ještě není důvod zavírat —
             # větrání se může rozjet pomalu. Zavírá se až po druhém
             # v řadě; zhoršení se řeší výš a hned.
@@ -978,19 +1109,15 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                 p.ucinek_od_s = v.cas_s
                 p.ucinek_co2 = v.co2
                 p.ucinek_t_in = t_in
+                p.ucinek_pm = v.pm25
                 p.ucinek_kolikaty += 1
                 return beze_zmeny(
                     f"zatím se nic nehýbe, dávám tomu ještě jeden úsek "
-                    f"(CO2 {v.co2:.0f}, {t_in:.1f} °C)", True)
-            p.pulzy_za_sebou += 1
-            p.marne_od_s = v.cas_s
-            p.marne_t_out = v.t_out
-            p.marne_proc = _marne_proc(p)
-            return zavri(
-                f"nehýbe se to: za {int(uplynulo / 60)} min CO2 "
-                f"{p.ucinek_co2:.0f} → {v.co2:.0f}, teplota "
-                f"{p.ucinek_t_in:.1f} → {t_in:.1f} °C",
-                kod="bez_ucinku")
+                    f"(CO2 {v.co2:.0f}, {t_in:.1f} °C"
+                    + (f", PM2.5 {v.pm25:.0f}" if prach else "") + ")",
+                    True)
+            return _marny(f"nehýbe se to: za {int(uplynulo / 60)} min "
+                          + _mereni())
 
         if konec_useku:
             # úsek dopadl dobře, další se posuzuje od těchhle hodnot
@@ -998,6 +1125,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             p.ucinek_od_s = v.cas_s
             p.ucinek_co2 = v.co2
             p.ucinek_t_in = t_in
+            p.ucinek_pm = v.pm25
             p.ucinek_kolikaty += 1
 
     # --- 3c. absolutní pojistky --------------------------------------
@@ -1010,22 +1138,52 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # proti smyslu.
         chladi_nas = v.t_out < t_in
         hreje_nas = v.t_out > t_max
+        # Pojistka přebije i krizové CO2 — vymrzlý nebo rozpálený byt
+        # je horší problém než dusno. Musí to ale přiznat: karta jinde
+        # slibuje, že se při krizi otevře i ve spánku, a tady se to
+        # nestane. Bez téhle věty nebylo z ničeho poznat, že slib
+        # neplatí.
+        krize = (" — i přes CO2 "
+                 f"{v.co2:.0f} nad krizovým prahem "
+                 f"{n.co2_noc_krize:.0f}") if v.co2 > n.co2_noc_krize else ""
+
+        # Pulz, který pojistka utne dřív, než mu jediný úsek dopadl
+        # dobře, byl k ničemu — a bere se tedy jako marný. Bez toho
+        # pokoj přesně na mezi kmital donekonečna: otevřelo se kvůli
+        # vzduchu, do dvou minut teplota klesla pod mez, zavřelo se,
+        # pokoj se ohřál zpátky na mez a šlo to znovu. Kontrola účinku
+        # se k tomu nedostala, protože na posouzení je takový pulz
+        # příliš krátký.
+        #
+        # Rozhoduje počet dobře dopadlých úseků, ne délka toho
+        # posledního: ten se na konci každého úseku počítá znovu od
+        # nuly, takže podle délky by vypadalo jako marné i větrání,
+        # které pojistka utne těsně po úspěšném úseku.
+        nic_neukazal = p.ucinek_od_s > 0 and p.ucinek_kolikaty == 0
         # Ostré srovnání: na hranici se nic neděje, jinak by se při
         # rovnosti zavřelo a už nikdy neotevřelo.
         if t_in < n.mez_dolni and chladi_nas:
             if p.otevreno:
-                return zavri(f"pojistka: kleslo na {t_in:.1f} °C "
-                             f"(mez {n.mez_dolni:.1f})", kod="pojistka")
+                duvod = (f"pojistka: kleslo na {t_in:.1f} °C "
+                         f"(mez {n.mez_dolni:.1f})")
+                if nic_neukazal:
+                    return _marny(duvod + " — na to je tu moc chladno",
+                                  kod="pojistka")
+                return zavri(duvod, hned=narazove, kod="pojistka")
             return beze_zmeny(
-                f"pojistka: {t_in:.1f} °C pod mezí {n.mez_dolni:.1f} °C",
-                False)
+                f"pojistka: {t_in:.1f} °C pod mezí "
+                f"{n.mez_dolni:.1f} °C" + krize, False)
         if t_max > n.mez_horni and hreje_nas:
             if p.otevreno:
-                return zavri(f"pojistka: vyšplhalo na {t_max:.1f} °C "
-                             f"(mez {n.mez_horni:.1f})", kod="pojistka")
+                duvod = (f"pojistka: vyšplhalo na {t_max:.1f} °C "
+                         f"(mez {n.mez_horni:.1f})")
+                if nic_neukazal:
+                    return _marny(duvod + " — na to je tu moc horko",
+                                  kod="pojistka")
+                return zavri(duvod, hned=narazove, kod="pojistka")
             return beze_zmeny(
-                f"pojistka: {t_max:.1f} °C nad mezí {n.mez_horni:.1f} °C",
-                False)
+                f"pojistka: {t_max:.1f} °C nad mezí "
+                f"{n.mez_horni:.1f} °C" + krize, False)
 
     # --- 4. vzduch --------------------------------------------------
     if p.pm_prumer is None:
@@ -1051,10 +1209,23 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # smogu, tedy jako dřív.
     pm_venku_lepsi = True
     if v.pm25_venku is not None:
-        pm_venku_lepsi = v.pm25_venku <= v.pm25 - n.pm_rozdil
+        # Začít se vyplatí, až když je venku čistěji o nastavený
+        # odstup. Rozjeté větrání ale dojede, dokud je venku čistěji
+        # vůbec. Dřív se odstup používal na obojí, takže se zavřelo
+        # přesně tam, kde se přestalo vyplácet — prach o ten odstup
+        # zase narostl a jelo se znovu. Okno kmitalo a nepřinášelo nic.
+        # Rozjeté větrání dojede, dokud je venku čistěji vůbec — ale
+        # opravdu čistěji: při rovnosti už nemá co přinést a bez
+        # ostrého srovnání by běželo dál a jen tahalo teplo.
+        def _lepsi(venku: float, uvnitr: float) -> bool:
+            if p.prach_se_resi:
+                return venku < uvnitr
+            return venku <= uvnitr - n.pm_rozdil
+
+        pm_venku_lepsi = _lepsi(v.pm25_venku, v.pm25)
         if v.pm10_venku is not None and v.pm10 > 0:
-            pm_venku_lepsi = pm_venku_lepsi and (
-                v.pm10_venku <= v.pm10 - n.pm_rozdil)
+            pm_venku_lepsi = pm_venku_lepsi and _lepsi(v.pm10_venku,
+                                                       v.pm10)
     else:
         # Bez venkovního čidla se to pozná z chování: když prach uvnitř
         # při otevřeném okně stoupá, tahá se dovnitř. Poznatek pár hodin
@@ -1083,6 +1254,13 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
 
     if not pm_venku_lepsi:
         pm_spatne = False          # větráním se prach nespraví
+    # Zapisuje se i v tom kole, kdy se teprve otevírá — okno je v té
+    # chvíli ještě zavřené, a právě proto se příznak dřív nenastavil
+    # nikdy: hned v dalším kole už prach na odstup nedosáhl.
+    if pm_spatne:
+        p.prach_se_resi = True
+    elif not p.otevreno:
+        p.prach_se_resi = False
 
     pm_cisto = (not pm_spatne
                 and (not v.pm_platny
@@ -1095,23 +1273,14 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # chvíli je dávno pryč. Zavřít hned by se tedy nestihlo nikdy
     # a nárazové větrání nedělalo nic jiného než běžné.
     #
-    # Čte se dřív, než si to některá větev stihne přepsat: pulz se
-    # při zavření ruší, a to je právě ten okamžik, kdy se ptáme.
-    # Stačí jedna ze tří věcí: běžící nárazové větrání, pulz, který
-    # se s ním otevřel, nebo samotné počasí. To poslední přibylo
-    # kvůli chlazení a ohřevu: ty nárazové větrání nespouští, protože
-    # to je věc vzduchu — ale jakmile důvod doběhne, je v mrazu každá
-    # minuta navíc stejně drahá, ať se větralo kvůli čemukoli.
-    narazove = bool(v.narazove or p.narazove_pulz or v.narazove_mozne)
-
     if v.co2 > n.co2_otevrit:
         p.vetra_se = True
-    if v.co2 < n.co2_zavrit:
+    if v.co2 < prah_zavreni(v, n):
         p.vetra_se = False
     prah_startu = prah_otevreni(v, p, n)
 
     potreba = v.co2 > prah_startu or v.vetrat or pm_spatne
-    cisto = v.co2 < n.co2_zavrit and not v.vetrat and pm_cisto
+    cisto = v.co2 < prah_zavreni(v, n) and not v.vetrat and pm_cisto
 
     # --- 5. komfort a chlazení --------------------------------------
     noc = _je_noc(v.hodina, n, v.spanek)
@@ -1361,7 +1530,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             # Jedna hladina pro zavření, tatáž jako ve dne. Dřív se ve
             # spánku zavíralo na nočním prahu, takže se jedna hodnota
             # používala na otevírání i zavírání a nebylo poznat, co dělá.
-            if (v.co2 < n.co2_zavrit and not pm_spatne
+            if (v.co2 < prah_zavreni(v, n) and not pm_spatne
                     and not v.vetrat and not v.vynuceno):
                 return zavri(f"noc: vyvětráno, CO2 {v.co2:.0f}",
                              hned=narazove, kod="noc_hotovo")
@@ -1400,11 +1569,12 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     if p.otevreno and p.pm_tahne_zvenci:
         p.pm_tahne_zvenci = False
         p.narazove_pulz = False
-        # Nejkratší doba držení polohy platí i tady. Obcházet ji smí
-        # jen ochrana pohonu — vítr a déšť — a odchod z bytu.
+        # Nejkratší doba držení polohy platí i tady — obcházet ji smí
+        # jen ochrana pohonu, odchod z bytu a nárazový režim, který
+        # zavírá hned ze své podstaty.
         return zavri(f"prach se tahá zvenčí: PM2.5 "
                      f"{(p.pm_pri_otevreni or 0):.0f} → {v.pm25:.0f}",
-                     kod="prach_zvenci")
+                     hned=narazove, kod="prach_zvenci")
 
     if cisto:
         if not p.otevreno:
@@ -1488,6 +1658,10 @@ def pevna_pravidla_bytu() -> list[str]:
         f"nesnížilo aspoň o {UCINEK_CO2_PPM:.0f} ppm ani teplota "
         f"nepřiblížila k cíli o {UCINEK_TEPLOTA:.1f} °C, zavřu — "
         f"nad krizovým prahem a při ruční žádosti ne.",
+        f"Větrám-li kvůli prachu, posuzuju účinek na prachu: stačí "
+        f"pokles o {UCINEK_PM:.0f} µg/m³ za úsek. Jakmile přestane "
+        f"klesat, zavřu — ne jako marný pokus, ale jako hotovou věc, "
+        f"takže se dá kdykoli pustit znovu.",
         f"Bez funkčního ventilátoru v čidle prachu se práh zvedá na "
         f"{Nastaveni.pm_prah_bez_ventilatoru:.0f} µg/m³, protože měření "
         f"bez nasávání podhodnocuje.",
@@ -1500,7 +1674,9 @@ def pevna_pravidla_bytu() -> list[str]:
         f"otevřené okno: měří se {Nastaveni.pm_uceni_s / 60:.0f} min "
         f"a poznatek platí {Nastaveni.pm_poznatek_s / 3600:.0f} h.",
         "Teplotu při každém větrání drží dvě absolutní pojistky "
-        "u místnosti; obchází je jen ruční žádost o vyvětrání.",
+        "u místnosti; obchází je jen ruční žádost o vyvětrání. Přebijí "
+        "i krizové CO2 — vymrzlý nebo rozpálený byt je horší problém "
+        "než dusno — a v hlášce se to pozná.",
         f"Povel se po {Nastaveni.obnova_s / 60:.0f} min pošle znovu, "
         f"protože pohon ho občas ztratí. V noci a ve spánku ne.",
         f"Délka pulzu vychází z rozpočtu "

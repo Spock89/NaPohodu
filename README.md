@@ -182,7 +182,8 @@ celého cyklu — a to včetně nejkratší doby držení polohy, kterou nárazo
 zavření obchází. Délka pulzu zůstává stejná jako jindy; mění se jen to,
 že může skončit dřív.
 
-Zavření hned platí **na každý důvod**, ne jen na vzduch. Nárazové
+Zavření hned platí **na každý důvod**, ne jen na vzduch — včetně
+marného větrání, pojistek a prachu taženého zvenčí. Nárazové
 větrání spouští jen CO2 a prach, protože jde o výměnu vzduchu; chlazení
 a ohřev ho nezapnou. Jakmile ale jejich důvod doběhne na druhou stranu
 — pokoj je na cíli, nebo venku přestalo pomáhat — je v tomhle počasí
@@ -270,6 +271,16 @@ uplyne nejkratší doba držení polohy, se proto ověří, že větrání vůbe
 zabírá: když se CO2 nesnížilo aspoň o padesát ppm ani teplota
 nepřiblížila k cíli o tři desetiny, okno se zavře a chvíli se to
 nezkouší. Pauza se s každým dalším marným pokusem zdvojnásobí.
+
+Pokrok se měří k tomu, **kam větrání míří** — chlazení dojíždí na
+dolní hranu pásma, ohřev na horní, ne na cíl. Jinak by úspěšné
+chlazení vypadalo jako zhoršení přesně ve chvíli, kdy pokoj cíl přešel
+a mířil na hranu pásma.
+
+Počítadlo marných pokusů se zvyšuje **až když zavírací povel opravdu
+projde**, ne už ve chvíli, kdy se marnost pozná: zavření čeká na
+nejkratší dobu držení polohy a za tu dobu by se marnost napočítala
+tolikrát, kolik minut se čekalo.
 
 Účinek se posuzuje **po úsecích, ne proti okamžiku otevření**. První
 úsek trvá nejkratší dobu držení polohy, další třetinu z ní, nejméně
@@ -1094,6 +1105,24 @@ neklesla.
 zdvojnásobí, nejvýš na hodinu. Spouští se, když větrání nezabírá na
 CO2 — typicky když jedna místnost větrá za druhou a svým oknem její
 vzduch skoro neovlivní. Teplotního kmitání se netýká, to řeší pásmo.
+
+**Účinek se posuzuje na té veličině, kvůli které je okno otevřené.**
+Kvůli CO2 na CO2, kvůli teplu na teplotě, kvůli prachu na prachu.
+Prachové větrání jinak nemělo jak uspět: CO2 při něm klesat nemusí a
+teplota se při otevřeném okně vždycky vzdaluje.
+
+**Prachové větrání se nezastaví na venkovní hodnotě, ale tam, kde
+prach přestane klesat.** Poslední mikrogramy se dobírají tak pomalu,
+že se za ně nevyplatí držet okno. Není to marný pokus, ale hotová
+věc — couvání se proto nezapne a kdykoli se dá pustit znovu. Jak často
+se to stane, určuje odstup venkovního prachu: čím menší, tím kratší a
+častější pulzy. Na trvalý vnitřní zdroj prachu je lepší nástroj
+čistička.
+
+**Pojistky přebijí i krizový práh CO2.** Vymrzlý nebo rozpálený byt je
+horší problém než dusno. V tropické noci tedy může zůstat zavřeno i
+nad krizovým prahem — hláška v kartě to v takové chvíli řekne, aby
+nevypadalo, že slib o otevření při krizi platí a neplní se.
 
 Pravidla pro celý byt jsou v kartě jednou, v samostatné sekci před
 grafy. Ta, která závisí na stavu místnosti, zůstávají u ní.

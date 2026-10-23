@@ -2761,3 +2761,249 @@ def test_drzeni_rika_ktery_pohyb_hlida():
                cil=22.0, hodina=9.0, cas_s=100000)
     p3 = Pamet(otevreno=False, cas_povelu_s=100000 - 300)
     assert drzeni(v3, p3)[0].startswith("otevřu nejdřív")
+
+
+# ------------------------- kontrola účinku měří k tomu, kam se míří
+
+def _bezi_vetrani(t_in, co2, t_start, co2_start, uplynulo_min, **kw):
+    """Běžící větrání a jeho posouzení po zadané době."""
+    nast = Nastaveni(hyst_den_otevrit=2.0, hyst_den_zavrit=2.0,
+                     min_drzeni_s=20 * 60)
+    v = Vstup(cas_s=100000.0, co2=co2, t_in=t_in, t_in_max=t_in,
+              t_out=8.7, rh_out=70.0, cil=kw.pop("cil", 21.8), hodina=14.0)
+    p = Pamet(cas_povelu_s=kw.pop("cas_povelu_s", 0.0))
+    p.otevreno = True
+    p.chladi = kw.pop("chladi", True)
+    p.ohrivam = kw.pop("ohrivam", False)
+    p.rezim = "komfort" if (p.chladi or p.ohrivam) else "pulz"
+    p.komfort_start = t_start
+    p.ucinek_od_s = v.cas_s - uplynulo_min * 60
+    p.ucinek_co2, p.ucinek_t_in = co2_start, t_start
+    p.pulzy_za_sebou = kw.pop("pulzy", 0)
+    return rozhodni(v, p, nast), p
+
+
+def test_uspesne_chlazeni_neni_zhorseni():
+    """Chlazení dojíždí na dolní hranu pásma, ne na cíl.
+
+    Dokud se pokrok měřil ke cíli, vypadalo úspěšné chlazení jako
+    zhoršení přesně ve chvíli, kdy pokoj cíl přešel a mířil na hranu
+    pásma — okno se zavřelo s hláškou „zhoršuje se to", přestože se
+    vychladilo o dva stupně.
+    """
+    r, _ = _bezi_vetrani(20.0, 564, 22.0, 564, 62)      # cíl 21,8
+    assert "zhoršuje" not in r.duvod, r.duvod
+    assert r.akce is not Akce.ZAVRIT, r.duvod
+
+    # a na hraně pásma se zavře, jak má
+    r, _ = _bezi_vetrani(19.7, 564, 22.0, 564, 62)
+    assert r.akce is Akce.ZAVRIT
+    assert "vychlazeno" in r.duvod, r.duvod
+
+
+def test_uspesny_ohrev_neni_zhorseni():
+    r, _ = _bezi_vetrani(21.3, 564, 19.0, 564, 62, cil=21.0,
+                         chladi=False, ohrivam=True)
+    assert "zhoršuje" not in r.duvod, r.duvod
+
+
+def test_skutecne_zhorseni_se_pozna_dal():
+    """Chladím a otepluje se — to je zhoršení i nadále."""
+    r, _ = _bezi_vetrani(23.5, 564, 22.0, 564, 30)
+    assert r.akce is Akce.ZAVRIT
+    assert "zhoršuje se to" in r.duvod, r.duvod
+
+    # a zrcadlově u ohřevu
+    r, _ = _bezi_vetrani(17.0, 564, 19.0, 564, 30, cil=21.0,
+                         chladi=False, ohrivam=True)
+    assert "zhoršuje se to" in r.duvod, r.duvod
+
+
+def test_marny_pulz_se_pocita_az_kdyz_povel_projde():
+    """Počítadlo marných pulzů nesmí růst každou minutu držení.
+
+    Zavření kvůli marnosti čeká na nejkratší dobu držení polohy.
+    Dokud se počítadlo zvyšovalo rovnou, přičetlo se za tři minuty
+    čekání třikrát a pauzy před dalším pokusem se tím natahovaly.
+    """
+    # zhoršení, ale povel drží nejkratší doba držení polohy
+    r, p = _bezi_vetrani(23.5, 564, 22.0, 564, 30, pulzy=4,
+                         cas_povelu_s=100000.0 - 60)
+    assert r.kod == "drzeni", r.duvod
+    assert p.pulzy_za_sebou == 4, "drženo, tak se nic nepřičítá"
+
+    # jakmile držení doběhne, přičte se jednou
+    r, p = _bezi_vetrani(23.5, 564, 22.0, 564, 30, pulzy=4)
+    assert r.akce is Akce.ZAVRIT
+    assert p.pulzy_za_sebou == 5
+    assert p.marne_proc == "chlazeni"
+
+
+# ----------------------- smyčky, které vzniknou až během provozu
+
+def test_predvetrani_ma_pasmo_ne_caru():
+    """Před návštěvou se otevírá na prahu zavření — zavírat se na něm
+    nesmí, jinak má pásmo nulovou šířku a okno kmitá.
+    """
+    from core import prah_otevreni, prah_zavreni
+
+    n = Nastaveni()
+    v = stary(co2=705, t_in=21.0, cil=21.0, predvetrat=True)
+    p = Pamet(cas_povelu_s=0.0)
+    assert prah_otevreni(v, p, n) == n.co2_zavrit
+    assert prah_zavreni(v, n) < prah_otevreni(v, p, n)
+    # šířku pásma si určuje člověk svými dvěma prahy
+    assert (prah_otevreni(v, p, n) - prah_zavreni(v, n)
+            == n.co2_otevrit - n.co2_zavrit)
+
+    # a bez předvětrání se nic nemění
+    bez = stary(co2=705, t_in=21.0, cil=21.0)
+    assert prah_zavreni(bez, n) == n.co2_zavrit
+
+
+def test_vetrani_kvuli_prachu_dojede_a_nekmita():
+    """Začít se vyplatí s odstupem, dojet i bez něj.
+
+    Dokud se odstup používal na obojí, zavřelo se přesně tam, kde se
+    přestalo vyplácet — prach o ten odstup zase narostl a jelo se
+    znovu. Okno kmitalo a nepřinášelo nic.
+    """
+    n = Nastaveni()
+
+    def kolo(pm, bezi):
+        v = stary(co2=680, t_in=21.3, cil=21.0, pm25=pm, pm10=pm * 1.4,
+                  pm25_venku=60.0, pm_platny=True)
+        p = Pamet(cas_povelu_s=0.0, otevreno=True, prach_se_resi=bezi)
+        return rozhodni(v, p, n), p
+
+    # rozjeté větrání dojede až k venkovní hodnotě
+    for pm in (65.0, 63.0, 61.0):
+        r, p = kolo(pm, True)
+        assert r.akce is not Akce.ZAVRIT, (pm, r.duvod)
+        assert p.prach_se_resi
+    # pod venkovní hodnotou už nemá co přinést
+    r, _ = kolo(58.0, True)
+    assert r.akce is Akce.ZAVRIT, r.duvod
+
+    # začít se ale s tak malým rozdílem nezačne
+    r, p = kolo(62.0, False)
+    assert not p.prach_se_resi
+
+
+def test_pojistka_utne_nicneukazavsi_pulz_jako_marny():
+    """Pulz, který pojistka utne, než mu dopadl jediný úsek, byl marný.
+
+    Kontrola účinku se k takhle krátkému větrání nedostane. Bez
+    tohohle se pokoj kolem meze otevíral pořád dokola: otevřelo se
+    kvůli vzduchu, do dvou minut spadla teplota pod mez, zavřelo se,
+    pokoj se ohřál zpátky na mez a šlo to znovu — a nikdo si nevšiml,
+    že to nikam nevede.
+    """
+    n = Nastaveni(mez_dolni=18.0)
+    v = Vstup(cas_s=100000.0, co2=900.0, t_in=17.8, t_in_max=17.8,
+              t_out=-8.0, rh_out=50.0, cil=21.0, hodina=12.0)
+
+    def pamet(useku):
+        p = Pamet(cas_povelu_s=v.cas_s - 22 * 60)   # držení je za námi
+        p.otevreno = True
+        p.ucinek_kolikaty = useku
+        p.ucinek_od_s = v.cas_s - 2 * 60            # úsek běží dvě minuty
+        p.ucinek_co2, p.ucinek_t_in = 900.0, 18.3
+        return p
+
+    p = pamet(0)                                    # nic ještě nedopadlo
+    r = rozhodni(v, p, n)
+    assert r.akce is Akce.ZAVRIT and r.kod == "pojistka", r.duvod
+    assert "moc chladno" in r.duvod
+    assert p.pulzy_za_sebou == 1, "pulz bez jediného úseku je marný"
+    assert p.marne_od_s == v.cas_s
+
+    # pulz, kterému úsek dopadl dobře, marný není — něco přinesl
+    p2 = pamet(1)
+    r2 = rozhodni(v, p2, n)
+    assert r2.akce is Akce.ZAVRIT and r2.kod == "pojistka"
+    assert p2.pulzy_za_sebou == 0
+
+
+def test_marny_pulz_se_pocita_az_kdyz_povel_projde():
+    """Dokud zavření drží minimální doba, nemá se co počítat.
+
+    Jinak během tří minut držení narostl počet marných pulzů ze čtyř
+    na sedm, protože se přičítalo při každém kole koordinátoru.
+    """
+    n = Nastaveni(mez_dolni=18.0)
+    v = Vstup(cas_s=100000.0, co2=900.0, t_in=17.8, t_in_max=17.8,
+              t_out=-8.0, rh_out=50.0, cil=21.0, hodina=12.0)
+    p = Pamet(cas_povelu_s=v.cas_s - 60)            # držení ještě běží
+    p.otevreno = True
+    p.ucinek_od_s = v.cas_s - 2 * 60
+    p.ucinek_co2, p.ucinek_t_in = 900.0, 18.3
+    for _ in range(3):
+        r = rozhodni(v, p, n)
+        assert r.akce is Akce.NIC and r.kod == "drzeni", r.duvod
+    assert p.pulzy_za_sebou == 0
+
+
+def test_prachove_vetrani_se_posuzuje_na_prachu():
+    """Větrá-li se kvůli prachu, rozhoduje prach.
+
+    CO2 při prachovém větrání klesat nemusí (nemusí být vysoké) a
+    teplota se při otevřeném okně vždycky vzdaluje, takže z nich
+    vycházelo, že to nezabírá, i když prach pěkně klesal. Okno se
+    zavřelo jako marné, prach zůstal a za čtvrt hodiny se otevřelo
+    znovu — klidně stokrát za den.
+    """
+    n = Nastaveni(min_drzeni_s=5 * 60)
+    Z = 100000.0
+
+    def kolo(minut, pm, p):
+        v = Vstup(cas_s=Z + minut * 60, co2=520.0, t_in=18.4, t_in_max=18.4,
+                  t_out=5.0, rh_out=50.0, cil=21.0, hodina=14.0,
+                  pm25=pm, pm10=pm * 1.4, pm25_venku=40.0,
+                  pm10_venku=56.0, pm_platny=True)
+        return rozhodni(v, p, n)
+
+    def pamet():
+        p = Pamet(cas_povelu_s=Z, otevreno=True, rezim="pulz",
+                  prach_se_resi=True, ucinek_od_s=Z, ucinek_co2=520.0,
+                  ucinek_t_in=19.2, ucinek_pm=65.0)
+        return p
+
+    # prach klesá: větrání zabírá, i když teplota utíká od cíle
+    p = pamet()
+    r = kolo(6, 58.0, p)
+    assert r.akce is not Akce.ZAVRIT, r.duvod
+    assert p.pulzy_za_sebou == 0
+
+    # prach už dál neklesá: zavírá se, ale pod svým jménem a ne jako marné
+    p2 = pamet()
+    r2 = kolo(6, 64.6, p2)
+    assert r2.akce is Akce.ZAVRIT and r2.kod == "cisto", r2.duvod
+    assert "prach už dál neklesá" in r2.duvod
+    assert "venku 40" in r2.duvod
+    assert p2.pulzy_za_sebou == 0, "povedlo se, na couvání není důvod"
+
+
+def test_zhorseni_prachu_si_necha_vlastni_hlasku():
+    """Rostoucí prach při otevřeném okně se jmenuje „tahá se zvenčí".
+
+    Kontrola účinku ho nesmí předběhnout s obecným „zhoršuje se to“ —
+    podle toho by se nepoznalo, co se vlastně stalo.
+    """
+    n = Nastaveni(min_drzeni_s=60 * 60)
+    Z = 100000.0
+    p = Pamet(otevreno=True, cas_povelu_s=Z, rezim="pulz", vetra_se=True,
+              prach_se_resi=True, pm_pri_otevreni=39.0, pm_otevreno_od_s=Z,
+              ucinek_od_s=Z, ucinek_co2=600.0, ucinek_t_in=21.5,
+              ucinek_pm=44.0)
+
+    def kolo(minut, pm):
+        return rozhodni(Vstup(co2=600, pm25=pm, pm10=pm * 1.4, t_in=21.5,
+                              t_in_max=21.7, t_out=12.0, rh_out=60.0,
+                              cil=22.0, hodina=14.0,
+                              cas_s=Z + minut * 60), p, n)
+
+    kolo(12, 48.0)
+    assert p.pm_venku_horsi_do_s > Z
+    r = kolo(61, 48.0)
+    assert r.kod == "prach_zvenci", r.duvod
