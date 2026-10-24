@@ -68,7 +68,8 @@ from .const import (
     CONF_STINENI_REZIM, CONF_TEPLOTY, CONF_TOPENI_OBNOVA,
     CONF_TOPIT_PRI_OKNU, CONF_T_PRUMER, CONF_T_SEZONA, CONF_T_VENKU,
     CONF_T_VENKU_M, CONF_UTLUM, CONF_VETRAT, CONF_VITR, CONF_VITR_KLID,
-    CONF_VITR_PRAH, CONF_VLHKOST_DOSAH, CONF_VLHKOST_MISTNOSTI,
+    CONF_VITR_KLID_MIN, CONF_VITR_PRAH, CONF_VLHKOST_DOSAH,
+    CONF_VLHKOST_MISTNOSTI,
     CONF_VYCHOZI_KDY, CONF_VYNUCENO_M, CONF_ZALUZIE,
     CONF_ZARENI, CONF_ZASKLENI, CONF_ZDROJ_OBSAZENOSTI, CONF_ZIMA_NAJEZD,
     CONF_ZIMA_O_KOLIK, CONF_ZIMA_PRAH, CONF_ZMENA_PODMINEK,
@@ -133,6 +134,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.zony: dict[str, VysledekZony] = {}
         self.topna_sezona: bool = True
         self.vitr_blokuje: bool = False
+        # kdy naposled přišlo čtení nad prahem; od toho se měří klid
+        self.vitr_naposled_s: float = 0.0
         # hodnoty, které blokaci spustily — zpráva má říkat pravdu,
         # ne aktuální stav, který už může být jiný
         self.vitr_pricina: dict = {}
@@ -636,7 +639,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     # ------------------------------------------------------------ hlavní
 
-    def _vitr(self, g: dict, vitr: float, naraz: float) -> bool:
+    def _vitr(self, g: dict, vitr: float, naraz: float,
+              mlci: bool = False, cas_s: float = 0.0) -> bool:
         """Nárazy mají vlastní práh, protože pohon poškodí dřív než
         ustálená rychlost.
 
@@ -646,25 +650,53 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         prah_v = float(g.get(CONF_VITR_PRAH, 7.0))
         prah_n = float(g.get(CONF_NARAZ_PRAH, 11.0))
         klid_v = float(g.get(CONF_VITR_KLID, 5.0))
+        # Klid musí chvíli vydržet. Hystereze hlídá jen výšku hodnoty,
+        # a to na poryvy nestačí: mezi nimi náraz spadne pod uklidňovací
+        # mez klidně na jedno čtení, blokace pustila a okno se uprostřed
+        # vichřice otevřelo — do dalšího poryvu, který ho zase zavřel.
+        # Měří se od posledního čtení nad prahem, ne od prvního klidného.
+        klid_s = float(g.get(CONF_VITR_KLID_MIN, 10.0)) * 60
 
         drive = self.vitr_blokuje
-        if vitr > prah_v or naraz > prah_n:
+        if mlci:
+            # Nastavené čidlo, které nehlásí, není bezvětří. Dokud mlčí,
+            # drží se předchozí stav: výpadek blokaci nezruší ani
+            # nezavede. Dřív se chybějící hodnota brala jako nula, takže
+            # jediné vynechané čtení uprostřed vichřice blokaci pustilo
+            # a okno se otevřelo — a při dalším čtení zase zavřelo.
+            # U pojistky se mlčení čte na bezpečnou stranu, stejně jako
+            # u přítomnosti: nevím neznamená vypnuto.
+            co, prah = (("čidlo mlčí", None) if self.vitr_blokuje
+                        else (None, None))
+        elif vitr > prah_v or naraz > prah_n:
             self.vitr_blokuje = True
+            self.vitr_naposled_s = cas_s
             co = "nárazy" if naraz > prah_n else "rychlost"
             prah = prah_n if naraz > prah_n else prah_v
         elif vitr < klid_v and naraz < klid_v:
-            self.vitr_blokuje = False
-            co, prah = None, None
+            if cas_s - self.vitr_naposled_s >= klid_s:
+                self.vitr_blokuje = False
+                co, prah = None, None
+            else:
+                co, prah = "klid ještě nevydržel", klid_v
         else:
             # mezi prahem a uklidněním se stav nemění
             co, prah = ("hystereze", klid_v) if self.vitr_blokuje else (None, None)
+
+        # Kolik klidu ještě chybí, než blokace pustí. Bez toho vypadalo
+        # zavřené okno při bezvětří jako chyba.
+        zbyva_min = (
+            max(0, int((klid_s - (cas_s - self.vitr_naposled_s)) / 60) + 1)
+            if self.vitr_blokuje and self.vitr_naposled_s > 0
+            and cas_s - self.vitr_naposled_s < klid_s else 0)
 
         # příčina se přepisuje každý cyklus, aby zpráva nikdy nebyla prázdná
         self.vitr_pricina = {
             "rychlost": round(vitr, 1), "naraz": round(naraz, 1),
             "co_prekrocilo": co, "prah": prah,
+            "klid_zbyva_min": zbyva_min,
             "prahy": {"rychlost": prah_v, "naraz": prah_n,
-                      "povoli_pod": klid_v},
+                      "povoli_pod": klid_v, "klid_min": klid_s / 60},
         } if self.vitr_blokuje else {}
 
         if drive != self.vitr_blokuje:
@@ -678,10 +710,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                           vitr, naraz, self.vitr_blokuje)
         self.vitr_stav = {
             "jednotka": "m/s (přepočteno z čidla)",
+            "cidlo": "mlčí, držím předchozí stav" if mlci else "hlásí",
             "rychlost": round(vitr, 1), "naraz": round(naraz, 1),
             "blokuje": self.vitr_blokuje,
             "prahy": {"rychlost": prah_v, "naraz": prah_n,
-                      "povoli_pod": klid_v},
+                      "povoli_pod": klid_v,
+                      "klid_min": klid_s / 60},
+            "klid_zbyva_min": zbyva_min,
             "pricina": self.vitr_pricina or None,
         }
         return self.vitr_blokuje
@@ -966,9 +1001,20 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             else "přítomnost nenastavena, beru jako doma")
         doma = True if doma is None else doma
 
-        vitr = self._rychlost(g.get(CONF_VITR), 0.0)
-        naraz = self._rychlost(g.get(CONF_NARAZ), vitr)
-        vitr_blokuje = self._vitr(g, vitr, naraz)
+        # Čas se bere jednou na začátku a platí pro celý cyklus, ať se
+        # rozhodnutí v jednom kole neměří každé podle jiných hodin.
+        # Vítr ho potřebuje taky — hlídá si, jak dlouho už je klid.
+        cas_s = dt_util.utcnow().timestamp()
+
+        # Mlčí jen nastavené čidlo, které nehlásí. Nenastavené čidlo
+        # mlčením není — tam se o větru prostě nerozhoduje.
+        zdroj_vitr, zdroj_naraz = g.get(CONF_VITR), g.get(CONF_NARAZ)
+        mlci_vitr = bool(zdroj_vitr) and self._stav(zdroj_vitr) is None
+        mlci_naraz = bool(zdroj_naraz) and self._stav(zdroj_naraz) is None
+        vitr = self._rychlost(zdroj_vitr, 0.0)
+        naraz = self._rychlost(zdroj_naraz, vitr)
+        vitr_blokuje = self._vitr(g, vitr, naraz,
+                                  mlci=mlci_vitr or mlci_naraz, cas_s=cas_s)
 
         slunce_az, slunce_el = self._poloha_slunce()
         jasno = pr.oblacnost(self._cislo(g.get(CONF_ZARENI)), slunce_el)
@@ -979,7 +1025,6 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if dnes != self._souhrn_den:
             self._souhrn_den = dnes
             self.souhrn = {}          # nový den, počítadla od nuly
-        cas_s = dt_util.utcnow().timestamp()
         # Plán obsazenosti. Skutečnost smí přítomnost jen přidat, nikdy
         # ubrat: kdyby plán uměl „nikdo doma" přebít čidlo, stačil by
         # jeden zapomenutý záznam v kalendáři a člověk sedí ve studeném
@@ -1879,11 +1924,37 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("NaPohodu: %s — okno nehlásí stav, nic neposílám",
                           m.nazev)
         if ovladat and okna and stav_znamy:
+            # Čím se každému okno naposled hýbalo. Obnova povelu totiž
+            # nemusí být jen potvrzení stávajícího stavu: když se stav
+            # rozešel se skutečností, obnova okno doopravdy přestaví —
+            # a to je pohyb, od kterého musí platit nejkratší doba
+            # držení. Dřív se obnova do držení nepočítala vůbec, takže
+            # po ní směl hned následovat pohyb opačným směrem: okno se
+            # zavřelo (obnovou, s důvodem větru) a za dvě minuty se
+            # otevřelo, protože držení se měřilo od povelu několik
+            # hodin starého.
+            poslal_driv = {o: vyk.stav.posledni_okna.get(o, (None, 0.0))[0]
+                           for o in okna}
             for okno in okna:
                 vysledek = await vyk.okno(okno, r, cas_s, skutecne)
                 if vysledek:
                     provedeno = vysledek
                     vyk.stav.posledni_popis = vysledek
+
+            if r.kod == "obnova":
+                # Opakování téhož směru nic nepřestavuje, držení se ho
+                # tedy netýká — jinak by se při obnově každých třicet
+                # minut a delší době držení stav nesměl změnit nikdy.
+                otocilo = any(
+                    drive is not None
+                    and drive != ("open_cover" if r.akce is core.Akce.OTEVRIT
+                                  else "close_cover")
+                    for drive in poslal_driv.values())
+                if otocilo:
+                    pamet.cas_povelu_s = cas_s
+                    _LOGGER.info(
+                        "NaPohodu: %s — obnova okno přestavila, nejkratší "
+                        "doba držení platí od teď", m.nazev)
 
             # Zavření po dojezdu pulzu musí nastavit i paměť jádra,
             # jinak neplatí minimální doba držení stavu a okno se

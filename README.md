@@ -1184,6 +1184,29 @@ bez důvodu. Srovnat se dá tlačítkem.
 Ochrana stojí nad tvým rozhodnutím: vítr a déšť zavřou okno i tehdy, když
 jsi ho otevřel ručně nebo vynutil přepínačem.
 
+**Blokaci větru nepustí jedna klidná hodnota.** Kromě tří prahů
+(rychlost, nárazy, uklidňovací mez) se hlídá i čas: po posledním čtení
+nad prahem zůstává zavřeno nastavenou dobu klidu, výchozí deset minut.
+Mezi poryvy totiž náraz spadne pod uklidňovací mez klidně na jedno
+čtení, a to dřív stačilo na otevření okna uprostřed vichřice — zavřelo
+kvůli větru, za dvě minuty otevřelo a hned zase zavřelo. Hystereze
+hlídá jen výšku hodnoty, ne čas. Nula dobu klidu vypne. Kolik klidu
+ještě chybí, je vidět v hlášce i v atributu `vitr`.
+
+**Obnova povelu, která okno přestaví, je pohyb.** Obnova se posílá
+každých třicet minut pro případ, že pohon povel zahodil. Většinou jen
+potvrzuje stav, ve kterém okno už je, a držení se jí pak netýká —
+jinak by se při hodinovém držení stav nesměl změnit nikdy. Když se ale
+stav rozešel se skutečností, obnova okno doopravdy přestaví, a od
+toho okamžiku platí nejkratší doba držení. Dřív se obnova do držení
+nepočítala vůbec, takže po ní směl hned následovat pohyb opačným
+směrem: okno se zavřelo obnovou s důvodem větru a za dvě minuty se
+otevřelo, protože držení se měřilo od povelu několik hodin starého.
+
+**Mlčící čidlo větru není bezvětří.** Když nastavené čidlo nehlásí,
+drží se předchozí stav: výpadek blokaci nezruší ani nezavede. U
+pojistky se „nevím" čte na bezpečnou stranu, stejně jako u přítomnosti.
+
 Naopak všechno ostatní tvoje rozhodnutí respektuje. Ruční zásah zruší
 rozdělanou akci, vynucené otevření přebije vzduch i teploty a přepínače
 ovládání vypnou automatiku úplně.

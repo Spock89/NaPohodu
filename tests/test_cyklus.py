@@ -458,3 +458,81 @@ def test_nezada_tam_kde_neni_koho_prosit(ha):
     assert dilna.rozhodnuti.duvod == "okno tady neovládáme"
     assert not any("žádám sousedy" in x for x in
                    (dilna.atributy.get("pevna_pravidla") or []))
+
+
+def _pripravena_obnova(ko, c, posledni_povel):
+    """Byt, kde jádro drží zavřeno, vítr fouká a povel je pět hodin starý."""
+    import homeassistant.util.dt as dt_util
+
+    stavy = _stavy()
+    stavy["sensor.co2"] = Stav("1100", {"unit_of_measurement": "ppm"})
+    stavy["sensor.vitr"] = Stav("12.0", {"unit_of_measurement": "m/s"})
+    k, hass = _koordinator(
+        ko, c,
+        podentity=[p for p in _instalace(c) if p.title in ("Obývák", "Dílna")],
+        stavy=stavy,
+        data={c.CONF_T_VENKU: "sensor.venku", c.CONF_DOMA: "binary_sensor.doma",
+              c.CONF_VITR: "sensor.vitr", c.CONF_VITR_KLID_MIN: 0.0})
+    asyncio.run(k.async_nacti())
+    k.hodnoty[("id_Obývák", "ovladat")] = 1.0
+    k.hodnoty[("id_Obývák", c.CONF_MIN_DRZENI)] = 62.0
+    asyncio.run(k._async_update_data())
+
+    cas = dt_util.utcnow().timestamp()
+    pamet = k.pameti["id_Obývák"]
+    pamet.otevreno = False
+    pamet.cas_povelu_s = cas - 5 * 3600
+    pamet.obnova_kdy_s = 0.0
+    k.vykonavaci["id_Obývák"].stav.posledni_okna["cover.obyvak"] = (
+        posledni_povel, cas - 5 * 3600)
+    return k, hass, pamet
+
+
+def _kolo(k, hass, vitr):
+    hass.states._h["sensor.vitr"] = Stav(str(vitr),
+                                         {"unit_of_measurement": "m/s"})
+    hass.services.volano.clear()
+    asyncio.run(k._async_update_data())
+    povely = [s for o, s, d in hass.services.volano if o == "cover"]
+    return k.mistnosti["id_Obývák"].rozhodnuti, povely
+
+
+def test_obnova_ktera_okno_prestavi_nastartuje_drzeni(ha):
+    """Obnova povelu je taky pohyb, když se stav rozešel se skutečností.
+
+    Dřív se do nejkratší doby držení nepočítala vůbec, takže po ní
+    směl hned následovat pohyb opačným směrem: okno se zavřelo
+    (obnovou, s důvodem větru) a za dvě minuty otevřelo, protože
+    držení se měřilo od povelu několik hodin starého.
+    """
+    ko = ha
+    from napohodu import const as c
+
+    # naposled se posílalo otevřít, obnova tedy okno doopravdy zavře
+    k, hass, pamet = _pripravena_obnova(ko, c, "open_cover")
+    r, povely = _kolo(k, hass, 12.0)
+    assert r.kod == "obnova" and "zavřít" in r.duvod, r.duvod
+    assert "close_cover" in povely
+
+    # vítr pustí, ale otevřít se nesmí — od přestavení platí držení
+    r2, povely2 = _kolo(k, hass, 1.0)
+    assert r2.kod == "drzeni", r2.duvod
+    assert "držím stav" in r2.duvod
+    assert not povely2, povely2
+
+
+def test_obnova_stejnym_smerem_drzeni_nerestartuje(ha):
+    """Jinak by se stav nesměl změnit nikdy: obnova chodí každých
+    třicet minut a doba držení je u mě hodina."""
+    ko = ha
+    from napohodu import const as c
+
+    # naposled se posílalo zavřít, obnova tedy jen potvrzuje stav
+    k, hass, pamet = _pripravena_obnova(ko, c, "close_cover")
+    r, _ = _kolo(k, hass, 12.0)
+    assert r.kod == "obnova", r.duvod
+
+    # vítr pustí a otevřít se smí hned, držení je dávno za námi
+    r2, povely2 = _kolo(k, hass, 1.0)
+    assert r2.akce.value == "otevrit", r2.duvod
+    assert "open_cover" in povely2

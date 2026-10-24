@@ -127,6 +127,8 @@ SCHEMA_GLOBAL = vol.Schema(
         vol.Optional(c.CONF_VITR_PRAH, default=7.0): _cislo(3, 30, 0.5, "m/s"),
         vol.Optional(c.CONF_NARAZ_PRAH, default=11.0): _cislo(3, 40, 0.5, "m/s"),
         vol.Optional(c.CONF_VITR_KLID, default=5.0): _cislo(2, 25, 0.5, "m/s"),
+        vol.Optional(c.CONF_VITR_KLID_MIN, default=10.0):
+            _cislo(0, 120, 1, "min"),
     }
 )
 

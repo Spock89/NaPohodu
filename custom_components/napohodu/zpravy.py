@@ -78,11 +78,18 @@ def _vitr(m, u):
     co = u.get("co_prekrocilo")
     kvuli = {"nárazy": "nárazy jsou nad prahem",
              "rychlost": "rychlost je nad prahem",
-             "hystereze": "vítr ještě neklesl dost nízko"}.get(co, "")
+             "hystereze": "vítr ještě neklesl dost nízko",
+             "klid ještě nevydržel": "vítr spadl, ale zatím nakrátko",
+             "čidlo mlčí": "čidlo větru nehlásí, držím předchozí stav",
+             }.get(co, "")
+    # Kolik klidu ještě chybí. Bez toho vypadalo zavřené okno při
+    # bezvětří jako chyba — a přesně tím se dřív stávalo.
+    zbyva = u.get("klid_zbyva_min") or 0
+    dokdy = f" Pustím, až bude klid {zbyva} min." if zbyva else ""
     return (f"{m}: zavírám okno kvůli větru — {kvuli}. "
             f"Rychlost {rychlost:.1f} z {prahy.get('rychlost', '?')}, "
             f"náraz {naraz:.1f} z {prahy.get('naraz', '?')}, "
-            f"povolí pod {prahy.get('povoli_pod', '?')}.")
+            f"povolí pod {prahy.get('povoli_pod', '?')}." + dokdy)
 
 
 def _dest(m, u):

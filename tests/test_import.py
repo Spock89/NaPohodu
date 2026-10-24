@@ -50,10 +50,12 @@ def test_vitr_blokuje_podle_dvou_prahu(nahradni_ha):
 
     class Falesny:
         vitr_blokuje = False
+        vitr_naposled_s = 0.0
         _vitr = ko.NaPohoduCoordinator._vitr
 
     f = Falesny()
-    g = {c.CONF_VITR_PRAH: 7.0, c.CONF_NARAZ_PRAH: 11.0, c.CONF_VITR_KLID: 5.0}
+    g = {c.CONF_VITR_PRAH: 7.0, c.CONF_NARAZ_PRAH: 11.0,
+         c.CONF_VITR_KLID: 5.0, c.CONF_VITR_KLID_MIN: 0.0}
 
     assert f._vitr(g, vitr=3.0, naraz=4.0) is False      # klid
     assert f._vitr(g, vitr=8.0, naraz=8.0) is True       # průměr přes práh
@@ -61,6 +63,73 @@ def test_vitr_blokuje_podle_dvou_prahu(nahradni_ha):
     assert f._vitr(g, vitr=2.0, naraz=2.0) is False      # povolilo
     assert f._vitr(g, vitr=3.0, naraz=12.0) is True      # náraz přes práh
     assert f._vitr({}, vitr=20.0, naraz=20.0) is True    # výchozí hodnoty
+
+
+def test_vitr_pusti_az_po_dobe_klidu(nahradni_ha):
+    """Poryv: mezi nárazy spadne hodnota pod uklidňovací mez na jedno
+    čtení. Bez doby klidu to stačilo na otevření okna ve vichřici —
+    zavřelo kvůli větru, za dvě minuty otevřelo a hned zavřelo zas.
+    """
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    c = importlib.import_module("napohodu.const")
+
+    class Falesny:
+        vitr_blokuje = False
+        vitr_naposled_s = 0.0
+        _vitr = ko.NaPohoduCoordinator._vitr
+
+    f = Falesny()
+    g = {c.CONF_VITR_PRAH: 7.0, c.CONF_NARAZ_PRAH: 11.0,
+         c.CONF_VITR_KLID: 5.0, c.CONF_VITR_KLID_MIN: 10.0}
+    Z = 100000.0
+
+    assert f._vitr(g, 3.0, 14.0, cas_s=Z) is True          # poryv
+    assert f._vitr(g, 4.0, 13.0, cas_s=Z + 60) is True     # fouká dál
+    # mezi poryvy je chvíli klid — blokace ale drží
+    assert f._vitr(g, 3.0, 4.5, cas_s=Z + 120) is True
+    assert f._vitr(g, 3.0, 4.0, cas_s=Z + 300) is True
+    # až když klid vydrží deset minut od posledního čtení nad prahem
+    assert f._vitr(g, 3.0, 4.0, cas_s=Z + 60 + 600) is False
+
+    # a další poryv odpočet začíná znovu
+    assert f._vitr(g, 3.0, 14.0, cas_s=Z + 1000) is True
+    assert f._vitr(g, 2.0, 2.0, cas_s=Z + 1300) is True
+    assert f._vitr(g, 2.0, 2.0, cas_s=Z + 1601) is False
+
+    # nula dobu klidu vypne, chování je jako dřív
+    g0 = {**g, c.CONF_VITR_KLID_MIN: 0.0}
+    assert f._vitr(g0, 3.0, 14.0, cas_s=Z + 2000) is True
+    assert f._vitr(g0, 2.0, 2.0, cas_s=Z + 2060) is False
+
+
+def test_mlcici_cidlo_vetru_neni_bezvetri(nahradni_ha):
+    """Chybějící hodnota se dřív brala jako nula, takže jedno vynechané
+    čtení uprostřed vichřice pustilo blokaci a okno se otevřelo."""
+    import importlib
+
+    ko = importlib.import_module("napohodu.coordinator")
+    c = importlib.import_module("napohodu.const")
+
+    class Falesny:
+        vitr_blokuje = False
+        vitr_naposled_s = 0.0
+        _vitr = ko.NaPohoduCoordinator._vitr
+
+    f = Falesny()
+    g = {c.CONF_VITR_PRAH: 7.0, c.CONF_NARAZ_PRAH: 11.0,
+         c.CONF_VITR_KLID: 5.0, c.CONF_VITR_KLID_MIN: 0.0}
+    Z = 100000.0
+
+    assert f._vitr(g, 3.0, 14.0, cas_s=Z) is True
+    # čidlo mlčí: hodnota dojde jako nula, ale blokace drží
+    assert f._vitr(g, 0.0, 0.0, mlci=True, cas_s=Z + 60) is True
+    assert f.vitr_stav["cidlo"] == "mlčí, držím předchozí stav"
+    # čidlo se ozve a opravdu je klid — pustí
+    assert f._vitr(g, 2.0, 2.0, cas_s=Z + 120) is False
+    # a mlčení samo blokaci nezavede
+    assert f._vitr(g, 0.0, 0.0, mlci=True, cas_s=Z + 180) is False
 
 
 # ------------------------------------------------- zakládání entit

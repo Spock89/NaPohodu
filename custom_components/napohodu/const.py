@@ -106,6 +106,7 @@ CONF_NOC_DO = "noc_do"
 CONF_VITR_PRAH = "vitr_prah"       # průměrná rychlost
 CONF_NARAZ_PRAH = "naraz_prah"     # nárazy, ty poškodí pohon dřív
 CONF_VITR_KLID = "vitr_klid"      # pod tím blokace povolí
+CONF_VITR_KLID_MIN = "vitr_klid_min"   # a jak dlouho musí klid vydržet
 
 # --- společné nárazové větrání ---
 CONF_NARAZOVE = "narazove_vetrani"

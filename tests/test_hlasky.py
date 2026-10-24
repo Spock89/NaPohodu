@@ -381,3 +381,26 @@ def test_pojistka_prizna_prebitou_krizi():
     v2 = Vstup(**{**v.__dict__, "co2": 900.0})
     r2 = rozhodni(v2, Pamet(cas_povelu_s=-1e9), n)
     assert "krizovým" not in r2.duvod, r2.duvod
+
+
+def test_zprava_o_vetru_rekne_kdy_pusti():
+    """Zavřené okno při bezvětří vypadá jako chyba, dokud se neřekne,
+    že se čeká, jestli klid vydrží."""
+    import sys, pathlib
+    sys.path.insert(0, str(pathlib.Path(__file__).parent.parent
+                           / "custom_components" / "napohodu"))
+    import zpravy
+
+    u = {"rychlost": 3.0, "naraz": 4.5, "co_prekrocilo": "klid ještě nevydržel",
+         "klid_zbyva_min": 7,
+         "prahy": {"rychlost": 7.0, "naraz": 11.0, "povoli_pod": 5.0,
+                   "klid_min": 10.0}}
+    t = zpravy.SKLADBA["vitr"]("Obývák", u)
+    assert "vítr spadl, ale zatím nakrátko" in t
+    assert "klid 7 min" in t
+
+    # mlčící čidlo se jmenuje
+    u2 = {**u, "co_prekrocilo": "čidlo mlčí", "klid_zbyva_min": 0}
+    t2 = zpravy.SKLADBA["vitr"]("Obývák", u2)
+    assert "čidlo větru nehlásí" in t2
+    assert "klid" not in t2.split("povolí pod")[1]
