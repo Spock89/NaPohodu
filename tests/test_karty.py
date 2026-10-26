@@ -957,8 +957,14 @@ def test_mrizka_dnu_sceny_v_karte():
     assert "columns: 7" in text
     assert "switch.napohodu_den_00" in text
     assert f"switch.napohodu_den_{karty.DNU_MRIZKY - 1:02d}" in text
-    # tolik dlaždic, kolik je přepínačů — ani jedna prázdná
-    assert text.count("switch.napohodu_den_") == karty.DNU_MRIZKY
+    # dvě dlaždice na den, z nichž je vidět vždycky právě jedna:
+    # podmínka na typ dne a karta sama, obojí na tutéž entitu
+    assert text.count("switch.napohodu_den_") == karty.DNU_MRIZKY * 4
+    assert text.count("attribute: typ_dne") == karty.DNU_MRIZKY * 2
+    assert text.count(f"color: {karty.BARVA_VOLNA}") == karty.DNU_MRIZKY
+    assert (text.count(f"color: {karty.BARVA_PRACOVNIHO_DNE}")
+            == karty.DNU_MRIZKY)
+    assert "state: \"volno\"" in text and "state: \"pracovní\"" in text
     assert "action: toggle" in text
     # a kalendář scény zůstává pod ní, kvůli opakování
     assert "initial_view: dayGridMonth" in text

@@ -21,7 +21,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import dny as dn
 from .const import (DOMAIN, PODENTITA_KLIMA, PODENTITA_MISTNOST,
-                    PODENTITA_SCENA)
+                    )
 from .entity import NaPohoduEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -55,11 +55,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     k = hass.data[DOMAIN][entry.entry_id]
     # Mřížka dnů patří vybrané scéně, ne každé zvlášť: s každou novou
     # by karta narostla o pětatřicet dlaždic a musela by se generovat
-    # znovu. Zakládá se, jen když nějaká scéna je.
-    if any(p.subentry_type == PODENTITA_SCENA
-           for p in entry.subentries.values()):
-        _sprav_identifikatory(hass, entry)
-        pridat([DenSceny(k, entry, i) for i in range(dn.DNU_DOPREDU)])
+    # znovu.
+    #
+    # Zakládá se vždycky, i když zrovna žádná scéna není. Dřív se
+    # zakládala jen se scénou, takže po smazání poslední scény zmizely
+    # entity, na které se vygenerovaný dashboard odkazuje — a karta
+    # kalendáře se pak místo prázdna donekonečna točí, protože na
+    # chybějící entitu nečeká s hláškou, ale s kolečkem.
+    _sprav_identifikatory(hass, entry)
+    pridat([DenSceny(k, entry, i) for i in range(dn.DNU_DOPREDU)])
 
 
     for pod in entry.subentries.values():
@@ -199,6 +203,10 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
     scénou narostla o celou mřížku.
     """
 
+    # Jméno zařízení se před dlaždici nelepí. Dlaždice je široká
+    # sedminu karty a „NaPohodu út 27. 10." se do ní nevejde — na
+    # kartě z toho zbylo „aPohod" a pod tím datum.
+    _attr_has_entity_name = False
     _attr_icon = "mdi:calendar-check"
 
     def __init__(self, k, entry, odstup: int) -> None:
@@ -207,8 +215,6 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
         # V jméně entity je číslo dlaždice, ne datum: z něho vzniká
         # `switch.napohodu_den_03`, a to se nesmí přes noc měnit.
         # Datum je ve jméně, které se ukazuje na kartě.
-        self._attr_translation_key = "scena_den"
-        self._attr_translation_placeholders = {"cislo": f"{odstup:02d}"}
         self._attr_unique_id = f"{entry.entry_id}_den_{odstup:02d}"
         # Identifikátor se nastavuje napevno. Home Assistant ho jinak
         # odvodí ze jména — a to je tady datum, takže by z dlaždic
@@ -267,7 +273,13 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
 
     @property
     def icon(self) -> str:
-        """Z ikony se pozná, co je uložené a co se teprve uloží."""
+        """Tvar nese stav zaškrtnutí, barvu den.
+
+        Rozpracovaná změna má přednost: dokud se neuloží, je důležité
+        vidět, co se zapíše a co zruší. Víkend a svátek jsou na druhé
+        ose, v barvě dlaždice — kdyby je nesl taky tvar, praly by se
+        o jedno místo dvě různé věci.
+        """
         den, ceka = self._den, self._ceka
         if den in ceka["pridat"]:
             return "mdi:calendar-plus"
@@ -282,6 +294,13 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
         den, ceka = self._den, self._ceka
         return {
             "datum": den.isoformat(),
+            # Víkend a svátek. Na dlaždici je víkend vidět ze zkratky
+            # dne a z ikony, svátek z hvězdičky; obarvit ho vestavěná
+            # karta neumí.
+            "typ_dne": dn.typ_dne(den),
+            "den": dn.DNY_TYDNE[den.weekday()],
+            "vikend": dn.vikend(den),
+            "svatek": dn.svatek(den),
             "scena": self._definice.get("nazev"),
             # Když den drží opakovaná nebo vícedenní událost, zrušit
             # ho kliknutím nejde — smazala by se i ta ostatní.

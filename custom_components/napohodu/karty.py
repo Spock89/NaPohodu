@@ -185,6 +185,11 @@ ZNACKA_BLOKU = "#--BLOK--"
 # se dal ověřit samostatně. Že se obě čísla rovnají, hlídá kontrola.
 DNU_MRIZKY = 35
 
+# Čím se v mřížce liší volno od pracovního dne. Pojmenované barvy
+# Home Assistantu, aby to sedlo do světlého i tmavého vzhledu.
+BARVA_VOLNA = "red"
+BARVA_PRACOVNIHO_DNE = "grey"
+
 
 def _jen_zapnute(radky: list[str], bloky: set | None) -> list[str]:
     """Vyhodí řádky bloků, které nikdo nechce.
@@ -1297,12 +1302,29 @@ def _mrizka_dnu(existuje) -> list[str]:
         eid = f"switch.napohodu_den_{i:02d}"
         if not existuje(eid):
             continue
-        dlazdice.append(
-            ["      - type: button",
-             f"        entity: {eid}",
-             "        show_state: false",
-             "        tap_action:",
-             "          action: toggle"])
+        # Dvě dlaždice na jeden den, z nichž je vždycky vidět právě
+        # jedna: barva nese víkend a svátek. Který sloupec je víkend,
+        # se totiž každým dnem posune, kdežto YAML má zůstat pořád
+        # stejný — rozhodnout to tedy musí entita svým atributem, ne
+        # pozice v mřížce. Schovaná dlaždice místo v mřížce nezabírá,
+        # takže řádky zůstanou po sedmi.
+        for typ, barva in (("volno", BARVA_VOLNA),
+                           ("pracovní", BARVA_PRACOVNIHO_DNE)):
+            dlazdice.append(
+                ["      - type: conditional",
+                 "        conditions:",
+                 "          - condition: state",
+                 f"            entity: {eid}",
+                 "            attribute: typ_dne",
+                 f"            state: {_text(typ)}",
+                 "        card:",
+                 "          type: tile",
+                 f"          entity: {eid}",
+                 f"          color: {barva}",
+                 "          vertical: true",
+                 "          hide_state: true",
+                 "          tap_action:",
+                 "            action: toggle"])
     if not dlazdice:
         return []
     out = ["  - type: grid",

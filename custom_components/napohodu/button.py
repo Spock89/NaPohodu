@@ -22,7 +22,7 @@ from . import vykon as vy
 from . import core
 from .const import (
     CONF_OKNA, CONF_RUCNI_KLID, CONF_STINENI_MAPA, DOMAIN,
-    PODENTITA_MISTNOST, PODENTITA_SCENA,
+    PODENTITA_MISTNOST,
 )
 from .services import proved_stav_stineni
 from .entity import NaPohoduEntity
@@ -55,11 +55,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             pridat(tlacitka, config_subentry_id=pod.subentry_id)
     tlacitka_bytu = [SrovnatVse(k, entry), VynulovatStavy(k, entry),
                      Naplanovat(k, entry)]
-    # Uložení a zahození rozpracovaného výběru dnů. Jen se scénou:
-    # bez ní není co ukládat.
-    if any(p.subentry_type == PODENTITA_SCENA
-           for p in entry.subentries.values()):
-        tlacitka_bytu += [UlozitDny(k, entry), ZahoditDny(k, entry)]
+    # Uložení a zahození rozpracovaného výběru dnů. Zakládají se
+    # vždycky, stejně jako mřížka a kalendář scény: vygenerovaný
+    # dashboard nesmí přestat fungovat tím, že smažeš poslední scénu.
+    tlacitka_bytu += [UlozitDny(k, entry), ZahoditDny(k, entry)]
     pridat(tlacitka_bytu)
 
 

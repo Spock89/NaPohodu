@@ -44,13 +44,24 @@ def _rozbal(pz):
 
 
 def test_popis_dlazdice_nese_datum(modul):
-    """Na dlaždici se čte datum, ne číslo — mřížka je kalendář."""
+    """Na dlaždici se čte zkratka dne a datum, nic víc.
+
+    Dlaždice je úzká: „NaPohodu zítra" se do ní nevejde a zbude
+    „aPohod". Mezera mezi zkratkou a datem je jediné místo, kde se
+    text zalomí, takže každá dlaždice vypadá stejně — proto tu nejsou
+    ani slova „dnes" a „zítra".
+    """
     dn, _ = modul
     dnes = datetime.date(2026, 10, 26)       # pondělí
-    assert dn.popis(0, dnes) == "dnes"
-    assert dn.popis(1, dnes) == "zítra"
-    assert dn.popis(2, dnes) == "st 28. 10."
+    assert dn.popis(0, dnes) == "po 26. 10."
+    assert dn.popis(2, dnes) == "st 28. 10. ★"   # Vznik Československa
+    assert dn.popis(3, dnes) == "čt 29. 10."
     assert dn.popis(5, dnes) == "so 31. 10."
+    # Každý popisek má stejný tvar, ať se dlaždice zalomí stejně.
+    # Svátek přidává hvězdičku, nic jiného se neliší.
+    for i in range(dn.DNU_DOPREDU):
+        x = dn.popis(i, dnes)
+        assert x.count(" ") == (3 if x.endswith("★") else 2), x
     # mřížka musí dosáhnout za hranici měsíce, jinak se první dny
     # příštího zadávají až na poslední chvíli
     assert dn.popis(dn.DNU_DOPREDU - 1, dnes) == "ne 29. 11."
@@ -114,3 +125,59 @@ def test_jedno_zaskrtnuti_se_odskrtnout_da(modul):
     # cizí scéna se do toho nemíchá
     jina = dn.pro_den([z], "id_jina", den, _rozbal(pz))
     assert not jina["plati"]
+
+
+def test_svatky_a_vikendy_jsou_volno(modul):
+    """Barvu dlaždice určuje entita, ne pozice v mřížce — který
+    sloupec je víkend, se každým dnem posune."""
+    dn, _ = modul
+    d = datetime.date
+    assert dn.typ_dne(d(2026, 10, 31)) == "volno"       # sobota
+    assert dn.typ_dne(d(2026, 11, 1)) == "volno"        # neděle
+    assert dn.typ_dne(d(2026, 10, 30)) == "pracovní"    # pátek
+    # státní svátek ve všední den je taky volno a je pojmenovaný
+    assert dn.typ_dne(d(2026, 10, 28)) == "volno"       # středa
+    assert dn.svatek(d(2026, 10, 28)) == "Vznik Československa"
+    assert dn.svatek(d(2026, 10, 30)) is None
+
+
+def test_velikonoce_se_pocitaji(modul):
+    """Jediné dva svátky, které se stěhují — v tabulce být nemůžou."""
+    dn, _ = modul
+    d = datetime.date
+    for rok, nedele in ((2026, d(2026, 4, 5)), (2027, d(2027, 3, 28)),
+                        (2030, d(2030, 4, 21))):
+        assert dn.velikonoce(rok) == nedele, rok
+        assert dn.svatek(nedele - datetime.timedelta(days=2)) == "Velký pátek"
+        assert dn.svatek(
+            nedele + datetime.timedelta(days=1)) == "Velikonoční pondělí"
+
+
+def test_popis_je_zkratka_dne_a_datum(modul):
+    """Dlaždice je široká sedminu karty: „NaPohodu út 27. 10." se do ní
+    nevešlo a zbylo z toho „aPohod". Zkratka dne a datum se vejdou."""
+    dn, _ = modul
+    assert dn.popis(0, datetime.date(2026, 10, 27)) == "út 27. 10."
+    assert dn.popis(4, datetime.date(2026, 10, 27)) == "so 31. 10."
+    # víkend je poznat ze zkratky, a to i bez barvy
+    assert dn.typ_dne(datetime.date(2026, 10, 31)) == "volno"
+    assert dn.typ_dne(datetime.date(2026, 10, 27)) == "pracovní"
+
+
+def test_statni_svatky(modul):
+    """Pevné i pohyblivé. Velikonoce se počítají, ať to platí i za
+    deset let a nic se nemusí doplňovat."""
+    dn, _ = modul
+    assert dn.svatek(datetime.date(2026, 11, 17)) == "Den boje za svobodu"
+    assert dn.svatek(datetime.date(2026, 7, 5)) == "Cyril a Metoděj"
+    assert dn.svatek(datetime.date(2026, 10, 27)) is None
+    assert dn.typ_dne(datetime.date(2026, 11, 17)) == "volno"
+
+    # velikonoční neděle podle tabulek
+    for rok, den in ((2024, (3, 31)), (2025, (4, 20)),
+                     (2026, (4, 5)), (2027, (3, 28))):
+        assert dn.velikonoce(rok) == datetime.date(rok, *den), rok
+    assert dn.svatek(datetime.date(2026, 4, 3)) == "Velký pátek"
+    assert dn.svatek(datetime.date(2026, 4, 6)) == "Velikonoční pondělí"
+    # a svátek je na dlaždici vidět
+    assert "★" in dn.popis(0, datetime.date(2026, 4, 6))

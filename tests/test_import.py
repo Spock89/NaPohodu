@@ -172,7 +172,10 @@ def _entity_platformy(modul, podentity):
 
 
 def _klice(entity):
-    return sorted(e._attr_translation_key for e in entity)
+    """Klíče překladu. Dlaždice dnů scény žádný nemají — jmenují se
+    datem, takže se vynechávají."""
+    return sorted(e._attr_translation_key for e in entity
+                  if getattr(e, "_attr_translation_key", None))
 
 
 def test_mistnost_dostane_vsechny_prepinace(nahradni_ha):

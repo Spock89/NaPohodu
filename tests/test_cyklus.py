@@ -546,6 +546,7 @@ def test_mrizka_dnu_sceny_zapina_a_vypina(ha):
     """
     ko = ha
     from napohodu import const as c
+    from napohodu import dny as dn
     from napohodu.switch import DenSceny
 
     k, hass = _koordinator(ko, c)
@@ -561,7 +562,7 @@ def test_mrizka_dnu_sceny_zapina_a_vypina(ha):
     dnes, zitra, pozitri = dlazdice
 
     assert not any(d.is_on for d in dlazdice)
-    assert dnes.name == "dnes" and zitra.name == "zítra"
+    assert dnes.name == dn.popis(0) and zitra.name == dn.popis(1)
 
     # naklikání dvou dnů: mřížka je ukazuje, do kalendáře nic nejde
     asyncio.run(zitra.async_turn_on())
@@ -745,6 +746,7 @@ def test_dlazdice_maji_identifikator_ktery_karta_hleda(ha):
     ko = ha
     import karty
     from napohodu import const as c
+    from napohodu import dny as dny_mod
     from napohodu.switch import DenSceny
 
     k, hass = _koordinator(ko, c)
@@ -752,7 +754,10 @@ def test_dlazdice_maji_identifikator_ktery_karta_hleda(ha):
 
     d = DenSceny(k, k.entry, 0)
     assert d.entity_id == "switch.napohodu_den_00"
-    assert d.name == "dnes", "na dlaždici se čte datum"
+    # Jméno zařízení se před dlaždici nelepí: „NaPohodu út 27. 10."
+    # se do sedminy karty nevejde a na kartě z toho zbylo „aPohod".
+    assert d._attr_has_entity_name is False
+    assert d.name[:2] in dny_mod.DNY_TYDNE, "na dlaždici se čte datum"
     assert DenSceny(k, k.entry, 12).entity_id == "switch.napohodu_den_12"
 
     # a karta hledá přesně tohle
@@ -788,3 +793,90 @@ def test_dlazdice_ze_starsiho_vydani_se_prejmenuji(ha):
             "switch.napohodu_den_02") in registr.prejmenovane
     # a co už správně je, se nepřejmenovává
     assert len(registr.prejmenovane) == 2
+
+
+def test_scena_entity_vzniknou_i_bez_scen(ha):
+    """Entita, která po smazání scény zmizí, nechá v kartě odkaz na
+    nic — a kalendář se nad ním točí donekonečna."""
+    ko = ha
+    from napohodu import const as c
+    from napohodu import dny as dn
+    from napohodu.button import async_setup_entry as tlacitka
+    from napohodu.calendar import async_setup_entry as kalendare
+    from napohodu.select import async_setup_entry as vybery
+    from napohodu.switch import async_setup_entry as prepinace
+
+    bez_scen = [p for p in _instalace(c)
+                if p.subentry_type != c.PODENTITA_SCENA]
+    k, hass = _koordinator(ko, c, podentity=bez_scen)
+    asyncio.run(k.async_nacti())
+    hass.data = {c.DOMAIN: {k.entry.entry_id: k}}
+
+    def sber(platforma):
+        vznikle = []
+        asyncio.run(platforma(
+            hass, k.entry,
+            lambda s, config_subentry_id=None: vznikle.extend(s)))
+        return vznikle
+
+    ids = [e.entity_id for e in sber(prepinace) if hasattr(e, "entity_id")]
+    assert f"switch.napohodu_den_{dn.DNU_DOPREDU - 1:02d}" in ids
+    assert any(type(e).__name__ == "KalendarVybraneSceny"
+               for e in sber(kalendare))
+    assert any(type(e).__name__ == "KteraScena" for e in sber(vybery))
+    assert sum(type(e).__name__ in ("UlozitDny", "ZahoditDny")
+               for e in sber(tlacitka)) == 2
+
+    # a nic z toho nepadá, jen neukazuje žádné dny
+    assert k.scena_vybrana() == (None, {})
+    assert k.scena_kolik_ceka() == (0, 0)
+    assert asyncio.run(k.scena_uloz()) == "žádná scéna není nastavená"
+
+
+def test_entity_scen_existuji_i_bez_sceny(ha):
+    """Bez scény se netočí kolečko.
+
+    Karta se generuje jen z entit, které existují. Kdyby dlaždice,
+    rolovátko a kalendář vznikaly až se scénou, musel by se po jejím
+    založení generovat dashboard znovu — a po smazání poslední scény
+    by karta ukazovala na entitu, která zmizela, tedy na věčně se
+    točící kolečko.
+    """
+    ko = ha
+    from napohodu import const as c
+    from napohodu.button import async_setup_entry as tlacitka
+    from napohodu.calendar import async_setup_entry as kalendare
+    from napohodu.switch import async_setup_entry as prepinace
+
+    # byt úplně bez scény
+    bez = [p for p in _instalace(c) if p.subentry_type != c.PODENTITA_SCENA]
+    k, hass = _koordinator(ko, c, podentity=bez)
+    asyncio.run(k.async_nacti())
+    hass.data = {c.DOMAIN: {k.entry.entry_id: k}}
+
+    vznikle = []
+
+    def pridat(entity, **kw):
+        vznikle.extend(entity)
+
+    asyncio.run(prepinace(hass, k.entry, pridat))
+    asyncio.run(tlacitka(hass, k.entry, pridat))
+    asyncio.run(kalendare(hass, k.entry, pridat))
+
+    ids = {getattr(e, "entity_id", None) or e._attr_unique_id
+           for e in vznikle}
+    assert "switch.napohodu_den_00" in ids
+    assert any(str(x).endswith("_vybrana_scena") for x in ids), ids
+    assert any(str(x).endswith("_ulozit_dny") for x in ids), ids
+
+    # a nic z toho nespadne, když se jich na prázdný byt zeptáš
+    dlazdice = next(e for e in vznikle
+                    if getattr(e, "entity_id", "") == "switch.napohodu_den_00")
+    dlazdice.hass = hass
+    dlazdice.async_write_ha_state = lambda: None
+    assert dlazdice.is_on is False
+    assert dlazdice.extra_state_attributes["scena"] is None
+    asyncio.run(dlazdice.async_turn_on())        # nemá co dělat
+    assert not [z for z in k.plan_zaznamy() if z.get("druh") == "scena"]
+    assert k.scena_kolik_ceka() == (0, 0)
+    assert asyncio.run(k.scena_uloz()) == "žádná scéna není nastavená"

@@ -37,18 +37,88 @@ def datum(odstup: int, dnes: date | None = None) -> date:
     return (dnes or dt_util.now().date()) + timedelta(days=odstup)
 
 
+def velikonoce(rok: int) -> date:
+    """Velikonoční neděle. Počítá se, protože se každý rok stěhuje.
+
+    Anonymní gregoriánský výpočet — nic se nestahuje a nic se nemusí
+    doplňovat, takže to platí i za deset let.
+    """
+    a = rok % 19
+    b, c = divmod(rok, 100)
+    d_, e = divmod(b, 4)
+    f = (b + 8) // 25
+    g = (b - f + 1) // 3
+    h = (19 * a + b - d_ - g + 15) % 30
+    i, k = divmod(c, 4)
+    l = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l) // 451
+    mesic, den = divmod(h + l - 7 * m + 114, 31)
+    return date(rok, mesic, den + 1)
+
+
+# Státní svátky a dny pracovního klidu s pevným datem.
+SVATKY = {
+    (1, 1): "Nový rok",
+    (5, 1): "Svátek práce",
+    (5, 8): "Den vítězství",
+    (7, 5): "Cyril a Metoděj",
+    (7, 6): "Jan Hus",
+    (9, 28): "Den české státnosti",
+    (10, 28): "Vznik Československa",
+    (11, 17): "Den boje za svobodu",
+    (12, 24): "Štědrý den",
+    (12, 25): "1. svátek vánoční",
+    (12, 26): "2. svátek vánoční",
+}
+
+
+def svatek(den: date) -> str | None:
+    """Jméno svátku, nebo nic. České, protože byt stojí v Praze."""
+    pevny = SVATKY.get((den.month, den.day))
+    if pevny:
+        return pevny
+    nedele = velikonoce(den.year)
+    if den == nedele - timedelta(days=2):
+        return "Velký pátek"
+    if den == nedele + timedelta(days=1):
+        return "Velikonoční pondělí"
+    return None
+
+
+def vikend(den: date) -> bool:
+    return den.weekday() >= 5
+
+
 def popis(odstup: int, dnes: date | None = None) -> str:
     """Co je na dlaždici napsané: „pá 31. 10.".
 
-    Dnešek a zítřek se jmenují slovy — na mřížce je pak hned vidět,
-    kde začíná, a den v týdnu u nich nikdo nehledá.
+    Zkratka dne a datum, nic víc — dlaždice je úzká a delší text se do
+    ní nevejde. Slova „dnes" a „zítra" tu nejsou schválně: mezera mezi
+    zkratkou a datem je jediné místo, kde text zalomí na dva řádky, a
+    tak každá dlaždice vypadá stejně.
     """
     d = datum(odstup, dnes)
-    if odstup == 0:
-        return "dnes"
-    if odstup == 1:
-        return "zítra"
-    return f"{DNY_TYDNE[d.weekday()]} {d.day}. {d.month}."
+    # Svátek nese hvězdička. Do ikony se nevejde — tu už má zabranou
+    # stav zaškrtnutí — a v popisku je vidět pořád, ať je den
+    # zaškrtnutý nebo ne. Jméno svátku je v atributech.
+    return (f"{DNY_TYDNE[d.weekday()]} {d.day}. {d.month}."
+            + (" ★" if svatek(d) else ""))
+
+
+def typ_dne(den: date) -> str:
+    """„volno" pro víkend a svátek, jinak „pracovní".
+
+    Rozhoduje entita, ne karta: který sloupec je víkend, se každým
+    dnem posune, kdežto YAML má zůstat pořád stejný.
+
+    Obarvit podle toho dlaždici vestavěné karty neumí — barvu ikony
+    určuje stav entity, ne její atribut, a nic jiného se v nich
+    nastavit nedá. Víkend je proto poznat ze zkratky dne a z ikony
+    prázdného dne, svátek z hvězdičky v popisku. Atribut je tu ke
+    čtení pro automatizace a pro karty, které barvit podle atributu
+    umí.
+    """
+    return "volno" if vikend(den) or svatek(den) else "pracovní"
 
 
 def _vlastni(zaznam: dict) -> bool:

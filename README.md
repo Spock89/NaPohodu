@@ -905,6 +905,22 @@ sloupec je dnešní den — a den se zapne a vypne kliknutím. Jde
 o pětatřicet dní dopředu, takže po celý měsíc je vidět jeho zbytek
 i celý příští.
 
+**Na dlaždici je zkratka dne a datum** — „út 27. 10." Jméno zařízení
+se před ni nelepí: dlaždice je široká sedminu karty a „NaPohodu út
+27. 10." se do ní nevejde. Víkend je poznat ze zkratky dne a z ikony
+prázdného dne, **státní svátek** z hvězdičky v popisku; jeho jméno je
+v atributu `svatek` a `typ_dne` říká „volno" nebo „pracovní".
+Velikonoce se počítají, takže tabulka svátků nepotřebuje doplňovat.
+Obarvit dlaždici podle dne vestavěné karty neumí — barvu ikony určuje
+stav entity, ne její atribut — proto to nesou popisek a ikona.
+
+**Entity scén existují i bez jediné scény.** Karta se generuje jen
+z entit, které opravdu jsou, takže kdyby dlaždice, rolovátko
+a kalendář vznikaly až se scénou, musel by se po jejím založení
+generovat dashboard znovu. A po smazání poslední scény by v kartě
+zůstal kalendář ukazující na entitu, která zmizela — tedy věčně se
+točící kolečko.
+
 **Zaškrtnutí se neukládá hned.** Mřížka je rozpracovaný výběr: dny se
 naklikají a do kalendáře se zapíšou jedním stiskem **Uložit dny do
 kalendáře** hned pod mřížkou. Jinak by čtrnáct dní znamenalo čtrnáct

@@ -52,9 +52,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     # Na kartě je jeden kalendář pro tu scénu, kterou ukazuje
     # rolovátko. S kalendářem ke každé scéně by karta s každou novou
     # narostla a musela by se generovat znovu.
-    if any(p.subentry_type == PODENTITA_SCENA
-           for p in entry.subentries.values()):
-        pridat([KalendarVybraneSceny(k, entry)])
+    #
+    # Zakládá se vždycky, i bez scény — prázdný kalendář je lepší než
+    # žádný. Na chybějící entitu totiž kalendářová karta nečeká
+    # s hláškou, ale s točícím se kolečkem, takže by vygenerovaný
+    # dashboard po smazání poslední scény vypadal rozbitě.
+    pridat([KalendarVybraneSceny(k, entry)])
 
 
 class KalendarPlanu(CoordinatorEntity, CalendarEntity):
