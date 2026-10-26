@@ -473,6 +473,24 @@ for k in sorted(ve_form - cte - UI_POLE):
 # 1s) tatáž hodnota nesmí mít jiné jméno v entitě a jiné ve formuláři.
 # Člověk pak v dashboardu hledá něco, co v nastavení najde pod jiným
 # názvem — a neví, že je to totéž.
+# Mřížka dnů scény: dlaždice si identifikátor nastavují napevno,
+# protože Home Assistant ho jinak odvodí ze jména — a to je u nich
+# datum. Ve 2.44 a 2.45 z toho vznikly `switch.dnes` a spol., karta
+# hledala `switch.napohodu_den_00`, nenašla ani jednu a mřížku
+# negenerovala vůbec. Obě strany proto musí mluvit o tomtéž.
+_sw = (d / "switch.py").read_text()
+_tvar_entity = re.search(r'entity_id = f"switch\.\{klic_dne\(odstup\)\}"',
+                         _sw)
+_tvar_klice = re.search(r'return f"napohodu_den_\{odstup:02d\}"', _sw)
+_tvar_karty = re.search(r'eid = f"switch\.napohodu_den_\{i:02d\}"',
+                        (d / "karty.py").read_text())
+if not (_tvar_entity and _tvar_klice):
+    chyby.append("switch.py: dlaždice dne si nenastavuje identifikátor "
+                 "napevno — vznikne z data a karta ji nenajde")
+elif not _tvar_karty:
+    chyby.append("karty.py: mřížka hledá jiný tvar identifikátoru, než "
+                 "jaký dlaždice dne dostávají")
+
 # Mřížka dnů scény: karta si počet dlaždic opisuje, protože na
 # integraci schválně nesahá. Když se čísla rozejdou, bude na kartě
 # o dlaždici víc nebo míň, než kolik přepínačů vznikne — a ta

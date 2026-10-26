@@ -11,6 +11,12 @@ class Registr:
         self.prejmenovane = []
         self.smazane = []
 
+    def async_get_entity_id(self, domain, platform, unique_id):
+        for z in self.zapisy:
+            if z.unique_id == unique_id and z.domain == domain:
+                return z.entity_id
+        return None
+
     def async_get(self, entity_id):
         for z in self.zapisy:
             if z.entity_id == entity_id:

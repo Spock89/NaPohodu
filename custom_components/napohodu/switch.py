@@ -15,6 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -26,6 +27,29 @@ from .entity import NaPohoduEntity
 _LOGGER = logging.getLogger(__name__)
 
 
+def klic_dne(odstup: int) -> str:
+    """Identifikátor dlaždice. Jedno místo pro entitu i pro kartu."""
+    return f"napohodu_den_{odstup:02d}"
+
+
+def _sprav_identifikatory(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Přejmenuje dlaždice z dřívějších vydání.
+
+    Ve 2.44 a 2.45 si identifikátor odvozoval Home Assistant ze jména,
+    a to je u dlaždice datum — vznikly z toho `switch.dnes` a spol.
+    Registr si první jméno pamatuje, takže by oprava sama na stávající
+    instalaci nedosáhla a mřížka by zůstala prázdná i po aktualizaci.
+    """
+    registr = er.async_get(hass)
+    for i in range(dn.DNU_DOPREDU):
+        stary = registr.async_get_entity_id(
+            "switch", DOMAIN, f"{entry.entry_id}_den_{i:02d}")
+        novy = f"switch.{klic_dne(i)}"
+        if stary and stary != novy and registr.async_get(novy) is None:
+            _LOGGER.info("NaPohodu: přejmenovávám %s na %s", stary, novy)
+            registr.async_update_entity(stary, new_entity_id=novy)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                             pridat: AddEntitiesCallback) -> None:
     k = hass.data[DOMAIN][entry.entry_id]
@@ -34,7 +58,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     # znovu. Zakládá se, jen když nějaká scéna je.
     if any(p.subentry_type == PODENTITA_SCENA
            for p in entry.subentries.values()):
+        _sprav_identifikatory(hass, entry)
         pridat([DenSceny(k, entry, i) for i in range(dn.DNU_DOPREDU)])
+
 
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_MISTNOST:
@@ -182,8 +208,15 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
         # `switch.napohodu_den_03`, a to se nesmí přes noc měnit.
         # Datum je ve jméně, které se ukazuje na kartě.
         self._attr_translation_key = "scena_den"
-        self._attr_translation_placeholders = {"cislo": f"{odstup + 1:02d}"}
+        self._attr_translation_placeholders = {"cislo": f"{odstup:02d}"}
         self._attr_unique_id = f"{entry.entry_id}_den_{odstup:02d}"
+        # Identifikátor se nastavuje napevno. Home Assistant ho jinak
+        # odvodí ze jména — a to je tady datum, takže by z dlaždic
+        # vznikly `switch.dnes`, `switch.zitra`, `switch.st_28_10`.
+        # Karta hledá `switch.napohodu_den_00` a nenašla by ani jednu,
+        # takže se mřížka negenerovala vůbec. Jméno s datem je jen to,
+        # co se čte na dlaždici.
+        self.entity_id = f"switch.{klic_dne(odstup)}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
             name="NaPohodu", manufacturer="NaPohodu", model="Byt")

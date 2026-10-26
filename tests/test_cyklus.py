@@ -736,3 +736,55 @@ def test_scena_jde_naplanovat_i_opakovane(ha):
     # a nese okno dne i opis, takže neplatí celou noc
     assert z["okno"] == ["08:00:00", "20:00:00"]
     assert z["opis"]["cil"] == {"Obývák": 23.0}
+
+
+def test_dlazdice_maji_identifikator_ktery_karta_hleda(ha):
+    """Jméno dlaždice je datum, takže by z něj Home Assistant odvodil
+    `switch.dnes` a karta by mřížku nenašla — a negenerovala by ji
+    vůbec. Identifikátor se proto nastavuje napevno."""
+    ko = ha
+    import karty
+    from napohodu import const as c
+    from napohodu.switch import DenSceny
+
+    k, hass = _koordinator(ko, c)
+    asyncio.run(k.async_nacti())
+
+    d = DenSceny(k, k.entry, 0)
+    assert d.entity_id == "switch.napohodu_den_00"
+    assert d.name == "dnes", "na dlaždici se čte datum"
+    assert DenSceny(k, k.entry, 12).entity_id == "switch.napohodu_den_12"
+
+    # a karta hledá přesně tohle
+    text = karty.dashboard(["obyvak"], [], lambda e: True,
+                           sceny=["Home Office"])
+    for i in range(karty.DNU_MRIZKY):
+        assert DenSceny(k, k.entry, i).entity_id in text
+
+
+def test_dlazdice_ze_starsiho_vydani_se_prejmenuji(ha):
+    """Registr si první jméno pamatuje, takže by oprava sama na
+    stávající instalaci nedosáhla a mřížka by zůstala prázdná."""
+    ko = ha
+    from homeassistant.helpers import entity_registry as er
+    from napohodu import const as c
+    from napohodu.switch import async_setup_entry
+
+    k, hass = _koordinator(ko, c)
+    asyncio.run(k.async_nacti())
+    hass.data = {c.DOMAIN: {k.entry.entry_id: k}}
+
+    registr = er.Registr([
+        er.RegistrZapis("switch.dnes", f"{k.entry.entry_id}_den_00",
+                        "switch"),
+        er.RegistrZapis("switch.st_28_10", f"{k.entry.entry_id}_den_02",
+                        "switch"),
+    ])
+    hass.registr = registr
+    asyncio.run(async_setup_entry(hass, k.entry, lambda *a, **kw: None))
+
+    assert ("switch.dnes", "switch.napohodu_den_00") in registr.prejmenovane
+    assert ("switch.st_28_10",
+            "switch.napohodu_den_02") in registr.prejmenovane
+    # a co už správně je, se nepřejmenovává
+    assert len(registr.prejmenovane) == 2
