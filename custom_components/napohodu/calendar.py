@@ -49,6 +49,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
         if pod.subentry_type == PODENTITA_SCENA:
             pridat([KalendarSceny(k, entry, pod)],
                    config_subentry_id=pod.subentry_id)
+    # Na kartě je jeden kalendář pro tu scénu, kterou ukazuje
+    # rolovátko. S kalendářem ke každé scéně by karta s každou novou
+    # narostla a musela by se generovat znovu.
+    if any(p.subentry_type == PODENTITA_SCENA
+           for p in entry.subentries.values()):
+        pridat([KalendarVybraneSceny(k, entry)])
 
 
 class KalendarPlanu(CoordinatorEntity, CalendarEntity):
@@ -176,6 +182,10 @@ class KalendarSceny(CoordinatorEntity, CalendarEntity):
                 if z.get("druh") == "scena"
                 and z.get("scena") == self._pod_id]
 
+    def _komu(self) -> str | None:
+        """Do které scény se zakládá. Potomek si to přepíše."""
+        return self._pod_id
+
     @property
     def event(self) -> CalendarEvent | None:
         ted = dt_util.now()
@@ -217,7 +227,7 @@ class KalendarSceny(CoordinatorEntity, CalendarEntity):
         await self.coordinator.plan_zapis({
             "uid": uuid.uuid4().hex,
             "druh": "scena",
-            "scena": self._pod_id,
+            "scena": self._komu(),
             "nazev_sceny": d.get("nazev"),
             # Opis pro případ, že scénu smažeš: plán se tím nerozsype,
             # jen zamrzne v podobě, v jaké byl zadán. Stejné pravidlo
@@ -229,7 +239,7 @@ class KalendarSceny(CoordinatorEntity, CalendarEntity):
             "okno": d.get("okno") or ["07:00", "18:00"],
             "od": zacatek, "do": konec,
             "rrule": kw.get("rrule"),
-            "popis": kw.get("description") or "",
+            "popis": kw.get("description") or d.get("popis") or "",
         })
         self.async_update_event_listeners()
 
@@ -237,3 +247,45 @@ class KalendarSceny(CoordinatorEntity, CalendarEntity):
                                  recurrence_range=None) -> None:
         await self.coordinator.plan_smaz(uid)
         self.async_update_event_listeners()
+
+
+class KalendarVybraneSceny(KalendarSceny):
+    """Dny té scény, kterou zrovna ukazuje rolovátko.
+
+    Dědí všechno od kalendáře scény a mění jen jedno: která scéna to
+    je. Díky tomu zůstává karta pořád stejná — nová scéna se jen
+    objeví v rolovátku.
+    """
+
+    _attr_translation_key = "vybrana_scena"
+
+    def __init__(self, k, entry: ConfigEntry) -> None:
+        # Základ chce podentitu; tahle entita ale patří bytu, takže se
+        # zařízení i jméno přepíšou hned za ním.
+        CoordinatorEntity.__init__(self, k)
+        self._pod_id = None
+        # Jméno nechává na překladu. Přepsat ho na „Scéna: Home
+        # Office" by znamenalo, že se jméno — a s ním i identifikátor
+        # entity — mění s vybranou scénou. Která to je, stojí
+        # v rolovátku hned nad kalendářem.
+        self._attr_unique_id = f"{entry.entry_id}_vybrana_scena"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name="NaPohodu", manufacturer="NaPohodu", model="Byt")
+
+    @property
+    def _scena_id(self) -> str | None:
+        return self.coordinator.scena_vybrana()[0]
+
+    def _definice(self) -> dict:
+        return self.coordinator.scena_vybrana()[1]
+
+    def _moje(self) -> list[dict]:
+        pid = self._scena_id
+        if pid is None:
+            return []
+        return [z for z in self.coordinator.plan_zaznamy()
+                if z.get("druh") == "scena" and z.get("scena") == pid]
+
+    def _komu(self) -> str | None:
+        return self._scena_id

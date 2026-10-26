@@ -893,14 +893,21 @@ def test_odchylka_pro_vetrani_zonou():
         assert f"number.napohodu_dilna_{klic}" not in s_zonou, klic
 
 
-def test_scena_ma_vlastni_kalendar_v_karte():
-    """Scéna se zadává kliknutím na den, takže patří měsíční pohled."""
+def test_scena_ma_v_karte_rolovatko_a_mesicni_pohled():
+    """Scény mají jednu sekci pro všechny: rolovátko vybere, čí dny se
+    zaškrtávají, a mřížka i kalendář patří jí. S kartou na každou by
+    dashboard s každou novou scénou narostl."""
     text = dashboard(
         ["obyvak"], [], lambda e: True, nazvy={"obyvak": "Obývák"},
-        s_okny={"obyvak"}, sceny=["Home Office"])
-    assert "calendar.napohodu_home_office" in text
+        s_okny={"obyvak"}, sceny=["Home Office", "Hlídání"])
+    assert "select.napohodu_scena" in text
+    assert "calendar.napohodu_scena" in text
     assert "initial_view: dayGridMonth" in text
-    assert "Scéna: Home Office" in text
+    # jedna sekce, ne jedna na scénu
+    assert text.count("initial_view: dayGridMonth") == 1
+    assert text.count("columns: 7") == 1
+    # kalendář scény se jmenuje jen v nápovědě, kartu nezabírá
+    assert "      - calendar.napohodu_home_office" not in text
     # a v nápovědě se neplete mezi tvary názvů událostí
     assert "Home Office: nikdo tu nebude" not in text
 
@@ -939,19 +946,19 @@ def test_mrizka_dnu_sceny_v_karte():
 
     # jako ve skutečné instalaci: zadávání plánu i scéna
     def existuje(e):
-        return (e.startswith("switch.napohodu_home_office_den_")
+        return (e.startswith("switch.napohodu_den_")
                 or e.startswith(("select.napohodu_", "datetime.napohodu_",
                                  "button.napohodu_naplanovat"))
-                or e in ("calendar.napohodu_home_office",
+                or e in ("calendar.napohodu_scena",
                          "calendar.napohodu_plan"))
 
     text = dashboard(["obyvak"], [], existuje, sceny=["Home Office"],
                      nazvy={"obyvak": "Obývák"})
     assert "columns: 7" in text
-    assert "switch.napohodu_home_office_den_00" in text
-    assert f"switch.napohodu_home_office_den_{karty.DNU_MRIZKY - 1:02d}" in text
+    assert "switch.napohodu_den_00" in text
+    assert f"switch.napohodu_den_{karty.DNU_MRIZKY - 1:02d}" in text
     # tolik dlaždic, kolik je přepínačů — ani jedna prázdná
-    assert text.count("switch.napohodu_home_office_den_") == karty.DNU_MRIZKY
+    assert text.count("switch.napohodu_den_") == karty.DNU_MRIZKY
     assert "action: toggle" in text
     # a kalendář scény zůstává pod ní, kvůli opakování
     assert "initial_view: dayGridMonth" in text
@@ -964,7 +971,7 @@ def test_mrizka_dnu_se_nevygeneruje_bez_prepinacu():
         ["obyvak"], [],
         lambda e: (e.startswith(("select.napohodu_", "datetime.napohodu_",
                                  "button.napohodu_naplanovat"))
-                   or e == "calendar.napohodu_home_office"),
+                   or e == "calendar.napohodu_scena"),
         sceny=["Home Office"], nazvy={"obyvak": "Obývák"})
     assert "columns: 7" not in text
     assert "initial_view: dayGridMonth" in text     # kalendář ano

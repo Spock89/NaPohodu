@@ -26,7 +26,7 @@ except ImportError:      # pragma: no cover - bez něj se jen neopakuje
     rrulestr = None
 
 from .number import MISTNOST as POSUVNIKY_MISTNOSTI
-from . import (core, plan as pl, planovac as pz, podklady as pk,
+from . import (core, dny, plan as pl, planovac as pz, podklady as pk,
                pritomnost as pr, prumery as pm, slunce as sl,
                sousedstvi as so, vykon as vy, zpravy as zp, klima as kl)
 
@@ -63,7 +63,8 @@ from .const import (
     CONF_REZERVA_VENKU, CONF_RH_MAX, CONF_RH_MIN, CONF_RH_VENKU,
     CONF_RH_VENKU_M, CONF_RH_VNITRNI, CONF_RUCNI_KLID,
     CONF_RUCNI_KLID_ZALUZIE,
-    CONF_SCENA_DO, CONF_SCENA_OD, CONF_SCENA_PRAZDNO, CONF_SCENA_ZAVRENO,
+    CONF_SCENA_DO, CONF_SCENA_OD, CONF_SCENA_POPIS,
+    CONF_SCENA_PRAZDNO, CONF_SCENA_ZAVRENO,
     CONF_SEZONA_HYSTEREZE, CONF_SEZONA_PRAH, CONF_SEZONA_REZIM,
     CONF_SKUPINA_OBRACENE, CONF_SKUPINA_PRITOMNOST,
     CONF_SEZONU_RIDI_HLAVICE, CONF_SMOG, CONF_SOUHRN_CAS,
@@ -173,6 +174,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.plan_vysledek: str = "zatím nic"
         # co je navolené na dashboardu pro tlačítko Naplánovat
         self.plan_volba: str | None = None
+        # Kterou scénu zrovna zaškrtávám. Kalendář i mřížka dnů patří
+        # jedné, aby karta nerostla s každou novou scénou.
+        self.scena_volba: str | None = None
         self.plan_od = None
         self.plan_do = None
         self.plan_opakovani: str = "jednou"
@@ -2366,6 +2370,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                          scena.data.get(CONF_SCENA_DO) or "18:00"],
                 "prazdno": list(scena.data.get(CONF_SCENA_PRAZDNO) or []),
                 "zavreno": list(scena.data.get(CONF_SCENA_ZAVRENO) or []),
+                "popis": scena.data.get(CONF_SCENA_POPIS) or "",
                 "cil": cile,
             }
         return out
@@ -2481,6 +2486,21 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return None
         return max(nalezy, key=lambda x: (x[0], x[1]))[2]
 
+    def scena_vybrana(self) -> tuple[str | None, dict]:
+        """Vybraná scéna: identifikátor a definice.
+
+        Bez vybrání platí první scéna — prázdná mřížka, která nikam
+        nepatří, by vypadala jako rozbitá. Jedno místo pro mřížku,
+        kalendář i diagnostiku, ať každý neukazuje na jinou.
+        """
+        sceny = self.sceny()
+        if not sceny:
+            return None, {}
+        for pid, d in sceny.items():
+            if d.get("nazev") == self.scena_volba:
+                return pid, d
+        return next(iter(sceny.items()))
+
     def plan_rozbal(self, zaznam: dict, od, do) -> list[tuple]:
         """Výskyty jednoho záznamu v daném rozsahu.
 
@@ -2576,7 +2596,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                    if any(c in zavira for c in cleni)}
         return pz.nabidka(
             [p.title for p in self._podentity(PODENTITA_MISTNOST)],
-            list(skupiny), lze_zavrit=zavira)
+            list(skupiny), lze_zavrit=zavira,
+            sceny={pid: d["nazev"] for pid, d in self.sceny().items()})
 
     async def naplanuj(self, popis: str, od, do) -> str:
         """Založí událost ve vlastním kalendáři plánu.
@@ -2601,6 +2622,26 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         kolikrat = self.hodnota(self.entry.entry_id, CONF_PLAN_KOLIKRAT, 8.0)
         cil = self.hodnota(self.entry.entry_id, CONF_PLAN_CIL, 21.0)
         pravidlo = pz.pravidlo(self.plan_opakovani, int(kolikrat or 0))
+        if volba.druh == "scena":
+            # Scéna se zakládá tak, jak ji zná zaškrtávací mřížka
+            # i vlastní kalendář: s opisem a oknem dne. Jinak by den
+            # z dashboardu platil celou noc a po smazání scény zmizel.
+            d = self.sceny().get(volba.scena) or {}
+            zaznam = dny.novy_zaznam(volba.scena, d, od.date())
+            zaznam.update({
+                "rrule": pravidlo,
+                "parita": pz.parita(self.plan_opakovani),
+                "kolikrat": int(kolikrat or 0),
+            })
+            await self.plan_zapis(zaznam)
+            kolik = (f", opakovaně: {self.plan_opakovani}"
+                     + (f", {int(kolikrat)}×" if kolikrat else "")
+                     if pravidlo else "")
+            self.plan_vysledek = (
+                f"scéna {d.get('nazev')}: {od:%-d.%-m.}"
+                f" {'–'.join(d.get('okno') or [])}{kolik}")
+            return self.plan_vysledek
+
         await self.plan_zapis({
             "uid": uuid.uuid4().hex,
             "druh": volba.druh,

@@ -877,14 +877,16 @@
             "scena_od": "Day window — from",
             "scena_do": "Day window — to",
             "scena_prazdno": "Rooms where nobody will be",
-            "scena_zavreno": "Rooms with windows kept closed"
+            "scena_zavreno": "Rooms with windows kept closed",
+            "scena_popis": "Calendar description"
           },
           "data_description": {
             "nazev": "The scene's name. Its calendar is created under this name.",
             "scena_od": "When the scene starts for an all-day event.",
             "scena_do": "When the scene ends for an all-day event.",
             "scena_prazdno": "These rooms count as empty while the scene runs and their heating is set back. It does not close windows.",
-            "scena_zavreno": "Windows are kept closed here while the scene runs."
+            "scena_zavreno": "Windows are kept closed here while the scene runs.",
+            "scena_popis": "Optional. Copied into every day marked with this scene — useful when the calendar is read by someone or something else."
           }
         },
         "reconfigure": {
@@ -895,14 +897,16 @@
             "scena_od": "Day window — from",
             "scena_do": "Day window — to",
             "scena_prazdno": "Rooms where nobody will be",
-            "scena_zavreno": "Rooms with windows kept closed"
+            "scena_zavreno": "Rooms with windows kept closed",
+            "scena_popis": "Calendar description"
           },
           "data_description": {
             "nazev": "The scene's name. Its calendar is created under this name.",
             "scena_od": "When the scene starts for an all-day event.",
             "scena_do": "When the scene ends for an all-day event.",
             "scena_prazdno": "These rooms count as empty while the scene runs and their heating is set back. It does not close windows.",
-            "scena_zavreno": "Windows are kept closed here while the scene runs."
+            "scena_zavreno": "Windows are kept closed here while the scene runs.",
+            "scena_popis": "Optional. Copied into every day marked with this scene — useful when the calendar is read by someone or something else."
           }
         }
       }
@@ -1245,6 +1249,9 @@
           "vikend_lichy": "weekend in odd weeks",
           "vikend_sudy": "weekend in even weeks"
         }
+      },
+      "ktera_scena": {
+        "name": "Scene"
       }
     },
     "datetime": {
@@ -1258,6 +1265,9 @@
     "calendar": {
       "plan": {
         "name": "Plan"
+      },
+      "vybrana_scena": {
+        "name": "Scene"
       }
     }
   }

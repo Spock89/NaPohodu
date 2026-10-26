@@ -29,6 +29,13 @@ _LOGGER = logging.getLogger(__name__)
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                             pridat: AddEntitiesCallback) -> None:
     k = hass.data[DOMAIN][entry.entry_id]
+    # Mřížka dnů patří vybrané scéně, ne každé zvlášť: s každou novou
+    # by karta narostla o pětatřicet dlaždic a musela by se generovat
+    # znovu. Zakládá se, jen když nějaká scéna je.
+    if any(p.subentry_type == PODENTITA_SCENA
+           for p in entry.subentries.values()):
+        pridat([DenSceny(k, entry, i) for i in range(dn.DNU_DOPREDU)])
+
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_MISTNOST:
             pridat([OvladatOkno(k, pod), OvladatStineni(k, pod),
@@ -37,10 +44,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                    config_subentry_id=pod.subentry_id)
         elif pod.subentry_type == PODENTITA_KLIMA:
             pridat([OvladatKlimu(k, pod)], config_subentry_id=pod.subentry_id)
-        elif pod.subentry_type == PODENTITA_SCENA:
-            pridat([DenSceny(k, entry, pod, i)
-                    for i in range(dn.DNU_DOPREDU)],
-                   config_subentry_id=pod.subentry_id)
+
 
 
 class NaPohoduPrepinac(NaPohoduEntity, SwitchEntity, RestoreEntity):
@@ -158,35 +162,39 @@ class OvladatTopeni(NaPohoduPrepinac):
 
 
 class DenSceny(CoordinatorEntity, SwitchEntity):
-    """Jeden den v zaškrtávací mřížce scény.
+    """Jeden den v zaškrtávací mřížce vybrané scény.
 
     Dlaždice patří odstupu od dneška, ne datu — jen tak zůstane mřížka
     na kartě pořád stejná. Zaškrtnutí se ukládá na datum, takže přes
     noc neputuje: dlaždice se jen posunou o jednu a zaškrtnutý den
     zůstane zaškrtnutý tam, kam patří.
+
+    Scénu nese rolovátko, ne dlaždice. Jinak by karta s každou novou
+    scénou narostla o celou mřížku.
     """
 
     _attr_icon = "mdi:calendar-check"
 
-    def __init__(self, k, entry, pod, odstup: int) -> None:
+    def __init__(self, k, entry, odstup: int) -> None:
         super().__init__(k)
-        self._pod_id = pod.subentry_id
         self._odstup = odstup
         # V jméně entity je číslo dlaždice, ne datum: z něho vzniká
-        # `switch.napohodu_<scéna>_den_03`, a to se nesmí přes noc
-        # měnit. Datum je ve jméně, které se ukazuje na kartě.
+        # `switch.napohodu_den_03`, a to se nesmí přes noc měnit.
+        # Datum je ve jméně, které se ukazuje na kartě.
         self._attr_translation_key = "scena_den"
         self._attr_translation_placeholders = {"cislo": f"{odstup + 1:02d}"}
-        self._attr_unique_id = (f"{entry.entry_id}_{pod.subentry_id}"
-                                f"_den_{odstup:02d}")
+        self._attr_unique_id = f"{entry.entry_id}_den_{odstup:02d}"
         self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, pod.subentry_id)},
-            name=f"NaPohodu {pod.title}",
-            manufacturer="NaPohodu", model="Scéna")
+            identifiers={(DOMAIN, entry.entry_id)},
+            name="NaPohodu", manufacturer="NaPohodu", model="Byt")
+
+    @property
+    def _pod_id(self) -> str | None:
+        return self.coordinator.scena_vybrana()[0]
 
     @property
     def _definice(self) -> dict:
-        return self.coordinator.sceny().get(self._pod_id) or {}
+        return self.coordinator.scena_vybrana()[1]
 
     @property
     def _den(self):
@@ -194,8 +202,10 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
 
     @property
     def _stav_dne(self) -> dict:
+        if self._pod_id is None:
+            return {"plati": False, "vlastni": [], "odjinud": False}
         return dn.pro_den(self.coordinator.plan_zaznamy(), self._pod_id,
-                           self._den, self.coordinator.plan_rozbal)
+                          self._den, self.coordinator.plan_rozbal)
 
     @property
     def name(self) -> str:
@@ -220,7 +230,7 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
         }
 
     async def async_turn_on(self, **kwargs) -> None:
-        if self._stav_dne["plati"]:
+        if self._pod_id is None or self._stav_dne["plati"]:
             return                      # už platí, nepřidávej druhý
         await self.coordinator.plan_zapis(
             dn.novy_zaznam(self._pod_id, self._definice, self._den))

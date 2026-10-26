@@ -122,6 +122,6 @@ def novy_zaznam(scena_id: str, definice: dict, den: date) -> dict:
         "okno": list(definice.get("okno") or ["07:00", "18:00"]),
         "od": zacatek,
         "do": zacatek + timedelta(days=1),
-        "popis": "",
+        "popis": definice.get("popis") or "",
         "rrule": None,
     }

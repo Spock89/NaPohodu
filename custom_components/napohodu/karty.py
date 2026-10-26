@@ -553,12 +553,15 @@ def _napoveda_planu(mistnosti: list[str], skupiny: list[str],
              " dál. Zavřená okna = drží okno zavřené, i když je zbytek"
              " bytu plný lidí.*")
     if sceny:
-        c.append("      **Scény** se takhle nezadávají: každá má"
-                 " vlastní kalendář (" + ", ".join(
+        c.append("      **Scény** jdou zadat třemi způsoby a všechny"
+                 " vedou na totéž. Jeden den: zaškrtni ho v mřížce"
+                 " výš. Opakovaně: vyber v nabídce „scéna: …“ a"
+                 " použij *Jak často* — mřížka vzorec neumí."
+                 " Nebo rukou v kalendáři té scény (" + ", ".join(
                      f"`calendar.napohodu_{klic_jmena(x)}`"
-                     for x in sceny) + ") a den se v něm jen označí."
-                 " Celodenní událost znamená „použij okno dne té"
-                 " scény\".")
+                     for x in sceny) + "), kde se dá zadat i opakování"
+                 " v panelu Kalendář. Celodenní událost znamená"
+                 " „použij okno dne té scény\".")
     c.append("")
     return c
 
@@ -1017,22 +1020,27 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         # takže patří do měsíčního pohledu, ne do seznamu. Jeden
         # kalendář na scénu — sloučené by se nedalo poznat, do které
         # se kliká.
-        for nazev in (sceny or []):
-            eid = f"calendar.napohodu_{klic_jmena(nazev)}"
-            mrizka = _mrizka_dnu(klic_jmena(nazev), existuje)
-            if not existuje(eid) and not mrizka:
-                continue
-            c += _hlavicka(f"Scéna: {nazev}", "mdi:calendar-star",
-                           "subtitle")
+        # Scény mají jednu sekci pro všechny: rolovátko vybere, které
+        # scény se dny zaškrtávají, a mřížka i kalendář patří jí.
+        # S kartou na každou scénu by dashboard s každou novou narostl
+        # a musel by se generovat znovu — takhle se nová scéna jen
+        # objeví v nabídce rolovátka, protože ta se čte živě.
+        mrizka = _mrizka_dnu(existuje)
+        kal = "calendar.napohodu_scena"
+        vyber = "select.napohodu_scena"
+        if sceny and (mrizka or existuje(kal)):
+            c += _hlavicka("Scény", "mdi:calendar-star", "subtitle")
+            if existuje(vyber):
+                c += _karta(_radek(vyber, "Scéna"))
             # Zaškrtávací mřížka první: na ni se kliká. Kalendář pod ní
             # ukazuje totéž v měsíčním pohledu a zadávají se v něm
             # opakování, která se naklikat nedají.
             c += mrizka
-            if existuje(eid):
+            if existuje(kal):
                 c += ["  - type: calendar",
                       "    initial_view: dayGridMonth",
                       "    entities:",
-                      f"      - {eid}",
+                      f"      - {kal}",
                       ""]
 
     c.append(ZNACKA_BLOKU + "napoveda")
@@ -1260,8 +1268,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     return "\n".join(hlava + ["type: vertical-stack", "cards:"] + karty) + "\n"
 
 
-def _mrizka_dnu(klic: str, existuje) -> list[str]:
-    """Zaškrtávací mřížka dnů jedné scény: dlaždice po sedmi.
+def _mrizka_dnu(existuje) -> list[str]:
+    """Zaškrtávací mřížka dnů vybrané scény: dlaždice po sedmi.
 
     Mřížka se neváže na data, ale na dlaždice — popisek i stav si nese
     entita, takže YAML nezestárne a nemusí se každý měsíc generovat
@@ -1270,7 +1278,7 @@ def _mrizka_dnu(klic: str, existuje) -> list[str]:
     """
     dlazdice = []
     for i in range(DNU_MRIZKY):
-        eid = f"switch.napohodu_{klic}_den_{i:02d}"
+        eid = f"switch.napohodu_den_{i:02d}"
         if not existuje(eid):
             continue
         dlazdice.append(

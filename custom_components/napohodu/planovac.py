@@ -29,6 +29,7 @@ class Volba:
     druh: str                  # viz DRUHY
     mistnost: str | None = None    # None = celý byt nebo skupina
     skupina: str | None = None     # jméno skupiny místností
+    scena: str | None = None       # identifikátor scény, u druhu „scena"
 
 
 # Co se dá zadat jedné místnosti nebo skupině. Prázdno a zavřená okna
@@ -45,7 +46,8 @@ JEN_SE_ZAVIRANIM = ("zavreno", "prazdno_zavreno")
 
 def nabidka(mistnosti: list[str],
             skupiny: list[str] | None = None,
-            lze_zavrit: set[str] | None = None) -> list[Volba]:
+            lze_zavrit: set[str] | None = None,
+            sceny: dict[str, str] | None = None) -> list[Volba]:
     """Co všechno jde naplánovat.
 
     Zapisuje se do vlastního kalendáře integrace, takže není kam se
@@ -60,6 +62,12 @@ def nabidka(mistnosti: list[str],
     i bez znalosti vybavení.
     """
     out = [Volba("nikdo doma", "nikdo"), Volba("víc lidí", "vic")]
+    # Scény taky, a to i na opakování: zaškrtávací mřížka umí jeden
+    # den kliknutím, kdežto „každý všední den osmkrát" se naklikat
+    # nedá. Nabídka se čte živě, takže nová scéna se tu objeví sama
+    # a dashboard se kvůli ní nemusí generovat znovu.
+    for pid, nazev in (sceny or {}).items():
+        out.append(Volba(f"scéna: {nazev}", "scena", None, None, pid))
 
     def druhy(nazev: str):
         if lze_zavrit is None or nazev in lze_zavrit:

@@ -543,7 +543,6 @@ def test_mrizka_dnu_sceny_zapina_a_vypina(ha):
     ten den platí. A druhé kliknutí ho zruší."""
     ko = ha
     from napohodu import const as c
-    from napohodu import dny as dn
     from napohodu.switch import DenSceny
 
     k, hass = _koordinator(ko, c)
@@ -552,7 +551,7 @@ def test_mrizka_dnu_sceny_zapina_a_vypina(ha):
 
     scena = next(p for p in k.entry.subentries.values()
                  if p.subentry_type == c.PODENTITA_SCENA)
-    dlazdice = [DenSceny(k, k.entry, scena, i) for i in range(3)]
+    dlazdice = [DenSceny(k, k.entry, i) for i in range(3)]
     for d in dlazdice:
         d.hass = hass
         d.async_write_ha_state = lambda: None
@@ -611,8 +610,102 @@ def test_dlazdice_a_kalendar_sceny_vidi_totez(ha):
         + dt.timedelta(days=1),
         "opis": {"prazdno": [], "zavreno": [], "cil": {}}}))
 
-    d = DenSceny(k, k.entry, scena, 1)
+    d = DenSceny(k, k.entry, 1)
     d.hass = hass
     d.async_write_ha_state = lambda: None
     assert d.is_on, "den z kalendáře musí být na mřížce vidět"
     assert d.extra_state_attributes["da_se_odskrtnout"] is True
+
+
+def _dve_sceny(c):
+    return [p for p in _instalace(c)] + [
+        Podentita(c.PODENTITA_SCENA, "Hlídání", {
+            c.CONF_NAZEV: "Hlídání",
+            c.CONF_SCENA_OD: "08:00:00", c.CONF_SCENA_DO: "20:00:00",
+            c.CONF_SCENA_POPIS: "babička u dětí",
+            c.PREFIX_SCENA_CIL + "obyvak": 23.0}),
+    ]
+
+
+def test_mrizka_patri_vybrane_scene(ha):
+    """Rolovátko rozhoduje, které scény dny mřížka zaškrtává.
+
+    Dřív měla mřížku i kalendář každá scéna, takže karta s každou
+    novou narostla a musela se generovat znovu.
+    """
+    ko = ha
+    from napohodu import const as c
+    from napohodu.select import KteraScena
+    from napohodu.switch import DenSceny
+
+    k, hass = _koordinator(ko, c, podentity=_dve_sceny(c))
+    asyncio.run(k.async_nacti())
+    asyncio.run(k._async_update_data())
+
+    vyber = KteraScena(k, k.entry)
+    vyber.hass = hass
+    vyber.async_write_ha_state = lambda: None
+    assert vyber.options == ["Home Office", "Hlídání"]
+    # bez vybrání platí první — prázdná mřížka by vypadala rozbitě
+    assert vyber.current_option == "Home Office"
+
+    d = DenSceny(k, k.entry, 3)
+    d.hass = hass
+    d.async_write_ha_state = lambda: None
+
+    asyncio.run(d.async_turn_on())
+    zaznamy = [z for z in k.plan_zaznamy() if z.get("druh") == "scena"]
+    assert len(zaznamy) == 1
+    ho = next(p for p in k.entry.subentries.values()
+              if p.title == "Home Office")
+    assert zaznamy[0]["scena"] == ho.subentry_id
+
+    # přepnu scénu: tatáž dlaždice teď patří jiné a je prázdná
+    asyncio.run(vyber.async_select_option("Hlídání"))
+    assert not d.is_on
+    asyncio.run(d.async_turn_on())
+    zaznamy = [z for z in k.plan_zaznamy() if z.get("druh") == "scena"]
+    assert len(zaznamy) == 2
+    hl = next(p for p in k.entry.subentries.values() if p.title == "Hlídání")
+    assert {z["scena"] for z in zaznamy} == {ho.subentry_id, hl.subentry_id}
+    # popis scény se opíše do dne
+    novy = next(z for z in zaznamy if z["scena"] == hl.subentry_id)
+    assert novy["popis"] == "babička u dětí"
+    assert novy["okno"] == ["08:00:00", "20:00:00"]
+
+    # a zpátky u první scény zůstalo, co bylo zaškrtnuté
+    asyncio.run(vyber.async_select_option("Home Office"))
+    assert d.is_on
+
+
+def test_scena_jde_naplanovat_i_opakovane(ha):
+    """Mřížka umí jeden den kliknutím, vzorec ne — na ten je nabídka.
+
+    A ta se čte živě, takže nová scéna se v ní objeví bez generování
+    dashboardu.
+    """
+    ko = ha
+    import datetime as dt
+
+    from homeassistant.util import dt as dt_util
+    from napohodu import const as c
+
+    k, hass = _koordinator(ko, c, podentity=_dve_sceny(c))
+    asyncio.run(k.async_nacti())
+    asyncio.run(k._async_update_data())
+
+    popisy = [v.popis for v in k.nabidka_planu()]
+    assert "scéna: Home Office" in popisy
+    assert "scéna: Hlídání" in popisy
+
+    k.plan_opakovani = "vsedni_dny"
+    od = dt_util.now().replace(hour=9, minute=0, second=0, microsecond=0)
+    vysledek = asyncio.run(k.naplanuj("scéna: Hlídání", od,
+                                      od + dt.timedelta(hours=8)))
+    assert "Hlídání" in vysledek and "vsedni_dny" in vysledek
+
+    z = next(x for x in k.plan_zaznamy() if x.get("druh") == "scena")
+    assert z["rrule"] and "BYDAY=MO,TU,WE,TH,FR" in z["rrule"]
+    # a nese okno dne i opis, takže neplatí celou noc
+    assert z["okno"] == ["08:00:00", "20:00:00"]
+    assert z["opis"]["cil"] == {"Obývák": 23.0}

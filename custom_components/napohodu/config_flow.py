@@ -1052,6 +1052,7 @@ def _schema_scena(mistnosti: list[dict]) -> vol.Schema:
             selector.TimeSelector(),
         vol.Optional(c.CONF_SCENA_PRAZDNO): _vyber(jmena),
         vol.Optional(c.CONF_SCENA_ZAVRENO): _vyber(jmena),
+        vol.Optional(c.CONF_SCENA_POPIS): selector.TextSelector(),
     }
     for m in mistnosti:
         pole[vol.Optional(c.PREFIX_SCENA_CIL + c.klic(m["label"]))] = _cislo(

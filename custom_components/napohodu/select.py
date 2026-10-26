@@ -35,7 +35,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                   for i, z in enumerate(pod.data.get(CONF_ZALUZIE) or [])]
         if vybery:
             pridat(vybery, config_subentry_id=pod.subentry_id)
-    pridat([CoNaplanovat(k, entry), JakCasto(k, entry)])
+    pridat([CoNaplanovat(k, entry), JakCasto(k, entry),
+            KteraScena(k, entry)])
 
 
 class StavZaluzie(NaPohoduEntity, SelectEntity):
@@ -170,3 +171,59 @@ class JakCasto(CoordinatorEntity, RestoreEntity, SelectEntity):
     async def async_select_option(self, option: str) -> None:
         self.coordinator.plan_opakovani = option
         self.async_write_ha_state()
+
+
+class KteraScena(CoordinatorEntity, SelectEntity, RestoreEntity):
+    """Kterou scénu zrovna zaškrtávám.
+
+    Kalendář i zaškrtávací mřížka patří jedné scéně — téhle. Jinak by
+    karta s každou novou scénou narostla o kalendář a o pětatřicet
+    dlaždic a musela by se generovat znovu. Takhle zůstává pořád
+    stejná a nová scéna se jen objeví v nabídce, protože ta se čte
+    živě.
+    """
+
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:calendar-star"
+    _attr_translation_key = "ktera_scena"
+
+    def __init__(self, k, entry) -> None:
+        super().__init__(k)
+        self._volba: str | None = None
+        self._attr_unique_id = f"{entry.entry_id}_ktera_scena"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name="NaPohodu", manufacturer="NaPohodu", model="Byt")
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        posledni = await self.async_get_last_state()
+        if posledni is not None and posledni.state in self.options:
+            self._volba = posledni.state
+        self.coordinator.scena_volba = self.current_option
+
+    @property
+    def options(self) -> list[str]:
+        nazvy = [d.get("nazev") or "" for d in
+                 self.coordinator.sceny().values()]
+        return [x for x in nazvy if x] or ["žádná scéna"]
+
+    @property
+    def current_option(self) -> str | None:
+        """Bez vybrání platí první scéna.
+
+        Prázdné rolovátko by znamenalo mřížku, která nikam nepatří,
+        a ta by na první pohled vypadala jako rozbitá.
+        """
+        if self._volba in self.options:
+            return self._volba
+        volby = self.options
+        return volby[0] if volby and volby[0] != "žádná scéna" else None
+
+    async def async_select_option(self, option: str) -> None:
+        self._volba = option
+        self.coordinator.scena_volba = option
+        self.async_write_ha_state()
+        # Mřížka i kalendář ukazují jinou scénu, takže se musí
+        # překreslit — samy o sobě se o změně rolovátka nedozví.
+        self.coordinator.async_update_listeners()

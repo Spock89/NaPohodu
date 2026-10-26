@@ -347,8 +347,12 @@ try:
                 return zbytek[len(predpona):] in znama[druh]
         return False
 
+    # Se scénou, protože rolovátko scény, její kalendář i mřížka dnů
+    # vznikají jen tehdy, když nějaká scéna je — bez ní by kontrola
+    # tvrdila, že v kartě chybí entity, které by v takovém bytě
+    # neexistovaly.
     text = _karty.dashboard(
-        ["pokoj"], ["oblast"], existuje,
+        ["pokoj"], ["oblast"], existuje, sceny=["Scéna"],
         cidla={"pokoj": "sensor.cizi"}, zaluzie={"pokoj": ["cover.cizi"]})
 
     for eid in set(re.findall(r"\b(\w+\.napohodu_[\w]+)", text)):
@@ -370,7 +374,7 @@ try:
                    "okno_pro_topeni",          # mají starší variantu
                    "ovladat_klimatizaci"}      # klima má vlastní kartu
     vse = _karty.dashboard(
-        ["pokoj"], ["oblast"], lambda e: True,
+        ["pokoj"], ["oblast"], lambda e: True, sceny=["Scéna"],
         cidla={"pokoj": "sensor.cizi"}, zaluzie={"pokoj": ["cover.cizi"]})
     for druh, polozky in preklady["entity"].items():
         for v in polozky.values():

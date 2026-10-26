@@ -261,6 +261,7 @@ CONF_SCENA_OD = "scena_od"
 CONF_SCENA_DO = "scena_do"
 CONF_SCENA_PRAZDNO = "scena_prazdno"
 CONF_SCENA_ZAVRENO = "scena_zavreno"
+CONF_SCENA_POPIS = "scena_popis"   # opíše se do každého dne
 # Cílová teplota se zadává každé místnosti zvlášť, klíč je
 # „scena_cil_" plus klíč místnosti.
 PREFIX_SCENA_CIL = "scena_cil_"

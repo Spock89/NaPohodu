@@ -897,10 +897,33 @@ samotné prázdno.
 
 **Dny scény se zaškrtávají v mřížce.** Kalendář umí jen „přidat
 událost" po jedné, takže čtrnáct dní v měsíci by znamenalo čtrnáct
-dialogů. Každá scéna proto dostane na dashboardu mřížku dlaždic po
-sedmi — svislice jsou dny v týdnu, první sloupec je dnešní den — a den
-se zapne a vypne kliknutím. Jde o pětatřicet dní dopředu, takže po
-celý měsíc je vidět jeho zbytek i celý příští.
+dialogů. Kliknutí na den v kalendářové kartě scénu přidat neumí —
+karta je vlastní karta Home Assistantu a akci na kliknutí na den
+nenabízí, integrace se do toho nemá kam zavěsit. Místo toho je na
+dashboardu mřížka dlaždic po sedmi — svislice jsou dny v týdnu, první
+sloupec je dnešní den — a den se zapne a vypne kliknutím. Jde
+o pětatřicet dní dopředu, takže po celý měsíc je vidět jeho zbytek
+i celý příští.
+
+**Scénu vybírá rolovátko, ne karta.** Mřížka i měsíční kalendář patří
+té scéně, kterou ukazuje `select.napohodu_scena`. S kartou na každou
+scénu by dashboard s každou novou narostl o kalendář a pětatřicet
+dlaždic a musel by se generovat znovu; takhle zůstane stejný a nová
+scéna se jen objeví v nabídce rolovátka, protože ta se čte živě.
+Vlastní kalendáře scén zůstávají jako entity pro panel Kalendář.
+
+**Scéna jde naplánovat i opakovaně.** V nabídce „Co naplánovat" je
+vedle místností a skupin i „scéna: …", takže na scénu platí *Jak
+často* i *Kolikrát zopakovat* — mřížka umí jeden den kliknutím, ale
+vzorec jako „každý všední den osmkrát" se naklikat nedá. Nabídka se
+čte živě ze seznamu scén, takže nová scéna se v ní objeví bez
+generování dashboardu. Záznam z nabídky je k nerozeznání od toho
+z mřížky: nese okno dne i opis, tedy neplatí celou noc a po smazání
+scény nespadne.
+
+Nepovinný **popis do kalendáře** v nastavení scény se opíše do každého
+dne, který scénou označíš — hodí se, když kalendář čte i někdo jiný
+nebo jiná automatizace.
 
 Dlaždice patří **odstupu od dneška**, ne datu: číslo pět je vždycky „za
 pět dní". Jen tak může YAML karty zůstat pořád stejný a nemusí se
