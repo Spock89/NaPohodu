@@ -1225,6 +1225,12 @@
       },
       "naplanovat": {
         "name": "Naplánovat"
+      },
+      "ulozit_dny": {
+        "name": "Uložit dny do kalendáře"
+      },
+      "zahodit_dny": {
+        "name": "Zahodit výběr dnů"
       }
     },
     "select": {

@@ -1225,6 +1225,12 @@
       },
       "naplanovat": {
         "name": "Plan it"
+      },
+      "ulozit_dny": {
+        "name": "Save days to calendar"
+      },
+      "zahodit_dny": {
+        "name": "Discard day selection"
       }
     },
     "select": {

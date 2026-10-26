@@ -905,6 +905,16 @@ sloupec je dnešní den — a den se zapne a vypne kliknutím. Jde
 o pětatřicet dní dopředu, takže po celý měsíc je vidět jeho zbytek
 i celý příští.
 
+**Zaškrtnutí se neukládá hned.** Mřížka je rozpracovaný výběr: dny se
+naklikají a do kalendáře se zapíšou jedním stiskem **Uložit dny do
+kalendáře** hned pod mřížkou. Jinak by čtrnáct dní znamenalo čtrnáct
+zápisů a nedal by se výběr po sobě projít. Z ikony dlaždice je vidět,
+co je co: `calendar-check` už v kalendáři je, `calendar-plus` se
+přidá, `calendar-remove` se zruší, prázdná není nic. Kolik dnů čeká,
+stojí v řádku *k uložení*, a **Zahodit výběr** ho zruší, aniž by
+sáhnul na kalendář. Nenaklikaný výběr nepřežije restart Home
+Assistantu — neuložené dny prostě zmizí.
+
 **Scénu vybírá rolovátko, ne karta.** Mřížka i měsíční kalendář patří
 té scéně, kterou ukazuje `select.napohodu_scena`. S kartou na každou
 scénu by dashboard s každou novou narostl o kalendář a pětatřicet

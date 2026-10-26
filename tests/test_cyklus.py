@@ -539,8 +539,11 @@ def test_obnova_stejnym_smerem_drzeni_nerestartuje(ha):
 
 
 def test_mrizka_dnu_sceny_zapina_a_vypina(ha):
-    """Celý řetězec: kliknutí na dlaždici → záznam v plánu → scéna
-    ten den platí. A druhé kliknutí ho zruší."""
+    """Celý řetězec: naklikat dny → jeden stisk → záznamy v plánu.
+
+    Zaškrtnutí samo nic nezapisuje, aby se dalo naklikat víc dní
+    a uložit je najednou.
+    """
     ko = ha
     from napohodu import const as c
     from napohodu.switch import DenSceny
@@ -560,25 +563,47 @@ def test_mrizka_dnu_sceny_zapina_a_vypina(ha):
     assert not any(d.is_on for d in dlazdice)
     assert dnes.name == "dnes" and zitra.name == "zítra"
 
-    # zaškrtnutí pozítří
+    # naklikání dvou dnů: mřížka je ukazuje, do kalendáře nic nejde
+    asyncio.run(zitra.async_turn_on())
     asyncio.run(pozitri.async_turn_on())
-    assert pozitri.is_on and not dnes.is_on and not zitra.is_on
-    zaznamy = [z for z in k.plan_zaznamy() if z.get("druh") == "scena"]
-    assert len(zaznamy) == 1
-    assert zaznamy[0]["scena"] == scena.subentry_id
-    assert zaznamy[0]["celodenni"] is True
-    assert pozitri.extra_state_attributes["zdroj"] == "zaškrtnutí"
-    assert pozitri.extra_state_attributes["da_se_odskrtnout"] is True
+    assert zitra.is_on and pozitri.is_on and not dnes.is_on
+    assert zitra.icon == "mdi:calendar-plus", "čeká na uložení"
+    assert not [z for z in k.plan_zaznamy() if z.get("druh") == "scena"]
+    assert k.scena_kolik_ceka() == (2, 0)
 
-    # druhé kliknutí na totéž nepřidá druhý záznam
-    asyncio.run(pozitri.async_turn_on())
+    # jeden stisk uloží oba
+    vysledek = asyncio.run(k.scena_uloz())
+    assert "přidáno 2" in vysledek
+    zaznamy = [z for z in k.plan_zaznamy() if z.get("druh") == "scena"]
+    assert len(zaznamy) == 2
+    assert {z["scena"] for z in zaznamy} == {scena.subentry_id}
+    assert all(z["celodenni"] is True for z in zaznamy)
+    assert k.scena_kolik_ceka() == (0, 0)
+    assert pozitri.icon == "mdi:calendar-check", "uložené"
+    assert pozitri.extra_state_attributes["v_kalendari"] is True
+
+    # druhý stisk nemá co dělat a nic nepřidá
+    assert asyncio.run(k.scena_uloz()) == "nic k uložení"
+    assert len([z for z in k.plan_zaznamy()
+                if z.get("druh") == "scena"]) == 2
+
+    # odškrtnutí taky čeká na uložení
+    asyncio.run(pozitri.async_turn_off())
+    assert not pozitri.is_on
+    assert pozitri.icon == "mdi:calendar-remove"
+    assert len([z for z in k.plan_zaznamy()
+                if z.get("druh") == "scena"]) == 2
+    asyncio.run(k.scena_uloz())
     assert len([z for z in k.plan_zaznamy()
                 if z.get("druh") == "scena"]) == 1
 
-    # a odškrtnutí ho zruší
-    asyncio.run(pozitri.async_turn_off())
-    assert not pozitri.is_on
-    assert not [z for z in k.plan_zaznamy() if z.get("druh") == "scena"]
+    # a zahození výběr zruší, kalendář nechá být
+    asyncio.run(dnes.async_turn_on())
+    assert dnes.is_on and k.scena_kolik_ceka() == (1, 0)
+    k.scena_zahod()
+    assert not dnes.is_on and k.scena_kolik_ceka() == (0, 0)
+    assert len([z for z in k.plan_zaznamy()
+                if z.get("druh") == "scena"]) == 1
 
 
 def test_dlazdice_a_kalendar_sceny_vidi_totez(ha):
@@ -654,6 +679,7 @@ def test_mrizka_patri_vybrane_scene(ha):
     d.async_write_ha_state = lambda: None
 
     asyncio.run(d.async_turn_on())
+    asyncio.run(k.scena_uloz())
     zaznamy = [z for z in k.plan_zaznamy() if z.get("druh") == "scena"]
     assert len(zaznamy) == 1
     ho = next(p for p in k.entry.subentries.values()
@@ -664,6 +690,7 @@ def test_mrizka_patri_vybrane_scene(ha):
     asyncio.run(vyber.async_select_option("Hlídání"))
     assert not d.is_on
     asyncio.run(d.async_turn_on())
+    asyncio.run(k.scena_uloz())
     zaznamy = [z for z in k.plan_zaznamy() if z.get("druh") == "scena"]
     assert len(zaznamy) == 2
     hl = next(p for p in k.entry.subentries.values() if p.title == "Hlídání")

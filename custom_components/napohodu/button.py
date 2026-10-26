@@ -22,7 +22,7 @@ from . import vykon as vy
 from . import core
 from .const import (
     CONF_OKNA, CONF_RUCNI_KLID, CONF_STINENI_MAPA, DOMAIN,
-    PODENTITA_MISTNOST,
+    PODENTITA_MISTNOST, PODENTITA_SCENA,
 )
 from .services import proved_stav_stineni
 from .entity import NaPohoduEntity
@@ -53,8 +53,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                 if vy.cile_zaluzii(role, mapa):
                     tlacitka.append(Stineni(k, pod, klic, role))
             pridat(tlacitka, config_subentry_id=pod.subentry_id)
-    pridat([SrovnatVse(k, entry), VynulovatStavy(k, entry),
-            Naplanovat(k, entry)])
+    tlacitka_bytu = [SrovnatVse(k, entry), VynulovatStavy(k, entry),
+                     Naplanovat(k, entry)]
+    # Uložení a zahození rozpracovaného výběru dnů. Jen se scénou:
+    # bez ní není co ukládat.
+    if any(p.subentry_type == PODENTITA_SCENA
+           for p in entry.subentries.values()):
+        tlacitka_bytu += [UlozitDny(k, entry), ZahoditDny(k, entry)]
+    pridat(tlacitka_bytu)
 
 
 class Srovnat(NaPohoduEntity, ButtonEntity):
@@ -210,3 +216,56 @@ class Naplanovat(CoordinatorEntity, ButtonEntity):
         await self.coordinator.naplanuj(self.coordinator.plan_volba or "",
                                         self.coordinator.plan_od,
                                         self.coordinator.plan_do)
+
+
+class UlozitDny(CoordinatorEntity, ButtonEntity):
+    """Zapíše do kalendáře všechny dny naklikané v mřížce.
+
+    Jeden stisk na čtrnáct dní. Zaškrtávání samo nic nezapisuje právě
+    proto, aby se dalo naklikat víc dní najednou — a protože po sobě
+    jde výběr ještě projít, než se uloží.
+    """
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "ulozit_dny"
+    _attr_icon = "mdi:calendar-arrow-right"
+
+    def __init__(self, koordinator, entry) -> None:
+        super().__init__(koordinator)
+        self._attr_unique_id = f"{entry.entry_id}_ulozit_dny"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name="NaPohodu", manufacturer="NaPohodu", model="Byt")
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        pridat_, zrusit = self.coordinator.scena_kolik_ceka()
+        return {
+            "k_ulozeni": (
+                ", ".join(
+                    ([f"přidat {pridat_}"] if pridat_ else [])
+                    + ([f"zrušit {zrusit}"] if zrusit else []))
+                or "nic"),
+            "posledni_vysledek": self.coordinator.scena_vysledek,
+        }
+
+    async def async_press(self) -> None:
+        await self.coordinator.scena_uloz()
+
+
+class ZahoditDny(CoordinatorEntity, ButtonEntity):
+    """Zahodí rozpracovaný výběr. Kalendář zůstane, jak byl."""
+
+    _attr_has_entity_name = True
+    _attr_translation_key = "zahodit_dny"
+    _attr_icon = "mdi:calendar-remove-outline"
+
+    def __init__(self, koordinator, entry) -> None:
+        super().__init__(koordinator)
+        self._attr_unique_id = f"{entry.entry_id}_zahodit_dny"
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name="NaPohodu", manufacturer="NaPohodu", model="Byt")
+
+    async def async_press(self) -> None:
+        self.coordinator.scena_zahod()

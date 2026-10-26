@@ -975,3 +975,19 @@ def test_mrizka_dnu_se_nevygeneruje_bez_prepinacu():
         sceny=["Home Office"], nazvy={"obyvak": "Obývák"})
     assert "columns: 7" not in text
     assert "initial_view: dayGridMonth" in text     # kalendář ano
+
+
+def test_karta_ma_pod_mrizkou_ulozeni():
+    """Zaškrtnutí samo nic nezapisuje, takže tlačítko Uložit je jediná
+    cesta výběru do kalendáře — a musí být hned pod mřížkou."""
+    text = dashboard(["obyvak"], [], lambda e: True, sceny=["Home Office"],
+                     nazvy={"obyvak": "Obývák"})
+    assert "button.napohodu_ulozit_dny_do_kalendare" in text
+    assert "button.napohodu_zahodit_vyber_dnu" in text
+    assert "attribute: k_ulozeni" in text
+    # pořadí: rolovátko, mřížka, uložení, kalendář
+    poradi = [text.index(x) for x in (
+        "select.napohodu_scena", "columns: 7",
+        "button.napohodu_ulozit_dny_do_kalendare",
+        "calendar.napohodu_scena")]
+    assert poradi == sorted(poradi), poradi

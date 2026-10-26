@@ -1036,6 +1036,22 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             # ukazuje totéž v měsíčním pohledu a zadávají se v něm
             # opakování, která se naklikat nedají.
             c += mrizka
+            # Uložení naklikaných dnů. Zaškrtnutí samo nic nezapisuje,
+            # aby se dalo naklikat víc dní a uložit je jedním stiskem —
+            # tohle je tedy jediná cesta, jak se výběr dostane do
+            # kalendáře, a patří hned pod mřížku.
+            ulozit = "button.napohodu_ulozit_dny_do_kalendare"
+            polozky_dnu = []
+            if existuje(ulozit):
+                polozky_dnu += _radek(ulozit, "Uložit dny do kalendáře")
+                polozky_dnu += _atribut(ulozit, "k_ulozeni", "   k uložení")
+                polozky_dnu += _atribut(ulozit, "posledni_vysledek",
+                                        "   naposledy")
+            zahodit = "button.napohodu_zahodit_vyber_dnu"
+            if existuje(zahodit):
+                polozky_dnu += _radek(zahodit, "Zahodit výběr")
+            if polozky_dnu:
+                c += _karta(polozky_dnu)
             if existuje(kal):
                 c += ["  - type: calendar",
                       "    initial_view: dayGridMonth",

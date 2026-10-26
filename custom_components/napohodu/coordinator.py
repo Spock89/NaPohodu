@@ -177,6 +177,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # Kterou scénu zrovna zaškrtávám. Kalendář i mřížka dnů patří
         # jedné, aby karta nerostla s každou novou scénou.
         self.scena_volba: str | None = None
+        # Rozpracovaný výběr dnů: scéna na dvojici množin dat, co se má
+        # přidat a co zrušit. Zaškrtávání se tím oddělí od zapisování —
+        # čtrnáct dní se naklikne a uloží jedním stiskem, ne čtrnácti
+        # zápisy do kalendáře.
+        self.scena_cekajici: dict[str, dict[str, set]] = {}
+        self.scena_vysledek: str = "nic k uložení"
         self.plan_od = None
         self.plan_do = None
         self.plan_opakovani: str = "jednou"
@@ -2500,6 +2506,66 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             if d.get("nazev") == self.scena_volba:
                 return pid, d
         return next(iter(sceny.items()))
+
+    def scena_ceka(self, scena_id: str) -> dict[str, set]:
+        """Rozpracovaný výběr té scény. Založí se prázdný."""
+        return self.scena_cekajici.setdefault(
+            scena_id, {"pridat": set(), "zrusit": set()})
+
+    def scena_kolik_ceka(self) -> tuple[int, int]:
+        """Kolik dnů je u vybrané scény k přidání a kolik ke zrušení."""
+        pid = self.scena_vybrana()[0]
+        if pid is None:
+            return 0, 0
+        ceka = self.scena_ceka(pid)
+        return len(ceka["pridat"]), len(ceka["zrusit"])
+
+    async def scena_uloz(self) -> str:
+        """Zapíše rozpracovaný výběr vybrané scény do kalendáře.
+
+        Jeden stisk na všechny naklikané dny. Vrací větu pro člověka —
+        tlačítko samo o sobě nic neukáže.
+        """
+        pid, d = self.scena_vybrana()
+        if pid is None:
+            self.scena_vysledek = "žádná scéna není nastavená"
+            return self.scena_vysledek
+        ceka = self.scena_ceka(pid)
+        if not ceka["pridat"] and not ceka["zrusit"]:
+            self.scena_vysledek = "nic k uložení"
+            return self.scena_vysledek
+
+        pridano = 0
+        for den in sorted(ceka["pridat"]):
+            await self.plan_zapis(dny.novy_zaznam(pid, d, den))
+            pridano += 1
+        zruseno = 0
+        for den in sorted(ceka["zrusit"]):
+            stav = dny.pro_den(self.plan_zaznamy(), pid, den,
+                               self.plan_rozbal)
+            for z in stav["vlastni"]:
+                await self.plan_smaz(z["uid"])
+                zruseno += 1
+        ceka["pridat"].clear()
+        ceka["zrusit"].clear()
+        casti = []
+        if pridano:
+            casti.append(f"přidáno {pridano} dní")
+        if zruseno:
+            casti.append(f"zrušeno {zruseno}")
+        self.scena_vysledek = (f"{d.get('nazev')}: " + ", ".join(casti))
+        return self.scena_vysledek
+
+    def scena_zahod(self) -> str:
+        """Zahodí rozpracovaný výběr. Kalendář zůstane, jak byl."""
+        pid = self.scena_vybrana()[0]
+        if pid is not None:
+            ceka = self.scena_ceka(pid)
+            ceka["pridat"].clear()
+            ceka["zrusit"].clear()
+        self.scena_vysledek = "výběr zahozen"
+        self.async_update_listeners()
+        return self.scena_vysledek
 
     def plan_rozbal(self, zaznam: dict, od, do) -> list[tuple]:
         """Výskyty jednoho záznamu v daném rozsahu.

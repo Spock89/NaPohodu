@@ -213,37 +213,76 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
         return dn.popis(self._odstup)
 
     @property
+    def _ceka(self) -> dict[str, set]:
+        if self._pod_id is None:
+            return {"pridat": set(), "zrusit": set()}
+        return self.coordinator.scena_ceka(self._pod_id)
+
+    @property
     def is_on(self) -> bool:
+        """Jak to bude vypadat po uložení, ne jak to je teď.
+
+        Mřížka je rozpracovaný výběr: zaškrtnutí se nezapisuje hned,
+        aby šlo naklikat čtrnáct dní a uložit je jedním stiskem.
+        """
+        den, ceka = self._den, self._ceka
+        if den in ceka["pridat"]:
+            return True
+        if den in ceka["zrusit"]:
+            return False
         return self._stav_dne["plati"]
+
+    @property
+    def icon(self) -> str:
+        """Z ikony se pozná, co je uložené a co se teprve uloží."""
+        den, ceka = self._den, self._ceka
+        if den in ceka["pridat"]:
+            return "mdi:calendar-plus"
+        if den in ceka["zrusit"]:
+            return "mdi:calendar-remove"
+        return ("mdi:calendar-check" if self._stav_dne["plati"]
+                else "mdi:calendar-blank-outline")
 
     @property
     def extra_state_attributes(self) -> dict:
         s = self._stav_dne
+        den, ceka = self._den, self._ceka
         return {
-            "datum": self._den.isoformat(),
+            "datum": den.isoformat(),
             "scena": self._definice.get("nazev"),
             # Když den drží opakovaná nebo vícedenní událost, zrušit
             # ho kliknutím nejde — smazala by se i ta ostatní.
             "zdroj": ("opakovaná nebo vícedenní událost" if s["odjinud"]
                       else "zaškrtnutí" if s["plati"] else "nic"),
             "da_se_odskrtnout": bool(s["vlastni"]) and not s["odjinud"],
+            "v_kalendari": s["plati"],
+            "ceka": ("přidat" if den in ceka["pridat"]
+                     else "zrušit" if den in ceka["zrusit"] else None),
         }
 
     async def async_turn_on(self, **kwargs) -> None:
-        if self._pod_id is None or self._stav_dne["plati"]:
-            return                      # už platí, nepřidávej druhý
-        await self.coordinator.plan_zapis(
-            dn.novy_zaznam(self._pod_id, self._definice, self._den))
+        if self._pod_id is None:
+            return
+        den, ceka = self._den, self._ceka
+        ceka["zrusit"].discard(den)
+        if not self._stav_dne["plati"]:
+            ceka["pridat"].add(den)
         self.async_write_ha_state()
+        # Počítadlo „k uložení" visí na jiné entitě, musí se dozvědět.
+        self.coordinator.async_update_listeners()
 
     async def async_turn_off(self, **kwargs) -> None:
+        if self._pod_id is None:
+            return
+        den, ceka = self._den, self._ceka
+        ceka["pridat"].discard(den)
         s = self._stav_dne
-        for z in s["vlastni"]:
-            await self.coordinator.plan_smaz(z["uid"])
         if s["odjinud"]:
             _LOGGER.info(
                 "NaPohodu: %s %s drží opakovaná nebo vícedenní událost, "
                 "odškrtnutím nezmizí — zruš ji v kalendáři scény.",
-                self._definice.get("nazev") or "scéna",
-                self._den.isoformat())
+                self._definice.get("nazev") or "scéna", den.isoformat())
+        elif s["vlastni"]:
+            ceka["zrusit"].add(den)
         self.async_write_ha_state()
+        self.coordinator.async_update_listeners()
