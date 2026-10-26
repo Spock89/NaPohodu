@@ -179,6 +179,12 @@ ATRIBUTY_PODROBNE = [
 # odškrtne, se takhle dá vyhodit celý včetně jeho hranic sekcí.
 ZNACKA_BLOKU = "#--BLOK--"
 
+# Kolik dlaždic má zaškrtávací mřížka scény. Musí se rovnat
+# `dny.DNU_DOPREDU`, protože tolik přepínačů se scéně zakládá. Opsané,
+# ne importované: tenhle modul schválně nesahá na nic z integrace, aby
+# se dal ověřit samostatně. Že se obě čísla rovnají, hlídá kontrola.
+DNU_MRIZKY = 35
+
 
 def _jen_zapnute(radky: list[str], bloky: set | None) -> list[str]:
     """Vyhodí řádky bloků, které nikdo nechce.
@@ -1013,15 +1019,21 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         # se kliká.
         for nazev in (sceny or []):
             eid = f"calendar.napohodu_{klic_jmena(nazev)}"
-            if not existuje(eid):
+            mrizka = _mrizka_dnu(klic_jmena(nazev), existuje)
+            if not existuje(eid) and not mrizka:
                 continue
             c += _hlavicka(f"Scéna: {nazev}", "mdi:calendar-star",
                            "subtitle")
-            c += ["  - type: calendar",
-                  "    initial_view: dayGridMonth",
-                  "    entities:",
-                  f"      - {eid}",
-                  ""]
+            # Zaškrtávací mřížka první: na ni se kliká. Kalendář pod ní
+            # ukazuje totéž v měsíčním pohledu a zadávají se v něm
+            # opakování, která se naklikat nedají.
+            c += mrizka
+            if existuje(eid):
+                c += ["  - type: calendar",
+                      "    initial_view: dayGridMonth",
+                      "    entities:",
+                      f"      - {eid}",
+                      ""]
 
     c.append(ZNACKA_BLOKU + "napoveda")
     # --- jak zadat plán ručně ---
@@ -1246,6 +1258,37 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
              ""]
     karty = [r for r in karty if r != SEKCE]
     return "\n".join(hlava + ["type: vertical-stack", "cards:"] + karty) + "\n"
+
+
+def _mrizka_dnu(klic: str, existuje) -> list[str]:
+    """Zaškrtávací mřížka dnů jedné scény: dlaždice po sedmi.
+
+    Mřížka se neváže na data, ale na dlaždice — popisek i stav si nese
+    entita, takže YAML nezestárne a nemusí se každý měsíc generovat
+    znovu. Sedm sloupců znamená, že svislice jsou dny v týdnu: první
+    sloupec je dnešní den, protože dlaždice se počítají od dneška.
+    """
+    dlazdice = []
+    for i in range(DNU_MRIZKY):
+        eid = f"switch.napohodu_{klic}_den_{i:02d}"
+        if not existuje(eid):
+            continue
+        dlazdice.append(
+            ["      - type: button",
+             f"        entity: {eid}",
+             "        show_state: false",
+             "        tap_action:",
+             "          action: toggle"])
+    if not dlazdice:
+        return []
+    out = ["  - type: grid",
+           "    columns: 7",
+           "    square: false",
+           "    cards:"]
+    for d in dlazdice:
+        out += d
+    out.append("")
+    return out
 
 
 def _prvni(existuje, *kandidati: str) -> str | None:

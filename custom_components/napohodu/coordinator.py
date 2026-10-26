@@ -26,9 +26,14 @@ except ImportError:      # pragma: no cover - bez něj se jen neopakuje
     rrulestr = None
 
 from .number import MISTNOST as POSUVNIKY_MISTNOSTI
-from . import (core, plan as pl, planovac as pz, pritomnost as pr,
-               prumery as pm, slunce as sl, sousedstvi as so,
-               vykon as vy, zpravy as zp, klima as kl)
+from . import (core, plan as pl, planovac as pz, podklady as pk,
+               pritomnost as pr, prumery as pm, slunce as sl,
+               sousedstvi as so, vykon as vy, zpravy as zp, klima as kl)
+
+try:      # dateutil je v Home Assistantu běžně k dispozici
+    from dateutil.rrule import rrulestr
+except ImportError:      # pragma: no cover - bez něj se jen neopakuje
+    rrulestr = None
 from .const import (
     CONF_AZIMUT, CONF_CHLAZENI_MIN_VENKU, CONF_CIL_MAX, CONF_CIL_MIN,
     CONF_CISTICKA, CONF_CISTICKA_OD, CONF_CLIMATE, CONF_CO2, CONF_CO2_NOC,
@@ -2476,6 +2481,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return None
         return max(nalezy, key=lambda x: (x[0], x[1]))[2]
 
+    def plan_rozbal(self, zaznam: dict, od, do) -> list[tuple]:
+        """Výskyty jednoho záznamu v daném rozsahu.
+
+        Jedno místo na rozbalování pro všechny, kdo se plánu ptají:
+        kalendář, zaškrtávací dny i diagnostika. Bez něho si každý
+        hledal `rrulestr` sám a opakované události někde platily
+        a někde ne.
+        """
+        return pz.rozbal(zaznam, od, do, rrulestr)
+
     def plan_zaznamy(self) -> list[dict]:
         """Uložené záznamy plánu i s časy jako datum, ne text."""
         return self._vlastni_plan
@@ -2542,10 +2557,26 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 self._vlastni_plan.append({**z, "od": od, "do": do})
 
     def nabidka_planu(self) -> list[pz.Volba]:
-        """Co jde naplánovat z dashboardu."""
+        """Co jde naplánovat z dashboardu.
+
+        Volby o zavřených oknech se nabízejí jen tam, kde je co
+        zavřít. Dřív se nabízely vždycky, takže v bytě bez jediného
+        ovládaného okna šlo naplánovat povel, který nic neudělá.
+        Rozhoduje totéž vybavení jako na kartě: vlastní okno, nebo
+        vyvětrání zónou přes sousedovo.
+        """
+        vyb = pk.podklady(list(self.entry.subentries.values()))
+        zavira = {vyb["nazvy"].get(k, k)
+                  for k, znacky in vyb["vybaveni"].items()
+                  if {"okno", "vetrani_zonou"} & set(znacky)}
+        # Skupina umí zavřít, umí-li to aspoň jeden její člen: povel
+        # se rozpadá na místnosti a zbytek skupiny tím není dotčený.
+        skupiny = self._skupiny()
+        zavira |= {jmeno for jmeno, cleni in skupiny.items()
+                   if any(c in zavira for c in cleni)}
         return pz.nabidka(
             [p.title for p in self._podentity(PODENTITA_MISTNOST)],
-            list(self._skupiny()))
+            list(skupiny), lze_zavrit=zavira)
 
     async def naplanuj(self, popis: str, od, do) -> str:
         """Založí událost ve vlastním kalendáři plánu.

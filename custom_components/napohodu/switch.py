@@ -6,6 +6,8 @@ co by udělala, což je bezpečnější způsob, jak ji poprvé nasadit.
 
 from __future__ import annotations
 
+import logging
+
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
@@ -13,8 +15,15 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
-from .const import DOMAIN, PODENTITA_KLIMA, PODENTITA_MISTNOST
+from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from . import dny as dn
+from .const import (DOMAIN, PODENTITA_KLIMA, PODENTITA_MISTNOST,
+                    PODENTITA_SCENA)
 from .entity import NaPohoduEntity
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
@@ -28,6 +37,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                    config_subentry_id=pod.subentry_id)
         elif pod.subentry_type == PODENTITA_KLIMA:
             pridat([OvladatKlimu(k, pod)], config_subentry_id=pod.subentry_id)
+        elif pod.subentry_type == PODENTITA_SCENA:
+            pridat([DenSceny(k, entry, pod, i)
+                    for i in range(dn.DNU_DOPREDU)],
+                   config_subentry_id=pod.subentry_id)
 
 
 class NaPohoduPrepinac(NaPohoduEntity, SwitchEntity, RestoreEntity):
@@ -142,3 +155,85 @@ class OvladatTopeni(NaPohoduPrepinac):
 
     def __init__(self, k, pod):
         super().__init__(k, pod, "ovladat_topeni")
+
+
+class DenSceny(CoordinatorEntity, SwitchEntity):
+    """Jeden den v zaškrtávací mřížce scény.
+
+    Dlaždice patří odstupu od dneška, ne datu — jen tak zůstane mřížka
+    na kartě pořád stejná. Zaškrtnutí se ukládá na datum, takže přes
+    noc neputuje: dlaždice se jen posunou o jednu a zaškrtnutý den
+    zůstane zaškrtnutý tam, kam patří.
+    """
+
+    _attr_icon = "mdi:calendar-check"
+
+    def __init__(self, k, entry, pod, odstup: int) -> None:
+        super().__init__(k)
+        self._pod_id = pod.subentry_id
+        self._odstup = odstup
+        # V jméně entity je číslo dlaždice, ne datum: z něho vzniká
+        # `switch.napohodu_<scéna>_den_03`, a to se nesmí přes noc
+        # měnit. Datum je ve jméně, které se ukazuje na kartě.
+        self._attr_translation_key = "scena_den"
+        self._attr_translation_placeholders = {"cislo": f"{odstup + 1:02d}"}
+        self._attr_unique_id = (f"{entry.entry_id}_{pod.subentry_id}"
+                                f"_den_{odstup:02d}")
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, pod.subentry_id)},
+            name=f"NaPohodu {pod.title}",
+            manufacturer="NaPohodu", model="Scéna")
+
+    @property
+    def _definice(self) -> dict:
+        return self.coordinator.sceny().get(self._pod_id) or {}
+
+    @property
+    def _den(self):
+        return dn.datum(self._odstup)
+
+    @property
+    def _stav_dne(self) -> dict:
+        return dn.pro_den(self.coordinator.plan_zaznamy(), self._pod_id,
+                           self._den, self.coordinator.plan_rozbal)
+
+    @property
+    def name(self) -> str:
+        # Datum, ne číslo dlaždice: na mřížce je to jediné, co se čte.
+        return dn.popis(self._odstup)
+
+    @property
+    def is_on(self) -> bool:
+        return self._stav_dne["plati"]
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        s = self._stav_dne
+        return {
+            "datum": self._den.isoformat(),
+            "scena": self._definice.get("nazev"),
+            # Když den drží opakovaná nebo vícedenní událost, zrušit
+            # ho kliknutím nejde — smazala by se i ta ostatní.
+            "zdroj": ("opakovaná nebo vícedenní událost" if s["odjinud"]
+                      else "zaškrtnutí" if s["plati"] else "nic"),
+            "da_se_odskrtnout": bool(s["vlastni"]) and not s["odjinud"],
+        }
+
+    async def async_turn_on(self, **kwargs) -> None:
+        if self._stav_dne["plati"]:
+            return                      # už platí, nepřidávej druhý
+        await self.coordinator.plan_zapis(
+            dn.novy_zaznam(self._pod_id, self._definice, self._den))
+        self.async_write_ha_state()
+
+    async def async_turn_off(self, **kwargs) -> None:
+        s = self._stav_dne
+        for z in s["vlastni"]:
+            await self.coordinator.plan_smaz(z["uid"])
+        if s["odjinud"]:
+            _LOGGER.info(
+                "NaPohodu: %s %s drží opakovaná nebo vícedenní událost, "
+                "odškrtnutím nezmizí — zruš ji v kalendáři scény.",
+                self._definice.get("nazev") or "scéna",
+                self._den.isoformat())
+        self.async_write_ha_state()

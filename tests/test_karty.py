@@ -931,3 +931,40 @@ def test_jmena_s_dvojteckou_nerozbiji_yaml():
             sceny=["Scéna: Home Office", 'Návštěva "velká"'],
             podoba=podoba)
         _y.safe_load(text)      # nesmí vyhodit výjimku
+
+
+def test_mrizka_dnu_sceny_v_karte():
+    """Mřížka se vyskládá po sedmi a kliká se na přepínače dnů."""
+    import karty
+
+    # jako ve skutečné instalaci: zadávání plánu i scéna
+    def existuje(e):
+        return (e.startswith("switch.napohodu_home_office_den_")
+                or e.startswith(("select.napohodu_", "datetime.napohodu_",
+                                 "button.napohodu_naplanovat"))
+                or e in ("calendar.napohodu_home_office",
+                         "calendar.napohodu_plan"))
+
+    text = dashboard(["obyvak"], [], existuje, sceny=["Home Office"],
+                     nazvy={"obyvak": "Obývák"})
+    assert "columns: 7" in text
+    assert "switch.napohodu_home_office_den_00" in text
+    assert f"switch.napohodu_home_office_den_{karty.DNU_MRIZKY - 1:02d}" in text
+    # tolik dlaždic, kolik je přepínačů — ani jedna prázdná
+    assert text.count("switch.napohodu_home_office_den_") == karty.DNU_MRIZKY
+    assert "action: toggle" in text
+    # a kalendář scény zůstává pod ní, kvůli opakování
+    assert "initial_view: dayGridMonth" in text
+    yaml.safe_load(text)                      # pořád to je platný YAML
+
+
+def test_mrizka_dnu_se_nevygeneruje_bez_prepinacu():
+    """Bez entit by na kartě zůstala mříž prázdných dlaždic."""
+    text = dashboard(
+        ["obyvak"], [],
+        lambda e: (e.startswith(("select.napohodu_", "datetime.napohodu_",
+                                 "button.napohodu_naplanovat"))
+                   or e == "calendar.napohodu_home_office"),
+        sceny=["Home Office"], nazvy={"obyvak": "Obývák"})
+    assert "columns: 7" not in text
+    assert "initial_view: dayGridMonth" in text     # kalendář ano

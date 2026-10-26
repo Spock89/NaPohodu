@@ -297,3 +297,63 @@ def test_scena_jen_s_cilem_neni_potichu(koord):
     k.mistnosti["x"].plan_cil = None
     asyncio.run(k._plan_zpravy({}, 1120.0))
     assert poslano and poslano[0][1].get("konec") is True
+
+
+def test_nabidka_nezavira_kde_neni_co_zavrit(koord):
+    """Byt bez jediného ovládaného okna nemá co zakazovat.
+
+    Volby „zavřená okna" se nabízely vždycky, takže šlo naplánovat
+    povel, který nikdy nic neudělá.
+    """
+    from napohodu import const as c
+
+    k = _instance(koord, podentity=[
+        Podentita(c.PODENTITA_MISTNOST, "Dílna"),
+        Podentita(c.PODENTITA_MISTNOST, "Sklad"),
+    ])
+    popisy = [v.popis for v in k.nabidka_planu()]
+    assert not [x for x in popisy if "zavřená okna" in x], popisy
+    assert "Dílna: nikdo tu nebude" in popisy      # ostatní zůstávají
+    assert "nikdo doma" in popisy
+
+
+def test_nabidka_zavira_i_bez_okna_v_zone(koord):
+    """Místnost bez okna, ale v zóně s oknem, zavřít jde — vyvětrá se
+    sousedovým oknem, takže „zavřená okna" jí něco zakazuje."""
+    from napohodu import const as c
+
+    k = _instance(koord, podentity=[
+        Podentita(c.PODENTITA_MISTNOST, "Kuchyně",
+                  {c.CONF_OKNA: ["cover.kuchyne"]}),
+        Podentita(c.PODENTITA_MISTNOST, "Obývák"),
+        Podentita(c.PODENTITA_MISTNOST, "Dílna"),
+        Podentita(c.PODENTITA_ZONA, "Kuchyň a obývák",
+                  {c.CONF_MISTNOSTI: ["Kuchyně", "Obývák"]}),
+    ])
+    popisy = [v.popis for v in k.nabidka_planu()]
+    assert "Kuchyně: zavřená okna" in popisy
+    assert "Obývák: zavřená okna" in popisy, "vyvětrá se oknem v zóně"
+    # Dílna v žádné zóně není a okno nemá
+    assert "Dílna: zavřená okna" not in popisy, popisy
+    assert "Dílna: nikdo tu nebude" in popisy
+    # a sloučená volba se tam scvrkne na samotné prázdno
+    assert "Dílna: nikdo tu nebude, zavřená okna" not in popisy
+
+
+def test_nabidka_zavira_skupinu_kdyz_umi_aspon_jeden_clen(koord):
+    """Povel se rozpadá na místnosti, takže skupině stačí jeden člen
+    s oknem — zbytek skupiny tím není dotčený."""
+    from napohodu import const as c
+
+    k = _instance(koord, podentity=[
+        Podentita(c.PODENTITA_MISTNOST, "Kuchyně",
+                  {c.CONF_OKNA: ["cover.kuchyne"]}),
+        Podentita(c.PODENTITA_MISTNOST, "Dílna"),
+        Podentita(c.PODENTITA_SKUPINA, "1. patro",
+                  {c.CONF_SKUPINA_MISTNOSTI: ["Kuchyně", "Dílna"]}),
+        Podentita(c.PODENTITA_SKUPINA, "Sklepy",
+                  {c.CONF_SKUPINA_MISTNOSTI: ["Dílna"]}),
+    ])
+    popisy = [v.popis for v in k.nabidka_planu()]
+    assert "1. patro: zavřená okna" in popisy
+    assert "Sklepy: zavřená okna" not in popisy, popisy

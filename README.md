@@ -883,9 +883,37 @@ odtud dá i prohlížet a mazat.
 
 **Události jdou zakládat přímo z dashboardu.** V sekci u obsazenosti se
 vybere co, odkdy a dokdy, volitelně jak často se to má opakovat, a
-zmáčkne se Naplánovat. V nabídce jsou všechny varianty pro všechny
-definované místnosti. Výsledek posledního stisku je vidět hned pod
+zmáčkne se Naplánovat. Výsledek posledního stisku je vidět hned pod
 tlačítkem a naplánované události pod ním v kalendáři.
+
+V nabídce jsou varianty pro všechny definované místnosti a skupiny —
+kromě těch, které by nic neudělaly. **Zavřená okna** se nabízejí jen
+tam, kde je co zavřít: místnosti s vlastním ovládaným oknem a
+místnosti bez okna v zóně, kde nějaké okno je, protože ty se vyvětrají
+sousedovým. Skupině stačí jeden takový člen. V bytě bez jediného
+ovládaného okna tedy volby o zavírání nejsou vůbec, a sloučená volba
+„nikdo tu nebude, zavřená okna" se v místnosti bez okna scvrkne na
+samotné prázdno.
+
+**Dny scény se zaškrtávají v mřížce.** Kalendář umí jen „přidat
+událost" po jedné, takže čtrnáct dní v měsíci by znamenalo čtrnáct
+dialogů. Každá scéna proto dostane na dashboardu mřížku dlaždic po
+sedmi — svislice jsou dny v týdnu, první sloupec je dnešní den — a den
+se zapne a vypne kliknutím. Jde o pětatřicet dní dopředu, takže po
+celý měsíc je vidět jeho zbytek i celý příští.
+
+Dlaždice patří **odstupu od dneška**, ne datu: číslo pět je vždycky „za
+pět dní". Jen tak může YAML karty zůstat pořád stejný a nemusí se
+každý měsíc generovat znovu — datum i stav si nese entita. Zaškrtnutí
+se ale ukládá na datum, takže přes noc neputuje: dlaždice se posunou
+o jednu a zaškrtnutý den zůstane tam, kam patří.
+
+Mřížka a kalendář scény jsou dvě cesty k jedné věci, ne dva seznamy:
+den označený v kalendáři je na mřížce zaškrtnutý a naopak. Co ale
+**odškrtnout nejde**, je den, který drží opakovaná nebo vícedenní
+událost — ta je jedna věc zadaná jako celek a zrušit ji kliknutím na
+jeden den by smazalo i dny, o kterých není řeč. Dlaždice to přizná
+v atributu `zdroj` a opakování se ruší v kalendáři scény.
 
 **Opakování funguje.** *Jak často* nabízí denně, všední dny, víkend,
 týdně, za dva týdny, měsíčně, **lichý a sudý týden** a **víkend

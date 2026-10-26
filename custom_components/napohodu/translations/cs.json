@@ -1177,6 +1177,9 @@
       },
       "zvlhcovat_i_ve_spanku": {
         "name": "Zvlhčovat i ve spánku"
+      },
+      "scena_den": {
+        "name": "Den {cislo}"
       }
     },
     "button": {

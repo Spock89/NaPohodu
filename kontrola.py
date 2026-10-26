@@ -469,6 +469,18 @@ for k in sorted(ve_form - cte - UI_POLE):
 # 1s) tatáž hodnota nesmí mít jiné jméno v entitě a jiné ve formuláři.
 # Člověk pak v dashboardu hledá něco, co v nastavení najde pod jiným
 # názvem — a neví, že je to totéž.
+# Mřížka dnů scény: karta si počet dlaždic opisuje, protože na
+# integraci schválně nesahá. Když se čísla rozejdou, bude na kartě
+# o dlaždici víc nebo míň, než kolik přepínačů vznikne — a ta
+# přebývající bude prázdná, protože její entita neexistuje.
+_mrizka = re.search(r"^DNU_MRIZKY = (\d+)", (d / "karty.py").read_text(),
+                    re.M)
+_dnu = re.search(r"^DNU_DOPREDU = (\d+)", (d / "dny.py").read_text(), re.M)
+if _mrizka and _dnu and _mrizka.group(1) != _dnu.group(1):
+    chyby.append(
+        f"karty.DNU_MRIZKY je {_mrizka.group(1)}, ale dny.DNU_DOPREDU "
+        f"{_dnu.group(1)} — mřížka dnů scény by neodpovídala přepínačům")
+
 posuvniky_klice = set(re.findall(r"Posuvnik\((CONF_\w+)",
                                  (d / "number.py").read_text()))
 hodnoty_konst = dict(re.findall(r'^(CONF_\w+) = "(\w+)"',

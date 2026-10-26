@@ -536,3 +536,83 @@ def test_obnova_stejnym_smerem_drzeni_nerestartuje(ha):
     r2, povely2 = _kolo(k, hass, 1.0)
     assert r2.akce.value == "otevrit", r2.duvod
     assert "open_cover" in povely2
+
+
+def test_mrizka_dnu_sceny_zapina_a_vypina(ha):
+    """Celý řetězec: kliknutí na dlaždici → záznam v plánu → scéna
+    ten den platí. A druhé kliknutí ho zruší."""
+    ko = ha
+    from napohodu import const as c
+    from napohodu import dny as dn
+    from napohodu.switch import DenSceny
+
+    k, hass = _koordinator(ko, c)
+    asyncio.run(k.async_nacti())
+    asyncio.run(k._async_update_data())
+
+    scena = next(p for p in k.entry.subentries.values()
+                 if p.subentry_type == c.PODENTITA_SCENA)
+    dlazdice = [DenSceny(k, k.entry, scena, i) for i in range(3)]
+    for d in dlazdice:
+        d.hass = hass
+        d.async_write_ha_state = lambda: None
+    dnes, zitra, pozitri = dlazdice
+
+    assert not any(d.is_on for d in dlazdice)
+    assert dnes.name == "dnes" and zitra.name == "zítra"
+
+    # zaškrtnutí pozítří
+    asyncio.run(pozitri.async_turn_on())
+    assert pozitri.is_on and not dnes.is_on and not zitra.is_on
+    zaznamy = [z for z in k.plan_zaznamy() if z.get("druh") == "scena"]
+    assert len(zaznamy) == 1
+    assert zaznamy[0]["scena"] == scena.subentry_id
+    assert zaznamy[0]["celodenni"] is True
+    assert pozitri.extra_state_attributes["zdroj"] == "zaškrtnutí"
+    assert pozitri.extra_state_attributes["da_se_odskrtnout"] is True
+
+    # druhé kliknutí na totéž nepřidá druhý záznam
+    asyncio.run(pozitri.async_turn_on())
+    assert len([z for z in k.plan_zaznamy()
+                if z.get("druh") == "scena"]) == 1
+
+    # a odškrtnutí ho zruší
+    asyncio.run(pozitri.async_turn_off())
+    assert not pozitri.is_on
+    assert not [z for z in k.plan_zaznamy() if z.get("druh") == "scena"]
+
+
+def test_dlazdice_a_kalendar_sceny_vidi_totez(ha):
+    """Den označený v kalendáři scény musí být na mřížce zaškrtnutý —
+    jsou to dvě cesty k jedné věci, ne dva seznamy."""
+    ko = ha
+    import datetime as dt
+
+    from homeassistant.util import dt as dt_util
+    from napohodu import const as c
+    from napohodu.switch import DenSceny
+
+    k, hass = _koordinator(ko, c)
+    asyncio.run(k.async_nacti())
+    asyncio.run(k._async_update_data())
+    scena = next(p for p in k.entry.subentries.values()
+                 if p.subentry_type == c.PODENTITA_SCENA)
+
+    # tak, jak to ukládá kalendář scény: celodenní událost na zítřek
+    zitra = dt_util.now().date() + dt.timedelta(days=1)
+    asyncio.run(k.plan_zapis({
+        "uid": "z_kalendare", "druh": "scena",
+        "scena": scena.subentry_id, "nazev_sceny": "Home Office",
+        "celodenni": True, "okno": ["07:00", "18:00"],
+        "od": dt_util.start_of_local_day(
+            dt.datetime(zitra.year, zitra.month, zitra.day)),
+        "do": dt_util.start_of_local_day(
+            dt.datetime(zitra.year, zitra.month, zitra.day))
+        + dt.timedelta(days=1),
+        "opis": {"prazdno": [], "zavreno": [], "cil": {}}}))
+
+    d = DenSceny(k, k.entry, scena, 1)
+    d.hass = hass
+    d.async_write_ha_state = lambda: None
+    assert d.is_on, "den z kalendáře musí být na mřížce vidět"
+    assert d.extra_state_attributes["da_se_odskrtnout"] is True

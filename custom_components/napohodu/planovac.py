@@ -38,20 +38,39 @@ class Volba:
 PRO_MISTNOST = ("obsazeno", "prazdno", "zavreno", "prazdno_zavreno", "cil")
 
 
+# Volby, které nemají co dělat, když není co zavřít. „Zavřená okna"
+# je povel oknu — bez okna nezakazuje nic a v nabídce jen plete.
+JEN_SE_ZAVIRANIM = ("zavreno", "prazdno_zavreno")
+
+
 def nabidka(mistnosti: list[str],
-            skupiny: list[str] | None = None) -> list[Volba]:
+            skupiny: list[str] | None = None,
+            lze_zavrit: set[str] | None = None) -> list[Volba]:
     """Co všechno jde naplánovat.
 
-    Všechny varianty pro všechny místnosti i skupiny: zapisuje se do
-    vlastního kalendáře integrace, takže není kam se netrefit a nabídku
-    nemá smysl zkracovat podle toho, co je kde přiřazené.
+    Zapisuje se do vlastního kalendáře integrace, takže není kam se
+    netrefit — podle přiřazení kalendářů se nabídka nekrátí. Krátí se
+    jen podle toho, co místnost **umí**: „zavřená okna" tam, kde se
+    žádné okno neovládá ani se nedá vyvětrat zónou, je volba, která
+    nikdy nic neudělá. Sloučená volba „nikdo tu nebude, zavřená okna"
+    se v takové místnosti scvrkne na samotné prázdno.
+
+    `lze_zavrit` je množina jmen (místností i skupin), kde zavírání
+    něco znamená. None znamená „neřeš", aby se dala nabídka vypsat
+    i bez znalosti vybavení.
     """
     out = [Volba("nikdo doma", "nikdo"), Volba("víc lidí", "vic")]
+
+    def druhy(nazev: str):
+        if lze_zavrit is None or nazev in lze_zavrit:
+            return PRO_MISTNOST
+        return tuple(d for d in PRO_MISTNOST if d not in JEN_SE_ZAVIRANIM)
+
     for nazev in mistnosti:
-        for druh in PRO_MISTNOST:
+        for druh in druhy(nazev):
             out.append(Volba(f"{nazev}: {DRUHY[druh]}", druh, nazev))
     for nazev in (skupiny or []):
-        for druh in PRO_MISTNOST:
+        for druh in druhy(nazev):
             out.append(Volba(f"{nazev}: {DRUHY[druh]}", druh,
                              None, nazev))
     return out
