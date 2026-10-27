@@ -7,3 +7,6 @@ class DataUpdateCoordinator:
 class CoordinatorEntity:
     # Skutečná třída si koordinátor uloží, entity na to spoléhají.
     def __init__(self,coordinator=None,*a,**k): self.coordinator=coordinator
+    # Volá se po každém kole koordinátoru; entita si tu může přepočítat,
+    # co se mění s časem, a zapsat stav.
+    def _handle_coordinator_update(self): self.async_write_ha_state()

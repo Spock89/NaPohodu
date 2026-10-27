@@ -473,6 +473,17 @@ for k in sorted(ve_form - cte - UI_POLE):
 # 1s) tatáž hodnota nesmí mít jiné jméno v entitě a jiné ve formuláři.
 # Člověk pak v dashboardu hledá něco, co v nastavení najde pod jiným
 # názvem — a neví, že je to totéž.
+# Jméno entity patří do `_attr_name`. V Home Assistantu je `name`
+# cached_property a přepsat ji obyčejnou vlastností znamená, že jméno
+# nedojde — karta pak spadne na jméno zařízení. Projevilo se to na
+# dlaždicích mřížky, kde místo data stálo „NaP…".
+for _soubor in sorted(d.glob("*.py")):
+    _text = _soubor.read_text()
+    if re.search(r"^    def name\(self\)", _text, re.M):
+        chyby.append(
+            f"{_soubor.name}: přepisuje vlastnost name — v HA je to "
+            f"cached_property, jméno patří do _attr_name")
+
 # Mřížka dnů scény: dlaždice si identifikátor nastavují napevno,
 # protože Home Assistant ho jinak odvodí ze jména — a to je u nich
 # datum. Ve 2.44 a 2.45 z toho vznikly `switch.dnes` a spol., karta

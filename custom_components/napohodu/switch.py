@@ -205,7 +205,7 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
 
     # Jméno zařízení se před dlaždici nelepí. Dlaždice je široká
     # sedminu karty a „NaPohodu út 27. 10." se do ní nevejde — na
-    # kartě z toho zbylo „aPohod" a pod tím datum.
+    # kartě z toho zbylo „NaP…" a datum se vůbec neukázalo.
     _attr_has_entity_name = False
     _attr_icon = "mdi:calendar-check"
 
@@ -223,6 +223,12 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
         # takže se mřížka negenerovala vůbec. Jméno s datem je jen to,
         # co se čte na dlaždici.
         self.entity_id = f"switch.{klic_dne(odstup)}"
+        # Jméno se zapisuje do `_attr_name`, ne do přepsané vlastnosti
+        # `name`: ta je v Home Assistantu `cached_property` a přepsat
+        # ji obyčejnou vlastností znamená, že jméno nedojde — karta pak
+        # spadne na jméno zařízení a na dlaždicích stojí „NaP…".
+        # Přes `_attr_name` si HA hlídá i vyprázdnění své paměti.
+        self._attr_name = dn.popis(odstup)
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
             name="NaPohodu", manufacturer="NaPohodu", model="Byt")
@@ -246,10 +252,17 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
         return dn.pro_den(self.coordinator.plan_zaznamy(), self._pod_id,
                           self._den, self.coordinator.plan_rozbal)
 
-    @property
-    def name(self) -> str:
-        # Datum, ne číslo dlaždice: na mřížce je to jediné, co se čte.
-        return dn.popis(self._odstup)
+    def _obnov_jmeno(self) -> None:
+        """Datum na dlaždici. Po půlnoci se posune o jeden den."""
+        self._attr_name = dn.popis(self._odstup)
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        self._obnov_jmeno()
+
+    def _handle_coordinator_update(self) -> None:
+        self._obnov_jmeno()
+        super()._handle_coordinator_update()
 
     @property
     def _ceka(self) -> dict[str, set]:

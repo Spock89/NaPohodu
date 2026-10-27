@@ -880,3 +880,33 @@ def test_entity_scen_existuji_i_bez_sceny(ha):
     assert not [z for z in k.plan_zaznamy() if z.get("druh") == "scena"]
     assert k.scena_kolik_ceka() == (0, 0)
     assert asyncio.run(k.scena_uloz()) == "žádná scéna není nastavená"
+
+
+def test_dlazdice_nese_datum_v_attr_name(ha):
+    """Jméno patří do `_attr_name`, ne do přepsané vlastnosti `name`.
+
+    V Home Assistantu je `name` cached_property. Přepsat ji obyčejnou
+    vlastností znamená, že jméno nedojde — karta pak spadne na jméno
+    zařízení a na dlaždicích stojí „NaP…" bez data.
+    """
+    ko = ha
+    from napohodu import const as c
+    from napohodu.switch import DenSceny
+
+    k, hass = _koordinator(ko, c)
+    asyncio.run(k.async_nacti())
+
+    d = DenSceny(k, k.entry, 2)
+    assert "name" not in DenSceny.__dict__, \
+        "vlastnost name se nesmí přepisovat, HA ji má jako cached_property"
+    assert d._attr_name == d.name
+    assert d.name and any(x.isdigit() for x in d.name), d.name
+    assert "NaPohodu" not in d.name
+
+    # po kole koordinátoru se jméno obnoví, aby se datum po půlnoci
+    # posunulo i bez restartu
+    d.hass = hass
+    d.async_write_ha_state = lambda: None
+    d._attr_name = "staré"
+    d._handle_coordinator_update()
+    assert d.name != "staré"
