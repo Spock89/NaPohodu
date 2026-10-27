@@ -910,3 +910,24 @@ def test_dlazdice_nese_datum_v_attr_name(ha):
     d._attr_name = "staré"
     d._handle_coordinator_update()
     assert d.name != "staré"
+
+
+def test_dlazdice_nepatri_k_zarizeni(ha):
+    """Jméno zařízení se před dlaždici nemá jak dostat.
+
+    Složené jméno „zařízení + entita" vzniká jedině u entity, která
+    zařízení má. Samotné `has_entity_name = False` nestačilo — na
+    kartě pořád stálo „NaPohodu út 27. 10." a z toho se na dlaždici
+    vešlo „NaP…".
+    """
+    ko = ha
+    from napohodu import const as c
+    from napohodu.switch import DenSceny
+
+    k, hass = _koordinator(ko, c)
+    asyncio.run(k.async_nacti())
+
+    d = DenSceny(k, k.entry, 1)
+    assert getattr(d, "_attr_device_info", None) is None
+    assert d._attr_has_entity_name is False
+    assert "NaPohodu" not in (d.name or "")

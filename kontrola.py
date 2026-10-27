@@ -473,6 +473,14 @@ for k in sorted(ve_form - cte - UI_POLE):
 # 1s) tatáž hodnota nesmí mít jiné jméno v entitě a jiné ve formuláři.
 # Člověk pak v dashboardu hledá něco, co v nastavení najde pod jiným
 # názvem — a neví, že je to totéž.
+# Dlaždice dne nesmí patřit k zařízení: jméno zařízení by se předřadilo
+# před datum a na dlaždici široké sedminu karty by zbylo „NaP…".
+_dlazdice = re.search(r"class DenSceny.*?(?=\nclass |\Z)",
+                      (d / "switch.py").read_text(), re.S)
+if _dlazdice and "_attr_device_info" in _dlazdice.group(0):
+    chyby.append("switch.py: dlaždice dne má zařízení — jeho jméno se "
+                 "předřadí před datum a na dlaždici se nevejde")
+
 # Jméno entity patří do `_attr_name`. V Home Assistantu je `name`
 # cached_property a přepsat ji obyčejnou vlastností znamená, že jméno
 # nedojde — karta pak spadne na jméno zařízení. Projevilo se to na

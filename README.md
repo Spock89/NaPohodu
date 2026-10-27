@@ -1022,6 +1022,13 @@ Nepovinný **popis do kalendáře** v nastavení scény se opíše do každého
 dne, který scénou označíš — hodí se, když kalendář čte i někdo jiný
 nebo jiná automatizace.
 
+Dlaždice schválně **nepatří k žádnému zařízení**. Složené jméno
+„zařízení + entita" vzniká v Home Assistantu jedině u entity, která
+zařízení má, a na dlaždici široké sedminu karty se „NaPohodu út
+27. 10." nevejde — zbyde z toho „NaP…" a datum se neukáže vůbec.
+Samotný přepínač `has_entity_name` na to nestačil, protože se jméno
+zařízení lepilo dál; tahle cesta na žádném přepínači nezávisí.
+
 Dlaždice patří **odstupu od dneška**, ne datu: číslo pět je vždycky „za
 pět dní". Jen tak může YAML karty zůstat pořád stejný a nemusí se
 každý měsíc generovat znovu — datum i stav si nese entita. Zaškrtnutí

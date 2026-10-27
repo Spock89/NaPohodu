@@ -16,7 +16,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from homeassistant.helpers import entity_registry as er
-from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import dny as dn
@@ -203,9 +202,16 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
     scénou narostla o celou mřížku.
     """
 
-    # Jméno zařízení se před dlaždici nelepí. Dlaždice je široká
-    # sedminu karty a „NaPohodu út 27. 10." se do ní nevejde — na
-    # kartě z toho zbylo „NaP…" a datum se vůbec neukázalo.
+    # Dlaždice schválně nepatří k žádnému zařízení. Jméno se pak
+    # skládá z jediné věci — z `_attr_name` — a jméno zařízení se před
+    # ně nemá jak dostat: složené jméno „zařízení + entita" vzniká
+    # v Home Assistantu jedině tehdy, když entita zařízení má.
+    #
+    # Samotné `_attr_has_entity_name = False` nestačilo. V té verzi
+    # Home Assistanta, která tohle má doopravdy ovládat, se jméno
+    # zařízení lepilo dál a na dlaždici široké sedminu karty z toho
+    # zbylo „NaP…" — datum se nevešlo vůbec. Tahle cesta je proti
+    # verzím odolná, protože nezávisí na žádném přepínači.
     _attr_has_entity_name = False
     _attr_icon = "mdi:calendar-check"
 
@@ -229,9 +235,6 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
         # spadne na jméno zařízení a na dlaždicích stojí „NaP…".
         # Přes `_attr_name` si HA hlídá i vyprázdnění své paměti.
         self._attr_name = dn.popis(odstup)
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry.entry_id)},
-            name="NaPohodu", manufacturer="NaPohodu", model="Byt")
 
     @property
     def _pod_id(self) -> str | None:
