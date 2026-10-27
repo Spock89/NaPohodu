@@ -71,12 +71,12 @@ Měřeno na zapnutí v babím létě a ochlazení druhý den vychází největš
 skok cíle 1,1 °C při přepnutí po týdnu, 0,4 °C po dvou a 0,2 °C po
 třech, tedy na úrovni zaokrouhlení.
 
-Když se průměr přesto nasadí vedle — zapnuto zrovna v mrazivém ránu —
-spraví to tlačítko **Zapomenout naučený průměr**. Zahodí naučená čísla
-a nasadí se znovu z toho, co je venku teď; nastavení ani posuvníků se
-to netýká. Je to jediná cesta, jak průměru říct, že je vedle:
-*Vynulovat vnitřní stavy* se ho schválně nedotýká, protože zahodit ho
-omylem by znamenalo začínat znovu.
+Tlačítko na zahození naučeného průměru tu schválně není. Opravovat
+ručně něco, co se za dva dny spraví samo, je nastavení navíc, které
+se používá jednou za život a mezitím mate. Když je přesto potřeba
+začít znovu — třeba po týdnu, kdy teploměr hlásil nesmysly — stačí
+integraci na víc než týden vypnout: delší výpadek se bere jako nový
+začátek a průměr se nasadí znovu.
 
 **Zimní přitápění.** Adaptivní norma je psaná na letní komfort
 v přirozeně větraných budovách: čím tepleji venku, tím vyšší teplotu

@@ -121,18 +121,6 @@ def test_prechod_bez_skoku():
     assert nejvetsi <= 0.3, f"skok {nejvetsi} °C"
 
 
-def test_zapomenuti_nasadi_znovu():
-    """Jediná cesta, jak průměru říct, že se nasadil vedle."""
-    p = Prumery()
-    p.aktualizuj(20.0, 0.0)
-    p.aktualizuj(20.0, 3600.0)
-    assert p.tyden == 20.0
-
-    p.zapomen()
-    assert p.tyden is None and p.zaseto_s is None and p.doba_h == 0.0
-    p.aktualizuj(8.0, 7200.0)
-    assert p.tyden == 8.0 and p.tyden_pouzitelny(7200.0) == 8.0
-
 
 def test_ulozeni_si_pamatuje_odkdy_se_uci():
     """Bez toho by se po restartu mladý průměr tvářil jako usazený."""

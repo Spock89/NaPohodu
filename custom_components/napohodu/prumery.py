@@ -126,13 +126,3 @@ class Prumery:
                    float(d.get("soucet") or 0.0),
                    float(d.get("doba_h") or 0.0))
 
-    def zapomen(self) -> None:
-        """Zahodí naučené průměry. Při dalším měření se nasadí znovu.
-
-        Nasazení z jediného čtení se dá trefit špatně — babí léto, nebo
-        zrovna mrazivé ráno — a sedmidenní konstanta pak chybu drží
-        týdny. Tohle je jediná cesta, jak mu říct, že je vedle.
-        """
-        self.tyden = self.tri_dny = None
-        self.cas_s = self.zaseto_s = None
-        self.soucet = self.doba_h = 0.0

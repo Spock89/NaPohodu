@@ -54,7 +54,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                     tlacitka.append(Stineni(k, pod, klic, role))
             pridat(tlacitka, config_subentry_id=pod.subentry_id)
     tlacitka_bytu = [SrovnatVse(k, entry), VynulovatStavy(k, entry),
-                     Naplanovat(k, entry), ZapomenoutPrumer(k, entry)]
+                     Naplanovat(k, entry)]
     # Uložení a zahození rozpracovaného výběru dnů. Zakládají se
     # vždycky, stejně jako mřížka a kalendář scény: vygenerovaný
     # dashboard nesmí přestat fungovat tím, že smažeš poslední scénu.
@@ -268,42 +268,3 @@ class ZahoditDny(CoordinatorEntity, ButtonEntity):
 
     async def async_press(self) -> None:
         self.coordinator.scena_zahod()
-
-
-class ZapomenoutPrumer(CoordinatorEntity, ButtonEntity):
-    """Zahodí naučené průměry venkovní teploty.
-
-    Průměr se nasazuje z prvního změřeného čtení a tam se dá trefit
-    vedle — babí léto, nebo zrovna mrazivé ráno. Sedmidenní konstanta
-    pak takovou chybu drží týdny a cíl s ní. Tohle je jediná cesta,
-    jak průměru říct, že je vedle: zapomene a nasadí se znovu z toho,
-    co je venku teď.
-
-    Nastavení ani posuvníků se to netýká, jen naučených čísel.
-    """
-
-    _attr_has_entity_name = True
-    _attr_translation_key = "zapomenout_prumer"
-    _attr_icon = "mdi:chart-bell-curve-cumulative"
-
-    def __init__(self, koordinator, entry) -> None:
-        super().__init__(koordinator)
-        self._attr_unique_id = f"{entry.entry_id}_zapomenout_prumer"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry.entry_id)},
-            name="NaPohodu", manufacturer="NaPohodu", model="Společné")
-
-    @property
-    def extra_state_attributes(self) -> dict:
-        pr = self.coordinator.prumery
-        return {
-            "tyden": pr.tyden,
-            "tri_dny": pr.tri_dny,
-            "uci_se_dni": (round(pr.doba_h / 24, 1)
-                           if pr.doba_h else 0.0),
-            "usazeny": pr.zaseto_s is not None and pr.doba_h / 24 >= 7,
-        }
-
-    async def async_press(self) -> None:
-        self.coordinator.prumery.zapomen()
-        await self.coordinator.async_request_refresh()
