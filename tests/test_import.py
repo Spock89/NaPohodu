@@ -2096,3 +2096,23 @@ def test_skupina_bez_lidi(nahradni_ha):
     # skupina bez čidla do toho nemluví
     patro.data.pop(c.CONF_SKUPINA_PRITOMNOST)
     assert Falesny("off")._skupiny_bez_lidi() == {}
+
+
+def test_utlum_v_nepritomnosti_jen_s_hlavici(nahradni_ha):
+    """Šoupátko bez hlavice by nic neudělalo. Místnost bez topení ho
+    tedy nedostane — jinak je stránka plná nastavení, která nic
+    neovlivní, a hledá se v tom to, co ovlivní."""
+    import importlib
+    const = importlib.import_module("napohodu.const")
+
+    s_hlavici = FalesnaPodentita(const.PODENTITA_MISTNOST, "Loznice",
+                                 {const.CONF_CLIMATE: "climate.hlavice"})
+    bez = FalesnaPodentita(const.PODENTITA_MISTNOST, "Dilna")
+
+    klice_s = _klice(_entity_platformy("number", [s_hlavici]))
+    klice_bez = _klice(_entity_platformy("number", [bez]))
+    for klic in (const.CONF_PRYC_UTLUM, const.CONF_PRYC_PO):
+        assert klic in klice_s, klic
+        assert klic not in klice_bez, klic
+    # a ostatní šoupátka dostanou obě
+    assert const.CONF_MEZ_DOLNI in klice_bez

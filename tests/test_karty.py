@@ -997,3 +997,33 @@ def test_karta_ma_pod_mrizkou_ulozeni():
         "button.napohodu_ulozit_dny_do_kalendare",
         "calendar.napohodu_scena")]
     assert poradi == sorted(poradi), poradi
+
+
+def test_utlum_v_nepritomnosti_jen_s_hlavici():
+    """Šoupátko, které v místnosti nic neovlivní, se negeneruje."""
+    text = dashboard(
+        ["obyvak", "dilna"], [], lambda e: True,
+        nazvy={"obyvak": "Obývák", "dilna": "Dílna"},
+        vybaveni={"obyvak": {"topeni", "okno"}, "dilna": {"okno"}})
+    assert "number.napohodu_obyvak_utlum_topeni_kdyz_nikdo_neni_doma" in text
+    assert "number.napohodu_obyvak_utlumit_az_po" in text
+    assert "number.napohodu_dilna_utlum_topeni_kdyz_nikdo_neni_doma" \
+        not in text
+    assert "number.napohodu_dilna_utlumit_az_po" not in text
+
+
+def test_pod_utlumem_je_vysvetleni():
+    """Útlum se chová jinak, než se od čísla čeká — bez vysvětlení se
+    na to zapomene."""
+    text = dashboard(["obyvak"], [], lambda e: True,
+                     nazvy={"obyvak": "Obývák"},
+                     vybaveni={"obyvak": {"topeni"}})
+    assert "Jak útlum v nepřítomnosti funguje" in text
+    assert "od povelu pro hlavice, ne od cíle místnosti" in text
+    assert "topeni_utlum" in text
+    assert yaml.safe_load(text)          # pořád platný YAML
+
+    # bez hlavice není co vysvětlovat
+    bez = dashboard(["dilna"], [], lambda e: True,
+                    nazvy={"dilna": "Dílna"}, vybaveni={"dilna": {"okno"}})
+    assert "Jak útlum v nepřítomnosti funguje" not in bez

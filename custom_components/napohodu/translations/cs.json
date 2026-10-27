@@ -479,7 +479,9 @@
             "prach_mistnosti": "   a to v těchto místnostech",
             "vlhkost_dosah": "Nezvlhčovat při otevřeném okně",
             "vlhkost_mistnosti": "   a to v těchto místnostech",
-            "noc_posun": "V noci posun cílové teploty"
+            "noc_posun": "V noci posun cílové teploty",
+            "pryc_utlum_topeni": "Útlum topení, když nikdo není doma",
+            "pryc_utlum_po_hodinach": "Utlumit až po"
           },
           "data_description": {
             "nazev": "Jak se místnost jmenuje. Tímto jménem ji pak přiřadíš k zóně.",
@@ -558,7 +560,9 @@
             "noc_posun": "O kolik se v noci posune cílová teplota. Záporné číslo znamená topit míň, kladné víc, nula nechává cíl být.\n\nKlesá se s předstihem před začátkem noci, aby to nebyl skok; zapnutý spánek platí hned, bez ohledu na hodinu.",
             "rucni_klid_zaluzie_min": "Když si žaluzie přestavíš rukou, automatika se do nich tak dlouho nemontuje. Poznáme to tak, že se skutečná poloha rozejde s tou, kterou jsme poslali — a musí se to potvrdit dvakrát za sebou, aby dojezd pohonu nevypadal jako ruka.\n\nBývá to delší než u okna: polohu žaluzií si člověk vybírá vědomě. Nula znamená, že automatika pokračuje hned. Tlačítko Srovnat žaluzie klid zruší, protože to je výslovný pokyn.",
             "plan_obsazeno": "Po dobu události se místnost bere za obsazenou, i když v ní nejsou čidla. Pro pokoje, kde se obsazenost mění po týdnech — host, pracovna, dětský pokoj.\n\nPřebíjí plán bytu i volbu Zdroj obsazenosti.",
-            "plan_prazdno": "Opak předchozího. Čidlo ho ale přebije: když v místnosti opravdu někdo je, bere se za obsazenou — plán smí přítomnost jen přidat, nikdy ubrat."
+            "plan_prazdno": "Opak předchozího. Čidlo ho ale přebije: když v místnosti opravdu někdo je, bere se za obsazenou — plán smí přítomnost jen přidat, nikdy ubrat.",
+            "pryc_utlum_topeni": "O kolik ubrat téhle místnosti, když je byt prázdný. Nula znamená netlumit. Nevyplněné bere hodnotu z nastavení bytu. Hlubší útlum se u zdiva nevyplatí: konstrukce chladne hodiny a stejně dlouho se natápí, takže se prototopí víc, než se ušetří.",
+            "pryc_utlum_po_hodinach": "Jak dlouho musí být prázdno, než se tahle místnost utlumí. Za krátkou nepřítomnost se útlum nezaplatí. Nevyplněné bere hodnotu z nastavení bytu."
           },
           "submit": "Další"
         },
@@ -625,7 +629,9 @@
             "indicie_stav": "Zapnuto znamená obsazeno",
             "indicie_vykon": "Čidla odběru",
             "prah_vykonu": "Odběr nad",
-            "indicie_dobeh_min": "Doběh"
+            "indicie_dobeh_min": "Doběh",
+            "pryc_utlum_topeni": "Útlum topení, když nikdo není doma",
+            "pryc_utlum_po_hodinach": "Utlumit až po"
           },
           "data_description": {
             "projezd_okna_s": "Jak dlouho pohon jede z jedné krajní polohy do druhé. Během jízdy se věří vlastnímu povelu, ne stavu entity.",
@@ -682,7 +688,9 @@
             "indicie_dobeh_min": "Jak dlouho po vypnutí ještě platí. Kdo právě zhasl, ještě neodešel.",
             "rucni_klid_zaluzie_min": "Když si žaluzie přestavíš rukou, automatika se do nich tak dlouho nemontuje. Poznáme to tak, že se skutečná poloha rozejde s tou, kterou jsme poslali — a musí se to potvrdit dvakrát za sebou, aby dojezd pohonu nevypadal jako ruka.\n\nBývá to delší než u okna: polohu žaluzií si člověk vybírá vědomě. Nula znamená, že automatika pokračuje hned. Tlačítko Srovnat žaluzie klid zruší, protože to je výslovný pokyn.",
             "plan_obsazeno": "Po dobu události se místnost bere za obsazenou, i když v ní nejsou čidla. Pro pokoje, kde se obsazenost mění po týdnech — host, pracovna, dětský pokoj.\n\nPřebíjí plán bytu i volbu Zdroj obsazenosti.",
-            "plan_prazdno": "Opak předchozího. Čidlo ho ale přebije: když v místnosti opravdu někdo je, bere se za obsazenou — plán smí přítomnost jen přidat, nikdy ubrat."
+            "plan_prazdno": "Opak předchozího. Čidlo ho ale přebije: když v místnosti opravdu někdo je, bere se za obsazenou — plán smí přítomnost jen přidat, nikdy ubrat.",
+            "pryc_utlum_topeni": "O kolik ubrat téhle místnosti, když je byt prázdný. Nula znamená netlumit. Nevyplněné bere hodnotu z nastavení bytu. Hlubší útlum se u zdiva nevyplatí: konstrukce chladne hodiny a stejně dlouho se natápí, takže se prototopí víc, než se ušetří.",
+            "pryc_utlum_po_hodinach": "Jak dlouho musí být prázdno, než se tahle místnost utlumí. Za krátkou nepřítomnost se útlum nezaplatí. Nevyplněné bere hodnotu z nastavení bytu."
           }
         }
       },
@@ -1161,6 +1169,12 @@
       },
       "plan_cil": {
         "name": "Plánovaná cílová teplota"
+      },
+      "pryc_utlum_topeni": {
+        "name": "Útlum topení, když nikdo není doma"
+      },
+      "pryc_utlum_po_hodinach": {
+        "name": "Utlumit až po"
       }
     },
     "switch": {

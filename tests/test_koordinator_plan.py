@@ -357,3 +357,37 @@ def test_nabidka_zavira_skupinu_kdyz_umi_aspon_jeden_clen(koord):
     popisy = [v.popis for v in k.nabidka_planu()]
     assert "1. patro: zavřená okna" in popisy
     assert "Sklepy: zavřená okna" not in popisy, popisy
+
+
+def test_utlum_v_nepritomnosti_je_mistnostni(koord):
+    """Jedna hodnota, dvě cesty k ní: šoupátko i formulář.
+
+    Dvě místa pro tutéž hodnotu jsou past — člověk pak neví, co platí.
+    Co místnost nemá vyplněné, bere z nastavení bytu.
+    """
+    from napohodu import const as c
+
+    k = _instance(koord, podentity=[
+        Podentita(c.PODENTITA_MISTNOST, "Ložnice",
+                  {c.CONF_PRYC_UTLUM: 2.0, c.CONF_PRYC_PO: 1.0}),
+        Podentita(c.PODENTITA_MISTNOST, "Koupelna"),
+    ])
+    k.entry.data = {c.CONF_PRYC_UTLUM: 0.5, c.CONF_PRYC_PO: 4.0}
+    k.hodnoty = {}       # šoupátka, do kterých zapisují entity
+
+    def platne(nazev, klic, vychozi_bytu):
+        pod = k.entry.subentries[nazev]
+        return k.hodnota(pod.subentry_id, klic,
+                         float(pod.data.get(klic, vychozi_bytu)))
+
+    # vlastní hodnota místnosti vyhraje nad bytem
+    assert platne("Ložnice", c.CONF_PRYC_UTLUM, 0.5) == 2.0
+    assert platne("Ložnice", c.CONF_PRYC_PO, 4.0) == 1.0
+    # nevyplněná místnost bere byt
+    assert platne("Koupelna", c.CONF_PRYC_UTLUM, 0.5) == 0.5
+    assert platne("Koupelna", c.CONF_PRYC_PO, 4.0) == 4.0
+
+    # a šoupátko přebije obojí, protože je to tatáž hodnota
+    k.hodnoty[(k.entry.subentries["Koupelna"].subentry_id,
+               c.CONF_PRYC_UTLUM)] = 1.5
+    assert platne("Koupelna", c.CONF_PRYC_UTLUM, 0.5) == 1.5

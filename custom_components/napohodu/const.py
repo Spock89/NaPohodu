@@ -95,6 +95,8 @@ CONF_NOC_POSUN = "noc_posun"
 CONF_NOC_PREDSTIH = "noc_utlum_predstih"
 CONF_PRYC_UTLUM = "pryc_utlum_topeni"
 CONF_PRYC_PO = "pryc_utlum_po_hodinach"
+# Obojí se dá nastavit i místnosti; hodnota bytu je pak
+# výchozí pro ty, které si svou nenastavily.
 CONF_ZIMA_PRAH = "zima_prah"
 CONF_ZIMA_O_KOLIK = "zima_o_kolik"
 CONF_ZIMA_NAJEZD = "zima_najezd"

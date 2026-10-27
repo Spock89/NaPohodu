@@ -2261,10 +2261,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
         utlum_pryc = 0.0
         utlum_plan = 0.0
-        pryc = float(g.get(CONF_PRYC_UTLUM, 0.0))
+        # Útlum v nepřítomnosti si každá místnost řídí sama: ložnici se
+        # vyplatí nechat vychladnout víc než koupelně. Hodnota bytu je
+        # výchozí pro ty, které si svou nenastavily — šoupátko a obojí
+        # pole ukazují pořád totéž jedno číslo.
+        pryc = self.hodnota(
+            p.subentry_id, CONF_PRYC_UTLUM,
+            float(d.get(CONF_PRYC_UTLUM, g.get(CONF_PRYC_UTLUM, 0.0))))
         predstih = float(g.get(CONF_NOC_PREDSTIH, 60))
         if pryc > 0 and self._prazdno_od is not None:
-            hodin = float(g.get(CONF_PRYC_PO, 2.0))
+            hodin = self.hodnota(
+                p.subentry_id, CONF_PRYC_PO,
+                float(d.get(CONF_PRYC_PO, g.get(CONF_PRYC_PO, 2.0))))
             # Plánovaná nepřítomnost se nemusí odsedět: kalendář ví
             # dopředu, že se nikdo nevrátí, a stejně tak ví, kdy
             # skončí — útlum proto včas povolí, aby se stihlo nahřát.

@@ -479,7 +479,9 @@
             "prach_mistnosti": "   in these rooms",
             "vlhkost_dosah": "Do not humidify with a window open",
             "vlhkost_mistnosti": "   in these rooms",
-            "noc_posun": "Night shift of the target temperature"
+            "noc_posun": "Night shift of the target temperature",
+            "pryc_utlum_topeni": "Heating setback when nobody is home",
+            "pryc_utlum_po_hodinach": "Apply the setback after"
           },
           "data_description": {
             "nazev": "What the room is called. You use this name to assign it to a zone.",
@@ -558,7 +560,9 @@
             "noc_posun": "How far the target temperature shifts at night. A negative number means heat less, a positive one more, zero leaves the target alone.\n\nThe drop begins before night starts so it is not a step; the sleep switch applies at once, whatever the hour.",
             "rucni_klid_zaluzie_min": "When you reposition the blinds by hand, the automation keeps out of them for this long. We notice it because the real position drifts from the one we sent — and it has to be confirmed twice in a row, so that a drive coasting to a stop does not look like a hand.\n\nThis is usually longer than for a window: a blind position is chosen deliberately. Zero means the automation carries on at once. The Line up blinds button clears the hold, because that is an explicit instruction.",
             "plan_obsazeno": "While the event runs, the room counts as occupied even with no sensors in it. For rooms whose use changes from week to week — a guest room, a study, a child's room.\n\nIt overrides both the home-wide plan and the Occupancy source setting.",
-            "plan_prazdno": "The opposite of the previous one. A sensor overrides it: if somebody really is in the room, it counts as occupied — the plan may only add presence, never take it away."
+            "plan_prazdno": "The opposite of the previous one. A sensor overrides it: if somebody really is in the room, it counts as occupied — the plan may only add presence, never take it away.",
+            "pryc_utlum_topeni": "How much to drop this room when the flat is empty. Empty takes the flat-wide value.",
+            "pryc_utlum_po_hodinach": "How long the flat must be empty before this room is set back. Empty takes the flat-wide value."
           },
           "submit": "Next"
         },
@@ -625,7 +629,9 @@
             "indicie_stav": "On means occupied",
             "indicie_vykon": "Power draw sensors",
             "prah_vykonu": "Power draw above",
-            "indicie_dobeh_min": "Run-on"
+            "indicie_dobeh_min": "Run-on",
+            "pryc_utlum_topeni": "Heating setback when nobody is home",
+            "pryc_utlum_po_hodinach": "Apply the setback after"
           },
           "data_description": {
             "projezd_okna_s": "How long the drive takes from one end position to the other. While it travels we trust our own command, not the entity state.",
@@ -682,7 +688,9 @@
             "indicie_dobeh_min": "How long it still counts after switching off. Someone who just turned the light off has not left yet.",
             "rucni_klid_zaluzie_min": "When you reposition the blinds by hand, the automation keeps out of them for this long. We notice it because the real position drifts from the one we sent — and it has to be confirmed twice in a row, so that a drive coasting to a stop does not look like a hand.\n\nThis is usually longer than for a window: a blind position is chosen deliberately. Zero means the automation carries on at once. The Line up blinds button clears the hold, because that is an explicit instruction.",
             "plan_obsazeno": "While the event runs, the room counts as occupied even with no sensors in it. For rooms whose use changes from week to week — a guest room, a study, a child's room.\n\nIt overrides both the home-wide plan and the Occupancy source setting.",
-            "plan_prazdno": "The opposite of the previous one. A sensor overrides it: if somebody really is in the room, it counts as occupied — the plan may only add presence, never take it away."
+            "plan_prazdno": "The opposite of the previous one. A sensor overrides it: if somebody really is in the room, it counts as occupied — the plan may only add presence, never take it away.",
+            "pryc_utlum_topeni": "How much to drop this room when the flat is empty. Empty takes the flat-wide value.",
+            "pryc_utlum_po_hodinach": "How long the flat must be empty before this room is set back. Empty takes the flat-wide value."
           }
         }
       },
@@ -1161,6 +1169,12 @@
       },
       "plan_cil": {
         "name": "Planned target temperature"
+      },
+      "pryc_utlum_topeni": {
+        "name": "Heating setback when nobody is home"
+      },
+      "pryc_utlum_po_hodinach": {
+        "name": "Apply the setback after"
       }
     },
     "switch": {

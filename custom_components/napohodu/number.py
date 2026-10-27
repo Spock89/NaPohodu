@@ -21,6 +21,7 @@ from .const import (
     CONF_NEJDRIV_ZNOVU, CONF_NOC_POSUN, CONF_ODCHYLKA, CONF_PM_CISTO,
     CONF_PLAN_CIL, CONF_PLAN_KOLIKRAT, CONF_PREDVETRAT,
     CONF_PM_SPATNE, CONF_REZERVA_VENKU, CONF_RH_MAX, CONF_RH_MIN,
+    CONF_CLIMATE, CONF_PRYC_PO, CONF_PRYC_UTLUM,
     CONF_RUCNI_KLID, CONF_RUCNI_KLID_ZALUZIE, CONF_UTLUM,
     CONF_ZMENA_PODMINEK, DOMAIN,
     PODENTITA_MISTNOST,
@@ -100,6 +101,16 @@ MISTNOST = [
 
 
 
+# Šoupátka, která potřebují hlavici. Výchozí hodnotu si berou
+# z nastavení bytu, takže se nastavují na jednom místě a místnosti se
+# odchylují jen tam, kde je proč.
+TOPENI = [
+    Posuvnik(CONF_PRYC_UTLUM, 0, 3, 0.5, UnitOfTemperature.CELSIUS, 0.0,
+             "mdi:home-export-outline"),
+    Posuvnik(CONF_PRYC_PO, 0, 12, 0.5, "h", 2.0, "mdi:timer-sand"),
+]
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
                             pridat: AddEntitiesCallback) -> None:
     k = hass.data[DOMAIN][entry.entry_id]
@@ -107,8 +118,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     for pod in entry.subentries.values():
         if pod.subentry_type != PODENTITA_MISTNOST:
             continue          # prahy vzduchu patří místnosti, ta se rozhoduje
-        sada = MISTNOST
-        pridat([NaPohoduNumber(k, pod, p) for p in sada],
+        # Útlum v nepřítomnosti má smysl jen tam, kde se opravdu
+        # topí — bez hlavice by to bylo šoupátko, které nic neudělá.
+        sada = MISTNOST + (TOPENI if pod.data.get(CONF_CLIMATE) else [])
+        pridat([NaPohoduNumber(k, pod, p, entry) for p in sada],
                config_subentry_id=pod.subentry_id)
 
 
@@ -138,7 +151,11 @@ class NaPohoduNumber(NaPohoduEntity, RestoreNumber, NumberEntity):
             data = {**entry.data, **entry.options}
         else:
             super().__init__(k, pod, p.klic)
-            data = pod.data
+            # Co místnost nemá vyplněné, bere z nastavení bytu. Jedna
+            # hodnota na jednom místě a odchylka jen tam, kde je proč
+            # — ne dvě čísla na totéž.
+            byt = {**entry.data, **entry.options} if entry else {}
+            data = {**byt, **pod.data}
         self._p = p
         self._attr_native_min_value = p.min
         self._attr_native_max_value = p.max

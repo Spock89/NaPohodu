@@ -506,6 +506,8 @@ def _schema_chovani(mistnosti: list[dict] | None = None) -> vol.Schema:
         vol.Optional(c.CONF_TOPIT_PRI_OKNU, default="nechat"): _volba(
             c.PRI_OKNU, "topit_pri_oknu"),
         vol.Optional(c.CONF_UTLUM, default=16.0): _cislo(5, 20),
+        vol.Optional(c.CONF_PRYC_UTLUM, default=0.0): _cislo(0, 3, 0.5),
+        vol.Optional(c.CONF_PRYC_PO, default=2.0): _cislo(0, 12, 0.5, "h"),
         vol.Optional(c.CONF_NOC_POSUN, default=0.0): _cislo(-5, 5, 0.5),
         vol.Optional(c.CONF_SEZONU_RIDI_HLAVICE, default=True):
             selector.BooleanSelector(),

@@ -86,6 +86,13 @@ POSUVNIKY = [
     ("pri_otevrenem_okne_topit_na", "Při otevřeném okně topit na",
      "Teplota, na kterou se hlavice stáhnou, když je okno otevřené. "
      "Je to celá teplota, ne odečet od cíle."),
+    ("utlum_topeni_kdyz_nikdo_neni_doma",
+     "Útlum topení, když nikdo není doma",
+     "O kolik téhle místnosti ubrat, když je byt prázdný. Nula netlumí. "
+     "Nevyplněné v nastavení místnosti bere hodnotu bytu."),
+    ("utlumit_az_po", "Utlumit až po",
+     "Jak dlouho musí být prázdno, než se tahle místnost utlumí. "
+     "Plánovaná nepřítomnost se neodsedí, ta platí hned."),
     ("otevrit_nad_co2", "Otevřít nad CO2",
      "Přes den otevřu, když CO2 vyleze nad tuhle hodnotu."),
     ("zavrit_pod_co2", "Zavřít pod CO2",
@@ -253,10 +260,35 @@ POTREBUJE = {
     "prach_je_cisty_pod_pm2_5": "prach",
     "v_noci_posun_cilove_teploty": "topeni",
     "pri_otevrenem_okne_topit_na": "topeni",
+    "utlum_topeni_kdyz_nikdo_neni_doma": "topeni",
+    "utlumit_az_po": "topeni",
     "otevrit_nad_co2": "co2",
     "zavrit_pod_co2": "co2",
     "v_noci_otevrit_nad_co2": "co2",
     "nouzove_otevrit_nad_co2": "co2",
+}
+
+# Delší vysvětlení pod šoupátkem. Patří sem jen to, co se z názvu
+# a jedné řádky nepozná a co by se jinak muselo hledat v README.
+VYSVETLIVKY = {
+    "utlumit_az_po": [
+        "**Jak útlum v nepřítomnosti funguje**",
+        "",
+        "- Utlumí se až po uplynutí *Utlumit až po* (výchozí 2 hodiny). "
+        "Za krátkou nepřítomnost se útlum nezaplatí.",
+        "- Rozsah je schválně malý. Zdivo chladne hodiny a stejně "
+        "dlouho se natápí, takže hlubokým útlumem se prototopí víc, "
+        "než se ušetří.",
+        "- Útlum se odečítá až od povelu pro hlavice, ne od cíle "
+        "místnosti. Prahy pro větrání a stínění se tím neposunou — ty "
+        "s topením nemají co dělat.",
+        "- Útlumy se sčítají. Noční a „nikdo doma“ běží vedle sebe "
+        "a výsledek je vidět v atributu `topeni_utlum`, třeba "
+        "`noc -1.0 °C, nikdo doma -1.5 °C`.",
+        "- Plánovaná nepřítomnost se neodsedí: kalendář ví dopředu, "
+        "že se nikdo nevrátí, a povolí útlum včas, aby se stihlo "
+        "nahřát.",
+    ],
 }
 
 # Hlavní bloky stránky. Dají se při generování odškrtnout — výchozí
@@ -1101,6 +1133,11 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             c.append("  - type: markdown")
             c.append(f"    content: \"*{popis}*\"")
             c.append("")
+            # U některých šoupátek nestačí jedna řádka: útlum se chová
+            # jinak, než se od čísla čeká, a bez vysvětlení se na to
+            # zapomene. Vypisuje se pod posledním šoupátkem tématu.
+            if klic in VYSVETLIVKY:
+                c += _vysvetlivka(VYSVETLIVKY[klic])
 
     c.append(ZNACKA_BLOKU + "ovladani")
     # --- ovládání a tlačítka ---
@@ -1287,6 +1324,14 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
              ""]
     karty = [r for r in karty if r != SEKCE]
     return "\n".join(hlava + ["type: vertical-stack", "cards:"] + karty) + "\n"
+
+
+def _vysvetlivka(radky: list[str]) -> list[str]:
+    """Delší text pod šoupátky. Odrážky se do popisku nevejdou."""
+    out = ["  - type: markdown", "    content: |-"]
+    out += [f"      {r}" if r else "" for r in radky]
+    out.append("")
+    return out
 
 
 def _mrizka_dnu(existuje) -> list[str]:

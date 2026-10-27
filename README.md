@@ -578,10 +578,35 @@ hlavice ji zbytečně probudí.
 
 **Dva útlumy**, oba jako odečet od cíle, ne jako absolutní teplota.
 Noční se nastavuje u místnosti a klesá plynule před začátkem noci;
-zapnutý spánek platí hned. Útlum při nepřítomnosti je společný a
-uplatní se až po nastavené době prázdného bytu, protože za krátkou
-nepřítomnost se nezaplatí: zdivo chladne hodiny a stejně dlouho se
-natápí.
+zapnutý spánek platí hned.
+
+Útlum při nepřítomnosti se nastavuje **u každé místnosti zvlášť** —
+ložnici se vyplatí nechat vychladnout víc než koupelně — a to jak jeho
+velikost, tak doba, po které se uplatní. Nastavení bytu zůstává a je
+výchozí hodnotou pro místnosti, které si svou nevyplnily, takže se
+obvykle nastaví jednou a odchyluje se jen tam, kde je proč. Obojí je
+na dashboardu v *Ladění — topení* a v nastavení místnosti, a je to
+pořád jedna hodnota: co přestavíš na jednom místě, platí i na druhém.
+Vzniká to jen u místností, které mají hlavici — jinde by to bylo
+šoupátko, které nic neudělá.
+
+Jak se chová:
+
+- Utlumí se až po uplynutí *Utlumit až po* (výchozí 2 hodiny). Za
+  krátkou nepřítomnost se útlum nezaplatí.
+- Rozsah je schválně malý. Zdivo chladne hodiny a stejně dlouho se
+  natápí, takže hlubokým útlumem se prototopí víc, než se ušetří.
+- Útlum se odečítá až od povelu pro hlavice, ne od cíle místnosti.
+  Prahy pro větrání a stínění se tím neposunou — ty s topením nemají
+  co dělat.
+- Útlumy se sčítají. Noční a „nikdo doma" běží vedle sebe a výsledek
+  je vidět v atributu `topeni_utlum`, třeba `noc -1.0 °C, nikdo doma
+  -1.5 °C`.
+- Plánovaná nepřítomnost se neodsedí: kalendář ví dopředu, že se nikdo
+  nevrátí, a povolí útlum včas, aby se stihlo nahřát.
+
+Totéž se vypisuje i na dashboardu pod šoupátky, protože se útlum chová
+jinak, než se od čísla čeká, a bez vysvětlení se na to zapomene.
 
 **Teplota se posílá vždycky**, protože bez ní hlavice neví, na co
 regulovat. Mění se jen ta hodnota.
