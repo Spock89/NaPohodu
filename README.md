@@ -543,9 +543,12 @@ nechladí celý byt.
 je tehdy otevřené kvůli vzduchu a tahá dovnitř teplo, takže chladit je
 potřeba právě teď. Vypne se jen tehdy, když okno chladí zadarmo.
 
-Při nepřítomnosti se cíl drží dál, protože rozhoupat byt zpátky je
-dražší než ho udržet. Na útlum se přejde až při dlouhé nepřítomnosti,
-buď přepínačem, nebo automaticky po zvolené době.
+Při nepřítomnosti se cíl drží dál a na útlum se přejde až při dlouhé
+nepřítomnosti, buď přepínačem, nebo automaticky po zvolené době.
+U klimatizace to na rozdíl od topení smysl dává: je to tepelné
+čerpadlo, takže dohánět větší rozdíl znamená jet na vyšší výkon s
+horším topným faktorem. U hlavic, kde zdroj tepla účinnost nemění,
+se tlumí hned.
 
 Cíl se posílá jen při skutečné změně — aspoň půl stupně a nejčastěji
 jednou za patnáct minut. Kompresor ani člověk nemá rád, když se hodnota
@@ -592,18 +595,36 @@ Vzniká to jen u místností, které mají hlavici — jinde by to bylo
 
 Jak se chová:
 
-- Utlumí se až po uplynutí *Utlumit až po* (výchozí 2 hodiny). Za
-  krátkou nepřítomnost se útlum nezaplatí.
-- Rozsah je schválně malý. Zdivo chladne hodiny a stejně dlouho se
-  natápí, takže hlubokým útlumem se prototopí víc, než se ušetří.
+- Tlumí se **hned**, jak čidlo ohlásí prázdný byt. Čekat na úsporu
+  není proč: tepelná ztráta je úměrná rozdílu teplot, takže každá
+  minuta, kdy je uvnitř chladněji, je ztráta menší — a nahřátí zpátky
+  vrátí přesně tu energii, která mezitím unikla, nikdy víc. Dřív tu
+  stálo, že se za krátkou nepřítomnost útlum nezaplatí; to je převzatá
+  poučka, která pro kotel ani dálkové teplo neplatí.
+- *Utlumit až po* je proto pojistka, ne úspora. Každé kolo, ve kterém
+  čidlo hlásí „doma", odpočet restartuje, takže delší doba brání tomu,
+  aby byt chladl pokaždé, když tě čidlo na chvíli neuvidí. Výchozí je
+  **nula**, tedy tlumit hned; kdo má přítomnost jen z jednoho
+  pohybového čidla, si ji nastaví na pár desítek minut.
+- Rozsah útlumu je malý kvůli návratu, ne kvůli úspoře. Zdivo se
+  natápí hodiny a zrychlit to nejde, takže hlubší útlum znamená, že se
+  do příjemného bytu vrátíš později.
 - Útlum se odečítá až od povelu pro hlavice, ne od cíle místnosti.
   Prahy pro větrání a stínění se tím neposunou — ty s topením nemají
   co dělat.
 - Útlumy se sčítají. Noční a „nikdo doma" běží vedle sebe a výsledek
   je vidět v atributu `topeni_utlum`, třeba `noc -1.0 °C, nikdo doma
   -1.5 °C`.
-- Plánovaná nepřítomnost se neodsedí: kalendář ví dopředu, že se nikdo
-  nevrátí, a povolí útlum včas, aby se stihlo nahřát.
+- Plánovaná nepřítomnost se nečeká ani vteřinu a navíc **přestane
+  tlumit hodinu před svým koncem**, aby bylo po návratu nahřáto. Čidlo
+  tohle umět nemůže — o návratu se dozví, až když tě uvidí. Okna
+  předstih nemají: nahřát se musí dopředu, ale okno nemá proč otevírat
+  dřív, než se někdo vrátí.
+
+U **tepelného čerpadla** je to jinak: nahřívání zpátky chce vyšší
+výstupní teplotu a tím horší topný faktor, takže se tam vyplatí mělký
+útlum a spíš delší čekání. Výchozí hodnoty integrace počítají
+s kotlem nebo dálkovým teplem.
 
 Totéž se vypisuje i na dashboardu pod šoupátky, protože se útlum chová
 jinak, než se od čísla čeká, a bez vysvětlení se na to zapomene.
@@ -805,9 +826,9 @@ později.
 Co to dělá:
 
 - **nikdo doma** — nepřítomnost se bere za dlouhou hned, bez čekání na
-  hodiny v poli *Útlum při nepřítomnosti po*. A protože se ví, kdy
-  skončí, útlum včas povolí, aby se stihlo nahřát zpátky; předstih je
-  tentýž, jaký se nastavuje pro náběh před nocí.
+  hodiny v poli *Utlumit až po*. A protože se ví, kdy skončí,
+  **přestane se tlumit hodinu před jejím koncem**, aby bylo po návratu
+  nahřáto; předstih je tentýž, jaký se nastavuje pro náběh před nocí.
 - **víc lidí** — byt se bere za obsazený, takže se netlumí, a před
   začátkem události se **předvětrá**: větrá se až na čistou hodnotu
   CO2, ne jen pod práh otevření, aby byla rezerva, než se byt zaplní.

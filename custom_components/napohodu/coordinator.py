@@ -2272,7 +2272,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if pryc > 0 and self._prazdno_od is not None:
             hodin = self.hodnota(
                 p.subentry_id, CONF_PRYC_PO,
-                float(d.get(CONF_PRYC_PO, g.get(CONF_PRYC_PO, 2.0))))
+                float(d.get(CONF_PRYC_PO, g.get(CONF_PRYC_PO, 0.0))))
             # Plánovaná nepřítomnost se nemusí odsedět: kalendář ví
             # dopředu, že se nikdo nevrátí, a stejně tak ví, kdy
             # skončí — útlum proto včas povolí, aby se stihlo nahřát.

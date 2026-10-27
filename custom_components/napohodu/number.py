@@ -107,7 +107,7 @@ MISTNOST = [
 TOPENI = [
     Posuvnik(CONF_PRYC_UTLUM, 0, 3, 0.5, UnitOfTemperature.CELSIUS, 0.0,
              "mdi:home-export-outline"),
-    Posuvnik(CONF_PRYC_PO, 0, 12, 0.5, "h", 2.0, "mdi:timer-sand"),
+    Posuvnik(CONF_PRYC_PO, 0, 12, 0.5, "h", 0.0, "mdi:timer-sand"),
 ]
 
 

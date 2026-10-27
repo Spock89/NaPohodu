@@ -391,3 +391,26 @@ def test_utlum_v_nepritomnosti_je_mistnostni(koord):
     k.hodnoty[(k.entry.subentries["Koupelna"].subentry_id,
                c.CONF_PRYC_UTLUM)] = 1.5
     assert platne("Koupelna", c.CONF_PRYC_UTLUM, 0.5) == 1.5
+
+
+def test_vychozi_je_tlumit_hned(koord):
+    """Čekání není úspora, ale pojistka proti výpadkům čidla.
+
+    Tepelná ztráta je úměrná rozdílu teplot, takže každá minuta
+    s nižší teplotou šetří a nahřátí zpátky vrátí přesně to, co
+    uniklo. Výchozí hodnota je proto nula.
+    """
+    import importlib
+    from napohodu import const as c
+
+    cf = importlib.import_module("napohodu.config_flow")
+    cisla = importlib.import_module("napohodu.number")
+
+    # formulář bytu i místnosti
+    for schema in (cf._schema_byt() if hasattr(cf, "_schema_byt") else None,):
+        if schema is None:
+            continue
+    vychozi = {p.klic: p.vychozi for p in cisla.TOPENI}
+    assert vychozi[c.CONF_PRYC_PO] == 0.0
+    # a útlum sám zůstává vypnutý, dokud si ho člověk nenastaví
+    assert vychozi[c.CONF_PRYC_UTLUM] == 0.0

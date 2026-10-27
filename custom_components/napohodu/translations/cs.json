@@ -78,8 +78,8 @@
           "sezona_rezim": "Podle průměru se sezóna pozná z venkovní teploty za tři dny. Vždy znamená topit celoročně, nikdy vůbec — hodí se, když sezónu určuješ sám jinde.",
           "topeni_obnova_min": "Zigbee hlavice povel občas ztratí a integrace se to nedozví. Po téhle době se poslední hodnota pošle znovu, i když se nic nezměnilo. Nula znamená posílat jen při změně.",
           "zima_prah": "Adaptivní norma je psaná na letní komfort a v zimě se jen opře o dolní hranici. V mrazu ale chladnou stěny a okna, klesá radiační teplota a při stejném vzduchu je člověku chladněji. Nula znamená vypnuto.",
-          "pryc_utlum_topeni": "O kolik ubrat, když je byt prázdný. Nula znamená netlumit. Hlubší útlum se u zdiva nevyplatí: konstrukce chladne hodiny a stejně dlouho se natápí, takže se prototopí víc, než se ušetří.",
-          "pryc_utlum_po_hodinach": "Jak dlouho musí být prázdno, než se utlumí. Za krátkou nepřítomnost se útlum nezaplatí.",
+          "pryc_utlum_topeni": "O kolik ubrat, když je byt prázdný. Nula znamená netlumit. Rozsah je malý kvůli návratu, ne kvůli úspoře: zdivo se natápí hodiny, takže hlubší útlum znamená, že se do příjemného bytu vrátíš později.",
+          "pryc_utlum_po_hodinach": "Jak dlouho musí čidlo hlásit prázdný byt, než se utlumí. Nula tlumí hned. Není to úspora, ale pojistka pro případ, že čidlo vypadává: každé kolo s „doma“ odpočet restartuje, takže se byt nevychladí pokaždé, když si půl hodiny čteš v křesle.",
           "noc_utlum_predstih": "Jak dlouho před začátkem noci se začne klesat. Plynulý náběh je lepší než skok, protože hlavice i zdivo reagují pomalu. Nula znamená skokem.",
           "zima_o_kolik": "O kolik stupňů přitopit, když je venku doopravdy zima. Dál se nepřidává — hlubší mrazy na tom nic nemění.",
           "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C.",
@@ -184,8 +184,8 @@
           "sezona_rezim": "Podle průměru se sezóna pozná z venkovní teploty za tři dny. Vždy znamená topit celoročně, nikdy vůbec — hodí se, když sezónu určuješ sám jinde.",
           "topeni_obnova_min": "Zigbee hlavice povel občas ztratí a integrace se to nedozví. Po téhle době se poslední hodnota pošle znovu, i když se nic nezměnilo. Nula znamená posílat jen při změně.",
           "zima_prah": "Adaptivní norma je psaná na letní komfort a v zimě se jen opře o dolní hranici. V mrazu ale chladnou stěny a okna, klesá radiační teplota a při stejném vzduchu je člověku chladněji. Nula znamená vypnuto.",
-          "pryc_utlum_topeni": "O kolik ubrat, když je byt prázdný. Nula znamená netlumit. Hlubší útlum se u zdiva nevyplatí: konstrukce chladne hodiny a stejně dlouho se natápí, takže se prototopí víc, než se ušetří.",
-          "pryc_utlum_po_hodinach": "Jak dlouho musí být prázdno, než se utlumí. Za krátkou nepřítomnost se útlum nezaplatí.",
+          "pryc_utlum_topeni": "O kolik ubrat, když je byt prázdný. Nula znamená netlumit. Rozsah je malý kvůli návratu, ne kvůli úspoře: zdivo se natápí hodiny, takže hlubší útlum znamená, že se do příjemného bytu vrátíš později.",
+          "pryc_utlum_po_hodinach": "Jak dlouho musí čidlo hlásit prázdný byt, než se utlumí. Nula tlumí hned. Není to úspora, ale pojistka pro případ, že čidlo vypadává: každé kolo s „doma“ odpočet restartuje, takže se byt nevychladí pokaždé, když si půl hodiny čteš v křesle.",
           "noc_utlum_predstih": "Jak dlouho před začátkem noci se začne klesat. Plynulý náběh je lepší než skok, protože hlavice i zdivo reagují pomalu. Nula znamená skokem.",
           "zima_o_kolik": "O kolik stupňů přitopit, když je venku doopravdy zima. Dál se nepřidává — hlubší mrazy na tom nic nemění.",
           "zima_najezd": "O kolik stupňů pod prahem se dojde na plnou hodnotu. Při prahu 7 a náběhu 2,5 je plný přídavek od 4,5 °C.",
@@ -561,8 +561,8 @@
             "rucni_klid_zaluzie_min": "Když si žaluzie přestavíš rukou, automatika se do nich tak dlouho nemontuje. Poznáme to tak, že se skutečná poloha rozejde s tou, kterou jsme poslali — a musí se to potvrdit dvakrát za sebou, aby dojezd pohonu nevypadal jako ruka.\n\nBývá to delší než u okna: polohu žaluzií si člověk vybírá vědomě. Nula znamená, že automatika pokračuje hned. Tlačítko Srovnat žaluzie klid zruší, protože to je výslovný pokyn.",
             "plan_obsazeno": "Po dobu události se místnost bere za obsazenou, i když v ní nejsou čidla. Pro pokoje, kde se obsazenost mění po týdnech — host, pracovna, dětský pokoj.\n\nPřebíjí plán bytu i volbu Zdroj obsazenosti.",
             "plan_prazdno": "Opak předchozího. Čidlo ho ale přebije: když v místnosti opravdu někdo je, bere se za obsazenou — plán smí přítomnost jen přidat, nikdy ubrat.",
-            "pryc_utlum_topeni": "O kolik ubrat téhle místnosti, když je byt prázdný. Nula znamená netlumit. Nevyplněné bere hodnotu z nastavení bytu. Hlubší útlum se u zdiva nevyplatí: konstrukce chladne hodiny a stejně dlouho se natápí, takže se prototopí víc, než se ušetří.",
-            "pryc_utlum_po_hodinach": "Jak dlouho musí být prázdno, než se tahle místnost utlumí. Za krátkou nepřítomnost se útlum nezaplatí. Nevyplněné bere hodnotu z nastavení bytu."
+            "pryc_utlum_topeni": "O kolik ubrat téhle místnosti, když je byt prázdný. Nula znamená netlumit. Nevyplněné bere hodnotu z nastavení bytu. Rozsah je malý kvůli návratu, ne kvůli úspoře: zdivo se natápí hodiny, takže hlubší útlum znamená, že se do příjemného bytu vrátíš později.",
+            "pryc_utlum_po_hodinach": "Jak dlouho musí čidlo hlásit prázdný byt, než se tahle místnost utlumí. Nula tlumí hned. Nevyplněné bere hodnotu z nastavení bytu. Není to úspora, ale pojistka pro případ, že čidlo vypadává."
           },
           "submit": "Další"
         },
@@ -689,8 +689,8 @@
             "rucni_klid_zaluzie_min": "Když si žaluzie přestavíš rukou, automatika se do nich tak dlouho nemontuje. Poznáme to tak, že se skutečná poloha rozejde s tou, kterou jsme poslali — a musí se to potvrdit dvakrát za sebou, aby dojezd pohonu nevypadal jako ruka.\n\nBývá to delší než u okna: polohu žaluzií si člověk vybírá vědomě. Nula znamená, že automatika pokračuje hned. Tlačítko Srovnat žaluzie klid zruší, protože to je výslovný pokyn.",
             "plan_obsazeno": "Po dobu události se místnost bere za obsazenou, i když v ní nejsou čidla. Pro pokoje, kde se obsazenost mění po týdnech — host, pracovna, dětský pokoj.\n\nPřebíjí plán bytu i volbu Zdroj obsazenosti.",
             "plan_prazdno": "Opak předchozího. Čidlo ho ale přebije: když v místnosti opravdu někdo je, bere se za obsazenou — plán smí přítomnost jen přidat, nikdy ubrat.",
-            "pryc_utlum_topeni": "O kolik ubrat téhle místnosti, když je byt prázdný. Nula znamená netlumit. Nevyplněné bere hodnotu z nastavení bytu. Hlubší útlum se u zdiva nevyplatí: konstrukce chladne hodiny a stejně dlouho se natápí, takže se prototopí víc, než se ušetří.",
-            "pryc_utlum_po_hodinach": "Jak dlouho musí být prázdno, než se tahle místnost utlumí. Za krátkou nepřítomnost se útlum nezaplatí. Nevyplněné bere hodnotu z nastavení bytu."
+            "pryc_utlum_topeni": "O kolik ubrat téhle místnosti, když je byt prázdný. Nula znamená netlumit. Nevyplněné bere hodnotu z nastavení bytu. Rozsah je malý kvůli návratu, ne kvůli úspoře: zdivo se natápí hodiny, takže hlubší útlum znamená, že se do příjemného bytu vrátíš později.",
+            "pryc_utlum_po_hodinach": "Jak dlouho musí čidlo hlásit prázdný byt, než se tahle místnost utlumí. Nula tlumí hned. Nevyplněné bere hodnotu z nastavení bytu. Není to úspora, ale pojistka pro případ, že čidlo vypadává."
           }
         }
       },

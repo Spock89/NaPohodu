@@ -100,7 +100,7 @@ SCHEMA_GLOBAL = vol.Schema(
         vol.Optional(c.CONF_PREDVETRAT, default=60):
             _cislo(0, 240, 15, "min"),
         vol.Optional(c.CONF_PRYC_UTLUM, default=0.0): _cislo(0, 3, 0.5),
-        vol.Optional(c.CONF_PRYC_PO, default=2.0): _cislo(0, 12, 0.5, "h"),
+        vol.Optional(c.CONF_PRYC_PO, default=0.0): _cislo(0, 12, 0.5, "h"),
         vol.Optional(c.CONF_NOC_PREDSTIH, default=60):
             _cislo(0, 240, 15, "min"),
         vol.Optional(c.CONF_ZIMA_PRAH, default=7.0): _cislo(0, 15, 0.5),
@@ -507,7 +507,7 @@ def _schema_chovani(mistnosti: list[dict] | None = None) -> vol.Schema:
             c.PRI_OKNU, "topit_pri_oknu"),
         vol.Optional(c.CONF_UTLUM, default=16.0): _cislo(5, 20),
         vol.Optional(c.CONF_PRYC_UTLUM, default=0.0): _cislo(0, 3, 0.5),
-        vol.Optional(c.CONF_PRYC_PO, default=2.0): _cislo(0, 12, 0.5, "h"),
+        vol.Optional(c.CONF_PRYC_PO, default=0.0): _cislo(0, 12, 0.5, "h"),
         vol.Optional(c.CONF_NOC_POSUN, default=0.0): _cislo(-5, 5, 0.5),
         vol.Optional(c.CONF_SEZONU_RIDI_HLAVICE, default=True):
             selector.BooleanSelector(),

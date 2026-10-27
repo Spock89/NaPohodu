@@ -91,8 +91,9 @@ POSUVNIKY = [
      "O kolik téhle místnosti ubrat, když je byt prázdný. Nula netlumí. "
      "Nevyplněné v nastavení místnosti bere hodnotu bytu."),
     ("utlumit_az_po", "Utlumit až po",
-     "Jak dlouho musí být prázdno, než se tahle místnost utlumí. "
-     "Plánovaná nepřítomnost se neodsedí, ta platí hned."),
+     "Jak dlouho musí čidlo hlásit prázdný byt, než se tahle místnost "
+     "utlumí. Nula tlumí hned; delší doba je pojistka proti výpadkům "
+     "čidla, ne úspora."),
     ("otevrit_nad_co2", "Otevřít nad CO2",
      "Přes den otevřu, když CO2 vyleze nad tuhle hodnotu."),
     ("zavrit_pod_co2", "Zavřít pod CO2",
@@ -274,20 +275,32 @@ VYSVETLIVKY = {
     "utlumit_az_po": [
         "**Jak útlum v nepřítomnosti funguje**",
         "",
-        "- Utlumí se až po uplynutí *Utlumit až po* (výchozí 2 hodiny). "
-        "Za krátkou nepřítomnost se útlum nezaplatí.",
-        "- Rozsah je schválně malý. Zdivo chladne hodiny a stejně "
-        "dlouho se natápí, takže hlubokým útlumem se prototopí víc, "
-        "než se ušetří.",
+        "- Tlumí se **hned**, jak čidlo ohlásí prázdný byt. Čekat na "
+        "úsporu není proč: každá minuta, kdy je uvnitř chladněji, je "
+        "ztráta menší, a nahřátí zpátky vrátí přesně to, co mezitím "
+        "uniklo — nikdy víc.",
+        "- *Utlumit až po* je proto pojistka, ne úspora: každé kolo "
+        "s „doma“ odpočet restartuje, takže delší doba brání tomu, aby "
+        "byt chladl pokaždé, když tě čidlo na chvíli neuvidí. "
+        "S nulou se tlumí okamžitě.",
+        "- Rozsah útlumu je malý kvůli návratu, ne kvůli úspoře. Zdivo "
+        "se natápí hodiny a zrychlit to nejde, takže hlubší útlum "
+        "znamená, že se do příjemného bytu vrátíš později.",
         "- Útlum se odečítá až od povelu pro hlavice, ne od cíle "
         "místnosti. Prahy pro větrání a stínění se tím neposunou — ty "
         "s topením nemají co dělat.",
         "- Útlumy se sčítají. Noční a „nikdo doma“ běží vedle sebe "
         "a výsledek je vidět v atributu `topeni_utlum`, třeba "
         "`noc -1.0 °C, nikdo doma -1.5 °C`.",
-        "- Plánovaná nepřítomnost se neodsedí: kalendář ví dopředu, "
-        "že se nikdo nevrátí, a povolí útlum včas, aby se stihlo "
-        "nahřát.",
+        "- Plánovaná nepřítomnost se nečeká ani vteřinu a navíc "
+        "**přestane tlumit hodinu před svým koncem**, aby bylo po "
+        "návratu nahřáto. Čidlo tohle neumí — o návratu se dozví, až "
+        "když tě uvidí.",
+        "",
+        "*Platí pro kotel i dálkové teplo. U tepelného čerpadla je to "
+        "jinak: nahřívání chce vyšší výstupní teplotu a tím horší "
+        "topný faktor, takže se tam mělký útlum a delší čekání "
+        "vyplatí.*",
     ],
 }
 
