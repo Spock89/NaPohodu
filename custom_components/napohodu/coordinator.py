@@ -91,6 +91,7 @@ _LOGGER = logging.getLogger(__name__)
 NEPLATNE = ("unknown", "unavailable", "none", "")
 
 
+
 @dataclass
 class VysledekZony:
     """Co koordinátor spočítal pro jednu oblast.
@@ -603,7 +604,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     # ------------------------------------------------------------ cíl
 
-    def _cil_zakladni(self, g: dict) -> float:
+    def _cil_zakladni(self, g: dict, cas_s: float = 0.0) -> float:
         """Adaptivní cíl. Bez týdenního průměru se použije aktuální teplota."""
         # týdenní průměr je jádrem adaptivního modelu; bez něj by se cíl
         # měnil s každým odpolednem, proto raději samostatná entita
@@ -611,7 +612,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         prumer = self._cislo(g.get(CONF_T_PRUMER))
         zdroj = "cidlo"
         if prumer is None:
-            prumer, zdroj = self.prumery.tyden, "pocitano"
+            prumer, zdroj = self.prumery.tyden_pouzitelny(cas_s), "pocitano"
         if prumer is None:
             # Poslední známá hodnota, ne vymyšlená patnáctka. Cíl se
             # z ní počítá a vymyšlené číslo by ho po restartu posunulo.
@@ -1074,7 +1075,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # když jsi doma, plán ustupuje.
         self.plan_zavrit_byt = bool(self.plan_nikdo.bezi and not doma)
 
-        cil_zakl = self._cil_zakladni(g)
+        cil_zakl = self._cil_zakladni(g, cas_s)
         drive_sezona = self.topna_sezona
         self.topna_sezona = self._sezona(g)
         if self.topna_sezona and not drive_sezona:

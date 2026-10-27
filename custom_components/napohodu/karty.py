@@ -1225,6 +1225,14 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         if existuje("button.napohodu_vynulovat_vnitrni_stavy"):
             polozky += _radek("button.napohodu_vynulovat_vnitrni_stavy",
                               "Vynulovat vnitřní stavy")
+        # Naučený průměr venkovní teploty je to jediné, co „vynulovat
+        # vnitřní stavy" schválně nechává být — cíl se z něj počítá
+        # a zahodit ho omylem by znamenalo začínat znovu.
+        prumer = "button.napohodu_zapomenout_nauceny_prumer"
+        if existuje(prumer):
+            polozky += _radek(prumer, "Zapomenout naučený průměr")
+            polozky += _atribut(prumer, "uci_se_dni", "   učí se dní")
+            polozky += _atribut(prumer, "tyden", "   týdenní průměr")
         polozky.append("      - type: divider")
     # Identifikátor entity vzniká z přeloženého jména, ne z klíče
     # v kódu — „srovnat_stineni" se jmenuje Srovnat žaluzie, takže

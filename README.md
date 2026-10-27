@@ -53,6 +53,31 @@ Průměry si integrace počítá sama exponenciálním průměrem, takže
 nepotřebuje statistické senzory ani historii. Vlastní čidlo můžeš zadat
 a přebije ten počítaný.
 
+**Čerstvá instalace se neřídí prvním dnem.** Exponenciální průměr se
+musí z něčeho nasadit a jediné, co v tu chvíli existuje, je první
+změřená hodnota — kdo integraci spustí v babím létě, nesl by si
+dvacet stupňů v průměru i do listopadu, protože sedmidenní konstanta
+takovou chybu stahuje po týdnech. Cíl by přitom seděl o dva stupně
+výš, než má: jeden stupeň v průměru je 0,33 °C na cíli.
+
+Dokud se průměr učí kratší dobu než tři své časové konstanty, platí
+proto **obyčejný průměr všeho naměřeného**. Ten první čtení
+nepřeceňuje a po dvou dnech už odpovídá počasí. Potom se přechází na
+exponenciální, protože ten na rozdíl od obyčejného zapomíná — po
+měsíci provozu by průměr „od začátku" mluvil pořád o létě. Přepíná se
+až po třech týdnech schválně: po jednom by z chyby prvního čtení
+zbývalo 37 % a cíl by v ten den o stupeň poskočil zpátky nahoru.
+Měřeno na zapnutí v babím létě a ochlazení druhý den vychází největší
+skok cíle 1,1 °C při přepnutí po týdnu, 0,4 °C po dvou a 0,2 °C po
+třech, tedy na úrovni zaokrouhlení.
+
+Když se průměr přesto nasadí vedle — zapnuto zrovna v mrazivém ránu —
+spraví to tlačítko **Zapomenout naučený průměr**. Zahodí naučená čísla
+a nasadí se znovu z toho, co je venku teď; nastavení ani posuvníků se
+to netýká. Je to jediná cesta, jak průměru říct, že je vedle:
+*Vynulovat vnitřní stavy* se ho schválně nedotýká, protože zahodit ho
+omylem by znamenalo začínat znovu.
+
 **Zimní přitápění.** Adaptivní norma je psaná na letní komfort
 v přirozeně větraných budovách: čím tepleji venku, tím vyšší teplotu
 lidé doma snesou. V zimě se proto jen opře o dolní hranici a dál nic.

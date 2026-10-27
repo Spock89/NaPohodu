@@ -1245,6 +1245,9 @@
       },
       "zahodit_dny": {
         "name": "Discard day selection"
+      },
+      "zapomenout_prumer": {
+        "name": "Forget the learned average"
       }
     },
     "select": {

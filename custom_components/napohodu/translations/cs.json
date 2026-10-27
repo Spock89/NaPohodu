@@ -1245,6 +1245,9 @@
       },
       "zahodit_dny": {
         "name": "Zahodit výběr dnů"
+      },
+      "zapomenout_prumer": {
+        "name": "Zapomenout naučený průměr"
       }
     },
     "select": {
