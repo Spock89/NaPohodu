@@ -150,12 +150,17 @@ class NaPohoduConfigFlow(ConfigFlow, domain=c.DOMAIN):
     def async_get_supported_subentry_types(cls, entry: ConfigEntry) -> dict:
         if not PODENTITY:
             return {}
+        # Pořadí rozhoduje: Home Assistant podle něj řadí jak tlačítka
+        # na přidání, tak seznam už založených podpoložek. Od toho,
+        # čeho je nejmíň a co se zakládá naposled, po to, čeho je
+        # nejvíc — scéna, oblast, skupina, pokoj, klima — ať se
+        # stejné věci drží u sebe a nemíchají se mezi sebou.
         return {
-            c.PODENTITA_MISTNOST: MistnostSubentryFlow,
-            c.PODENTITA_ZONA: ZonaSubentryFlow,
-            c.PODENTITA_KLIMA: KlimaSubentryFlow,
-            c.PODENTITA_SKUPINA: SkupinaSubentryFlow,
             c.PODENTITA_SCENA: ScenaSubentryFlow,
+            c.PODENTITA_ZONA: ZonaSubentryFlow,
+            c.PODENTITA_SKUPINA: SkupinaSubentryFlow,
+            c.PODENTITA_MISTNOST: MistnostSubentryFlow,
+            c.PODENTITA_KLIMA: KlimaSubentryFlow,
         }
 
     @staticmethod

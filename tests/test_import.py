@@ -2116,3 +2116,39 @@ def test_utlum_v_nepritomnosti_jen_s_hlavici(nahradni_ha):
         assert klic not in klice_bez, klic
     # a ostatní šoupátka dostanou obě
     assert const.CONF_MEZ_DOLNI in klice_bez
+
+
+def test_zarizeni_bytu_je_jedno(nahradni_ha):
+    """Entity celého bytu patří jednomu zařízení.
+
+    Stejné identifikátory s různým modelem popisují totéž zařízení
+    dvakrát jinak — Home Assistant si nechá ten, který přišel první,
+    a zbytek je tichý nepořádek.
+    """
+    import pathlib
+    import re
+
+    slozka = (pathlib.Path(__file__).parent.parent / "custom_components"
+              / "napohodu")
+    modely = set()
+    for soubor in slozka.glob("*.py"):
+        for m in re.finditer(
+                r"identifiers=\{\(DOMAIN, entry\.entry_id\)\}.{0,200}?"
+                r'model="([^"]+)"', soubor.read_text(), re.S):
+            modely.add(m.group(1))
+    assert modely == {"Byt"}, modely
+
+
+def test_poradi_podpolozek(nahradni_ha):
+    """Pořadí rozhoduje: Home Assistant podle něj řadí tlačítka na
+    přidání i seznam už založených podpoložek."""
+    import importlib
+
+    cf = importlib.import_module("napohodu.config_flow")
+    const = importlib.import_module("napohodu.const")
+
+    typy = list(cf.NaPohoduConfigFlow.async_get_supported_subentry_types(
+        None).keys())
+    assert typy == [const.PODENTITA_SCENA, const.PODENTITA_ZONA,
+                    const.PODENTITA_SKUPINA, const.PODENTITA_MISTNOST,
+                    const.PODENTITA_KLIMA], typy

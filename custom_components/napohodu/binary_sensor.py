@@ -126,7 +126,7 @@ class TopnaSezona(CoordinatorEntity, BinarySensorEntity):
             identifiers={(DOMAIN, entry.entry_id)},
             name="NaPohodu",
             manufacturer="NaPohodu",
-            model="Společné",
+            model="Byt",
         )
 
     @property

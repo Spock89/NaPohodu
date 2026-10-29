@@ -195,7 +195,12 @@ DNU_MRIZKY = 35
 
 # Čím se v mřížce liší volno od pracovního dne. Pojmenované barvy
 # Home Assistantu, aby to sedlo do světlého i tmavého vzhledu.
-BARVA_VOLNA = "red"
+#
+# Volno není chyba, tak ať tak nevypadá: červená v kartě obvykle
+# znamená „něco se pokazilo" a na víkendu působí jako poplach.
+# Tyrkysová se od šedi pracovního dne liší dost na to, aby byl víkend
+# vidět na první pohled, a přitom nevolá o pozornost.
+BARVA_VOLNA = "teal"
 BARVA_PRACOVNIHO_DNE = "grey"
 
 

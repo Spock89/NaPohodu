@@ -1036,3 +1036,15 @@ def test_pod_utlumem_je_vysvetleni():
     bez = dashboard(["dilna"], [], lambda e: True,
                     nazvy={"dilna": "Dílna"}, vybaveni={"dilna": {"okno"}})
     assert "Jak útlum v nepřítomnosti funguje" not in bez
+
+
+def test_volno_neni_cervene():
+    """Víkend není chyba, tak ať tak nevypadá: červená v kartě obvykle
+    znamená „něco se pokazilo"."""
+    import karty
+
+    assert karty.BARVA_VOLNA != "red"
+    assert karty.BARVA_VOLNA != karty.BARVA_PRACOVNIHO_DNE
+    text = dashboard(["obyvak"], [], lambda e: True, sceny=["Home Office"],
+                     nazvy={"obyvak": "Obývák"})
+    assert "color: red" not in text

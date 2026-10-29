@@ -178,7 +178,7 @@ class Prumer(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{entry.entry_id}_{klic}"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
-            name="NaPohodu", manufacturer="NaPohodu", model="Společné",
+            name="NaPohodu", manufacturer="NaPohodu", model="Byt",
         )
 
     @property
@@ -240,7 +240,7 @@ class Vitr(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{entry.entry_id}_vitr"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
-            name="NaPohodu", manufacturer="NaPohodu", model="Společné",
+            name="NaPohodu", manufacturer="NaPohodu", model="Byt",
         )
 
     @property

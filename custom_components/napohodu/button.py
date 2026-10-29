@@ -84,7 +84,7 @@ class SrovnatVse(CoordinatorEntity, ButtonEntity):
         self._attr_unique_id = f"{entry.entry_id}_srovnat_vse"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
-            name="NaPohodu", manufacturer="NaPohodu", model="Společné",
+            name="NaPohodu", manufacturer="NaPohodu", model="Byt",
         )
 
     async def async_press(self) -> None:
@@ -110,7 +110,7 @@ class VynulovatStavy(CoordinatorEntity, ButtonEntity):
         self._attr_unique_id = f"{entry.entry_id}_vynulovat_stavy"
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, entry.entry_id)},
-            name="NaPohodu", manufacturer="NaPohodu", model="Společné",
+            name="NaPohodu", manufacturer="NaPohodu", model="Byt",
         )
 
     async def async_press(self) -> None:

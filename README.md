@@ -1063,6 +1063,10 @@ každý den o políčko a z kalendáře by zbyl jen pás dlaždic. Dny před
 dneškem tím padnou na začátek prvního řádku — karta je nechává
 prázdné a zaškrtnout se nedají.
 
+Volno má v mřížce **tyrkysovou**, pracovní den šedou. Červená by
+působila jako chyba — v kartě obvykle znamená, že se něco pokazilo,
+a na víkendu volá o pozornost, kterou si nezaslouží.
+
 **Datum na dlaždici je krátké:** „29.", a prvního „1.11." Měsíc se
 píše jen na jeho začátku, jak je v kalendáři zvykem — jinde ho
 prozradí sousední dny. Dlaždice je sedmina karty a okraje se
@@ -1321,6 +1325,25 @@ nevypadalo, že slib o otevření při krizi platí a neplní se.
 
 Pravidla pro celý byt jsou v kartě jednou, v samostatné sekci před
 grafy. Ta, která závisí na stavu místnosti, zůstávají u ní.
+
+### Co je v nastavení integrace vidět
+
+Podpoložky se řadí po druzích — scéna, oblast, skupina, pokoj,
+klima — a ve stejném pořadí jsou i tlačítka na přidání. Rozhoduje
+o tom pořadí, ve kterém je integrace nabízí; Home Assistant podle něj
+řadí obojí.
+
+Nad tím stojí hlavička **„Zařízení, které nepatří do žádné
+podpoložky"**. To je vlastní text Home Assistantu a patří pod ni
+jediné zařízení: **NaPohodu**, které nese všechno, co se netýká jedné
+místnosti — kalendář plánu, zadávání událostí, šoupátka pro celý byt
+a tlačítka na srovnání. Do žádné podpoložky nepatří, protože podpoložka
+je místnost, oblast, skupina, scéna nebo klimatizace, a tohle není ani
+jedno. Není to chyba ani zbytek po něčem; je to tam od chvíle, kdy
+vznikla první celobytová entita.
+
+Zaškrtávací dlaždice dnů k žádnému zařízení nepatří schválně — jméno
+zařízení by se jim lepilo před datum a na dlaždici by se nevešlo.
 
 ## Kontrola celistvosti
 
