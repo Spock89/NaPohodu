@@ -540,9 +540,17 @@ def test_marne_vetrani_rekne_o_kolik_to_minulo():
     p.ucinek_od_s = v.cas_s - 21 * 60
     p.ucinek_co2, p.ucinek_t_in = 846.0, 23.5
 
+    # vzduch se pořád lepší, jen pomalu — dostane ještě jeden úsek
     r = rozhodni(v, p, n)
-    assert r.akce is Akce.ZAVRIT
-    assert "zhoršuje se to" not in r.duvod, "CO2 přitom kleslo"
-    assert "nevyplácí se to" in r.duvod
-    assert f"aspoň o {UCINEK_CO2_PPM:.0f}" in r.duvod, r.duvod
-    assert "od cíle dál" in r.duvod, r.duvod
+    assert r.akce is not Akce.ZAVRIT, r.duvod
+    assert "ještě jeden úsek" in r.duvod
+
+    # a když se ani ve druhém nepohne dost, zavře se a řekne proč
+    v2 = Vstup(**{**v.__dict__, "cas_s": v.cas_s + 21 * 60,
+                  "co2": 800.0, "t_in": 19.8, "t_in_max": 19.8})
+    r2 = rozhodni(v2, p, n)
+    assert r2.akce is Akce.ZAVRIT, r2.duvod
+    assert "zhoršuje se to" not in r2.duvod, "CO2 přitom kleslo"
+    assert "nevyplácí se to" in r2.duvod
+    assert f"aspoň o {UCINEK_CO2_PPM:.0f}" in r2.duvod, r2.duvod
+    assert "od cíle dál" in r2.duvod, r2.duvod

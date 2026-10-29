@@ -662,10 +662,44 @@ prachu: PM2.5 60 nad prahem 35, venku 20", „otevírám kvůli teplu:
 26,0 °C, venku 12,0 — chladím na 20,5".
 
 Zavřené okno nemá rozdělané větrání. Pravidlo „rozdělané větrání
-pokračuje k prahu zavření" platí pro **otevřené** okno; dokud příznak
-přežíval i zavření, počítal se z něj příští práh otevření a pokoj se
-otevíral o celou hysterezi dřív, než měl — v hlášce pak stálo „CO2 846
-nad prahem 625", přestože se má otevírat až nad osmi sty.
+pokračuje k prahu zavření" platí pro **otevřené** okno a je tak
+i napsané — přímo ve výpočtu prahu, aby ho stejně viděly hlášky
+i rozhodování. Dokud ta podmínka chyběla, pokoj, kterému se větrání
+nedotáhlo do konce, se otevíral o celou hysterezi dřív, než měl, a
+v hlášce stál spodní práh, který s otevíráním nemá co dělat: „CO2 799
+nad prahem 650", přestože se má otevírat až nad sedmi sty.
+
+**Otevřeno donekonečna nezůstane ani při neměnném CO2.** Zastaví ho
+tři nezávislé věci a stačí kterákoli: **dojezd pulzu** (každý pulz se
+otevírá na spočítanou dobu a pohon ho v ní zavře, i když jádro zrovna
+nic nechce), **pojistky** teplot, a **kontrola účinku** — ta zavře po
+druhém úseku bez zlepšení, protože vzduch, který se nehýbe, je důvod
+zavřít i v nárazovém režimu.
+
+Obnova povelu přitom dojezd pulzu nepřepisuje. Dokud to dělala,
+přicházela každých třicet minut na otevřené okno s prázdnou délkou
+a dojezd tím smazala, takže pulz naplánovaný na půl hodiny neskončil,
+dokud ho nezavřelo něco jiného.
+
+**Nárazový pulz se neposuzuje na teplotě.** Běží právě proto, že je
+venku daleko od cíle — teplota se tedy od cíle vzdalovat bude, a to je
+jeho cena, ne důkaz, že nefunguje. Zavírat ho kvůli ní znamená trestat
+ho za to, co má v popisu práce; platí se za ni tím, že se zavře,
+jakmile důvod pomine, a hlídají ji pojistky. Posuzuje se proto jen to,
+kvůli čemu je okno otevřené: vzduch, případně prach.
+
+Je v tom i druhý důvod: posuzování si délku úseků odvozuje z nejkratší
+doby držení polohy, jenže tu nárazový režim schválně obchází. Půjčovat
+si od ní měřítko na teplotu tedy nedává smysl ani formálně.
+
+**Pomalu se lepšící vzduch dostane ještě jeden úsek.** Druhý a další
+úsek posuzování je třetina doby držení, tedy u hodinové kolem dvaceti
+minut — a to je na výměnu vzduchu krátká doba. Když CO2 pořád klesá,
+jen pomaleji, než je práh, dostane větrání ještě jeden úsek místo
+zavření; utnout v půlce něco, co svou práci dělá, kvůli teplotě nemá
+smysl. Když CO2 stoupá, čekat není na co a zavírá se hned. Druhá šance
+je jedna, pak se zavírá tak jako tak — a žádné nové nastavení to
+nepotřebuje, počítá se z doby držení, která už existuje.
 
 Práh v otevírací hlášce je ten **překročený**, ne ten, ke kterému se
 pak dojíždí: rozdělané větrání pokračuje až k prahu zavření, takže by

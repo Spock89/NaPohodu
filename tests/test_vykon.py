@@ -1054,3 +1054,45 @@ def test_potvrzene_rozejiti_strop_nepotrebuje(monkeypatch):
     assert v.zkontroluj_polohu("cover.o2", 60.0, 1460) is None
     assert v.zkontroluj_polohu("cover.o2", 60.0, 1520) == "zastíněno"
     assert v.stav.rozejiti_od == {}
+
+
+def test_obnova_nesmaze_dojezd_pulzu(hass_stub=None):
+    """Obnova povelu není nové rozhodnutí, jen zopakování starého.
+
+    Dokud přepisovala délku pulzu, přišla každých třicet minut na
+    otevřené okno s prázdnou délkou a dojezd tím smazala — pulz
+    naplánovaný na půl hodiny pak neskončil, dokud ho nezavřelo něco
+    jiného.
+    """
+    import asyncio
+
+    vyk = Vykonavac(FalesnyHass(), "pokoj")
+    Z = 1000.0
+
+    # pulz na třicet minut
+    asyncio.run(vyk.okno("cover.okno", core.Rozhodnuti(
+        akce=core.Akce.OTEVRIT, duvod="CO2", limit_s=30 * 60, kod="pulz"),
+        Z, False))
+    assert vyk.stav.pulz_do_s == Z + 30 * 60
+
+    # obnova po dvaceti minutách dojezd nemění
+    asyncio.run(vyk.okno("cover.okno", core.Rozhodnuti(
+        akce=core.Akce.OTEVRIT, duvod="obnova povelu: otevřít — větrá se",
+        limit_s=None, kod="obnova"), Z + 20 * 60, True))
+    assert vyk.stav.pulz_do_s == Z + 30 * 60, "dojezd se smazal"
+
+    # a v dojezdu se zavře
+    popis = asyncio.run(vyk.okno("cover.okno", core.Rozhodnuti(
+        akce=core.Akce.NIC, duvod="větrá se"), Z + 31 * 60, True))
+    assert popis and "pulz dojel" in popis
+    assert vyk.stav.pulz_zavrel is True
+
+    # otevření bez délky (komfort) dojezd naopak zrušit smí
+    vyk2 = Vykonavac(FalesnyHass(), "pokoj")
+    asyncio.run(vyk2.okno("cover.okno", core.Rozhodnuti(
+        akce=core.Akce.OTEVRIT, duvod="CO2", limit_s=30 * 60, kod="pulz"),
+        Z, False))
+    asyncio.run(vyk2.okno("cover.okno", core.Rozhodnuti(
+        akce=core.Akce.OTEVRIT, duvod="venku je příjemně", limit_s=None,
+        kod=""), Z + 60, True))
+    assert vyk2.stav.pulz_do_s is None

@@ -513,8 +513,14 @@ def prah_otevreni(v: Vstup, p: Pamet, n: Nastaveni) -> float:
         # Ve spánku a při zastupování se v noci otevírá až při krizi:
         # rámus okna vzbudí spolehlivěji než oxid uhličitý.
         return n.co2_noc_krize if (v.spanek or v.zastupce) else n.co2_noc
-    # Rozdělané větrání pokračuje k prahu zavření, ne k prahu otevření.
-    prah = n.co2_zavrit if p.vetra_se else n.co2_otevrit
+    # Rozdělané větrání pokračuje k prahu zavření, ne k prahu otevření
+    # — ale jen dokud je okno **otevřené**. Zavřené okno nic
+    # rozdělaného nemá, a tak se znovu otevírá až na svém prahu.
+    # Dokud tahle podmínka chyběla, pokoj, kterému se větrání
+    # nedotáhlo do konce, se otevíral o celou hysterezi dřív a v
+    # hlášce stálo „CO2 799 nad prahem 650".
+    prah = (n.co2_zavrit if (p.vetra_se and p.otevreno)
+            else n.co2_otevrit)
     if v.predvetrat:
         # Před návštěvou se větrá až na čistou hodnotu.
         prah = n.co2_zavrit
@@ -1038,13 +1044,23 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # „zhoršuje se to", přestože se vychladilo o dva stupně.
         # Příznaky chlazení a ohřevu jsou tu ještě z minulého kola,
         # tedy z toho větrání, které zrovna běží — a právě o to jde.
+        # Nárazový pulz se o teplotě neposuzuje. Běží právě proto, že
+        # je venku daleko od cíle — teplota se tedy vzdalovat bude, to
+        # je jeho cena, ne důkaz, že nefunguje. Platí se za ni tím, že
+        # se zavře, jakmile důvod pomine, a hlídají ji pojistky.
+        # Posuzuje se proto jen to, kvůli čemu je okno otevřené.
+        #
+        # Navíc: nárazové větrání obchází nejkratší dobu držení, takže
+        # půjčovat si od ní měřítko na teplotu nedává smysl — v tom
+        # režimu neplatí ani pro zavírání.
+        narazovy_pulz = bool(p.narazove_pulz or v.narazove)
         kam = _hyst(v, n)[1]
         mira = (v.cil - kam if p.chladi
                 else v.cil + kam if p.ohrivam else v.cil)
-        blize = (abs(t_in - mira)
+        blize = (not narazovy_pulz and abs(t_in - mira)
                  <= abs(p.ucinek_t_in - mira) - UCINEK_TEPLOTA)
         horsi_co2 = v.co2 >= p.ucinek_co2 + UCINEK_CO2_PPM
-        dal = (abs(t_in - mira)
+        dal = (not narazovy_pulz and abs(t_in - mira)
                >= abs(p.ucinek_t_in - mira) + UCINEK_TEPLOTA)
         # Větrá-li se kvůli prachu, posuzuje se i prach. Jinak prachové
         # větrání nemělo jak uspět: CO2 při něm nemusí klesat (nemusí
@@ -1114,13 +1130,30 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
                          + venku, hned=narazove, kod="cisto")
 
         if zhorseni and uplynulo >= dalsi_usek:
-            # Zavírá se hned, jak se zhoršení pozná — nejkratší doba
-            # držení polohy ale platí dál, ta je od toho, aby okno
-            # nelítalo, a obcházet ji by znamenalo ji zrušit.
-            # „Zhoršuje se to" byla lež vždycky, když CO2 klesalo, jen
-            # pomalu: zavíralo se kvůli teplu, které okno tahalo
-            # dovnitř, a hláška mluvila o vzduchu. Říká se tedy, co se
-            # doopravdy nevyplatilo.
+            # Vzduch, který se pořád zlepšuje — jen pomaleji, než je
+            # práh — dostane ještě jeden úsek, stejně jako větrání,
+            # kterému se zatím nehýbe nic. Druhý a další úsek je
+            # třetina doby držení, tedy u hodinové kolem dvaceti
+            # minut, a to je na výměnu vzduchu krátká doba: zavřít
+            # kvůli teplotě větrání, které svou práci dělá, jen pomalu,
+            # znamená utnout ho v půlce. Když CO2 stoupá, čekat není
+            # na co a zavírá se hned.
+            if v.co2 < p.ucinek_co2 and p.ucinek_bez_zlepseni == 0:
+                p.ucinek_bez_zlepseni = 1
+                p.ucinek_od_s = v.cas_s
+                p.ucinek_co2 = v.co2
+                p.ucinek_t_in = t_in
+                p.ucinek_pm = v.pm25
+                p.ucinek_kolikaty += 1
+                return beze_zmeny(
+                    f"vzduch se lepší pomalu, dávám tomu ještě jeden "
+                    f"úsek (CO2 {v.co2:.0f}, {t_in:.1f} °C)", True)
+            # Zavírá se hned, jak se pozná, že to nestojí za to —
+            # nejkratší doba držení polohy ale platí dál, ta je od
+            # toho, aby okno nelítalo, a obcházet ji by znamenalo ji
+            # zrušit. „Zhoršuje se to" byla lež vždycky, když CO2
+            # klesalo, jen pomalu: zavíralo se kvůli teplu, které okno
+            # tahalo dovnitř, a hláška mluvila o vzduchu.
             return _marny(f"nevyplácí se to: za {int(uplynulo / 60)} min "
                           + _mereni())
 
@@ -1302,6 +1335,14 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # k prahu zavření, takže po nastavení příznaku by hláška u čerstvě
     # otevřeného okna tvrdila „CO2 900 nad prahem 700", přestože se
     # otevřelo na osmistovce.
+    # Rozdělané větrání je vlastnost **otevřeného** okna. Mazat ho při
+    # zavíracím povelu nestačí: okno se zavře i jinak — rukou, dojetím
+    # pulzu, nebo se jen paměť srovná se skutečností — a příznak pak
+    # přežil. Z něj se počítal příští práh otevření, takže se pokoj
+    # otevíral o celou hysterezi dřív a v hlášce stálo „CO2 799 nad
+    # prahem 650", přestože se má otevírat až nad sedmi sty.
+    if not p.otevreno:
+        p.vetra_se = False
     prah_prekroceny = prah_otevreni(v, p, n)
     if v.co2 > n.co2_otevrit:
         p.vetra_se = True

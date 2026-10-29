@@ -256,7 +256,14 @@ class Vykonavac:
             return None
 
         if r.akce is core.Akce.OTEVRIT:
-            self.stav.pulz_do_s = (cas_s + r.limit_s) if r.limit_s else None
+            # Obnova povelu není nové rozhodnutí, jen zopakování toho
+            # starého — délku pulzu tedy nepřepisuje. Dokud přepisovala,
+            # přišla každých třicet minut na otevřené okno s prázdnou
+            # délkou a dojezd pulzu tím smazala: pulz naplánovaný na
+            # půl hodiny pak neskončil, dokud ho nezavřelo něco jiného.
+            if r.kod != "obnova":
+                self.stav.pulz_do_s = (
+                    (cas_s + r.limit_s) if r.limit_s else None)
             return await self._povel(okno_entita, "open_cover", cas_s, r.duvod)
 
         self.stav.pulz_do_s = None

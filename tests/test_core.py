@@ -101,15 +101,30 @@ def test_mrtva_zona_nespousti():
     assert r.akce is Akce.NIC
 
 
-def test_rozdelane_vetrani_pokracuje_pod_800():
-    """Pulz skončí na 738 – bez tohohle by se do 800 neotevřelo."""
+def test_rozdelane_vetrani_pokracuje_jen_dokud_je_otevreno():
+    """Otevřené okno dojede k prahu zavření, zavřené čeká na svůj práh.
+
+    Pravidlo „rozdělané větrání pokračuje níž" je o **otevřeném**
+    okně. Dokud platilo i na zavřené, pokoj, kterému se větrání
+    nedotáhlo do konce, se otevíral o celou hysterezi dřív — a hláška
+    pak uváděla spodní práh, který s otevíráním nemá co dělat.
+    """
     v = stary(co2=850, cil=25.5, t_out=10)
     r, p = krok(v)
     assert r.akce is Akce.OTEVRIT
-    p.otevreno = False
+
+    # otevřené okno se na 738 nezavírá, větrání pokračuje
     p.cas_povelu_s = 0
     r2 = rozhodni(stary(co2=738, cil=25.5, t_out=10), p, N)
-    assert r2.akce is Akce.OTEVRIT
+    assert r2.akce is not Akce.ZAVRIT, r2.duvod
+
+    # zavřené čeká na svůj práh
+    p.otevreno = False
+    r3 = rozhodni(stary(co2=738, cil=25.5, t_out=10), p, N)
+    assert r3.akce is not Akce.OTEVRIT, r3.duvod
+    r4 = rozhodni(stary(co2=850, cil=25.5, t_out=10), p, N)
+    assert r4.akce is Akce.OTEVRIT
+    assert f"{N.co2_otevrit:.0f}" in r4.duvod, r4.duvod
 
 
 
@@ -3007,3 +3022,95 @@ def test_zhorseni_prachu_si_necha_vlastni_hlasku():
     assert p.pm_venku_horsi_do_s > Z
     r = kolo(61, 48.0)
     assert r.kod == "prach_zvenci", r.duvod
+
+
+def test_pomalu_se_lepsici_vzduch_dostane_jeste_usek():
+    """Druhý a další úsek je třetina doby držení, u hodinové kolem
+    dvaceti minut. Na výměnu vzduchu je to krátká doba: zavřít kvůli
+    teplotě větrání, které svou práci dělá, jen pomalu, znamená utnout
+    ho v půlce.
+    """
+    n = Nastaveni(min_drzeni_s=60 * 60)
+    Z = 200000.0
+
+    def kolo(cas_min, co2, t_in, p):
+        return rozhodni(
+            Vstup(cas_s=Z + cas_min * 60, co2=co2, t_in=t_in, t_in_max=t_in,
+                  t_out=8.0, rh_out=55.0, cil=23.0, hodina=17.0, doma=True),
+            p, n)
+
+    def pamet():
+        p = Pamet(cas_povelu_s=Z - 3600, otevreno=True, vetra_se=True)
+        p.ucinek_od_s = Z - 21 * 60
+        p.ucinek_kolikaty = 1          # první úsek už proběhl
+        p.ucinek_co2, p.ucinek_t_in = 846.0, 23.5
+        return p
+
+    # CO2 klesá, jen málo: ještě jeden úsek
+    p = pamet()
+    r = kolo(0, 819.0, 20.2, p)
+    assert r.akce is not Akce.ZAVRIT, r.duvod
+    assert p.ucinek_bez_zlepseni == 1
+    assert p.ucinek_co2 == 819.0, "úsek se měří od těchhle hodnot"
+
+    # ale když CO2 stoupá, čekat není na co
+    p2 = pamet()
+    r2 = kolo(0, 900.0, 20.2, p2)
+    assert r2.akce is Akce.ZAVRIT, r2.duvod
+    assert "stoupá" in r2.duvod
+
+    # a druhá šance je jen jedna
+    p3 = pamet()
+    p3.ucinek_bez_zlepseni = 1
+    r3 = kolo(0, 819.0, 20.2, p3)
+    assert r3.akce is Akce.ZAVRIT, r3.duvod
+
+
+def test_narazovy_pulz_se_neposuzuje_na_teplote():
+    """Nárazové větrání běží právě proto, že je venku daleko od cíle.
+
+    Teplota se tedy od cíle vzdalovat bude — to je jeho cena, ne
+    důkaz, že nefunguje. Zavírat ho kvůli ní znamená trestat ho za to,
+    co má v popisu práce. A navíc: nárazový režim obchází nejkratší
+    dobu držení, takže si od ní půjčovat měřítko na teplotu nedává
+    smysl ani formálně.
+    """
+    n = Nastaveni(min_drzeni_s=60 * 60)
+    Z = 200000.0
+
+    def kolo(p, co2, t_in):
+        return rozhodni(
+            Vstup(cas_s=Z, co2=co2, t_in=t_in, t_in_max=t_in, t_out=-5.0,
+                  rh_out=55.0, cil=22.0, hodina=17.0, doma=True), p, n)
+
+    def pamet(narazove):
+        # uprostřed prvního úseku: na posouzení celého úseku je brzo,
+        # ale na výrok „zhoršuje se to" už ne
+        p = Pamet(cas_povelu_s=Z - 3600, otevreno=True, vetra_se=True)
+        p.ucinek_od_s = Z - 25 * 60
+        p.ucinek_co2, p.ucinek_t_in = 846.0, 23.5
+        p.narazove_pulz = narazove
+        p.rezim = "pulz"
+        return p
+
+    # běžný pulz: CO2 stojí a teplota utekla od cíle — zavírá se
+    bezny = pamet(False)
+    r = kolo(bezny, 846.0, 20.2)
+    assert r.akce is Akce.ZAVRIT, r.duvod
+    assert "od cíle dál" in r.duvod
+
+    # nárazový pulz: tatáž situace, ale teplota o ničem nerozhoduje
+    narazovy = pamet(True)
+    r2 = kolo(narazovy, 846.0, 20.2)
+    assert r2.akce is not Akce.ZAVRIT, r2.duvod
+
+    # na vzduchu se posuzuje dál: když CO2 stoupá, zavírá se i nárazový
+    narazovy2 = pamet(True)
+    r3 = kolo(narazovy2, 920.0, 20.2)
+    assert r3.akce is Akce.ZAVRIT, r3.duvod
+    assert "stoupá" in r3.duvod
+
+    # a pojistka platí nad tím beze změny
+    narazovy3 = pamet(True)
+    r4 = kolo(narazovy3, 846.0, n.mez_dolni - 0.5)
+    assert r4.akce is Akce.ZAVRIT and r4.kod == "pojistka", r4.duvod
