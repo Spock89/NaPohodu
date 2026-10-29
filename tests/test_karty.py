@@ -957,10 +957,12 @@ def test_mrizka_dnu_sceny_v_karte():
     assert "columns: 7" in text
     assert "switch.napohodu_den_00" in text
     assert f"switch.napohodu_den_{karty.DNU_MRIZKY - 1:02d}" in text
-    # dvě dlaždice na den, z nichž je vidět vždycky právě jedna:
-    # podmínka na typ dne a karta sama, obojí na tutéž entitu
-    assert text.count("switch.napohodu_den_") == karty.DNU_MRIZKY * 4
-    assert text.count("attribute: typ_dne") == karty.DNU_MRIZKY * 2
+    # tři podoby na den, z nichž je vidět vždycky právě jedna:
+    # prázdné pole za minulý den, barevná dlaždice za volno a běžná
+    # za pracovní — podmínka i karta sama vždycky na tutéž entitu
+    assert text.count("switch.napohodu_den_") == karty.DNU_MRIZKY * 5
+    assert text.count("attribute: stav_dlazdice") == karty.DNU_MRIZKY * 3
+    assert text.count("state: \"minulost\"") == karty.DNU_MRIZKY
     assert text.count(f"color: {karty.BARVA_VOLNA}") == karty.DNU_MRIZKY
     assert (text.count(f"color: {karty.BARVA_PRACOVNIHO_DNE}")
             == karty.DNU_MRIZKY)
@@ -972,7 +974,7 @@ def test_mrizka_dnu_sceny_v_karte():
     assert "state_content: datum_popis" in text
     # a víkend se pozná barvou, kterou rozhoduje atribut entity, ne
     # pozice v mřížce — ta se každým dnem posune
-    assert "attribute: typ_dne" in text
+    assert "attribute: stav_dlazdice" in text
     # a kalendář scény zůstává pod ní, kvůli opakování
     assert "initial_view: dayGridMonth" in text
     yaml.safe_load(text)                      # pořád to je platný YAML

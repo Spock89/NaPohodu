@@ -52,22 +52,24 @@ def test_popis_dlazdice_nese_datum(modul):
     ani slova „dnes" a „zítra".
     """
     dn, _ = modul
-    dnes = datetime.date(2026, 10, 26)       # pondělí
-    assert (dn.popis(0, dnes), dn.datum_popis(0, dnes)) == ("dnes", "26. 10.")
+    dnes = datetime.date(2026, 10, 26)       # pondělí, tedy první dlaždice
+    assert (dn.popis(0, dnes), dn.datum_popis(0, dnes)) == ("dnes", "26.")
     assert dn.popis(1, dnes) == "zítra"
-    assert dn.datum_popis(2, dnes) == "28. 10. ★"   # Vznik Československa
-    assert (dn.popis(3, dnes), dn.datum_popis(3, dnes)) == ("čt", "29. 10.")
-    assert (dn.popis(5, dnes), dn.datum_popis(5, dnes)) == ("so", "31. 10.")
+    assert dn.datum_popis(2, dnes) == "28.★"        # Vznik Československa
+    assert (dn.popis(3, dnes), dn.datum_popis(3, dnes)) == ("čt", "29.")
+    assert (dn.popis(5, dnes), dn.datum_popis(5, dnes)) == ("so", "31.")
+    # měsíc se píše jen prvního, jak je v kalendáři zvykem
+    assert dn.datum_popis(6, dnes) == "1.11."
     # Horní řádek je vždycky dvě písmena, spodní datum — jen tak
     # vypadá každá dlaždice stejně a nic se neořízne.
     for i in range(2, dn.DNU_DOPREDU):
         assert len(dn.popis(i, dnes)) == 2, dn.popis(i, dnes)
         x = dn.datum_popis(i, dnes)
-        assert x.count(" ") == (2 if x.endswith("★") else 1), x
+        assert " " not in x and len(x) <= 6, x
     # mřížka musí dosáhnout za hranici měsíce, jinak se první dny
     # příštího zadávají až na poslední chvíli
     assert (dn.popis(dn.DNU_DOPREDU - 1, dnes),
-            dn.datum_popis(dn.DNU_DOPREDU - 1, dnes)) == ("ne", "29. 11.")
+            dn.datum_popis(dn.DNU_DOPREDU - 1, dnes)) == ("ne", "29.")
 
 
 def test_zaskrtnuti_vypada_jako_celodenni_udalost(modul):
@@ -160,10 +162,14 @@ def test_popis_je_zkratka_dne_a_datum(modul):
     """Dlaždice je široká sedminu karty: „NaPohodu út 27. 10." se do ní
     nevešlo a zbylo z toho „aPohod". Zkratka dne a datum se vejdou."""
     dn, _ = modul
-    assert dn.popis(0, datetime.date(2026, 10, 27)) == "dnes"
-    assert dn.popis(2, datetime.date(2026, 10, 27)) == "čt"
-    assert dn.datum_popis(0, datetime.date(2026, 10, 27)) == "27. 10."
-    assert dn.datum_popis(4, datetime.date(2026, 10, 27)) == "31. 10."
+    # v úterý sedí dnešek na druhé dlaždici, protože mřížka začíná
+    # pondělím — svislice jsou pevně dny v týdnu
+    utery = datetime.date(2026, 10, 27)
+    assert dn.popis(1, utery) == "dnes"
+    assert dn.popis(0, utery) == "po" and dn.stav_dlazdice(0, utery) == "minulost"
+    assert dn.popis(3, utery) == "čt"
+    assert dn.datum_popis(1, utery) == "27."
+    assert dn.datum_popis(5, utery) == "31."
     # víkend je poznat ze zkratky, a to i bez barvy
     assert dn.typ_dne(datetime.date(2026, 10, 31)) == "volno"
     assert dn.typ_dne(datetime.date(2026, 10, 27)) == "pracovní"
@@ -185,4 +191,34 @@ def test_statni_svatky(modul):
     assert dn.svatek(datetime.date(2026, 4, 3)) == "Velký pátek"
     assert dn.svatek(datetime.date(2026, 4, 6)) == "Velikonoční pondělí"
     # a svátek je na dlaždici vidět
+    # velikonoční pondělí 2026 je 6. dubna, tedy první dlaždice týdne
     assert "★" in dn.datum_popis(0, datetime.date(2026, 4, 6))
+
+
+def test_vikend_je_vzdycky_na_konci_radku(modul):
+    """Svislice mřížky musí být pevně dny v týdnu.
+
+    Kdyby se počítalo ode dneška, posouval by se víkend mřížkou každý
+    den o jedno políčko a z kalendáře by zbyl jen pás dlaždic.
+    """
+    dn, _ = modul
+    for dnes in (datetime.date(2026, 10, 26),   # pondělí
+                 datetime.date(2026, 10, 29),   # čtvrtek
+                 datetime.date(2026, 11, 1)):   # neděle
+        for i in range(dn.DNU_DOPREDU):
+            volno_podle_sloupce = i % 7 >= 5
+            assert dn.vikend(dn.datum(i, dnes)) == volno_podle_sloupce, (dnes, i)
+
+
+def test_minule_dny_se_nedaji_zaskrtnout(modul):
+    """Mřížka začíná pondělím, takže dny před dneškem padnou na začátek
+    prvního řádku. Karta je nechává prázdné."""
+    dn, _ = modul
+    ctvrtek = datetime.date(2026, 10, 29)
+    stavy = [dn.stav_dlazdice(i, ctvrtek) for i in range(7)]
+    assert stavy[:3] == ["minulost"] * 3, stavy
+    assert "minulost" not in stavy[3:]
+
+    # v pondělí nezbyde prázdné ani jedno
+    pondeli = datetime.date(2026, 10, 26)
+    assert all(dn.stav_dlazdice(i, pondeli) != "minulost" for i in range(7))

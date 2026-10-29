@@ -555,14 +555,18 @@ def test_mrizka_dnu_sceny_zapina_a_vypina(ha):
 
     scena = next(p for p in k.entry.subentries.values()
                  if p.subentry_type == c.PODENTITA_SCENA)
-    dlazdice = [DenSceny(k, k.entry, i) for i in range(3)]
+    # mřížka začíná pondělím toho týdne, takže dnešek sedí na
+    # tolikáté dlaždici, kolikátý je dnes den v týdnu
+    import datetime as _dt
+    od = _dt.date.today().weekday()
+    dlazdice = [DenSceny(k, k.entry, od + i) for i in range(3)]
     for d in dlazdice:
         d.hass = hass
         d.async_write_ha_state = lambda: None
     dnes, zitra, pozitri = dlazdice
 
     assert not any(d.is_on for d in dlazdice)
-    assert dnes.name == dn.popis(0) and zitra.name == dn.popis(1)
+    assert dnes.name == "dnes" and zitra.name == "zítra"
 
     # naklikání dvou dnů: mřížka je ukazuje, do kalendáře nic nejde
     asyncio.run(zitra.async_turn_on())
@@ -636,7 +640,8 @@ def test_dlazdice_a_kalendar_sceny_vidi_totez(ha):
         + dt.timedelta(days=1),
         "opis": {"prazdno": [], "zavreno": [], "cil": {}}}))
 
-    d = DenSceny(k, k.entry, 1)
+    import datetime as _dt
+    d = DenSceny(k, k.entry, _dt.date.today().weekday() + 1)
     d.hass = hass
     d.async_write_ha_state = lambda: None
     assert d.is_on, "den z kalendáře musí být na mřížce vidět"
@@ -675,7 +680,8 @@ def test_mrizka_patri_vybrane_scene(ha):
     # bez vybrání platí první — prázdná mřížka by vypadala rozbitě
     assert vyber.current_option == "Home Office"
 
-    d = DenSceny(k, k.entry, 3)
+    import datetime as _dt
+    d = DenSceny(k, k.entry, _dt.date.today().weekday() + 3)
     d.hass = hass
     d.async_write_ha_state = lambda: None
 

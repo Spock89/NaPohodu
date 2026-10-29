@@ -1056,7 +1056,20 @@ zařízení má, a na dlaždici široké sedminu karty se „NaPohodu út
 Samotný přepínač `has_entity_name` na to nestačil, protože se jméno
 zařízení lepilo dál; tahle cesta na žádném přepínači nezávisí.
 
-Dlaždice patří **odstupu od dneška**, ne datu: číslo pět je vždycky „za
+**Mřížka začíná pondělím toho týdne**, ne dneškem. Jen tak jsou
+svislice pevně dny v týdnu a sobota s nedělí stojí vždycky na konci
+řádku; kdyby se počítalo ode dneška, posouval by se víkend mřížkou
+každý den o políčko a z kalendáře by zbyl jen pás dlaždic. Dny před
+dneškem tím padnou na začátek prvního řádku — karta je nechává
+prázdné a zaškrtnout se nedají.
+
+**Datum na dlaždici je krátké:** „29.", a prvního „1.11." Měsíc se
+píše jen na jeho začátku, jak je v kalendáři zvykem — jinde ho
+prozradí sousední dny. Dlaždice je sedmina karty a okraje se
+v běžných kartách nastavit nedají, takže se musí vejít text; „29. 10."
+se ořízlo na „29. …". Svátek nese hvězdička bez mezery: „28.★".
+
+Dlaždice patří **odstupu od začátku toho týdne**, ne datu: číslo pět je vždycky „za
 pět dní". Jen tak může YAML karty zůstat pořád stejný a nemusí se
 každý měsíc generovat znovu — datum i stav si nese entita. Zaškrtnutí
 se ale ukládá na datum, takže přes noc neputuje: dlaždice se posunou

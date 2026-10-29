@@ -1366,6 +1366,21 @@ def _mrizka_dnu(existuje) -> list[str]:
         # stejný — rozhodnout to tedy musí entita svým atributem, ne
         # pozice v mřížce. Schovaná dlaždice místo v mřížce nezabírá,
         # takže řádky zůstanou po sedmi.
+        # Minulé dny jsou prázdná pole. Mřížka začíná pondělím toho
+        # týdne, aby sobota s nedělí stály vždycky na konci řádku —
+        # dny před dneškem tím padnou na začátek prvního řádku
+        # a zaškrtnout se nedají. Prázdná karta drží místo, takže
+        # řádky zůstanou po sedmi a sloupce sedí na dnech v týdnu.
+        dlazdice.append(
+            ["      - type: conditional",
+             "        conditions:",
+             "          - condition: state",
+             f"            entity: {eid}",
+             "            attribute: stav_dlazdice",
+             f"            state: {_text('minulost')}",
+             "        card:",
+             "          type: markdown",
+             "          content: \" \""])
         for typ, barva in (("volno", BARVA_VOLNA),
                            ("pracovní", BARVA_PRACOVNIHO_DNE)):
             dlazdice.append(
@@ -1373,7 +1388,7 @@ def _mrizka_dnu(existuje) -> list[str]:
                  "        conditions:",
                  "          - condition: state",
                  f"            entity: {eid}",
-                 "            attribute: typ_dne",
+                 "            attribute: stav_dlazdice",
                  f"            state: {_text(typ)}",
                  "        card:",
                  "          type: tile",

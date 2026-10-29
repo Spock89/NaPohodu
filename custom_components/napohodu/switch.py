@@ -318,6 +318,9 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
             # dne a z ikony, svátek z hvězdičky; obarvit ho vestavěná
             # karta neumí.
             "typ_dne": dn.typ_dne(den),
+            # Podle tohohle karta rozhoduje, jestli dlaždici vůbec
+            # ukázat: dny z minulého týdne nechává prázdné.
+            "stav_dlazdice": dn.stav_dlazdice(self._odstup),
             "den": dn.DNY_TYDNE[den.weekday()],
             "vikend": dn.vikend(den),
             "svatek": dn.svatek(den),
@@ -333,8 +336,8 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
         }
 
     async def async_turn_on(self, **kwargs) -> None:
-        if self._pod_id is None:
-            return
+        if self._pod_id is None or dn.stav_dlazdice(self._odstup) == "minulost":
+            return      # včerejšek se naplánovat nedá
         den, ceka = self._den, self._ceka
         ceka["zrusit"].discard(den)
         if not self._stav_dne["plati"]:

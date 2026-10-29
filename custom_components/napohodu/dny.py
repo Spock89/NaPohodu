@@ -33,8 +33,19 @@ DNY_TYDNE = ("po", "út", "st", "čt", "pá", "so", "ne")
 
 
 def datum(odstup: int, dnes: date | None = None) -> date:
-    """Datum, na které dlaždice s tímhle odstupem zrovna ukazuje."""
-    return (dnes or dt_util.now().date()) + timedelta(days=odstup)
+    """Datum, na které dlaždice s tímhle odstupem zrovna ukazuje.
+
+    Počítá se od **pondělí toho týdne**, ne ode dneška. Jen tak jsou
+    svislice mřížky pevně dny v týdnu a sobota s nedělí stojí vždycky
+    na konci řádku. Kdyby se počítalo ode dneška, posouval by se
+    víkend mřížkou každý den o jedno políčko.
+
+    Dny před dneškem tím padnou na začátek prvního řádku; zaškrtnout
+    se nedají a karta je nechává prázdné.
+    """
+    d = dnes or dt_util.now().date()
+    pondeli = d - timedelta(days=d.weekday())
+    return pondeli + timedelta(days=odstup)
 
 
 def velikonoce(rok: int) -> date:
@@ -100,22 +111,48 @@ def popis(odstup: int, dnes: date | None = None) -> str:
     nejčastěji a v mřížce je pak hned vidět, kde začíná. Den v týdnu
     se u nich nehledá a datum je stejně na řádku pod tím.
     """
-    if odstup == 0:
+    # Porovnává se datum, ne pořadí dlaždice: mřížka začíná pondělím
+    # toho týdne, takže dnešek sedí na tolikáté dlaždici, kolikátý je
+    # dnes den v týdnu.
+    d = dnes or dt_util.now().date()
+    kdy = datum(odstup, d)
+    if kdy == d:
         return "dnes"
-    if odstup == 1:
+    if kdy == d + timedelta(days=1):
         return "zítra"
-    return DNY_TYDNE[datum(odstup, dnes).weekday()]
+    return DNY_TYDNE[kdy.weekday()]
 
 
 def datum_popis(odstup: int, dnes: date | None = None) -> str:
-    """Datum na spodní řádek dlaždice: „27. 10."
+    """Datum na spodní řádek dlaždice: „29." a prvního „1.11."
 
-    Svátek nese hvězdička. Do ikony se nevejde — tu už má zabranou
-    stav zaškrtnutí — a tady je vidět pořád, ať je den zaškrtnutý
-    nebo ne. Jméno svátku je v atributech.
+    Krátké schválně. Dlaždice je sedmina karty a okraje se v běžných
+    kartách nastavit nedají, takže se musí vejít text: „29. 10." se
+    ořízlo na „29. …". Měsíc se píše jen prvního, jak je v kalendáři
+    zvykem — jinde ho prozradí sousední dny.
+
+    Svátek nese hvězdička, bez mezery, ať zabere co nejmíň. Do ikony
+    se nevejde — tu už má zabranou stav zaškrtnutí — a tady je vidět
+    pořád, ať je den zaškrtnutý nebo ne. Jméno svátku je v atributech.
     """
     d = datum(odstup, dnes)
-    return f"{d.day}. {d.month}." + (" ★" if svatek(d) else "")
+    zaklad = f"{d.day}.{d.month}." if d.day == 1 else f"{d.day}."
+    return zaklad + ("★" if svatek(d) else "")
+
+
+def stav_dlazdice(odstup: int, dnes: date | None = None) -> str:
+    """„minulost", „volno" nebo „pracovní".
+
+    Podle tohohle karta rozhoduje, jestli dlaždici ukázat a jakou
+    barvou. Rozhodnout to musí entita, ne pozice v mřížce: který
+    sloupec je víkend sice pevný je, ale kolik polí na začátku je
+    z minulého týdne, se mění každý den — a YAML má zůstat stejný.
+    """
+    d = dnes or dt_util.now().date()
+    kdy = datum(odstup, d)
+    if kdy < d:
+        return "minulost"
+    return typ_dne(kdy)
 
 
 def typ_dne(den: date) -> str:
