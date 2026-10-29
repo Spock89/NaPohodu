@@ -966,6 +966,13 @@ def test_mrizka_dnu_sceny_v_karte():
             == karty.DNU_MRIZKY)
     assert "state: \"volno\"" in text and "state: \"pracovní\"" in text
     assert "action: toggle" in text
+    # dlaždice typu tile: zkratka dne nahoře, datum pod ní
+    assert "type: tile" in text
+    assert "vertical: true" in text
+    assert "state_content: datum_popis" in text
+    # a víkend se pozná barvou, kterou rozhoduje atribut entity, ne
+    # pozice v mřížce — ta se každým dnem posune
+    assert "attribute: typ_dne" in text
     # a kalendář scény zůstává pod ní, kvůli opakování
     assert "initial_view: dayGridMonth" in text
     yaml.safe_load(text)                      # pořád to je platný YAML

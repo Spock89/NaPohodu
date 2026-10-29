@@ -535,7 +535,7 @@ def _co_drzi(v: Vstup, pm_spatne: bool) -> str | None:
     if v.vynuceno:
         return "nouzové větrání"
     if v.vetrat:
-        return "ruční větrání"
+        return "ruční žádost"
     if pm_spatne:
         return "prach"
     return None
@@ -722,7 +722,7 @@ def ocekavani(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
             chybi.append(f"CO2 pod {prah_zavreni(v, n):.0f} "
                          f"(teď {v.co2:.0f})")
         if v.vetrat:
-            chybi.append("vypnout ruční větrání")
+            chybi.append("vypnout ruční žádost o vyvětrání")
         venku_lepsi = (v.pm25_venku is None
                        or v.pm25_venku <= v.pm25 - n.pm_rozdil)
         if v.pm_platny and venku_lepsi and v.pm25 >= n.pm_prah_cisto:
@@ -934,7 +934,8 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         if not p.otevreno:
             return beze_zmeny("prší, zavřeno", False)
         p.rezim = "pulz"
-        return zavri(f"zavírám kvůli dešti ({v.dest:.1f})", hned=True, kod="dest")
+        return zavri(f"zavírám kvůli dešti ({v.dest:.1f} mm/h)",
+                     hned=True, kod="dest")
 
     # --- 2. nikdo doma ---------------------------------------------
     if not v.doma:
@@ -1273,6 +1274,12 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # chvíli je dávno pryč. Zavřít hned by se tedy nestihlo nikdy
     # a nárazové větrání nedělalo nic jiného než běžné.
     #
+    # Práh, o kterém mluví otevírací hláška, je ten **překročený**, ne
+    # ten, ke kterému se pak dojíždí. Rozdělané větrání pokračuje
+    # k prahu zavření, takže po nastavení příznaku by hláška u čerstvě
+    # otevřeného okna tvrdila „CO2 900 nad prahem 700", přestože se
+    # otevřelo na osmistovce.
+    prah_prekroceny = prah_otevreni(v, p, n)
     if v.co2 > n.co2_otevrit:
         p.vetra_se = True
     if v.co2 < prah_zavreni(v, n):
@@ -1451,9 +1458,17 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         p.chladi = chlazeni
         p.ohrivam = ohrev and not chlazeni
         if chlazeni:
-            popis_bezi, popis_nove = "chladím", "chlazení větráním"
+            kam = f"{v.cil - h_zavrit:.1f}"
+            popis_bezi = (f"chladím na {kam} °C (teď {t_in:.1f}, "
+                          f"venku {v.t_out:.1f})")
+            popis_nove = (f"otevírám kvůli teplu: {t_in:.1f} °C, "
+                          f"venku {v.t_out:.1f} — chladím na {kam}")
         elif ohrev:
-            popis_bezi = popis_nove = "ohřev venkovním vzduchem"
+            kam = f"{v.cil + h_zavrit:.1f}"
+            popis_bezi = (f"ohřívám na {kam} °C (teď {t_in:.1f}, "
+                          f"venku {v.t_out:.1f})")
+            popis_nove = (f"otevírám kvůli chladu: {t_in:.1f} °C, "
+                          f"venku {v.t_out:.1f} — ohřívám na {kam}")
         else:
             # ať je poznat, že za tím nestojí prach, CO2 ani teplota
             popis_bezi = "nic nevadí, venku je příjemně"
@@ -1556,7 +1571,7 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             # se z hlášky vyčíst, že se otevřelo kvůli hodnotě, která
             # je hluboko pod nočním prahem — a nešlo poznat proč.
             spoust = _co_drzi(v, pm_spatne) if v.co2 <= prah else None
-            duvod = (f"noc: otevírám, {spoust}, CO2 {v.co2:.0f}"
+            duvod = (f"noc: otevírám — {spoust}, CO2 {v.co2:.0f}"
                      if spoust else f"noc: otevírám, CO2 {v.co2:.0f}")
             if p.narazove_pulz:
                 duvod += ", nárazově — zavřu, jakmile důvod pomine"
@@ -1613,20 +1628,34 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         zkraceno = bool(v.narazove)
 
         p.rezim = "pulz"
-        duvod = f"CO2 {v.co2:.0f}"
+        # Zavírací hlášky vždycky říkaly sloveso a čísla, otevírací
+        # byly holé nálepky — „CO2 900" neřekne, co se děje ani proč.
+        # Proto i tady sloveso a práh, se kterým se to číslo poměřuje.
+        duvod = (f"otevírám kvůli vzduchu: CO2 {v.co2:.0f} "
+                 f"nad prahem {prah_prekroceny:.0f}")
         if pm_spatne:
-            duvod = f"PM2.5 {v.pm25:.0f}" + ("" if v.pm_platny else " (bez ventilátoru)")
+            venku = ("" if v.pm25_venku is None
+                     else f", venku {v.pm25_venku:.0f}")
+            duvod = (f"otevírám kvůli prachu: PM2.5 {v.pm25:.0f} "
+                     f"nad prahem {n.pm_prah:.0f}{venku}"
+                     + ("" if v.pm_platny else " (bez ventilátoru)"))
         elif v.vetrat and v.co2 <= prah_startu:
             # Ruční žádost otevírá bez ohledu na CO2, takže samotné
             # číslo CO2 jako důvod mate: je pod prahem otevření.
-            duvod = f"ruční větrání, CO2 {v.co2:.0f}"
+            duvod = f"otevírám na ruční žádost, CO2 {v.co2:.0f}"
         dolni = 30
         p.narazove_pulz = zkraceno
         if zkraceno:
             duvod += ", nárazově — zavřu, jakmile důvod pomine"
         return otevri(duvod, min(max(minuty, dolni), 120) * 60, kod="pulz")
 
-    return beze_zmeny(f"mrtvá zóna, CO2 {v.co2:.0f}")
+    # „Mrtvá zóna" byla hláška pro mě, ne pro člověka: z ní se nepozná,
+    # co je mrtvé ani proč se nic neděje. Jsou to dva prahy a hodnota
+    # mezi nimi, tak ať jsou vidět.
+    return beze_zmeny(
+        f"nic nechce: CO2 {v.co2:.0f} je mezi prahy "
+        f"(otevřít nad {prah_startu:.0f}, zavřeno pod "
+        f"{prah_zavreni(v, n):.0f})")
 
 
 # ------------------------------------------------------- obrázek smyčky

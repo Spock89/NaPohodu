@@ -256,7 +256,7 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
                           self._den, self.coordinator.plan_rozbal)
 
     def _obnov_jmeno(self) -> None:
-        """Datum na dlaždici. Po půlnoci se posune o jeden den."""
+        """Zkratka dne na dlaždici. Po půlnoci se posune o jeden den."""
         self._attr_name = dn.popis(self._odstup)
 
     async def async_added_to_hass(self) -> None:
@@ -310,6 +310,10 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
         den, ceka = self._den, self._ceka
         return {
             "datum": den.isoformat(),
+            # Spodní řádek dlaždice. Karta ho vypisuje místo stavu,
+            # protože „Zapnuto" u zaškrtávátka nic neříká a datum se
+            # na horní řádek vedle zkratky dne nevejde.
+            "datum_popis": dn.datum_popis(self._odstup),
             # Víkend a svátek. Na dlaždici je víkend vidět ze zkratky
             # dne a z ikony, svátek z hvězdičky; obarvit ho vestavěná
             # karta neumí.

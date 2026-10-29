@@ -757,7 +757,8 @@ def test_dlazdice_maji_identifikator_ktery_karta_hleda(ha):
     # Jméno zařízení se před dlaždici nelepí: „NaPohodu út 27. 10."
     # se do sedminy karty nevejde a na kartě z toho zbylo „aPohod".
     assert d._attr_has_entity_name is False
-    assert d.name[:2] in dny_mod.DNY_TYDNE, "na dlaždici se čte datum"
+    # na horní řádek jde „dnes", „zítra", jinak zkratka dne
+    assert d.name == "dnes" or d.name[:2] in dny_mod.DNY_TYDNE, d.name
     assert DenSceny(k, k.entry, 12).entity_id == "switch.napohodu_den_12"
 
     # a karta hledá přesně tohle
@@ -900,8 +901,13 @@ def test_dlazdice_nese_datum_v_attr_name(ha):
     assert "name" not in DenSceny.__dict__, \
         "vlastnost name se nesmí přepisovat, HA ji má jako cached_property"
     assert d._attr_name == d.name
-    assert d.name and any(x.isdigit() for x in d.name), d.name
+    assert d.name and not any(x.isdigit() for x in d.name), d.name
     assert "NaPohodu" not in d.name
+    # datum je na druhém řádku, tedy v atributu, který karta vypisuje
+    # místo stavu
+    d.hass = hass
+    assert any(x.isdigit()
+               for x in d.extra_state_attributes["datum_popis"])
 
     # po kole koordinátoru se jméno obnoví, aby se datum po půlnoci
     # posunulo i bez restartu

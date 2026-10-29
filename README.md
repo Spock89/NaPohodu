@@ -654,6 +654,24 @@ s kotlem nebo dálkovým teplem.
 Totéž se vypisuje i na dashboardu pod šoupátky, protože se útlum chová
 jinak, než se od čísla čeká, a bez vysvětlení se na to zapomene.
 
+**Hlášky o oknech říkají sloveso a čísla.** Zavírací je tak měly
+vždycky („pojistka: 17,0 °C pod mezí 18,0"), otevírací byly holé
+nálepky: „CO2 900" neřekne, co se děje ani proč. Teď je to srovnané —
+„otevírám kvůli vzduchu: CO2 900 nad prahem 800", „otevírám kvůli
+prachu: PM2.5 60 nad prahem 35, venku 20", „otevírám kvůli teplu:
+26,0 °C, venku 12,0 — chladím na 20,5".
+
+Práh v otevírací hlášce je ten **překročený**, ne ten, ke kterému se
+pak dojíždí: rozdělané větrání pokračuje až k prahu zavření, takže by
+u čerstvě otevřeného okna stálo „CO2 900 nad prahem 700", přestože se
+otevřelo na osmistovce.
+
+Zmizela i „mrtvá zóna" — to byla hláška pro programátora, ne pro
+člověka. Teď stojí „nic nechce: CO2 760 je mezi prahy (otevřít nad
+800, zavřeno pod 700)". A ruční žádost o vyvětrání se jmenuje všude
+stejně; dvě jména pro jednu věc jsou samy o sobě důvod, proč hláška
+mate.
+
 **Teplota se posílá vždycky**, protože bez ní hlavice neví, na co
 regulovat. Mění se jen ta hodnota.
 
@@ -976,7 +994,16 @@ sloupec je dnešní den — a den se zapne a vypne kliknutím. Jde
 o pětatřicet dní dopředu, takže po celý měsíc je vidět jeho zbytek
 i celý příští.
 
-**Na dlaždici je zkratka dne a datum** — „út 27. 10." Jméno zařízení
+**První dvě dlaždice se jmenují „dnes" a „zítra"** — kliká se na ně
+nejčastěji a v mřížce je pak hned vidět, kde začíná. Datum je stejně
+na řádku pod tím.
+
+**Na dlaždici je zkratka dne a pod ní datum** — „út" a „27. 10."
+na druhém řádku. Na sedmi sloupcích se delší text na jeden řádek
+nevejde a karta ho nezalomí, jen ořízne; z „út 27. 10." zbylo „út 2…".
+Datum proto nese atribut, který dlaždice vypisuje místo stavu —
+„Zapnuto" u zaškrtávátka stejně neříká nic, co by nebylo vidět
+z ikony. Jméno zařízení
 se před ni nelepí: dlaždice je široká sedminu karty a „NaPohodu út
 27. 10." se do ní nevejde. Víkend je poznat ze zkratky dne a z ikony
 prázdného dne, **státní svátek** z hvězdičky v popisku; jeho jméno je

@@ -53,18 +53,21 @@ def test_popis_dlazdice_nese_datum(modul):
     """
     dn, _ = modul
     dnes = datetime.date(2026, 10, 26)       # pondělí
-    assert dn.popis(0, dnes) == "po 26. 10."
-    assert dn.popis(2, dnes) == "st 28. 10. ★"   # Vznik Československa
-    assert dn.popis(3, dnes) == "čt 29. 10."
-    assert dn.popis(5, dnes) == "so 31. 10."
-    # Každý popisek má stejný tvar, ať se dlaždice zalomí stejně.
-    # Svátek přidává hvězdičku, nic jiného se neliší.
-    for i in range(dn.DNU_DOPREDU):
-        x = dn.popis(i, dnes)
-        assert x.count(" ") == (3 if x.endswith("★") else 2), x
+    assert (dn.popis(0, dnes), dn.datum_popis(0, dnes)) == ("dnes", "26. 10.")
+    assert dn.popis(1, dnes) == "zítra"
+    assert dn.datum_popis(2, dnes) == "28. 10. ★"   # Vznik Československa
+    assert (dn.popis(3, dnes), dn.datum_popis(3, dnes)) == ("čt", "29. 10.")
+    assert (dn.popis(5, dnes), dn.datum_popis(5, dnes)) == ("so", "31. 10.")
+    # Horní řádek je vždycky dvě písmena, spodní datum — jen tak
+    # vypadá každá dlaždice stejně a nic se neořízne.
+    for i in range(2, dn.DNU_DOPREDU):
+        assert len(dn.popis(i, dnes)) == 2, dn.popis(i, dnes)
+        x = dn.datum_popis(i, dnes)
+        assert x.count(" ") == (2 if x.endswith("★") else 1), x
     # mřížka musí dosáhnout za hranici měsíce, jinak se první dny
     # příštího zadávají až na poslední chvíli
-    assert dn.popis(dn.DNU_DOPREDU - 1, dnes) == "ne 29. 11."
+    assert (dn.popis(dn.DNU_DOPREDU - 1, dnes),
+            dn.datum_popis(dn.DNU_DOPREDU - 1, dnes)) == ("ne", "29. 11.")
 
 
 def test_zaskrtnuti_vypada_jako_celodenni_udalost(modul):
@@ -157,8 +160,10 @@ def test_popis_je_zkratka_dne_a_datum(modul):
     """Dlaždice je široká sedminu karty: „NaPohodu út 27. 10." se do ní
     nevešlo a zbylo z toho „aPohod". Zkratka dne a datum se vejdou."""
     dn, _ = modul
-    assert dn.popis(0, datetime.date(2026, 10, 27)) == "út 27. 10."
-    assert dn.popis(4, datetime.date(2026, 10, 27)) == "so 31. 10."
+    assert dn.popis(0, datetime.date(2026, 10, 27)) == "dnes"
+    assert dn.popis(2, datetime.date(2026, 10, 27)) == "čt"
+    assert dn.datum_popis(0, datetime.date(2026, 10, 27)) == "27. 10."
+    assert dn.datum_popis(4, datetime.date(2026, 10, 27)) == "31. 10."
     # víkend je poznat ze zkratky, a to i bez barvy
     assert dn.typ_dne(datetime.date(2026, 10, 31)) == "volno"
     assert dn.typ_dne(datetime.date(2026, 10, 27)) == "pracovní"
@@ -180,4 +185,4 @@ def test_statni_svatky(modul):
     assert dn.svatek(datetime.date(2026, 4, 3)) == "Velký pátek"
     assert dn.svatek(datetime.date(2026, 4, 6)) == "Velikonoční pondělí"
     # a svátek je na dlaždici vidět
-    assert "★" in dn.popis(0, datetime.date(2026, 4, 6))
+    assert "★" in dn.datum_popis(0, datetime.date(2026, 4, 6))

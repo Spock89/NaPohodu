@@ -239,7 +239,7 @@ def test_v_zime_rozhoduje_nejchladnejsi_cidlo():
 def test_chlazeni_se_ridi_nejteplejsim():
     r, _ = krok(stary(co2=550, t_in=22, t_in_max=27, t_out=19, cil=24,
                       hodina=2))
-    assert r.akce is Akce.OTEVRIT and "chlaz" in r.duvod
+    assert r.akce is Akce.OTEVRIT and "chladím" in r.duvod
 
 
 def test_bez_druheho_cidla_se_chova_stejne():
@@ -1253,7 +1253,7 @@ def test_ohrev_vetranim_ma_vlastni_rezim():
     p = Pamet(cas_povelu_s=0)
     r = rozhodni(stary(co2=500, t_in=19.0, t_in_max=19.3, t_out=27.0,
                        rh_out=50.0, cil=23.0, hodina=14.0), p, N)
-    assert r.akce is Akce.OTEVRIT and "ohřev" in r.duvod
+    assert r.akce is Akce.OTEVRIT and "ohřívám" in r.duvod
     assert p.ohrivam is True and p.chladi is False
 
 

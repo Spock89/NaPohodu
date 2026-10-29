@@ -1380,8 +1380,15 @@ def _mrizka_dnu(existuje) -> list[str]:
                  f"          entity: {eid}",
                  f"          color: {barva}",
                  "          vertical: true",
-                 "          hide_state: true",
+                 # Místo stavu se vypisuje datum. „Zapnuto" by neřeklo
+                 # nic, co není vidět z ikony, a celé „út 27. 10." se
+                 # na horní řádek nevejde — karta text nezalomí, jen
+                 # ho ořízne, takže z něj zbylo „út 2…". Takhle je
+                 # nahoře zkratka dne a pod ní datum.
+                 "          state_content: datum_popis",
                  "          tap_action:",
+                 "            action: toggle",
+                 "          icon_tap_action:",
                  "            action: toggle"])
     if not dlazdice:
         return []

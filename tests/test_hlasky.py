@@ -247,7 +247,7 @@ def test_tvrda_prekazka_nikdy_neskonci_otevrenim():
     assert not spatne, sorted(set(spatne))
 
 
-# ------------------------------------ ruční větrání v hlášce, ne CO2
+# ------------------------------------ ruční žádost v hlášce, ne CO2
 
 def test_noc_pojmenuje_rucni_vetrani():
     """CO2 pod nočním prahem neotevře; otevřít může ruční žádost.
@@ -262,7 +262,7 @@ def test_noc_pojmenuje_rucni_vetrani():
     v2 = dataclasses.replace(v, vetrat=True)
     r = rozhodni(v2, pamet(), N)
     assert r.akce is Akce.OTEVRIT
-    assert "ruční větrání" in r.duvod
+    assert "ruční žádost" in r.duvod
 
 
 def test_otevrene_okno_rekne_co_ho_drzi():
@@ -272,7 +272,7 @@ def test_otevrene_okno_rekne_co_ho_drzi():
                   t_out=6.7, cil=22.5, vetrat=True)
         r = rozhodni(v, pamet(otevreno=True, vetra_se=True), N)
         assert cekam in r.duvod, r.duvod
-        assert "drží to ruční větrání" in r.duvod, r.duvod
+        assert "drží to ruční žádost" in r.duvod, r.duvod
 
 
 def test_den_pojmenuje_rucni_vetrani_misto_co2():
@@ -280,7 +280,7 @@ def test_den_pojmenuje_rucni_vetrani_misto_co2():
               cil=22.5, vetrat=True)
     r = rozhodni(v, pamet(), N)
     assert r.akce is Akce.OTEVRIT
-    assert "ruční větrání" in r.duvod, r.duvod
+    assert "ruční žádost" in r.duvod, r.duvod
 
 
 def test_couvani_se_u_otevreneho_okna_nevypisuje():
@@ -404,3 +404,77 @@ def test_zprava_o_vetru_rekne_kdy_pusti():
     t2 = zpravy.SKLADBA["vitr"]("Obývák", u2)
     assert "čidlo větru nehlásí" in t2
     assert "klid" not in t2.split("povolí pod")[1]
+
+
+def test_otevreni_rekne_proc_a_proti_cemu():
+    """Zavírací hlášky vždycky říkaly sloveso a čísla, otevírací byly
+    holé nálepky — „CO2 900" neřekne, co se děje ani proč."""
+    from core import Vstup, Pamet, Nastaveni, Akce, rozhodni
+
+    n = Nastaveni()
+    spolecne = dict(cas_s=200000.0, t_in=21.5, t_in_max=21.5, t_out=12.0,
+                    rh_out=55.0, cil=21.5, hodina=14.0, doma=True)
+
+    # vzduch: číslo i práh, který se překročil (ne ten, ke kterému se
+    # pak dojíždí — na ten se otevřené okno teprve dostává)
+    r = rozhodni(Vstup(co2=900.0, **spolecne), Pamet(cas_povelu_s=0.0), n)
+    assert r.akce is Akce.OTEVRIT
+    assert "otevírám kvůli vzduchu" in r.duvod
+    assert "CO2 900" in r.duvod and f"{n.co2_otevrit:.0f}" in r.duvod
+    assert f"{n.co2_zavrit:.0f}" not in r.duvod, r.duvod
+
+    # prach: hodnota, práh i venkovní číslo, podle kterého se rozhoduje
+    r2 = rozhodni(
+        Vstup(co2=500.0, pm25=60.0, pm10=84.0, pm_platny=True,
+              pm25_venku=20.0, pm10_venku=28.0, **spolecne),
+        Pamet(cas_povelu_s=0.0), n)
+    assert "otevírám kvůli prachu" in r2.duvod
+    assert "PM2.5 60" in r2.duvod and "venku 20" in r2.duvod
+
+    # ruční žádost: číslo CO2 samo by mátlo, je pod prahem
+    r3 = rozhodni(Vstup(co2=450.0, vetrat=True, **spolecne),
+                  Pamet(cas_povelu_s=0.0), n)
+    assert "ruční žádost" in r3.duvod
+
+
+def test_mezi_prahy_se_rekne_mezi_kterymi():
+    """„Mrtvá zóna" byla hláška pro mě, ne pro člověka: nepoznalo se
+    z ní, co je mrtvé ani proč se nic neděje."""
+    from core import Vstup, Pamet, Nastaveni, Akce, rozhodni
+
+    n = Nastaveni()
+    r = rozhodni(
+        Vstup(cas_s=200000.0, co2=760.0, t_in=21.5, t_in_max=21.5,
+              t_out=12.0, rh_out=55.0, cil=21.5, hodina=14.0, doma=True),
+        Pamet(cas_povelu_s=0.0), n)
+    assert r.akce is Akce.NIC
+    assert "mrtvá zóna" not in r.duvod
+    assert "CO2 760" in r.duvod
+    assert f"{n.co2_otevrit:.0f}" in r.duvod and f"{n.co2_zavrit:.0f}" in r.duvod
+
+
+def test_jedno_jmeno_pro_jednu_vec():
+    """Ruční žádost se nesmí jmenovat jednou tak a jednou jinak —
+    právě tím jsou hlášky zmatečné."""
+    import pathlib
+    import re
+
+    zdroj = (pathlib.Path(__file__).parent.parent / "custom_components"
+             / "napohodu" / "core.py").read_text()
+    # v textech hlášek smí být jen „ruční žádost"
+    for m in re.finditer(r'"[^"\n]*ruční [^"\n]*"', zdroj):
+        assert "ruční žádost" in m.group(0) or "ruční zásah" in m.group(0) \
+            or "ruční otevření" in m.group(0) or "ručně" in m.group(0), m.group(0)
+
+
+def test_dest_ma_jednotku():
+    """Holé „(1.0)" neřekne, jestli je to milimetr, nebo procento."""
+    from core import Vstup, Pamet, Nastaveni, Akce, rozhodni
+
+    r = rozhodni(
+        Vstup(cas_s=200000.0, co2=500.0, t_in=21.5, t_in_max=21.5,
+              t_out=12.0, rh_out=55.0, cil=21.5, hodina=14.0, doma=True,
+              dest=1.0),
+        Pamet(cas_povelu_s=0.0, otevreno=True), Nastaveni())
+    assert r.akce is Akce.ZAVRIT
+    assert "mm/h" in r.duvod, r.duvod

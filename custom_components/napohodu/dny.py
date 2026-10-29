@@ -90,19 +90,32 @@ def vikend(den: date) -> bool:
 
 
 def popis(odstup: int, dnes: date | None = None) -> str:
-    """Co je na dlaždici napsané: „pá 31. 10.".
+    """Horní řádek dlaždice: „dnes", „zítra", jinak zkratka dne.
 
-    Zkratka dne a datum, nic víc — dlaždice je úzká a delší text se do
-    ní nevejde. Slova „dnes" a „zítra" tu nejsou schválně: mezera mezi
-    zkratkou a datem je jediné místo, kde text zalomí na dva řádky, a
-    tak každá dlaždice vypadá stejně.
+    Celé „út 27. 10." se do sedminy karty nevejde a karta text
+    nezalomí — jen ho ořízne. Datum proto nese `datum_popis` na
+    druhém řádku a sem se vejde jen tohle.
+
+    První dvě dlaždice se jmenují slovy, protože se na ně kliká
+    nejčastěji a v mřížce je pak hned vidět, kde začíná. Den v týdnu
+    se u nich nehledá a datum je stejně na řádku pod tím.
+    """
+    if odstup == 0:
+        return "dnes"
+    if odstup == 1:
+        return "zítra"
+    return DNY_TYDNE[datum(odstup, dnes).weekday()]
+
+
+def datum_popis(odstup: int, dnes: date | None = None) -> str:
+    """Datum na spodní řádek dlaždice: „27. 10."
+
+    Svátek nese hvězdička. Do ikony se nevejde — tu už má zabranou
+    stav zaškrtnutí — a tady je vidět pořád, ať je den zaškrtnutý
+    nebo ne. Jméno svátku je v atributech.
     """
     d = datum(odstup, dnes)
-    # Svátek nese hvězdička. Do ikony se nevejde — tu už má zabranou
-    # stav zaškrtnutí — a v popisku je vidět pořád, ať je den
-    # zaškrtnutý nebo ne. Jméno svátku je v atributech.
-    return (f"{DNY_TYDNE[d.weekday()]} {d.day}. {d.month}."
-            + (" ★" if svatek(d) else ""))
+    return f"{d.day}. {d.month}." + (" ★" if svatek(d) else "")
 
 
 def typ_dne(den: date) -> str:
