@@ -105,12 +105,25 @@ def _chyba(m, u):
     return f"{m}: {u.get('text', 'pohon nereaguje')}"
 
 
+def _sloveso(m: str, sloveso: str, duvod: str) -> str:
+    """Zpráva o pohybu okna, bez zdvojeného slovesa.
+
+    Důvod od jádra dnes začíná slovesem („otevírám kvůli vzduchu…"),
+    protože se čte i sám o sobě na kartě. Zpráva si ho přidávala taky,
+    takže z toho bylo „otevírám, otevírám kvůli vzduchu".
+    """
+    duvod = (duvod or "").strip()
+    if duvod.startswith(sloveso):
+        return f"{m}: {duvod}."
+    return f"{m}: {sloveso}, {duvod}."
+
+
 def _vetrani(m, u):
-    return f"{m}: otevírám, {u.get('duvod', '')}."
+    return _sloveso(m, "otevírám", u.get("duvod", ""))
 
 
 def _zavirani(m, u):
-    return f"{m}: zavírám, {u.get('duvod', '')}."
+    return _sloveso(m, "zavírám", u.get("duvod", ""))
 
 
 def _zaluzie(m, u):

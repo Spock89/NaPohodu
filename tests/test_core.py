@@ -1470,12 +1470,12 @@ def test_marny_pokus_si_pamatuje_podminky():
 
 
 def test_hlaska_rozlisi_zhorseni():
-    """Nehýbe se to je něco jiného než zhoršuje se to."""
+    """Nehýbe se to je něco jiného než nevyplácí se to."""
     p = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz",
               ucinek_od_s=100000 - 1800, ucinek_co2=1100, ucinek_t_in=21.0, ucinek_bez_zlepseni=1)
     r = rozhodni(stary(co2=1200, t_in=20.8, t_in_max=21.0, t_out=12.0,
                        cil=22.0, hodina=14.0), p, N)
-    assert "zhoršuje se to" in r.duvod
+    assert "nevyplácí se to" in r.duvod
 
     p2 = Pamet(otevreno=True, cas_povelu_s=0, rezim="pulz",
                ucinek_od_s=100000 - 1800, ucinek_co2=1100,
@@ -2389,7 +2389,7 @@ def test_ucinek_se_posuzuje_po_usecich():
 
     # a obrat se pozná proti novému bodu, ne proti dávným 26 °C
     r = krok_v(82, 23.6)
-    assert r.akce is Akce.ZAVRIT and "zhoršuje se to" in r.duvod
+    assert r.akce is Akce.ZAVRIT and "nevyplácí se to" in r.duvod
 
 
 def test_zhorseni_neceka_na_konec_useku():
@@ -2406,7 +2406,7 @@ def test_zhorseni_neceka_na_konec_useku():
     r = rozhodni(Vstup(co2=1200, t_in=21.0, t_in_max=21.2, t_out=12.0,
                        rh_out=50.0, cil=22.0, hodina=14.0,
                        cas_s=Z + 15 * 60), p, nast_bez)
-    assert r.akce is Akce.ZAVRIT and "zhoršuje se to" in r.duvod
+    assert r.akce is Akce.ZAVRIT and "nevyplácí se to" in r.duvod
 
 
 def test_zastaveni_ceka_na_konec_useku():
@@ -2788,7 +2788,7 @@ def test_uspesne_chlazeni_neni_zhorseni():
 
     Dokud se pokrok měřil ke cíli, vypadalo úspěšné chlazení jako
     zhoršení přesně ve chvíli, kdy pokoj cíl přešel a mířil na hranu
-    pásma — okno se zavřelo s hláškou „zhoršuje se to", přestože se
+    pásma — okno se zavřelo s hláškou o marném větrání, přestože se
     vychladilo o dva stupně.
     """
     r, _ = _bezi_vetrani(20.0, 564, 22.0, 564, 62)      # cíl 21,8
@@ -2811,12 +2811,12 @@ def test_skutecne_zhorseni_se_pozna_dal():
     """Chladím a otepluje se — to je zhoršení i nadále."""
     r, _ = _bezi_vetrani(23.5, 564, 22.0, 564, 30)
     assert r.akce is Akce.ZAVRIT
-    assert "zhoršuje se to" in r.duvod, r.duvod
+    assert "nevyplácí se to" in r.duvod, r.duvod
 
     # a zrcadlově u ohřevu
     r, _ = _bezi_vetrani(17.0, 564, 19.0, 564, 30, cil=21.0,
                          chladi=False, ohrivam=True)
-    assert "zhoršuje se to" in r.duvod, r.duvod
+    assert "nevyplácí se to" in r.duvod, r.duvod
 
 
 def test_marny_pulz_se_pocita_az_kdyz_povel_projde():
@@ -2987,7 +2987,7 @@ def test_prachove_vetrani_se_posuzuje_na_prachu():
 def test_zhorseni_prachu_si_necha_vlastni_hlasku():
     """Rostoucí prach při otevřeném okně se jmenuje „tahá se zvenčí".
 
-    Kontrola účinku ho nesmí předběhnout s obecným „zhoršuje se to“ —
+    Kontrola účinku ho nesmí předběhnout obecnou hláškou o marnosti —
     podle toho by se nepoznalo, co se vlastně stalo.
     """
     n = Nastaveni(min_drzeni_s=60 * 60)

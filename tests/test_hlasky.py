@@ -478,3 +478,71 @@ def test_dest_ma_jednotku():
         Pamet(cas_povelu_s=0.0, otevreno=True), Nastaveni())
     assert r.akce is Akce.ZAVRIT
     assert "mm/h" in r.duvod, r.duvod
+
+
+def test_zprava_nezdvojuje_sloveso():
+    """Důvod od jádra dnes začíná slovesem, protože se čte i sám na
+    kartě. Zpráva si ho přidávala taky — „otevírám, otevírám kvůli
+    vzduchu: CO2 846…"."""
+    import sys
+    import pathlib
+    sys.path.insert(0, str(pathlib.Path(__file__).parent.parent
+                           / "custom_components" / "napohodu"))
+    import zpravy
+
+    t = zpravy.SKLADBA["vetrani"](
+        "Ložnice", {"duvod": "otevírám kvůli vzduchu: CO2 846 nad prahem 800"})
+    assert t.count("otevírám") == 1, t
+    assert t.startswith("Ložnice: otevírám kvůli vzduchu")
+
+    # a když důvod sloveso nemá, zpráva ho doplní
+    t2 = zpravy.SKLADBA["zavirani"]("Kuchyně", {"duvod": "vyvětráno, CO2 600"})
+    assert t2 == "Kuchyně: zavírám, vyvětráno, CO2 600."
+    t3 = zpravy.SKLADBA["zavirani"](
+        "Kuchyně", {"duvod": "zavírám kvůli dešti (1.0 mm/h)"})
+    assert t3.count("zavírám") == 1, t3
+
+
+def test_zavrene_okno_nema_rozdelane_vetrani():
+    """Dokud příznak přežíval zavření, počítal se příští práh otevření
+    z prahu zavírání: pokoj se otevíral o celou hysterezi dřív a
+    v hlášce stálo „CO2 846 nad prahem 625"."""
+    from core import Vstup, Pamet, Nastaveni, Akce, rozhodni
+
+    n = Nastaveni(co2_otevrit=800.0, co2_zavrit=625.0, min_drzeni_s=0)
+    spolecne = dict(cas_s=200000.0, t_in=21.5, t_in_max=21.5, t_out=12.0,
+                    rh_out=55.0, cil=21.5, hodina=14.0, doma=True)
+
+    # větrá se, pak se zavře z jiného důvodu než kvůli čistému vzduchu
+    p = Pamet(cas_povelu_s=0.0, otevreno=True, vetra_se=True)
+    r = rozhodni(Vstup(co2=700.0, vitr_blokuje=True, **spolecne), p, n)
+    assert r.akce is Akce.ZAVRIT
+    assert p.vetra_se is False, "zavřené okno nic nerozdělaného nemá"
+
+    # a znovu se otevře až nad svým prahem, ne nad prahem zavírání
+    v = Vstup(co2=700.0, **spolecne)
+    assert rozhodni(v, p, n).akce is not Akce.OTEVRIT
+    p.cas_povelu_s = 0.0          # držení polohy je za námi
+    r2 = rozhodni(Vstup(co2=846.0, **spolecne), p, n)
+    assert r2.akce is Akce.OTEVRIT
+    assert "nad prahem 800" in r2.duvod, r2.duvod
+
+
+def test_marne_vetrani_rekne_o_kolik_to_minulo():
+    """Samotná dvojice čísel mate: „CO2 846 → 819" vypadá jako
+    zlepšení, a hláška přitom zavírá."""
+    from core import Vstup, Pamet, Nastaveni, Akce, UCINEK_CO2_PPM, rozhodni
+
+    n = Nastaveni(min_drzeni_s=20 * 60)
+    v = Vstup(cas_s=200000.0, co2=819.0, t_in=20.2, t_in_max=20.2,
+              t_out=8.0, rh_out=55.0, cil=23.0, hodina=17.0, doma=True)
+    p = Pamet(cas_povelu_s=v.cas_s - 21 * 60, otevreno=True, vetra_se=True)
+    p.ucinek_od_s = v.cas_s - 21 * 60
+    p.ucinek_co2, p.ucinek_t_in = 846.0, 23.5
+
+    r = rozhodni(v, p, n)
+    assert r.akce is Akce.ZAVRIT
+    assert "zhoršuje se to" not in r.duvod, "CO2 přitom kleslo"
+    assert "nevyplácí se to" in r.duvod
+    assert f"aspoň o {UCINEK_CO2_PPM:.0f}" in r.duvod, r.duvod
+    assert "od cíle dál" in r.duvod, r.duvod

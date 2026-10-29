@@ -661,10 +661,26 @@ nálepky: „CO2 900" neřekne, co se děje ani proč. Teď je to srovnané —
 prachu: PM2.5 60 nad prahem 35, venku 20", „otevírám kvůli teplu:
 26,0 °C, venku 12,0 — chladím na 20,5".
 
+Zavřené okno nemá rozdělané větrání. Pravidlo „rozdělané větrání
+pokračuje k prahu zavření" platí pro **otevřené** okno; dokud příznak
+přežíval i zavření, počítal se z něj příští práh otevření a pokoj se
+otevíral o celou hysterezi dřív, než měl — v hlášce pak stálo „CO2 846
+nad prahem 625", přestože se má otevírat až nad osmi sty.
+
 Práh v otevírací hlášce je ten **překročený**, ne ten, ke kterému se
 pak dojíždí: rozdělané větrání pokračuje až k prahu zavření, takže by
 u čerstvě otevřeného okna stálo „CO2 900 nad prahem 700", přestože se
 otevřelo na osmistovce.
+
+Zmizelo i „zhoršuje se to" tam, kde se nic nezhoršovalo. Zavíralo se
+kvůli teplu, které okno tahalo dovnitř, a hláška mluvila o vzduchu,
+který přitom klesal — jen pomalu. Teď stojí „nevyplácí se to: za 21
+min CO2 846 → 819 (čekal jsem aspoň o 50 míň), teplota 23,5 → 20,2 °C
+(od cíle dál)", tedy co se měřilo i proti čemu se to poměřovalo.
+
+A zprávy nezdvojují sloveso. Důvod od jádra dnes začíná slovesem,
+protože se čte i sám o sobě na kartě, a zpráva si ho přidávala taky —
+„otevírám, otevírám kvůli vzduchu".
 
 Zmizela i „mrtvá zóna" — to byla hláška pro programátora, ne pro
 člověka. Teď stojí „nic nechce: CO2 760 je mezi prahy (otevřít nad

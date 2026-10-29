@@ -867,6 +867,12 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             p.ucinek_bez_zlepseni = 0
             p.chladi = False
             p.prach_se_resi = False
+            # Rozdělané větrání skončilo. Dokud se příznak držel i po
+            # zavření, počítal se příští práh otevření z prahu
+            # zavírání — pokoj se pak otevíral o celou hysterezi dřív,
+            # než má, a v hlášce stálo „CO2 846 nad prahem 625",
+            # přestože se otevírat má až nad osmi sty.
+            p.vetra_se = False
         p.otevreno = chci_otevreno
         p.cas_povelu_s = v.cas_s
         p.pohyby += 1
@@ -1081,8 +1087,21 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         konec_useku = uplynulo >= ucinek_po
 
         def _mereni() -> str:
-            kus = (f"CO2 {p.ucinek_co2:.0f} → {v.co2:.0f}, teplota "
-                   f"{p.ucinek_t_in:.1f} → {t_in:.1f} °C")
+            """Co se za ten úsek stalo, i s tím, co se čekalo.
+
+            Samotná dvojice čísel mate: „CO2 846 → 819" vypadá jako
+            zlepšení, a hláška přitom zavírá. Chybí v ní měřítko —
+            o kolik to mělo klesnout, aby se větrání vyplatilo.
+            """
+            co2_kus = f"CO2 {p.ucinek_co2:.0f} → {v.co2:.0f}"
+            if v.co2 > p.ucinek_co2:
+                co2_kus += " (stoupá)"
+            elif not lepsi_co2:
+                co2_kus += f" (čekal jsem aspoň o {UCINEK_CO2_PPM:.0f} míň)"
+            t_kus = f"teplota {p.ucinek_t_in:.1f} → {t_in:.1f} °C"
+            if dal:
+                t_kus += " (od cíle dál)"
+            kus = f"{co2_kus}, {t_kus}"
             if prach:
                 kus += f", PM2.5 {p.ucinek_pm:.0f} → {v.pm25:.0f}"
             return kus
@@ -1098,7 +1117,11 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             # Zavírá se hned, jak se zhoršení pozná — nejkratší doba
             # držení polohy ale platí dál, ta je od toho, aby okno
             # nelítalo, a obcházet ji by znamenalo ji zrušit.
-            return _marny(f"zhoršuje se to: za {int(uplynulo / 60)} min "
+            # „Zhoršuje se to" byla lež vždycky, když CO2 klesalo, jen
+            # pomalu: zavíralo se kvůli teplu, které okno tahalo
+            # dovnitř, a hláška mluvila o vzduchu. Říká se tedy, co se
+            # doopravdy nevyplatilo.
+            return _marny(f"nevyplácí se to: za {int(uplynulo / 60)} min "
                           + _mereni())
 
         if konec_useku and not pomohlo and not dojel_prach:
