@@ -943,3 +943,222 @@ def test_dlazdice_nepatri_k_zarizeni(ha):
     assert getattr(d, "_attr_device_info", None) is None
     assert d._attr_has_entity_name is False
     assert "NaPohodu" not in (d.name or "")
+
+
+def test_okno_ktere_nereaguje_se_ohlasi_a_prestane_slibovat(ha):
+    """Okno, které na povel k otevření nereaguje, se tvářilo jako
+    ruční zásah: automatika couvla, po uklidnění to zkusila znovu —
+    a tak pořád dokola, pokaždé s novou zprávou „otevírám, zavřu,
+    jakmile důvod pomine" a nikdy se zavřením.
+    """
+    ko = ha
+    from napohodu import const as c
+
+    stavy = _stavy()
+    stavy["sensor.co2"] = Stav("834", {"unit_of_measurement": "ppm"})
+    stavy["cover.obyvak"] = Stav("closed", {"current_position": 0})
+    k, hass = _koordinator(
+        ko, c, podentity=[p for p in _instalace(c) if p.title == "Obývák"],
+        stavy=stavy)
+    asyncio.run(k.async_nacti())
+    k.hodnoty[("id_Obývák", "ovladat")] = 1.0
+
+    zpravy = []
+    puvodni = k._posli
+
+    async def spy(g, druh, nazev, cas_s, **kw):
+        zpravy.append(druh)
+        return await puvodni(g, druh, nazev, cas_s, **kw)
+
+    k._posli = spy
+    asyncio.run(k._async_update_data())      # ať se výkon založí
+    zpravy.clear()
+    vyk = k.vykonavaci["id_Obývák"]
+
+    # tři pokusy o otevření, okno zůstává zavřené
+    import homeassistant.util.dt as dt_util
+    for i in range(3):
+        cas = dt_util.utcnow().timestamp()
+        vyk.stav.posledni_okna["cover.obyvak"] = ("open_cover", cas - 3600)
+        k.pameti["id_Obývák"].otevreno = False
+        k.pameti["id_Obývák"].cas_povelu_s = cas - 7200
+        asyncio.run(k._async_update_data())
+
+    assert vyk.stav.marne_pokusy >= 2, vyk.stav.marne_pokusy
+    m = k.mistnosti["id_Obývák"]
+    assert m.atributy["okno_nereaguje"] == vyk.stav.marne_pokusy
+
+    # ozve se jednou, že nereaguje, a dál už neslibuje
+    assert zpravy.count("chyba") == 1, zpravy
+    assert zpravy.count("vetrani") <= 1, zpravy
+
+    # jakmile se okno ohlásí otevřené, počítadlo padá
+    hass.states._h["cover.obyvak"] = Stav("open", {"current_position": 100})
+    asyncio.run(k._async_update_data())
+    assert vyk.stav.marne_pokusy == 0
+    assert k.mistnosti["id_Obývák"].atributy["okno_nereaguje"] is None
+
+
+def test_souhrn_nepocita_pohyby_bez_ovladaneho_okna(ha):
+    """Dílna hlásila 68 pohybů okna proti třem v kuchyni, která okno
+    doopravdy má. Byla to rozhodnutí naprázdno: povel nikam nejde."""
+    ko = ha
+    from napohodu import const as c
+
+    podentity = [
+        Podentita(c.PODENTITA_MISTNOST, "Kuchyně", {
+            c.CONF_OKNA: ["cover.obyvak"], c.CONF_CO2: ["sensor.co2"],
+            c.CONF_TEPLOTY: ["sensor.t_obyvak"]}),
+        # jen kontakt, okno neovládá
+        Podentita(c.PODENTITA_MISTNOST, "Obývák", {
+            c.CONF_KONTAKT_M: ["binary_sensor.kontakt"],
+            c.CONF_TEPLOTY: ["sensor.t_obyvak"]}),
+        # ani okno, ani kontakt, ani čidlo CO2
+        Podentita(c.PODENTITA_MISTNOST, "Dílna", {
+            c.CONF_TEPLOTY: ["sensor.t_dilna"]}),
+    ]
+    stavy = _stavy()
+    stavy["sensor.co2"] = Stav("834", {"unit_of_measurement": "ppm"})
+    stavy["binary_sensor.kontakt"] = Stav("off")
+    k, hass = _koordinator(ko, c, podentity=podentity, stavy=stavy)
+    asyncio.run(k.async_nacti())
+    for pid in ("id_Kuchyně", "id_Obývák", "id_Dílna"):
+        k.hodnoty[(pid, "ovladat")] = 1.0
+    for _ in range(3):
+        asyncio.run(k._async_update_data())
+
+    dnes = {pid: k.mistnosti[pid].atributy["dnes"]
+            for pid in ("id_Kuchyně", "id_Obývák", "id_Dílna")}
+    # kuchyně okno ovládá, takže pohyby hlásit smí
+    assert "pohyby" in dnes["id_Kuchyně"]
+    # ale obnova povelu mezi pohyby nepatří: okno zůstává, kde je
+    vyk = k.vykonavaci["id_Kuchyně"]
+    pred = k.souhrn["id_Kuchyně"]["pohyby"]
+    puvodni = ko.core.rozhodni
+
+    def obnova(v, p_, n):
+        r = puvodni(v, p_, n)
+        return ko.core.Rozhodnuti(
+            akce=ko.core.Akce.OTEVRIT, duvod="obnova povelu: otevřít",
+            kod="obnova", limit_s=0, t_in_korig=r.t_in_korig,
+            rosny_bod=r.rosny_bod, co2=r.co2)
+
+    ko.core.rozhodni = obnova
+    try:
+        asyncio.run(k._async_update_data())
+    finally:
+        ko.core.rozhodni = puvodni
+    assert k.souhrn["id_Kuchyně"]["pohyby"] == pred, vyk.stav.posledni_okna
+    # obývák o okně jen ví — pohyby ne, minuty otevření ano
+    assert "pohyby" not in dnes["id_Obývák"], dnes["id_Obývák"]
+    assert "otevreno_min" in dnes["id_Obývák"]
+    # dílna nemá nic z toho
+    assert "pohyby" not in dnes["id_Dílna"] and "otevreno_min" not in dnes["id_Dílna"]
+    # a CO2 hlásí jen ten, kdo ho měří
+    assert dnes["id_Kuchyně"].get("co2_max")
+    assert not dnes["id_Dílna"].get("co2_max"), dnes["id_Dílna"]
+
+
+def test_dojezd_narazoveho_pulzu_se_ohlasi(ha):
+    """Pulz zavírá výkonná část, ne jádro — a ta mlčela.
+
+    V bytě z toho byla řada hlášek „otevírám … zavřu, jakmile důvod
+    pomine" a ani jedno zavření, přestože se okno mezitím pokaždé
+    zavřelo.
+    """
+    ko = ha
+    from napohodu import const as c
+
+    stavy = _stavy()
+    stavy["sensor.co2"] = Stav("834", {"unit_of_measurement": "ppm"})
+    stavy["cover.obyvak"] = Stav("open", {"current_position": 100})
+    k, hass = _koordinator(
+        ko, c, podentity=[p for p in _instalace(c) if p.title == "Obývák"],
+        stavy=stavy)
+    asyncio.run(k.async_nacti())
+    k.hodnoty[("id_Obývák", "ovladat")] = 1.0
+    asyncio.run(k._async_update_data())
+
+    zpravy = []
+    puvodni = k._posli
+
+    async def spy(g, druh, nazev, cas_s, **kw):
+        zpravy.append((druh, kw.get("duvod", "")))
+        return await puvodni(g, druh, nazev, cas_s, **kw)
+
+    k._posli = spy
+    # pulz má dojet: deadline v minulosti, okno hlášené otevřené
+    vyk = k.vykonavaci["id_Obývák"]
+    vyk.stav.pulz_do_s = 1.0
+    k.pameti["id_Obývák"].otevreno = True
+    asyncio.run(k._async_update_data())
+
+    assert vyk.stav.pulz_do_s is None
+    zavirani = [z for z in zpravy if z[0] == "zavirani"]
+    assert zavirani, zpravy
+    assert "dojelo" in zavirani[0][1], zavirani
+
+
+def test_nouzove_vetrani_se_pocita_jako_udalost(ha):
+    """Dokud se počítalo každé kolo, byla z půlhodiny nouzového
+    větrání „třicet nouzových větrání"."""
+    ko = ha
+    from napohodu import const as c
+
+    stavy = _stavy()
+    stavy["sensor.co2"] = Stav("1600", {"unit_of_measurement": "ppm"})
+    stavy["cover.obyvak"] = Stav("open", {"current_position": 100})
+    k, hass = _koordinator(
+        ko, c, podentity=[p for p in _instalace(c) if p.title == "Obývák"],
+        stavy=stavy)
+    asyncio.run(k.async_nacti())
+    k.hodnoty[("id_Obývák", "ovladat")] = 1.0
+    asyncio.run(k._async_update_data())
+
+    # jádro vrací nouzové otevření pořád dokola, jak to v krizi dělá
+    puvodni = ko.core.rozhodni
+
+    def nouzove(v, p_, n):
+        r = puvodni(v, p_, n)
+        return ko.core.Rozhodnuti(
+            akce=ko.core.Akce.OTEVRIT, duvod="noc: nouzové větrání, CO2 1600",
+            kod="noc_krize", limit_s=3600, t_in_korig=r.t_in_korig,
+            rosny_bod=r.rosny_bod, co2=r.co2)
+
+    ko.core.rozhodni = nouzove
+    try:
+        for _ in range(4):
+            asyncio.run(k._async_update_data())
+    finally:
+        ko.core.rozhodni = puvodni
+    sh = k.souhrn["id_Obývák"]
+    assert sh["nouzove"] == 1, sh
+
+
+def test_vyber_prespi_noc_a_vcerejsek_se_nezapise(ha):
+    """Naklikáno večer, uloženo po půlnoci: dnešek se tím stal
+    včerejškem a do plánu by se zapsal den, který už byl."""
+    ko = ha
+    import datetime as _dt
+    from napohodu import const as c
+    from napohodu.switch import DenSceny
+
+    k, hass = _koordinator(ko, c)
+    asyncio.run(k.async_nacti())
+    asyncio.run(k._async_update_data())
+    scena = next(p for p in k.entry.subentries.values()
+                 if p.subentry_type == c.PODENTITA_SCENA)
+
+    od = _dt.date.today().weekday()
+    zitra = DenSceny(k, k.entry, od + 1)
+    zitra.hass = hass
+    zitra.async_write_ha_state = lambda: None
+    asyncio.run(zitra.async_turn_on())
+    assert k.scena_kolik_ceka() == (1, 0)
+
+    # uložení proběhne „o den později"
+    ceka = k.scena_ceka(scena.subentry_id)
+    ceka["pridat"] = {_dt.date.today() - _dt.timedelta(days=1)}
+    vysledek = asyncio.run(k.scena_uloz())
+    assert "vynechal" in vysledek, vysledek
+    assert not [z for z in k.plan_zaznamy() if z.get("druh") == "scena"]

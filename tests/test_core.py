@@ -398,7 +398,10 @@ def test_narazove_bezi_jako_bezne_ale_zavre_driv():
     bez, _ = krok(stary(co2=900, t_in=21, t_out=14.5, cil=25.5))
     s, _ = krok(stary(co2=900, t_in=21, t_out=14.5, cil=25.5, narazove=True))
     assert bez.limit_s == s.limit_s
-    assert "nárazově" in s.duvod and "důvod pomine" in s.duvod
+    assert "nárazově" in s.duvod
+    # text říká čas, protože pulz na čas doopravdy dojede; že se umí
+    # zavřít i dřív, hlídá test_narazovy_pulz_zavre_hned_po_splneni
+    assert "nejvýš na" in s.duvod
 
 
 def test_narazove_prebiji_zastupce():
@@ -1524,12 +1527,24 @@ def test_narazovy_rezim_plati_soumerne():
 
 
 def test_narazovy_pulz_zavre_hned_po_splneni():
-    """Nečeká se na dojetí cyklu, zavře se, jakmile důvod pomine."""
+    """Nečeká se na dojetí cyklu, zavře se, jakmile důvod pomine.
+
+    Hláška přitom slibuje čas, ne splnění podmínky: pulz dojede a
+    zavře se i se špatným vzduchem, takže „zavřu, jakmile důvod
+    pomine" byl slib, který se neplnil."""
     p = Pamet(cas_povelu_s=0)
     r = rozhodni(stary(co2=900, t_in=21.0, t_in_max=21.2, t_out=14.5,
                        cil=25.5, narazove=True), p, N)
     assert r.akce is Akce.OTEVRIT
-    assert "zavřu, jakmile důvod pomine" in r.duvod
+    assert "nárazově nejvýš na" in r.duvod
+    assert "pomine" not in r.duvod
+    assert p.narazove_pulz
+    # a zavře se, jakmile je vyvětráno — bez čekání na dobu držení
+    p2 = Pamet(otevreno=True, cas_povelu_s=100000 - 300,
+               narazove_pulz=True, vetra_se=True, rezim="pulz")
+    r2 = rozhodni(stary(co2=450, t_in=21.0, t_in_max=21.2, t_out=14.5,
+                        cil=22.0), p2, N)
+    assert r2.akce is Akce.ZAVRIT, r2.duvod
 
 
 def test_narazove_zavira_bez_cekani_na_drzeni():

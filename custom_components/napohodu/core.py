@@ -273,7 +273,6 @@ class Pamet:
     obnova_kdy_s: float = 0.0
     posledni_co2: float = 0.0
     posledni_t_in: float = 0.0
-    pohyby: int = 0
 
 
 @dataclass
@@ -881,7 +880,6 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             p.vetra_se = False
         p.otevreno = chci_otevreno
         p.cas_povelu_s = v.cas_s
-        p.pohyby += 1
         p.posledni_akce = "otevřít" if chci_otevreno else "zavřít"
         p.posledni_duvod = duvod
         p.posledni_kdy_s = v.cas_s
@@ -1709,9 +1707,15 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             duvod = f"otevírám na ruční žádost, CO2 {v.co2:.0f}"
         dolni = 30
         p.narazove_pulz = zkraceno
+        limit_s = min(max(minuty, dolni), 120) * 60
         if zkraceno:
-            duvod += ", nárazově — zavřu, jakmile důvod pomine"
-        return otevri(duvod, min(max(minuty, dolni), 120) * 60, kod="pulz")
+            # Nárazové větrání je na čas, ne na splnění podmínky:
+            # dojede a zavře se, i když je vzduch pořád špatný.
+            # Dokud tu stálo „zavřu, jakmile důvod pomine", byl to
+            # slib, který se neplnil — a protože se zavření ohlásit
+            # zapomnělo, přišlo po sobě několik otevření bez zavření.
+            duvod += f", nárazově nejvýš na {int(limit_s / 60)} min"
+        return otevri(duvod, limit_s, kod="pulz")
 
     # „Mrtvá zóna" byla hláška pro mě, ne pro člověka: z ní se nepozná,
     # co je mrtvé ani proč se nic neděje. Jsou to dva prahy a hodnota

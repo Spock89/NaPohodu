@@ -40,6 +40,15 @@ class StavVykonu:
     posledni_okna: dict[str, tuple[str, float]] = field(
         default_factory=dict)
     pulz_do_s: float | None = None
+    # Kolikrát po sobě dostalo okno povel k otevření, aniž by se někdy
+    # ohlásilo otevřené. Okno, které na povel nereaguje, se tvářilo
+    # jako ruční zásah: automatika couvla, po uklidnění to zkusila
+    # znovu — a tak pořád dokola, pokaždé s novou zprávou „otevírám"
+    # a nikdy se zavřením.
+    marne_pokusy: int = 0
+    # čas povelu, který se už jako marný započítal — ať se nepočítá
+    # znovu při každém kole koordinátoru
+    marny_od_s: float = 0.0
     posledni_stineni: dict[str, str] = field(default_factory=dict)
     # poloha, na které žaluzie po povelu skutečně skončila — podle ní
     # se pozná ruční přestavení
@@ -244,8 +253,12 @@ class Vykonavac:
         if not okno_entita:
             return None
 
-        # pulz dojel: zavřít, i když jádro zrovna nic nechce
+        # Pulz dojel: zavřít, i když jádro zrovna nic nechce. Když ale
+        # jádro samo zavírá — vítr, déšť, vyvětráno — má přednost ono:
+        # zavřeno bude tak i tak, ale takhle se to ohlásí pod pravým
+        # důvodem a dojezd pulzu si nepřipíše pauzu po neúspěchu.
         if (self.stav.pulz_do_s is not None and otevreno
+                and r.akce is not core.Akce.ZAVRIT
                 and cas_s >= self.stav.pulz_do_s):
             self.stav.pulz_do_s = None
             self.stav.pulz_zavrel = True

@@ -1433,9 +1433,19 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self._posledni_snimek = None      # vynutí zápis
             for pid, sh in self.souhrn.items():
                 m = self.mistnosti.get(pid)
-                if m:
-                    await self._posli(g, "souhrn", m.nazev, cas_s,
-                                      dnes=m.atributy.get("dnes", {}))
+                if not m:
+                    continue
+                den = m.atributy.get("dnes", {})
+                # Místnost, o které se nedá říct nic — žádné okno,
+                # žádné čidlo CO2 — posílala každý večer „nic
+                # k hlášení". Souhrn má být přehled, ne výčet
+                # místností, o kterých nevím.
+                if not any(den.get(k) is not None for k in
+                           ("pohyby", "otevreno_min", "co2_max",
+                            "nejnizsi_teplota")) and not den.get(
+                                "nouzove_vetrani"):
+                    continue
+                await self._posli(g, "souhrn", m.nazev, cas_s, dnes=den)
 
         # ---------- 7. přehled oblasti ----------
         self.zony = {}
@@ -1896,6 +1906,29 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # během klidu se tím nezaznamenalo a odpočet běžel dál z toho
         # prvního — člověk otevřel okno a hned viděl, že mu zbývá
         # o půl hodiny míň, než si nastavil.
+        # Okno, které na povel k otevření nereaguje, není ruční zásah.
+        # Rozezná se podle směru: posílali jsme otevřít a ono je
+        # pořád zavřené. Po třetím takovém pokusu se to ohlásí a
+        # přestane se o tom posílat zpráva při každém dalším —
+        # opakovat „otevírám, zavřu, jakmile důvod pomine" u okna,
+        # které se ani nehnulo, je horší než mlčet.
+        posl = vyk.stav.posledni_okna.get(prvni_okno or "", (None, 0.0))
+        if (ovladat and okna and stav_znamy and posl[0] == "open_cover"
+                and cas_s - posl[1] > projezd * 2 and not skutecne
+                and vyk.stav.marny_od_s != posl[1]):
+            # Počítá se jeden povel jednou, ne každé kolo koordinátoru.
+            vyk.stav.marny_od_s = posl[1]
+            vyk.stav.marne_pokusy += 1
+            _LOGGER.warning(
+                "NaPohodu: %s — poslal jsem otevřít, okno je pořád "
+                "zavřené (%d. pokus v řadě)", m.nazev,
+                vyk.stav.marne_pokusy)
+        if skutecne:
+            vyk.stav.marne_pokusy = 0
+            vyk.stav.marny_od_s = 0.0
+        m.atributy["okno_nereaguje"] = (
+            vyk.stav.marne_pokusy if vyk.stav.marne_pokusy >= 2 else None)
+
         if (ovladat and okna and stav_znamy
                 and vyk.stav.posledni_okna
                 and cas_s - pamet.cas_povelu_s > projezd * 2
@@ -1975,6 +2008,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Zavření po dojezdu pulzu musí nastavit i paměť jádra,
             # jinak neplatí minimální doba držení stavu a okno se
             # hned otevře znovu.
+            pulz_dojel: int | None = None
             if vyk.stav.pulz_zavrel:
                 vyk.stav.pulz_zavrel = False
                 pamet.otevreno = False
@@ -1989,6 +2023,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 pauza = min(zaklad * 2 ** (pamet.pulzy_za_sebou - 1), 3600)
                 pamet.pauza_do_s = cas_s + pauza
                 m.atributy["pauza_po_pulzu_min"] = round(pauza / 60)
+                pulz_dojel = round(pauza / 60)
 
             # Totéž po nočním zavření kvůli chladu. Ložnice se prohřeje
             # za dvacet minut a bez pauzy se okno hned otevře znovu —
@@ -1996,7 +2031,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # zdržuje jen otevření, ne zavření, takže se nepřestřelí.
             g = {**self.entry.data, **self.entry.options}
             # routuje se podle strojového kódu, ne podle českého textu
-            if r.kod == "vitr":
+            if pulz_dojel is not None:
+                # Dojezd nárazového pulzu zavírá výkonná část, ne
+                # jádro — a ta nemluvila. Z toho byla řada hlášek
+                # „otevírám … zavřu, jakmile důvod pomine" a ani jedno
+                # zavření, přestože se okno mezitím pokaždé zavřelo.
+                dalsi = (f" — další nejdřív za {pulz_dojel} min"
+                         if pulz_dojel else "")
+                await self._posli(
+                    g, "zavirani", m.nazev, cas_s,
+                    duvod=f"nárazové větrání dojelo, CO2 {v.co2:.0f}"
+                          f"{dalsi}")
+            elif r.kod == "vitr":
                 await self._posli(g, "vitr", m.nazev, cas_s,
                                   **(self.vitr_pricina or {}))
             elif r.kod == "dest":
@@ -2009,8 +2055,20 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     co="otevřít" if r.akce is core.Akce.OTEVRIT
                     else "zavřít")
             elif r.akce is core.Akce.OTEVRIT:
-                await self._posli(g, "vetrani", m.nazev, cas_s,
-                                  duvod=r.duvod)
+                # Okno, které se po dvou pokusech ani nehnulo, se
+                # neohlašuje potřetí. Opakovat „otevírám, zavřu,
+                # jakmile důvod pomine" u okna, které zůstává zavřené,
+                # je horší než mlčet: slib, který se nemůže naplnit.
+                # Místo toho se jednou ozve, že nereaguje.
+                if vyk.stav.marne_pokusy >= 2:
+                    if vyk.stav.marne_pokusy == 2:
+                        await self._posli(
+                            g, "chyba", m.nazev, cas_s,
+                            text="posílám otevřít, ale okno zůstává "
+                                 "zavřené — zkontroluj pohon nebo kontakt")
+                else:
+                    await self._posli(g, "vetrani", m.nazev, cas_s,
+                                      duvod=r.duvod)
             elif r.akce is core.Akce.ZAVRIT:
                 await self._posli(g, "zavirani", m.nazev, cas_s,
                                   duvod=r.duvod)
@@ -2023,21 +2081,49 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         sh = self.souhrn.setdefault(p.subentry_id, {
             "pohyby": 0, "minut_otevreno": 0, "co2_max": 0,
             "nejnizsi_teplota": None, "nouzove": 0})
-        # Pohyby a minuty otevření se počítají jen tam, kde je co
-        # otevírat. Bez okna i kontaktu jsou to čísla bez opory ve
-        # skutečnosti: povel nikam nejde a „otevřeno" je jen vnitřní
-        # stav jádra.
-        ma_okno = bool(okna or kontakty)
-        if ma_okno and r.akce is not core.Akce.NIC:
+        # Pohyb okna je povel, který někam dojde. Kontakt znamená, že
+        # okno **vidím**, ne že s ním hýbu — v místnosti bez ovládaného
+        # okna se rozhodnutí nikam neposílá, a přesto se počítalo.
+        # Dílna tak hlásila osmašedesát pohybů proti třem v kuchyni,
+        # která okno doopravdy má: byla to rozhodnutí naprázdno, ne
+        # pohyby.
+        hybu_oknem = bool(okna and ovladat)
+        # Otevřeno se naopak pozná i bez ovládání, když je čím:
+        # kontakt ví o skutečnosti. Bez okna i kontaktu je „otevřeno"
+        # jen vnitřní stav jádra a do souhrnu nepatří.
+        vim_o_okne = bool(okna or kontakty)
+        # Obnova povelu taky není pohyb: posílá se dokola to samé,
+        # protože pohon povely občas ztrácí, a okno přitom zůstává
+        # tam, kde je. Každou půlhodinu z ní byl jeden „pohyb" navíc.
+        if (hybu_oknem and r.akce is not core.Akce.NIC
+                and r.kod != "obnova"):
             sh["pohyby"] += 1
-        if ma_okno and skutecne:
+        if vim_o_okne and skutecne:
             sh["minut_otevreno"] += INTERVAL_S / 60
-        sh["co2_max"] = max(sh["co2_max"], int(v.co2))
+        # Vlastní CO2, ne to, co se do místnosti přelilo. Při nárazovém
+        # větrání vidí každá místnost nejhorší hodnotu z bytu, takže
+        # všechny čtyři hlásily totéž číslo — i dílna, která čidlo
+        # nemá.
+        vlastni_co2 = m.atributy.get("co2_vlastni")
+        if vlastni_co2 is None:
+            vlastni_co2 = okruh["co2"] if okruh.get("pod") else None
+        if vlastni_co2:
+            sh["co2_max"] = max(sh["co2_max"], int(vlastni_co2))
         if r.t_in_korig:
             sh["nejnizsi_teplota"] = min(
                 sh["nejnizsi_teplota"] or 99, round(r.t_in_korig, 1))
-        if "nouzov" in (r.duvod or ""):
+        # Nouzové větrání je událost, ne stav: dokud se počítalo každé
+        # kolo, byla z půlhodiny „třicet nouzových větrání". Počítá se
+        # proto náběžná hrana a jen tam, kde se dá doopravdy větrat.
+        # Pozná se podle strojového kódu, ne podle českého textu:
+        # „nouzové větrání" stojí i v hlášce o tom, co okno drží
+        # otevřené, takže se podle textu počítalo celé větrání znovu.
+        nouzove_bezi = r.kod == "noc_krize" or bool(
+            sh.get("nouzove_bezi") and "nouzov" in (r.duvod or ""))
+        if nouzove_bezi and not sh.get("nouzove_bezi") and (
+                hybu_oknem or okruh.get("pod")):
             sh["nouzove"] += 1
+        sh["nouzove_bezi"] = nouzove_bezi
 
         # Rozhodnutí o okně v místnosti, kde se okno neovládá, není
         # pravda o ničem: nikam se nepošle a mluví o pojistkách, které
@@ -2180,10 +2266,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Údaje o oknu se vynechají tam, kde žádné není — zpráva
             # i karta se pak skládají z toho, co doopravdy existuje.
             "dnes": {
-                **({"pohyby": sh["pohyby"],
-                    "otevreno_min": round(sh["minut_otevreno"])}
-                   if ma_okno else {}),
-                "co2_max": sh["co2_max"],
+                **({"pohyby": sh["pohyby"]} if hybu_oknem else {}),
+                **({"otevreno_min": round(sh["minut_otevreno"])}
+                   if vim_o_okne else {}),
+                **({"co2_max": sh["co2_max"]} if sh["co2_max"] else {}),
                 "nejnizsi_teplota": sh["nejnizsi_teplota"],
                 "nouzove_vetrani": sh["nouzove"],
             },
@@ -2544,8 +2630,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self.scena_vysledek = "nic k uložení"
             return self.scena_vysledek
 
+        # Výběr přečká i noc: naklikáno večer, uloženo po půlnoci.
+        # Dnešek se tím stal včerejškem a do plánu by se zapsal den,
+        # který už byl — událost, která nikdy nenastane.
+        dnes = dt_util.now().date()
+        preskoceno = 0
         pridano = 0
         for den in sorted(ceka["pridat"]):
+            if den < dnes:
+                preskoceno += 1
+                continue
             await self.plan_zapis(dny.novy_zaznam(pid, d, den))
             pridano += 1
         zruseno = 0
@@ -2562,6 +2656,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             casti.append(f"přidáno {pridano} dní")
         if zruseno:
             casti.append(f"zrušeno {zruseno}")
+        if preskoceno:
+            casti.append(f"{preskoceno} dní už bylo, ty jsem vynechal")
+        if not casti:
+            casti.append("nic k uložení, všechny dny už byly")
         self.scena_vysledek = (f"{d.get('nazev')}: " + ", ".join(casti))
         return self.scena_vysledek
 

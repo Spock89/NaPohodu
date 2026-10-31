@@ -207,6 +207,12 @@ celého cyklu — a to včetně nejkratší doby držení polohy, kterou nárazo
 zavření obchází. Délka pulzu zůstává stejná jako jindy; mění se jen to,
 že může skončit dřív.
 
+V hlášce proto stojí **čas, ne podmínka**: „nárazově nejvýš na 30 min".
+Dřív tam bylo „zavřu, jakmile důvod pomine" — slib, který se neplní,
+protože pulz dojede a zavře se i se špatným vzduchem. **Dojezd pulzu
+se taky hlásí**: zavírá ho výkonná část, ne jádro, a ta mlčela, takže
+přišlo několik otevření za sebou a ani jedno zavření.
+
 Zavření hned platí **na každý důvod**, ne jen na vzduch — včetně
 marného větrání, pojistek a prachu taženého zvenčí. Nárazové
 větrání spouští jen CO2 a prach, protože jde o výměnu vzduchu; chlazení
@@ -1188,6 +1194,13 @@ Denní souhrn se skládá z toho, co místnost opravdu má. Bez ovládaného
 okna a bez kontaktu o žádném okně neví, takže se v něm pohyby okna ani
 minuty otevření neobjeví. Brát je z vnitřního stavu jádra nelze —
 vycházela by z toho nesmyslně vysoká čísla.
+
+Co je **pohyb okna**: povel, který někam dojde. Místnost, která okno
+jen vidí kontaktem, žádný neposílá, a obnova povelu taky pohyb není —
+posílá se dokola to samé, protože pohon povely občas ztrácí, a okno
+přitom zůstává, kde je. **Nouzové větrání** se počítá jako událost, ne
+jako stav: z půlhodiny je jedno, ne třicet. A místnost, o které se
+nedá říct nic, se večer neozve vůbec.
 
 ### Karta na dashboard
 

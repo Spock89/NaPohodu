@@ -554,3 +554,35 @@ def test_marne_vetrani_rekne_o_kolik_to_minulo():
     assert "nevyplácí se to" in r2.duvod
     assert f"aspoň o {UCINEK_CO2_PPM:.0f}" in r2.duvod, r2.duvod
     assert "od cíle dál" in r2.duvod, r2.duvod
+
+
+def test_souhrn_mluvi_jen_o_tom_co_mistnost_ma():
+    """Dílna hlásila 68 pohybů okna proti třem v kuchyni, která okno
+    doopravdy má — byla to rozhodnutí naprázdno. A nejvyšší CO2 měly
+    všechny místnosti stejné, protože při nárazovém větrání vidí každá
+    nejhorší hodnotu z bytu."""
+    import sys
+    import pathlib
+    sys.path.insert(0, str(pathlib.Path(__file__).parent.parent
+                           / "custom_components" / "napohodu"))
+    import zpravy
+
+    # místnost s oknem i čidlem: všechno
+    plna = zpravy.SKLADBA["souhrn"]("Kuchyně", {"dnes": {
+        "pohyby": 3, "otevreno_min": 30, "co2_max": 834,
+        "nejnizsi_teplota": 21.0}})
+    assert "3x pohyb okna" in plna and "otevřeno 30 min" in plna
+    assert "nejvyšší CO2 834" in plna
+
+    # jen kontakt: o otevření ví, pohyby nehlásí
+    kontakt = zpravy.SKLADBA["souhrn"]("Obývák", {"dnes": {
+        "otevreno_min": 1, "co2_max": 834, "nejnizsi_teplota": 21.0}})
+    assert "pohyb okna" not in kontakt
+    assert "otevřeno 1 min" in kontakt
+
+    # dílna bez okna i bez čidla
+    holá = zpravy.SKLADBA["souhrn"]("Dílna", {"dnes": {
+        "nejnizsi_teplota": 18.0}})
+    assert "pohyb okna" not in holá and "otevřeno" not in holá
+    assert "CO2" not in holá
+    assert "nejnižší teplota 18.0 °C" in holá

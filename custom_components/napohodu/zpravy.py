@@ -173,8 +173,19 @@ def _souhrn(m, u):
         casti.append(f"{d['pohyby']}x pohyb okna")
     if d.get("otevreno_min") is not None:
         casti.append(f"otevřeno {d['otevreno_min']} min")
-    casti.append(f"nejvyšší CO2 {d.get('co2_max', 0)}")
-    casti.append(f"nejnižší teplota {d.get('nejnizsi_teplota', '?')} °C")
+    # CO2 jen tam, kde ho místnost měří. Bez čidla by se vypisovalo
+    # buď nulové, nebo přelité číslo od sousedů — a to o ní neříká nic.
+    if d.get("co2_max"):
+        casti.append(f"nejvyšší CO2 {d['co2_max']}")
+    if d.get("nejnizsi_teplota") is not None:
+        casti.append(f"nejnižší teplota {d['nejnizsi_teplota']} °C")
+    # Nouzové větrání je ze souhrnu to nejdůležitější: CO2 přeteklo
+    # přes krizový práh a okno šlo otevřít i proti všemu ostatnímu.
+    # V atributech bylo odjakživa, ve zprávě ne.
+    if d.get("nouzove_vetrani"):
+        casti.append(f"{d['nouzove_vetrani']}x nouzové větrání")
+    if not casti:
+        return f"{m} za dnešek: nic k hlášení."
     return f"{m} za dnešek: " + ", ".join(casti) + "."
 
 
