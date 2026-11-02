@@ -1147,13 +1147,44 @@ def _kraje(o, cesta, kam):
         kam.append(cesta)
 
 
+#    c) každý popis pole musí mít i svůj název: data_description bez
+#       protějšku v data znamená, že se v nastavení ukáže klíč místo
+#       názvu — tak se našly zapomenuté „dveře" u pokoje, který takové
+#       pole nemá (patří oblasti).
+#    d) klíč „title" u podpoložky je zrušený: nadpis si Home Assistant
+#       bere z entry_type a initiate_flow. V jádru ho nemá ani jedna
+#       z jedenatřiceti podpoložek.
+def _kroky(o, cesta, kam):
+    if not isinstance(o, dict):
+        return
+    if "data_description" in o or "data" in o:
+        data = set(o.get("data") or {})
+        kam.extend(f"{cesta}.data_description.{k}"
+                   for k in (o.get("data_description") or {})
+                   if k not in data)
+    for k, v in o.items():
+        _kroky(v, f"{cesta}.{k}" if cesta else k, kam)
+
+
 for jazyk in sorted((d / "translations").glob("*.json")):
+    preklad = json.loads(jazyk.read_text(encoding="utf-8"))
     nalez = []
-    _kraje(json.loads(jazyk.read_text(encoding="utf-8")), "", nalez)
+    _kraje(preklad, "", nalez)
     for cesta in nalez:
         chyby.append(
             f"{jazyk.name}: mezery na kraji textu u {cesta} "
             f"(hassfest to odmítne)")
+    bez_nazvu = []
+    _kroky(preklad, "", bez_nazvu)
+    for cesta in bez_nazvu:
+        chyby.append(
+            f"{jazyk.name}: popis pole bez názvu u {cesta} "
+            f"(v nastavení se ukáže klíč místo názvu)")
+    for typ, v in (preklad.get("config_subentries") or {}).items():
+        if "title" in v:
+            chyby.append(
+                f"{jazyk.name}: config_subentries.{typ}.title je zrušený "
+                f"klíč, nadpis se bere z entry_type")
 
 if chyby:
     print("NALEZENO:")

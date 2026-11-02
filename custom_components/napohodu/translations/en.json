@@ -300,7 +300,6 @@
   },
   "config_subentries": {
     "mistnost": {
-      "title": "Room",
       "step": {
         "zaklad": {
           "title": "Room and devices",
@@ -347,7 +346,6 @@
             "t_venku_mistni": "When the window opens onto a balcony or a conservatory, the air behind it differs from the one at the façade. Enter a sensor from there and it overrides the global outdoor temperature.",
             "rh_venku_mistni": "Humidity from the same spot, for the dew point.",
             "zvlhcovac": "A humidifier, a switch or a helper. In winter the air dries out and drops below thirty percent, which already dries your airways.",
-            "dvere": "The door contact between rooms of a zone. A closed door means the air is not exchanged and window noise does not carry — sleep in one room then does not stop the other from ventilating.",
             "vetrat": "Switches that say you want the room aired out even though the sensors report nothing. Unlike a forced opening, the usual rules hold — wind, rain and the temperature limits still apply, the room is merely treated as stale until you switch it off.",
             "poradi": "Where the room belongs on the generated card. A lower number goes higher. With equal numbers they follow the order in which the rooms were created.",
             "zaskleni": "The glazing tells us how cold the glass is, and from that the highest humidity at which it still does not fog up. In frost the glass sits around five degrees, and with twenty-two in the room and sixty percent the dew point is about fourteen — so the window fogs up even though the humidity itself looks reasonable.\n\nThe upper humidity limit therefore lowers itself in frost. At twenty-two degrees and minus five outside it comes out at 67 % for double glazing and 53 % for older glazing."
@@ -476,9 +474,9 @@
             "zvlhcovac_ve_spanku": "Humidify during sleep as well",
             "rezerva_venku": "Outside must be past the run-down by",
             "prach_dosah": "Ignore dust from this humidifier",
-            "prach_mistnosti": "\u21b3 in these rooms",
+            "prach_mistnosti": "↳ in these rooms",
             "vlhkost_dosah": "Do not humidify with a window open",
-            "vlhkost_mistnosti": "\u21b3 in these rooms",
+            "vlhkost_mistnosti": "↳ in these rooms",
             "noc_posun": "Night shift of the target temperature",
             "pryc_utlum_topeni": "Heating setback when nobody is home",
             "pryc_utlum_po_hodinach": "Apply the setback after"
@@ -529,7 +527,6 @@
             "stineni_predstih": "Shading should come before the room overheats. The lead time says how far below the target shading already starts. One degree means: target 25, shade from 24.",
             "zvlhcovac": "A humidifier, a switch or a helper. In winter the air dries out and drops below thirty percent, which already dries your airways.",
             "rh_min": "Below this humidity the humidifier switches on. In a winter flat it commonly drops under thirty percent, which already dries out your airways.",
-            "dvere": "The door contact between rooms of a zone. A closed door means the air is not exchanged and window noise does not carry — sleep in one room then does not stop the other from ventilating.",
             "topit_pri_oknu": "We give the valve a window sensor, so it can handle an open window itself — that is the default, Leave it to the valve. Use setback or off only with a valve that has no window sensor, otherwise you are telling it the same thing twice.",
             "sezonu_ridi_hlavice": "Better Thermostat decides for itself when to heat, based on the weather. With this ticked, the integration sends it only the target temperature and respects its decision to switch on — when it judges that it should not heat, the integration will not start it.\n\nUntick it if you want the integration to decide the heating season: in season it sends heat, outside it off, and the valve is left with valve calibration, which it does best.",
             "znacka_okno": "The temperature the valve is given when a window is open and it cannot read a window sensor itself. Better Thermostat sends 5.0, so the default here is 5.5 — the value then tells you whose command it was.",
@@ -614,9 +611,9 @@
             "zvlhcovac_kdy": "Humidify",
             "zvlhcovac_ve_spanku": "Humidify during sleep as well",
             "prach_dosah": "Ignore dust from this humidifier",
-            "prach_mistnosti": "\u21b3 in these rooms",
+            "prach_mistnosti": "↳ in these rooms",
             "vlhkost_dosah": "Do not humidify with a window open",
-            "vlhkost_mistnosti": "\u21b3 in these rooms",
+            "vlhkost_mistnosti": "↳ in these rooms",
             "zdroj_obsazenosti": "Occupancy based on",
             "spanek": "Sleep switch",
             "pritomnost": "Motion sensor",
@@ -706,7 +703,6 @@
       }
     },
     "zona": {
-      "title": "Zone",
       "step": {
         "user": {
           "title": "Zone of connected rooms",
@@ -753,7 +749,6 @@
       }
     },
     "klima": {
-      "title": "Shared air conditioning",
       "entry_type": "Air conditioning",
       "initiate_flow": {
         "user": "air conditioning",
@@ -828,7 +823,6 @@
       }
     },
     "skupina": {
-      "title": "Room group",
       "entry_type": "Group",
       "initiate_flow": {
         "user": "group",
@@ -870,7 +864,6 @@
       }
     },
     "scena": {
-      "title": "Scene",
       "entry_type": "Scene",
       "initiate_flow": {
         "user": "scene",

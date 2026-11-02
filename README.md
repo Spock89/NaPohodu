@@ -1422,6 +1422,28 @@ karta, ale nevznikají.
 Každý hlídač byl přidán po skutečné chybě a ověřen tím, že ji naschvál
 vrátíme a kontrola ji najde.
 
+Součástí je i to, co hlídá **hassfest** Home Assistantu — pořadí klíčů
+v manifestu, mezery na krajích textů v překladech, popis pole bez názvu
+a zrušený klíč `title` u podpoložek. Chyby těchto druhů jinak spadnou až
+v GitHub Action, a hassfest navíc hlásí jen první z nich, takže se
+hledají po jedné. Pustit celý hassfest na tuhle integraci jde takhle:
+
+```bash
+uv python install 3.14            # hassfest ho vyžaduje
+uv venv --python 3.14 /tmp/hf
+git clone --depth 1 --filter=blob:none --sparse \
+    https://github.com/home-assistant/core /tmp/core
+cd /tmp/core && git sparse-checkout set script packages/hassfest
+# hassfest musí být ze stejného vydání jako nainstalovaná knihovna
+git fetch --depth 1 origin refs/tags/2026.2.3 && git checkout FETCH_HEAD
+VIRTUAL_ENV=/tmp/hf uv pip install ./packages/hassfest homeassistant \
+    probatio tqdm voluptuous-serialize
+/tmp/hf/bin/python -m script.hassfest --action validate \
+    --integration-path <cesta>/custom_components/napohodu
+```
+
+Čisté je „Invalid integrations: 0" a žádný výpis varování pod tím.
+
 ## Instalace přes HACS
 
 1. HACS → tři tečky vpravo nahoře → **Vlastní repozitáře**

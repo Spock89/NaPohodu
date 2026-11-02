@@ -300,7 +300,6 @@
   },
   "config_subentries": {
     "mistnost": {
-      "title": "Místnost",
       "step": {
         "zaklad": {
           "title": "Místnost a zařízení",
@@ -347,7 +346,6 @@
             "t_venku_mistni": "Když okno vede na balkon nebo do zimní zahrady, je za ním jiný vzduch než na fasádě. Zadej čidlo odtud a přebije globální venkovní teplotu.",
             "rh_venku_mistni": "Vlhkost ze stejného místa, kvůli rosnému bodu.",
             "zvlhcovac": "Zvlhčovač, spínač nebo pomocník. V zimě vysychá vzduch a klesá pod třicet procent, což už vysušuje sliznice.",
-            "dvere": "Kontakt dveří mezi místnostmi oblasti. Zavřené dveře znamenají, že se vzduch nevymění a rámus okna se nepřenese — spánek v jedné místnosti pak druhé nebrání větrat.",
             "vetrat": "Přepínače, kterými řekneš, že se má vyvětrat, i když čidla nic nehlásí. Na rozdíl od vynuceného otevření se drží běžná pravidla — vítr, déšť i teplotní meze platí dál, jen se místnost bere za dusnou, dokud přepínač nevypneš.",
             "poradi": "Kolikátá má být místnost na generované kartě. Nižší číslo výš. Při stejném čísle se řadí tak, jak místnosti vznikly.",
             "zaskleni": "Podle zasklení se počítá, jak chladné je sklo, a z toho nejvyšší vlhkost, při které se ještě neorosí. V mrazu má sklo okolo pěti stupňů a při dvaadvaceti v pokoji a šedesáti procentech je rosný bod kolem čtrnácti — okno se tedy orosí, přestože vlhkost sama o sobě vypadá rozumně.\n\nHorní mez vlhkosti se tím v mrazu sama sníží. Při dvaadvaceti stupních a venkovních minus pěti vyjde pro dvojsklo 67 %, pro starší 53 %."
@@ -476,9 +474,9 @@
             "zvlhcovac_ve_spanku": "Zvlhčovat i ve spánku",
             "rezerva_venku": "Venku musí být za dojezdem o",
             "prach_dosah": "Prach z tohoto zvlhčovače neberu vážně",
-            "prach_mistnosti": "\u21b3 a to v těchto místnostech",
+            "prach_mistnosti": "↳ a to v těchto místnostech",
             "vlhkost_dosah": "Nezvlhčovat při otevřeném okně",
-            "vlhkost_mistnosti": "\u21b3 a to v těchto místnostech",
+            "vlhkost_mistnosti": "↳ a to v těchto místnostech",
             "noc_posun": "V noci posun cílové teploty",
             "pryc_utlum_topeni": "Útlum topení, když nikdo není doma",
             "pryc_utlum_po_hodinach": "Utlumit až po"
@@ -529,7 +527,6 @@
             "stineni_predstih": "Zaclonit se má dřív, než se místnost přehřeje. Předstih říká, o kolik pod cílem už se stíní. Jeden stupeň znamená: cíl 25, stínit od 24.",
             "zvlhcovac": "Zvlhčovač, spínač nebo pomocník. V zimě vysychá vzduch a klesá pod třicet procent, což už vysušuje sliznice.",
             "rh_min": "Pod touhle vlhkostí se zvlhčovač zapne. V zimě v paneláku běžně klesne pod třicet procent, což už vysušuje sliznice.",
-            "dvere": "Kontakt dveří mezi místnostmi oblasti. Zavřené dveře znamenají, že se vzduch nevymění a rámus okna se nepřenese — spánek v jedné místnosti pak druhé nebrání větrat.",
             "topit_pri_oknu": "Hlavici posíláme okenní senzor, takže si otevřené okno umí ošetřit sama — to je výchozí volba Nechat na hlavici. Útlum nebo vypnuto použij jen u hlavice, která okenní senzor neumí, jinak jí posíláš dvě informace o téže věci.",
             "sezonu_ridi_hlavice": "Better Thermostat si podle počasí sám určuje, kdy topit. Se zaškrtnutým polem mu integrace posílá jen cílovou teplotu a jeho rozhodnutí o zapnutí respektuje — když usoudí, že topit nemá, integrace ho nezapne.\n\nOdškrtni, když chceš, aby o topné sezóně rozhodovala integrace: v sezóně pošle režim heat, mimo ni off, a hlavici zbude kalibrace ventilu, v čem je nejlepší.",
             "znacka_okno": "Teplota, kterou dostane hlavice, když je otevřené okno a neumí si přečíst okenní senzor. Better Thermostat posílá 5,0, tak je výchozí 5,5 — z hodnoty pak poznáš, čí povel to byl.",
@@ -614,9 +611,9 @@
             "zvlhcovac_kdy": "Zvlhčovat",
             "zvlhcovac_ve_spanku": "Zvlhčovat i ve spánku",
             "prach_dosah": "Prach z tohoto zvlhčovače neberu vážně",
-            "prach_mistnosti": "\u21b3 a to v těchto místnostech",
+            "prach_mistnosti": "↳ a to v těchto místnostech",
             "vlhkost_dosah": "Nezvlhčovat při otevřeném okně",
-            "vlhkost_mistnosti": "\u21b3 a to v těchto místnostech",
+            "vlhkost_mistnosti": "↳ a to v těchto místnostech",
             "zdroj_obsazenosti": "Obsazenost podle",
             "spanek": "Spánkový přepínač",
             "pritomnost": "Čidlo pohybu",
@@ -706,7 +703,6 @@
       }
     },
     "zona": {
-      "title": "Oblast",
       "step": {
         "user": {
           "title": "Oblast propojených místností",
@@ -753,7 +749,6 @@
       }
     },
     "klima": {
-      "title": "Sdílená klimatizace",
       "entry_type": "Klimatizace",
       "initiate_flow": {
         "user": "klima",
@@ -828,7 +823,6 @@
       }
     },
     "skupina": {
-      "title": "Skupina místností",
       "entry_type": "Skupina",
       "initiate_flow": {
         "user": "skupina",
@@ -870,7 +864,6 @@
       }
     },
     "scena": {
-      "title": "Scéna",
       "entry_type": "Scéna",
       "initiate_flow": {
         "user": "scena",
