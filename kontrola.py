@@ -1127,6 +1127,34 @@ if ocekavana and manifest.get("version") != ocekavana:
         f"{ocekavana}")
 print("verze v manifestu:", manifest.get("version"))
 
+# 6) co hlídá hassfest u Home Assistantu — ať to nespadne až na GitHubu
+#    a) pořadí klíčů v manifestu: domain, name, pak abecedně
+poradi = list(manifest)
+cekane = (["domain", "name"]
+          + sorted(k for k in poradi if k not in ("domain", "name")))
+if poradi != cekane:
+    chyby.append(
+        "klíče v manifestu nejsou v pořadí domain, name, pak abecedně "
+        f"(je {', '.join(poradi)})")
+
+#    b) překlady: řetězec nesmí mít mezery na krajích. Odsazení
+#       podřízené volby se dělá šipkou, ne třemi mezerami.
+def _kraje(o, cesta, kam):
+    if isinstance(o, dict):
+        for k, v in o.items():
+            _kraje(v, f"{cesta}.{k}" if cesta else k, kam)
+    elif isinstance(o, str) and o != o.strip():
+        kam.append(cesta)
+
+
+for jazyk in sorted((d / "translations").glob("*.json")):
+    nalez = []
+    _kraje(json.loads(jazyk.read_text(encoding="utf-8")), "", nalez)
+    for cesta in nalez:
+        chyby.append(
+            f"{jazyk.name}: mezery na kraji textu u {cesta} "
+            f"(hassfest to odmítne)")
+
 if chyby:
     print("NALEZENO:")
     for c in sorted(set(chyby)):

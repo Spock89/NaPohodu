@@ -29,7 +29,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install pytest
+      # Co testy potřebují: PyYAML (ověřují vygenerovaný YAML karty),
+      # dateutil (opakovaná událost v plánu), voluptuous (schémata
+      # nastavení v náhradě za Home Assistant). Samotný pytest nestačí —
+      # na tom tenhle krok poprvé spadl.
+      - run: pip install pytest pyyaml python-dateutil voluptuous
       - run: python -m pytest tests -q
       # kontrola celistvosti balíčku: entity v kartě, verze v manifestu,
       # zakázané vzory. Chyba se má ukázat tady, ne až v bytě.
