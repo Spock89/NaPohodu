@@ -693,7 +693,7 @@
       },
       "entry_type": "Místnost",
       "initiate_flow": {
-        "user": "místnost",
+        "user": "Místnost",
         "reconfigure": "Upravit místnost"
       },
       "error": {
@@ -741,7 +741,7 @@
       },
       "entry_type": "Oblast",
       "initiate_flow": {
-        "user": "oblast",
+        "user": "Oblast",
         "reconfigure": "Upravit oblast"
       },
       "error": {
@@ -751,7 +751,7 @@
     "klima": {
       "entry_type": "Klimatizace",
       "initiate_flow": {
-        "user": "klima",
+        "user": "Klimatizace",
         "reconfigure": "Upravit klimatizaci"
       },
       "step": {
@@ -825,7 +825,7 @@
     "skupina": {
       "entry_type": "Skupina",
       "initiate_flow": {
-        "user": "skupina",
+        "user": "Skupina",
         "reconfigure": "Upravit skupinu"
       },
       "step": {
@@ -866,7 +866,7 @@
     "scena": {
       "entry_type": "Scéna",
       "initiate_flow": {
-        "user": "scena",
+        "user": "Scéna",
         "reconfigure": "Upravit scénu"
       },
       "step": {

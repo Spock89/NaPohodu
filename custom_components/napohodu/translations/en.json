@@ -693,7 +693,7 @@
       },
       "entry_type": "Room",
       "initiate_flow": {
-        "user": "room",
+        "user": "Room",
         "reconfigure": "Edit the room"
       },
       "error": {
@@ -741,7 +741,7 @@
       },
       "entry_type": "Zone",
       "initiate_flow": {
-        "user": "zone",
+        "user": "Zone",
         "reconfigure": "Edit the zone"
       },
       "error": {
@@ -751,7 +751,7 @@
     "klima": {
       "entry_type": "Air conditioning",
       "initiate_flow": {
-        "user": "air conditioning",
+        "user": "Air conditioning",
         "reconfigure": "Edit air conditioning"
       },
       "step": {
@@ -825,7 +825,7 @@
     "skupina": {
       "entry_type": "Group",
       "initiate_flow": {
-        "user": "group",
+        "user": "Group",
         "reconfigure": "Edit group"
       },
       "step": {
@@ -866,7 +866,7 @@
     "scena": {
       "entry_type": "Scene",
       "initiate_flow": {
-        "user": "scene",
+        "user": "Scene",
         "reconfigure": "Edit scene"
       },
       "step": {

@@ -1181,6 +1181,14 @@ for jazyk in sorted((d / "translations").glob("*.json")):
             f"{jazyk.name}: popis pole bez názvu u {cesta} "
             f"(v nastavení se ukáže klíč místo názvu)")
     for typ, v in (preklad.get("config_subentries") or {}).items():
+        #    e) popisek tlačítka „přidat" se vypisuje tak, jak je —
+        #       vedle znaménka plus. S malým písmenem z toho byly
+        #       nápisy „+ scena" a „+ klima".
+        popisek = (v.get("initiate_flow") or {}).get("user")
+        if popisek and popisek[:1] != popisek[:1].upper():
+            chyby.append(
+                f"{jazyk.name}: popisek tlačítka u {typ} začíná malým "
+                f"písmenem ({popisek!r}), vypisuje se vedle plus")
         if "title" in v:
             chyby.append(
                 f"{jazyk.name}: config_subentries.{typ}.title je zrušený "
