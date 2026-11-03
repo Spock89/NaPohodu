@@ -196,6 +196,22 @@ SCHEMA_ULOZENI = vol.Schema(
 )
 
 
+def _poskladej(stare: dict, schema: vol.Schema, user_input: dict) -> dict:
+    """Výsledek kroku: co formulář poslal, plus to, na co se neptal.
+
+    Vymazané pole se ve výsledku formuláře neobjeví **vůbec** — pozná
+    se jen tím, že klíč chybí. Dokud se nové hodnoty jen přisypávaly
+    k starým (`update`), vymazané čidlo se vrátilo: formulář ho po
+    uložení zase ukázal a integrace podle něj dál počítala. Klíče, na
+    které se tenhle krok ptal a nepřišly, se proto zahazují; ostatní
+    (z jiných kroků) zůstávají.
+    """
+    ptal_se = {str(k.schema) for k in schema.schema}
+    nove = {k: v for k, v in stare.items() if k not in ptal_se}
+    nove.update(user_input)
+    return nove
+
+
 class NaPohoduOptionsFlow(OptionsFlow):
     """Společná nastavení a tester žaluzií."""
 
@@ -213,7 +229,16 @@ class NaPohoduOptionsFlow(OptionsFlow):
 
     async def async_step_nastaveni(self, user_input=None) -> FlowResult:
         if user_input is not None:
-            return self.async_create_entry(data=user_input)
+            # Nastavení se čte jako data překrytá options. Uložení
+            # psalo jen do options, takže vymazané čidlo se vracelo
+            # z data — ve formuláři i ve výpočtu. Přepisuje se proto
+            # obojí naráz.
+            nove = _poskladej(
+                {**self.config_entry.data, **self.config_entry.options},
+                SCHEMA_GLOBAL, user_input)
+            self.hass.config_entries.async_update_entry(
+                self.config_entry, data=nove, options=nove)
+            return self.async_create_entry(data=nove)
         return self.async_show_form(
             step_id="nastaveni",
             data_schema=self.add_suggested_values_to_schema(
@@ -649,7 +674,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         if user_input is not None:
             chyby = _zkontroluj_prahy(user_input)
             if not chyby:
-                self._data.update(user_input)
+                self._data = _poskladej(
+                    self._data, _schema_mistnost(), user_input)
                 return await self.async_step_chovani()
         return self.async_show_form(
             step_id="zaklad",
@@ -663,7 +689,9 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         if user_input is not None:
             chyby = _zkontroluj_prahy({**self._data, **user_input})
             if not chyby:
-                self._data.update(user_input)
+                self._data = _poskladej(
+                    self._data, _schema_chovani(self._ostatni_mistnosti()),
+                    user_input)
                 return await self.async_step_stineni()
         return self.async_show_form(
             step_id="chovani",
@@ -803,7 +831,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
 
     async def async_step_pritomnost(self, user_input=None) -> SubentryFlowResult:
         if user_input is not None:
-            self._data.update(user_input)
+            self._data = _poskladej(
+                self._data, SCHEMA_PRITOMNOST, user_input)
             return await self.async_step_indicie()
         return self.async_show_form(
             step_id="pritomnost", data_schema=SCHEMA_PRITOMNOST
@@ -811,7 +840,7 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
 
     async def async_step_indicie(self, user_input=None) -> SubentryFlowResult:
         if user_input is not None:
-            self._data.update(user_input)
+            self._data = _poskladej(self._data, SCHEMA_INDICIE, user_input)
             return self.async_create_entry(
                 title=self._data[c.CONF_NAZEV], data=self._data
             )
@@ -824,7 +853,15 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         if user_input is not None:
             chyby = _zkontroluj_prahy(user_input)
             if not chyby:
-                self._data.update(user_input)
+                # Jeden formulář se ptá na všechny čtyři kroky naráz,
+                # takže vymazané pole se pozná jen chybějícím klíčem.
+                self._data = _poskladej(
+                    self._data,
+                    _schema_mistnost()
+                    .extend(_schema_chovani(self._ostatni_mistnosti()).schema)
+                    .extend(SCHEMA_PRITOMNOST.schema)
+                    .extend(SCHEMA_INDICIE.schema),
+                    user_input)
                 # žaluzie mohly přibýt, projde se i krok se stavy
                 return await self.async_step_stineni()
         self._data = dict(self._get_reconfigure_subentry().data)

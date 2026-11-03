@@ -1127,6 +1127,18 @@ if ocekavana and manifest.get("version") != ocekavana:
         f"{ocekavana}")
 print("verze v manifestu:", manifest.get("version"))
 
+# 5b) formuláře: nové hodnoty se nesmí jen přisypávat k starým.
+#     Vymazané pole se ve výsledku formuláře neobjeví vůbec, takže
+#     `update` starou hodnotu nechá být — do průměru za deset dní se
+#     tak nedalo vymazat cizí čidlo. Skládá se proto `_poskladej`,
+#     která klíče toho kroku bez odpovědi zahodí.
+tok = (d / "config_flow.py").read_text(encoding="utf-8")
+for cislo, radek in enumerate(tok.splitlines(), 1):
+    if "_data.update(user_input)" in radek:
+        chyby.append(
+            f"config_flow.py:{cislo}: nové hodnoty se přisypávají "
+            f"k starým, vymazané pole se tím neuloží — použij _poskladej")
+
 # 6) co hlídá hassfest u Home Assistantu — ať to nespadne až na GitHubu
 #    a) pořadí klíčů v manifestu: domain, name, pak abecedně
 poradi = list(manifest)

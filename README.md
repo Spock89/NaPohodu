@@ -1304,6 +1304,20 @@ jejího uloženého stavu, a pro každou přiřazenou roli vznikne tlačítko.
 Tlačítka **Srovnat** zapomenou poslední povel, takže se v dalším cyklu
 pošle znovu — zvlášť pro okna, žaluzie a topení.
 
+## Vymazání pole v nastavení
+
+Prázdné pole se ve výsledku formuláře Home Assistantu neobjeví vůbec —
+nepřijde prázdná hodnota, přijde o klíč míň. Kdo nové hodnoty jen
+přisype k starým, vymazané pole tím neuloží a stará hodnota zůstane.
+Nastavení se navíc skládá ze dvou míst, `data` a `options`, a čte se
+jako `data` překrytá `options`; uložení psalo jen do `options`, takže
+vymazané čidlo se vracelo z `data`. Po uložení bylo zpátky ve formuláři
+a integrace podle něj dál počítala.
+
+Každý krok formuláře proto skládá výsledek přes `_poskladej`: klíče,
+na které se ten krok ptal a nepřišly, zahodí, ostatní nechá být.
+Společné nastavení přepisuje obě místa naráz. Hlídá to `kontrola.py`.
+
 ## Když si nastavení protiřečí
 
 Meze větrání a cílová teplota se dají nastavit tak, že se okno zavře
