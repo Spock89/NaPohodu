@@ -149,6 +149,11 @@ CONF_ODVZDUSNENI_H = "odvzdusneni_h"
 CONF_ODVZDUSNENI_T = "odvzdusneni_t"
 CONF_UTLUM = "utlum"
 CONF_ODCHYLKA = "odchylka"
+# Meze posuvníku odchylky. Na jednom místě proto, že z nich vychází
+# i rozsah kolečka na termostatové kartě — tam se nenastavuje teplota,
+# ale právě tahle odchylka, takže se dál než sem dojet nedá.
+ODCHYLKA_MEZ = 3.0
+ODCHYLKA_KROK = 0.5
 # O kolik pod noční mez smí teplota ve spánku spadnout, než se okno
 # zavře. Ve spánku se kvůli teplotě nevětrá, tohle je jen pojistka.
 CONF_STINENI_PRYC = "stineni_pryc"

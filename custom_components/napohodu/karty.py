@@ -1248,6 +1248,17 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             polozky.append("      - type: divider")
     c += _karta(polozky[:-1], nazev="Ovládání žaluzií")
     c.append("")
+    # Termostat místnosti: climate jako každý jiný, takže si na něj
+    # jde postavit termostatová karta nebo ho pustit do HomeKitu.
+    # Nenastavuje se jím teplota, ale odchylka od cíle — proto stojí
+    # mezi ovládáním, ne mezi čidly.
+    polozky = []
+    for m in mistnosti:
+        eid = f"climate.napohodu_{m}_termostat"
+        if existuje(eid):
+            polozky += _radek(eid, jm(m))
+    c += _karta(polozky, nazev="Termostaty")
+    c.append("")
 
     c.append(ZNACKA_BLOKU + "zvlhcovace")
     # --- zvlhčovače: jen místnosti, které ho mají ---

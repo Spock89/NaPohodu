@@ -1290,6 +1290,11 @@
       "vybrana_scena": {
         "name": "Scéna"
       }
+    },
+    "climate": {
+      "termostat": {
+        "name": "Termostat"
+      }
     }
   }
 }

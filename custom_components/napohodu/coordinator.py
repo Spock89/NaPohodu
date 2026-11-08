@@ -122,6 +122,13 @@ class VysledekMistnosti:
     skupina_prazdno: str | None = None
     # naplánovaná cílová teplota, pokud zrovna nějaká platí
     plan_cil: float | None = None
+    # Co z čeho vyšlo, jako čísla. Atributy nesou text s vysvětlením
+    # („20.8 °C (nejteplejší čidlo)"), ten se nedá počítat — a
+    # termostatová karta potřebuje čísla: základ cíle bez odchylky,
+    # naměřenou teplotu a povel, který dostaly hlavice.
+    cil_zaklad: float = 22.0
+    teplota: float | None = None
+    povel_topeni: float | None = None
     atributy: dict = field(default_factory=dict)
 
 
@@ -206,6 +213,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # místnosti, kde právě běží zvlhčovač a prach z něj se nemá
         # brát jako prach ve vzduchu
         self.zvlhcuje: set = set()
+        # Entity téhle integrace, které si někdo přiřadil jako cizí
+        # zařízení. Drží se jen proto, aby se o každé řeklo jednou.
+        self._smycka: set = set()
         # skutečný stav okna v každé místnosti; None znamená, že o něm
         # nevíme nic — ani kontakt, ani ovládané okno
         self.okna_stav: dict[str, bool | None] = {}
@@ -1149,6 +1159,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 nazev=jmeno,
                 cil=(round(plan_cil, 1) if plan_cil is not None
                      else round(cil_zakl + odchylka, 1)),
+                cil_zaklad=round(cil_zakl, 1),
                 obsazeno=obsazeno,
                 klid=pr.klid(sig),
                 plan_zavreno=zavreno,
@@ -2146,6 +2157,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         nejteplejsi = pamet.chladi or t_max_cidlo > m.cil
         t_rozhodna = t_max_cidlo if nejteplejsi else v.t_in
         popis_rozhodne = "nejteplejší" if nejteplejsi else "nejchladnější"
+        # Totéž číslo, jen bez vysvětlivky: termostatová karta ukazuje
+        # naměřenou teplotu a z textu „20.8 °C (nejteplejší)" ji
+        # vyloupnout nejde.
+        m.teplota = round(t_rozhodna, 1)
         m.atributy.update({
             "co2": v.co2, "uvnitr": r.t_in_korig,
             "venku": t_ven, "rosny_bod": r.rosny_bod, "rezim": pamet.rezim,
@@ -2293,13 +2308,42 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                                    okno_fakt, doma)
         await self._topeni_krok(p, d, m, cas_s)
 
+    def _cizi_entity(self, entity_id: list[str], kde: str,
+                     co: str) -> list[str]:
+        """Vyhodí z výběru entity, které vyrábí tahle integrace.
+
+        Termostat místnosti je climate jako každý jiný, takže ho
+        výběr hlavic nabídne — jenže ten termostat jen ukazuje, co
+        integrace spočítala. Přiřadit ho jako hlavici znamená psát
+        si sám sobě: povel by si přepsal vstup, ze kterého vznikl.
+        Mlčky to přeskočit nejde, protože navenek by to vypadalo, že
+        topení nereaguje.
+        """
+        reg = er.async_get(self.hass)
+        cizi = []
+        for e in entity_id:
+            zaznam = reg.async_get(e)
+            if zaznam is not None and zaznam.platform == DOMAIN:
+                # Hlásí se jednou. Cyklus běží po minutě a hodina
+                # stejné věty v záznamu nic nepřidá.
+                if e not in self._smycka:
+                    self._smycka.add(e)
+                    _LOGGER.warning(
+                        "NaPohodu: %s — %s %s je entita téhle "
+                        "integrace, přeskakuji ji; psala by si sama "
+                        "sobě", kde, co, e)
+                continue
+            cizi.append(e)
+        return cizi
+
     async def _topeni_krok(self, p, d, m, cas_s: float) -> None:
         """Napíše hlavicím cílovou teplotu.
 
         Hlavice může být virtuální z Better Thermostatu i skutečná —
         integrace posílá jen cíl a režim, o zbytek se stará ona.
         """
-        hlavice = list(d.get(CONF_CLIMATE) or [])
+        hlavice = self._cizi_entity(list(d.get(CONF_CLIMATE) or []),
+                                    m.nazev, "hlavice")
         m.atributy["odvzdusneni"] = False
         if not hlavice:
             m.atributy["topeni"] = "hlavice nenastavená"
@@ -2398,6 +2442,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                         f"{m.skupina_prazdno}: nikdo tam není "
                         f"-{utlum_skupina:.1f} °C"
                         if utlum_skupina else "") if x] or None
+
+        # Číslo, které doopravdy odešlo. Termostatová karta z něj
+        # pozná, jestli se zrovna topí: hlásit „topí" podle cíle
+        # místnosti by lhalo pokaždé, když ho útlum nebo otevřené okno
+        # stáhly dolů.
+        m.povel_topeni = povel.cil
 
         poslano = await vyk.topeni(
             hlavice, povel, cas_s,

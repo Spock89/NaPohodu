@@ -1,8 +1,12 @@
 class RegistrZapis:
-    def __init__(self, entity_id, unique_id="", domain=None):
+    def __init__(self, entity_id, unique_id="", domain=None,
+                 platform="cizi"):
         self.entity_id = entity_id
         self.unique_id = unique_id
         self.domain = domain or entity_id.split(".")[0]
+        # Která integrace entitu vyrobila. Podle toho se pozná vlastní
+        # entita přiřazená jako cizí zařízení.
+        self.platform = platform
 
 
 class Registr:

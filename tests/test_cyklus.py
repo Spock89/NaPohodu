@@ -1162,3 +1162,52 @@ def test_vyber_prespi_noc_a_vcerejsek_se_nezapise(ha):
     vysledek = asyncio.run(k.scena_uloz())
     assert "vynechal" in vysledek, vysledek
     assert not [z for z in k.plan_zaznamy() if z.get("druh") == "scena"]
+
+
+def test_vlastni_termostat_jako_hlavice_se_preskoci(ha, caplog):
+    """Termostat místnosti je climate jako každý jiný, takže ho výběr
+    hlavic nabídne. Přiřadit ho znamená psát si sám sobě: povel by
+    přepsal vstup, ze kterého vznikl."""
+    ko = ha
+    from napohodu import const as c
+    from homeassistant.helpers import entity_registry as er
+
+    k, hass = _koordinator(ko, c)
+    hass.registr = er.Registr([
+        er.RegistrZapis("climate.napohodu_obyvak_termostat",
+                        platform=c.DOMAIN),
+        er.RegistrZapis("climate.hlavice", platform="zha"),
+    ])
+    asyncio.run(k.async_nacti())
+
+    zbyde = k._cizi_entity(["climate.napohodu_obyvak_termostat",
+                            "climate.hlavice"], "Obývák", "hlavice")
+    assert zbyde == ["climate.hlavice"]
+    # Neznámá entita se nezahazuje: registr ji nemusí znát a odmítnout
+    # cizí hlavici kvůli tomu by bylo horší než ji zkusit.
+    assert k._cizi_entity(["climate.nikde"], "Obývák", "hlavice") == [
+        "climate.nikde"]
+    # a řekne se o tom, jednou — cyklus běží po minutě
+    assert sum("psala by si sama sobě" in z.message
+               for z in caplog.records) == 1
+    k._cizi_entity(["climate.napohodu_obyvak_termostat"], "Obývák",
+                   "hlavice")
+    assert sum("psala by si sama sobě" in z.message
+               for z in caplog.records) == 1
+
+    # a hlavně: topení tou pojistkou doopravdy prochází
+    pod = next(p for p in k.entry.subentries.values()
+               if p.title == "Obývák")
+    pod.data = {**pod.data,
+                c.CONF_CLIMATE: ["climate.napohodu_obyvak_termostat",
+                                 "climate.hlavice"]}
+    hass.states._h["climate.hlavice"] = Stav("heat", {"temperature": 15.0})
+    k.topna_sezona = True
+    k.hodnoty[("id_Obývák", "ovladat_topeni")] = 1.0
+    hass.services.volano.clear()
+    asyncio.run(k._async_update_data())
+    cile = {e for o, sl, dd in hass.services.volano
+            if sl == "set_temperature"
+            for e in ([dd["entity_id"]] if isinstance(dd["entity_id"], str)
+                      else dd["entity_id"])}
+    assert cile == {"climate.hlavice"}, cile

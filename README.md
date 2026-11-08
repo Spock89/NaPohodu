@@ -1209,11 +1209,44 @@ YAML poskládaný z entit, které opravdu existují. Na výběr je jedna karta,
 kterou vložíš jako Manuální kartu, nebo celá stránka rozdělená do sekcí,
 které se dají na dashboardu chytat a přesouvat.
 
-Třetí možnost je **ovládací panel**: na každou místnost jedna dlaždice
-s tlačítky − a +, dvě vedle sebe. Vypadá jako klimatizační karta, jenže
-se nenastavuje teplota, ale **odchylka od cíle** — cíl si integrace
-počítá sama z venkovního průměru a přepsat jí ho natvrdo by znamenalo
-vypnout půlku toho, proč vznikla.
+Třetí možnost je **ovládací panel**, popsaný níž.
+
+### Termostat místnosti
+
+Každá místnost, která má hlavice, dostane navíc **climate entitu**.
+Navenek je to obyčejný termostat, takže na něj sedne termostatová
+karta, hlasovky i HomeKit. Uvnitř se jím ale nenastavuje teplota —
+**nastavená hodnota se přepočítá na odchylku** od cíle, který
+integrace spočítala. Kdo nastaví o půl stupně víc, dostane o půl
+stupně víc, a když se venkovní průměr zítra pohne, cíl se pohne s ním
+a to přání zůstane. Tím se nevypíná, proč integrace vznikla; jen se
+k ní přidává druhá klika.
+
+Termostat **nemá vlastní paměť**. Všechno, co nastaví, jde do téhož
+posuvníku odchylky, který je na kartě i v nastavení — dvě místa, jedna
+hodnota. Rozsah kolečka je proto základ ±3 °C, tedy přesně meze toho
+posuvníku, a dál se otočit nedá.
+
+Co stojí za zmínku, protože to od termostatu nikdo nečeká:
+
+- **Vypnutí** (`off`) sedí na přepínači *Ovládat topení*. Zastaví zápis
+  do hlavic té místnosti, ne okna ani stínění.
+- **Topí / netopí** se pozná z povelu, který hlavice dostaly, ne z cíle
+  místnosti. Útlum i otevřené okno povel stahují dolů a podle cíle by
+  karta tvrdila, že se topí, i když se netopí schválně.
+- **Naplánovaná cílová teplota je konečná** a odchylku přebíjí. Dokud
+  plán běží, termostat nastavení teploty odmítne a napíše proč —
+  uložit odchylku, která nic neudělá, by vypadalo jako rozbitý
+  termostat.
+- Termostat je climate, takže ho **výběr hlavic nabídne**. Přiřadit ho
+  jako hlavici vlastní místnosti by znamenalo psát si sám sobě, proto
+  zápis vlastní entity přeskočí a napíše to do záznamu.
+
+### Ovládací panel
+
+Na každou místnost jedna dlaždice s tlačítky − a +, dvě vedle sebe.
+Je to tentýž překlad jako u termostatu, jen menší: nenastavuje se
+teplota, ale odchylka od cíle.
 
 Velké číslo na dlaždici je proto výsledný cíl a odchylka stojí za ním.
 Nese ho atribut `cil` posuvníku odchylky, protože dlaždice umí ukázat

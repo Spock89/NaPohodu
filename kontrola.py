@@ -63,9 +63,14 @@ for p in d.glob("*.py"):
 # 1e) moduly, které nikdo neimportuje — mrtvý kód mate a duplikuje logiku
 # Platformy si načítá Home Assistant sám podle jména souboru, takže je
 # nikdo neimportuje a přesto nejsou mrtvé.
+# Seznam platforem se nepíše ručně: je v __init__.py a ručně psaná
+# kopie by zestárla při první další platformě — přesně to se stalo
+# u climate.
 VSTUPNI = {"__init__", "const", "config_flow", "coordinator", "entity",
-           "sensor", "binary_sensor", "number", "switch", "button",
-           "services", "karty", "select", "datetime", "calendar"}
+           "services", "karty"}
+VSTUPNI |= set(re.findall(r"Platform\.([A-Z_]+)",
+                          (d / "__init__.py").read_text()))
+VSTUPNI = {x.lower() for x in VSTUPNI}
 importovane = set()
 for p in d.glob("*.py"):
     for u in ast.walk(ast.parse(p.read_text())):
@@ -293,6 +298,11 @@ HA_HOOKY = {"async_setup_entry", "async_unload_entry", "async_setup",
             "event", "async_get_events", "async_create_event",
             "async_delete_event",
             "available", "async_get_options_flow",
+            # climate: kolečko na kartě se ptá na meze a na cíl,
+            # režim a akci kreslí jako stav termostatu
+            "min_temp", "max_temp", "target_temperature",
+            "current_temperature", "hvac_mode", "hvac_action",
+            "async_set_temperature", "async_set_hvac_mode",
             "async_get_supported_subentry_types", "async_migrate_entry",
             "_async_update_data", "device_info", "icon", "native_unit_of_measurement"}
 kod_vse = "\n".join(x.read_text() for x in d.glob("*.py"))
