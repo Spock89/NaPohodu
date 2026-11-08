@@ -182,6 +182,25 @@ class NaPohoduNumber(NaPohoduEntity, RestoreNumber, NumberEntity):
         return self.coordinator.hodnoty.get(
             (self.pod_id, self._p.klic), self._vychozi)
 
+    @property
+    def extra_state_attributes(self) -> dict | None:
+        """U odchylky i to, co z ní vyšlo: cíl a naměřená teplota.
+
+        Dlaždice na dashboardu umí ukázat jen stav a atributy **své**
+        entity. Bez tohohle by na jedné dlaždici šla mít buď tlačítka
+        na odchylku, nebo výsledná cílová teplota — ne obojí, protože
+        cíl nese samostatné čidlo.
+        """
+        if self._p.klic != CONF_ODCHYLKA or self.pod is None:
+            return None
+        m = self.coordinator.mistnosti.get(self.pod_id)
+        if m is None:
+            return None
+        # Text, ne číslo: dlaždice atribut vypíše tak, jak je, a bez
+        # jednotky by vedle „+0.5 °C" stálo holé „21.5". Číselný cíl
+        # nese čidlo cílové teploty, tohle je k zobrazení.
+        return {"cil": f"{m.cil:.1f} °C"}
+
     async def async_set_native_value(self, value: float) -> None:
         self.coordinator.hodnoty[(self.pod_id, self._p.klic)] = value
         self.async_write_ha_state()

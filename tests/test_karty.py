@@ -1048,3 +1048,40 @@ def test_volno_neni_cervene():
     text = dashboard(["obyvak"], [], lambda e: True, sceny=["Home Office"],
                      nazvy={"obyvak": "Obývák"})
     assert "color: red" not in text
+
+
+def test_ovladaci_panel():
+    """Panel je jako klimatizační karta, jen se nastavuje odchylka.
+
+    Velké číslo je výsledný cíl z atributu posuvníku — čidlo cílové
+    teploty je jiná entita a dlaždice umí jen tu svou.
+    """
+    text = dashboard(
+        ["obyvak", "kuchyne"], [], lambda e: True,
+        nazvy={"obyvak": "Obývák", "kuchyne": "Kuchyně"}, podoba="panel")
+    d = yaml.safe_load(text)
+    assert d["type"] == "grid" and d["columns"] == 2
+    assert len(d["cards"]) == 2
+    prvni = d["cards"][0]
+    assert prvni["entity"] == "number.napohodu_obyvak_moje_odchylka_teploty"
+    assert prvni["features"] == [{"type": "numeric-input",
+                                  "style": "buttons"}]
+    # cíl napřed, odchylka za ním
+    assert prvni["state_content"] == ["cil", "state"]
+
+
+def test_panel_vynecha_mistnost_bez_posuvniku():
+    """Entita, která neexistuje, na kartu nepatří — jinak by na
+    dashboardu svítila šedá dlaždice s vykřičníkem."""
+    text = dashboard(
+        ["obyvak", "kuchyne"], [],
+        lambda e: "kuchyne" not in e, podoba="panel")
+    d = yaml.safe_load(text)
+    assert len(d["cards"]) == 1
+    assert "obyvak" in d["cards"][0]["entity"]
+
+
+def test_panel_bez_mistnosti_nespadne():
+    text = dashboard([], [], lambda e: True, podoba="panel")
+    assert yaml.safe_load(text) is None
+    assert "Žádná místnost" in text

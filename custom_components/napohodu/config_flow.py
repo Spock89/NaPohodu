@@ -252,13 +252,17 @@ class NaPohoduOptionsFlow(OptionsFlow):
     async def async_step_karta(self, user_input=None) -> FlowResult:
         """Výběr podoby: jedna karta, nebo celá stránka."""
         return self.async_show_menu(
-            step_id="karta", menu_options=["karta_jedna", "karta_stranka"])
+            step_id="karta",
+            menu_options=["karta_jedna", "karta_stranka", "karta_panel"])
 
     async def async_step_karta_jedna(self, user_input=None) -> FlowResult:
         return await self._vypis("karta", user_input)
 
     async def async_step_karta_stranka(self, user_input=None) -> FlowResult:
         return await self._vypis("stranka", user_input)
+
+    async def async_step_karta_panel(self, user_input=None) -> FlowResult:
+        return await self._vypis("panel", user_input)
 
     async def _vypis(self, podoba: str, user_input=None) -> FlowResult:
         """Vypíše hotovou kartu na dashboard.
@@ -292,7 +296,8 @@ class NaPohoduOptionsFlow(OptionsFlow):
             text = f"# Kartu se nepodařilo poskládat: {e}"
 
         return self.async_show_form(
-            step_id="karta_jedna" if podoba == "karta" else "karta_stranka",
+            step_id={"karta": "karta_jedna", "stranka": "karta_stranka",
+                     "panel": "karta_panel"}[podoba],
             data_schema=self.add_suggested_values_to_schema(
                 vol.Schema({
                     vol.Optional(c.CONF_KARTA_YAML, default=""):

@@ -243,10 +243,11 @@
       },
       "karta": {
         "title": "Dashboard card",
-        "description": "A single card is quick to paste; a full page rearranges better and fills the width of the screen.",
+        "description": "A single card pastes quickly, a whole page rearranges better and fills the screen. The control panel is just the offset buttons, two side by side.",
         "menu_options": {
           "karta_jedna": "Single card (Manual card)",
-          "karta_stranka": "Full page (YAML editor)"
+          "karta_stranka": "Full page (YAML editor)",
+          "karta_panel": "Control panel (Manual card)"
         }
       },
       "karta_jedna": {
@@ -291,6 +292,13 @@
         "submit": "Back",
         "data_description": {
           "mistnosti": "What to generate. An unticked block is left out entirely; the card is written out again after each submit, so you can add and remove until it fits."
+        }
+      },
+      "karta_panel": {
+        "title": "Control panel",
+        "description": "One tile per room ({pocet} of them): the big number is the resulting target, the − and + buttons move the offset from it.\n\nSelect the text and copy it. Then on the dashboard: pencil → Add card → Manual at the very bottom → clear → paste.\n\nIn a sections view the panel can be grabbed by its corner and narrowed to half a section.",
+        "data": {
+          "karta_yaml": "YAML"
         }
       }
     },

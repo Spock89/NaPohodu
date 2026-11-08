@@ -1209,6 +1209,17 @@ YAML poskládaný z entit, které opravdu existují. Na výběr je jedna karta,
 kterou vložíš jako Manuální kartu, nebo celá stránka rozdělená do sekcí,
 které se dají na dashboardu chytat a přesouvat.
 
+Třetí možnost je **ovládací panel**: na každou místnost jedna dlaždice
+s tlačítky − a +, dvě vedle sebe. Vypadá jako klimatizační karta, jenže
+se nenastavuje teplota, ale **odchylka od cíle** — cíl si integrace
+počítá sama z venkovního průměru a přepsat jí ho natvrdo by znamenalo
+vypnout půlku toho, proč vznikla.
+
+Velké číslo na dlaždici je proto výsledný cíl a odchylka stojí za ním.
+Nese ho atribut `cil` posuvníku odchylky, protože dlaždice umí ukázat
+jen stav a atributy **své** entity — cílová teplota má vlastní čidlo
+a do téhle dlaždice by se jinak nedostala.
+
 Po přidání místnosti si přijdeš pro novou verzi.
 
 Při generování se dají **hlavní bloky odškrtnout** — místnosti, cílová

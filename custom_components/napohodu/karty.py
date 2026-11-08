@@ -428,6 +428,55 @@ def _hlavicka(text: str, ikona: str, styl: str = "title") -> list[str]:
             f"    heading_style: {styl}", f"    icon: {ikona}", ""]
 
 
+def _panel(mistnosti: list[str], existuje, jm) -> str:
+    """Ovládací panel: na každou místnost jedna dlaždice s −/+.
+
+    Jako klimatizační karta, jenže se nenastavuje teplota, ale
+    odchylka od cíle — cíl si integrace počítá sama a přepisovat jí
+    ho natvrdo by znamenalo vypnout půlku toho, proč vznikla.
+
+    Dlaždice umí vlastnost `numeric-input`, která sedí na doménu
+    `number`, a ve vzhledu `buttons` z ní jsou tlačítka mínus a plus
+    po kroku šoupátka. Hlavní číslo je **cíl** z atributu, až za ním
+    odchylka: zajímá nás, na kolik se topí, odchylka je jen páka.
+
+    Mřížka po dvou proto, že dlaždice s tlačítky se do půlky sloupce
+    vejde a vedle sebe jich je na šířku víc než pod sebou.
+    """
+    karty = []
+    for m in mistnosti:
+        eid = f"number.napohodu_{m}_moje_odchylka_teploty"
+        if not existuje(eid):
+            continue
+        karty += ["  - type: tile",
+                  f"    entity: {eid}",
+                  f"    name: {_text(jm(m))}",
+                  "    icon: mdi:thermometer-plus",
+                  "    state_content:",
+                  "      - cil",
+                  "      - state",
+                  "    features:",
+                  "      - type: numeric-input",
+                  "        style: buttons"]
+    hlava = ["# Vygenerováno integrací NaPohodu.",
+             "#",
+             "# Ovládací panel: v každé místnosti se tlačítky přestaví",
+             "# odchylka od cíle, velké číslo je výsledný cíl.",
+             "#",
+             "# Dashboard -> tužka -> Přidat kartu -> úplně dole",
+             "# Manuální. Smaž obsah a vlož tenhle text.",
+             "#",
+             "# Na stránce se sekcemi se dá panel chytit za roh a",
+             "# zúžit; při šířce poloviny sekce zůstanou dlaždice",
+             "# pod sebou přes celou její šířku.",
+             ""]
+    if not karty:
+        return "\n".join(hlava + ["# Žádná místnost zatím není."]) + "\n"
+    return "\n".join(
+        hlava + ["type: grid", "columns: 2", "square: false",
+                 "cards:"] + karty) + "\n"
+
+
 def _graf(nadpis: str, hodin: int, polozky: list[tuple[str, str]],
           existuje, min_radku: int = 2) -> list[str]:
     """Graf se vynechá, když by v něm nebylo co kreslit.
@@ -745,6 +794,12 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     zaluzie = zaluzie or {}
     s_okny = s_okny if s_okny is not None else set(mistnosti)
     s_klidem = s_klidem if s_klidem is not None else set(mistnosti)
+
+    # Panel je samostatná karta, ne výřez z dashboardu: skládat kvůli
+    # němu všechny bloky a pak je zahodit by bylo zbytečné.
+    if podoba == "panel":
+        return _panel(mistnosti, existuje, jm)
+
     c = []
 
     c.append(ZNACKA_BLOKU + "cilova_teplota")

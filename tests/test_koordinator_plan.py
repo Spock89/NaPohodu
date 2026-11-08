@@ -414,3 +414,37 @@ def test_vychozi_je_tlumit_hned(koord):
     assert vychozi[c.CONF_PRYC_PO] == 0.0
     # a útlum sám zůstává vypnutý, dokud si ho člověk nenastaví
     assert vychozi[c.CONF_PRYC_UTLUM] == 0.0
+
+
+def test_posuvnik_odchylky_nese_cil(koord):
+    """Dlaždice na dashboardu ukazuje stav a atributy **své** entity.
+
+    Aby na jedné dlaždici šla mít tlačítka na odchylku i výsledná
+    cílová teplota, nese posuvník odchylky cíl v atributu — čidlo
+    cílové teploty je jiná entita a do té dlaždice se nedostane.
+    """
+    import importlib
+    from napohodu import const as c
+
+    cisla = importlib.import_module("napohodu.number")
+    odchylka = next(p for p in cisla.MISTNOST if p.klic == c.CONF_ODCHYLKA)
+    noc = next(p for p in cisla.MISTNOST if p.klic == c.CONF_NOC_POSUN)
+
+    class _M:
+        cil = 21.47
+
+    class _K:
+        mistnosti = {"id": _M()}
+        hodnoty = {}
+
+    e = cisla.NaPohoduNumber.__new__(cisla.NaPohoduNumber)
+    e.coordinator, e.pod, e.pod_id = _K(), object(), "id"
+
+    e._p = odchylka
+    assert e.extra_state_attributes == {"cil": "21.5 °C"}
+    # ostatní posuvníky cíl nenesou, ať se atributy nemnoží
+    e._p = noc
+    assert e.extra_state_attributes is None
+    # a posuvník celého bytu nemá ke které místnosti cíl hlásit
+    e._p, e.pod = odchylka, None
+    assert e.extra_state_attributes is None

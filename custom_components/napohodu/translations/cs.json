@@ -243,10 +243,11 @@
       },
       "karta": {
         "title": "Karta na dashboard",
-        "description": "Jedna karta se vloží rychle, celá stránka se líp přeskládává a vyplní šířku obrazovky.",
+        "description": "Jedna karta se vloží rychle, celá stránka se líp přeskládává a vyplní šířku obrazovky. Ovládací panel je jen tlačítka na odchylku, po dvou vedle sebe.",
         "menu_options": {
           "karta_jedna": "Jedna karta (Manuální karta)",
-          "karta_stranka": "Celá stránka (editor YAML)"
+          "karta_stranka": "Celá stránka (editor YAML)",
+          "karta_panel": "Ovládací panel (Manuální karta)"
         }
       },
       "karta_jedna": {
@@ -291,6 +292,13 @@
         "submit": "Zpět",
         "data_description": {
           "mistnosti": "Co se má do karty vygenerovat. Odškrtnutý blok se vynechá celý; po odeslání se karta vypíše znovu, takže jde ubírat a přidávat, dokud to nesedí."
+        }
+      },
+      "karta_panel": {
+        "title": "Ovládací panel",
+        "description": "Na každou z {pocet} místností jedna dlaždice: velké číslo je výsledný cíl, tlačítka − a + hýbou odchylkou od něj.\n\nOznač text a zkopíruj. Pak na dashboardu: tužka → Přidat kartu → úplně dole Manuální → smazat obsah → vložit.\n\nNa stránce se sekcemi se panel dá chytit za roh a zúžit na polovinu sekce.",
+        "data": {
+          "karta_yaml": "YAML"
         }
       }
     },
