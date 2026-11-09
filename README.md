@@ -1236,6 +1236,14 @@ Co stojí za zmínku, protože to od termostatu nikdo nečeká:
   Vypnout to jde dál, přepínačem *Ovládat topení* v nastavení
   místnosti, kam se člověk neproklikne omylem. Když je vypnutý,
   termostat to přizná: režim zůstává `heat`, ale hlásí, že netopí.
+
+  Akci „vypnout" přitom entita **nabízí** — schválně. Akci, kterou
+  entita nenabízí, utne Home Assistant vlastní hláškou „nepodporuje
+  akci climate.turn_off" a nedá se k tomu nic dodat; karty přitom pod
+  klepnutím vypínají (Mushroom má výchozí `tap_action: toggle`) a
+  u hlasovky nebo HomeKitu se to nastavit nedá. Nabídnout a slušně
+  odmítnout je proti tomu směrovka: *„Termostat vypnout nejde. Řízení
+  topení v místnosti Obývák zastavíš přepínačem Ovládat topení."*
 - **Topí / netopí** se pozná z povelu, který hlavice dostaly, ne z cíle
   místnosti. Útlum i otevřené okno povel stahují dolů a podle cíle by
   karta tvrdila, že se topí, i když se netopí schválně.

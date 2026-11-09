@@ -130,14 +130,28 @@ def test_termostat_nejde_vypnout(cl):
     from homeassistant.components.climate import (ClimateEntityFeature,
                                                   HVACAction, HVACMode)
 
+    from homeassistant.exceptions import ServiceValidationError
+
     e = _termostat(cl, _M(povel=22.0))
     assert e.hvac_modes == [HVACMode.HEAT]
     assert HVACMode.OFF not in e.hvac_modes
-    # ani jako služba: co entita neumí, to jí Home Assistant nepošle
+    # režim se přepnout nedá, metoda neexistuje
     assert not hasattr(e, "async_set_hvac_mode")
-    assert not hasattr(e, "async_turn_off")
-    assert not (e.supported_features & getattr(
-        ClimateEntityFeature, "TURN_OFF", 0))
+    assert e.hvac_mode is HVACMode.HEAT
+
+    # Vypnutí se nabízí schválně: akci, kterou entita nenabízí, utne
+    # Home Assistant vlastní hláškou „nepodporuje akci" a nedá se
+    # k tomu nic dodat. Takhle místo ní vyjede směrovka.
+    assert e.supported_features & ClimateEntityFeature.TURN_OFF
+    with pytest.raises(ServiceValidationError) as chyba:
+        asyncio.run(e.async_turn_off())
+    assert "Ovládat topení" in str(chyba.value)
+    assert "Obývák" in str(chyba.value)
+    # a nic se tím nepřestavilo
+    assert e.coordinator.hodnoty[("id", "ovladat_topeni")] == 1.0
+
+    # zapnout jde: stav po zavolání je přesně ten, o který se žádá
+    asyncio.run(e.async_turn_on())
     assert e.hvac_mode is HVACMode.HEAT
 
     # vypnutý přepínač se ale přiznat musí

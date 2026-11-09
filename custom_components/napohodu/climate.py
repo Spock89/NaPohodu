@@ -61,7 +61,16 @@ class TermostatMistnosti(NaPohoduEntity, ClimateEntity):
     # topení v místnosti, tiše a beze stopy. Vypnout to jde dál, ale
     # přepínačem Ovládat topení, kam se člověk neproklikne omylem.
     _attr_hvac_modes = [HVACMode.HEAT]
-    _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
+    # Vypnutí se nabízí schválně, i když se jím nevypne: Home Assistant
+    # akci, kterou entita nenabízí, utne vlastní hláškou „nepodporuje
+    # akci climate.turn_off" a nedá se k tomu nic dodat. Karty pod
+    # klepnutím vypínají (Mushroom má výchozí tap_action: toggle), a
+    # tam, kde se to nedá nastavit — hlasovka, HomeKit — zůstane
+    # jedinou odpovědí ta nicneříkající věta. Nabídnout a slušně
+    # odmítnout je proti tomu směrovka: řekne, kudy topení vypnout.
+    _attr_supported_features = (ClimateEntityFeature.TARGET_TEMPERATURE
+                                | ClimateEntityFeature.TURN_ON
+                                | ClimateEntityFeature.TURN_OFF)
     _attr_icon = "mdi:home-thermometer"
 
     def __init__(self, k, pod) -> None:
@@ -169,3 +178,24 @@ class TermostatMistnosti(NaPohoduEntity, ClimateEntity):
         # Posuvník odchylky ukazuje tutéž hodnotu a musí se to dozvědět.
         self.coordinator.async_update_listeners()
         await self.coordinator.async_request_refresh()
+
+    async def async_turn_on(self) -> None:
+        """Nic k zapínání: termostat je zapnutý pořád.
+
+        Mlčky uspět tu není lež — stav po zavolání je přesně ten,
+        o který volající žádal.
+        """
+
+    async def async_turn_off(self) -> None:
+        """Vypnout se termostatem nedá, ale dá se říct kudy.
+
+        Zastavit řízení topení jedním ťuknutím na kartu je moc
+        snadné, než aby to byla nehoda bez následků. Odmítnutí proto
+        není konec řeči: hláška rovnou ukáže na přepínač, kterým to
+        jde, a ten je v nastavení místnosti, ne pod prstem.
+        """
+        m = self.mistnost
+        kde = f" v místnosti {m.nazev}" if m else ""
+        raise ServiceValidationError(
+            f"Termostat vypnout nejde. Řízení topení{kde} zastavíš "
+            f"přepínačem Ovládat topení v nastavení místnosti.")
