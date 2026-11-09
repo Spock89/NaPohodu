@@ -120,19 +120,30 @@ def test_naplanovany_cil_se_neda_prebit_tise(cl):
     assert e.coordinator.hodnoty[("id", "odchylka")] == 0.0
 
 
-def test_vypnuti_sedi_na_prepinaci_topeni(cl):
-    """OFF vypne zápis do hlavic, ne okna a stínění."""
-    from homeassistant.components.climate import HVACAction, HVACMode
+def test_termostat_nejde_vypnout(cl):
+    """Termostatové karty mívají pod klepnutím přepnutí zapnuto/vypnuto.
+
+    Jediné nechtěné ťuknutí — nebo věta na hlasovku — by zastavilo
+    řízení topení v místnosti, tiše a beze stopy. Vypnout to jde dál,
+    ale přepínačem Ovládat topení.
+    """
+    from homeassistant.components.climate import (ClimateEntityFeature,
+                                                  HVACAction, HVACMode)
 
     e = _termostat(cl, _M(povel=22.0))
+    assert e.hvac_modes == [HVACMode.HEAT]
+    assert HVACMode.OFF not in e.hvac_modes
+    # ani jako služba: co entita neumí, to jí Home Assistant nepošle
+    assert not hasattr(e, "async_set_hvac_mode")
+    assert not hasattr(e, "async_turn_off")
+    assert not (e.supported_features & getattr(
+        ClimateEntityFeature, "TURN_OFF", 0))
     assert e.hvac_mode is HVACMode.HEAT
-    asyncio.run(e.async_set_hvac_mode(HVACMode.OFF))
-    assert e.coordinator.hodnoty[("id", "ovladat_topeni")] == 0.0
-    assert e.hvac_mode is HVACMode.OFF
-    assert e.hvac_action is HVACAction.OFF
-    # okna ani stínění tím nezhasla
-    assert ("id", "ovladat") not in e.coordinator.hodnoty
-    assert ("id", "ovladat_stineni") not in e.coordinator.hodnoty
+
+    # vypnutý přepínač se ale přiznat musí
+    vypnuty = _termostat(cl, _M(povel=22.0), topeni=0.0)
+    assert vypnuty.hvac_mode is HVACMode.HEAT
+    assert vypnuty.hvac_action is HVACAction.OFF
 
 
 def test_topi_se_podle_povelu_ne_podle_cile(cl):

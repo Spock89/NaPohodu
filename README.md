@@ -1229,8 +1229,13 @@ posuvníku, a dál se otočit nedá.
 
 Co stojí za zmínku, protože to od termostatu nikdo nečeká:
 
-- **Vypnutí** (`off`) sedí na přepínači *Ovládat topení*. Zastaví zápis
-  do hlavic té místnosti, ne okna ani stínění.
+- **Vypnout se termostatem nedá.** Nabízí jediný režim, `heat`.
+  Termostatové karty mívají pod klepnutím rovnou přepnutí
+  zapnuto/vypnuto, takže by jediné nechtěné ťuknutí — nebo věta na
+  hlasovku — zastavilo řízení topení v místnosti, tiše a beze stopy.
+  Vypnout to jde dál, přepínačem *Ovládat topení* v nastavení
+  místnosti, kam se člověk neproklikne omylem. Když je vypnutý,
+  termostat to přizná: režim zůstává `heat`, ale hlásí, že netopí.
 - **Topí / netopí** se pozná z povelu, který hlavice dostaly, ne z cíle
   místnosti. Útlum i otevřené okno povel stahují dolů a podle cíle by
   karta tvrdila, že se topí, i když se netopí schválně.

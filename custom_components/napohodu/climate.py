@@ -55,13 +55,13 @@ class TermostatMistnosti(NaPohoduEntity, ClimateEntity):
 
     _attr_temperature_unit = UnitOfTemperature.CELSIUS
     _attr_target_temperature_step = ODCHYLKA_KROK
-    _attr_hvac_modes = [HVACMode.HEAT, HVACMode.OFF]
-    _attr_supported_features = (ClimateEntityFeature.TARGET_TEMPERATURE
-                                | ClimateEntityFeature.TURN_ON
-                                | ClimateEntityFeature.TURN_OFF)
-    # Novější Home Assistant jinak hlásí, že entita přepíná režim
-    # postaru. Netýká se chování, jen způsobu zápisu.
-    _enable_turn_on_off_backwards_compatibility = False
+    # Jen topení, žádné vypnuto. Termostatové karty mívají pod
+    # klepnutím rovnou přepnutí zapnuto/vypnuto, takže by jediné
+    # nechtěné ťuknutí — nebo věta na hlasovku — zastavilo řízení
+    # topení v místnosti, tiše a beze stopy. Vypnout to jde dál, ale
+    # přepínačem Ovládat topení, kam se člověk neproklikne omylem.
+    _attr_hvac_modes = [HVACMode.HEAT]
+    _attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
     _attr_icon = "mdi:home-thermometer"
 
     def __init__(self, k, pod) -> None:
@@ -105,9 +105,7 @@ class TermostatMistnosti(NaPohoduEntity, ClimateEntity):
 
     @property
     def hvac_mode(self) -> HVACMode:
-        zapnuto = self.coordinator.hodnoty.get(
-            (self.pod_id, "ovladat_topeni"), 0.0) > 0
-        return HVACMode.HEAT if zapnuto else HVACMode.OFF
+        return HVACMode.HEAT
 
     @property
     def hvac_action(self) -> HVACAction:
@@ -116,8 +114,14 @@ class TermostatMistnosti(NaPohoduEntity, ClimateEntity):
         Rozhoduje povel, který hlavice dostaly, ne cíl místnosti:
         útlum i otevřené okno ho stahují dolů a podle cíle by karta
         tvrdila, že se topí, i když se zrovna netopí schválně.
+
+        Vypnutý přepínač Ovládat topení se tu hlásí jako vypnuto.
+        Režim zůstává `heat`, protože jiný termostat nabízet nemá —
+        ale tvrdit, že topí, když se do hlavic nezapisuje, by byla
+        lež.
         """
-        if self.hvac_mode is HVACMode.OFF:
+        if self.coordinator.hodnoty.get(
+                (self.pod_id, "ovladat_topeni"), 0.0) <= 0:
             return HVACAction.OFF
         m = self.mistnost
         if m is None or m.povel_topeni is None or m.teplota is None:
@@ -165,22 +169,3 @@ class TermostatMistnosti(NaPohoduEntity, ClimateEntity):
         # Posuvník odchylky ukazuje tutéž hodnotu a musí se to dozvědět.
         self.coordinator.async_update_listeners()
         await self.coordinator.async_request_refresh()
-
-    async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
-        """OFF sedí na přepínači Ovládat topení.
-
-        Vypíná jen zápis do hlavic té místnosti — okna ani stínění se
-        tím nezastaví. Termostat, který vypne i větrání, by nikdo
-        nečekal.
-        """
-        self.coordinator.hodnoty[(self.pod_id, "ovladat_topeni")] = (
-            1.0 if hvac_mode is HVACMode.HEAT else 0.0)
-        self.async_write_ha_state()
-        self.coordinator.async_update_listeners()
-        await self.coordinator.async_request_refresh()
-
-    async def async_turn_on(self) -> None:
-        await self.async_set_hvac_mode(HVACMode.HEAT)
-
-    async def async_turn_off(self) -> None:
-        await self.async_set_hvac_mode(HVACMode.OFF)
