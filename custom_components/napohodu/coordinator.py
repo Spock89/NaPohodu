@@ -3267,9 +3267,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 # zrovna chybí. Navíc se tím rozjelo kmitání: po zastínění
                 # čidlo vychladlo, žaluzie se odstínila a šlo to znovu.
                 zima = t_min is not None and t_min < m.cil - 0.5
+                # Předstih je ve stupních, ne v čase, a výchozí je
+                # nula: stíní se, až když teplota cíl překročí.
+                # S jedním stupněm se clonilo i v pokoji, který na cíl
+                # teprve lezl.
                 horko = (not zima and t_max is not None
                          and t_max > m.cil - float(
-                             d.get(CONF_STINENI_PREDSTIH, 1.0)))
+                             d.get(CONF_STINENI_PREDSTIH, 0.0)))
                 rezim = nastav(CONF_STINENI_REZIM, "vzdy")
                 soukromi = nastav(CONF_SOUKROMI_KDY, "nikdy")
 

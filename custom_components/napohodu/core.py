@@ -1720,10 +1720,26 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # „Mrtvá zóna" byla hláška pro mě, ne pro člověka: z ní se nepozná,
     # co je mrtvé ani proč se nic neděje. Jsou to dva prahy a hodnota
     # mezi nimi, tak ať jsou vidět.
+    dolni = prah_zavreni(v, n)
+    if v.co2 < dolni and not pm_cisto:
+        # Sem se dá dojít i s nízkým CO2: stačí, že prach je mezi
+        # „čisto" a „špatně" — otevřít kvůli němu ještě není proč,
+        # zavřeno za vyvětráno se to počítat nedá. Mluvit přitom
+        # o prazích CO2 svádělo na špatnou stopu, drží to prach.
+        return beze_zmeny(
+            f"nic nechce: CO2 {v.co2:.0f} je v pořádku, ale prach "
+            f"ještě není čistý (PM2.5 {v.pm25:.0f}, čisto pod "
+            f"{n.pm_prah_cisto:.0f})")
+    if v.co2 < dolni:
+        # Pod dolním prahem není co řešit a tvrdit „je mezi prahy" by
+        # byla nepravda: hodnota je pod oběma. Dolní práh zůstává
+        # vidět, ať je poznat, odkud se to počítá.
+        return beze_zmeny(
+            f"nic nechce: vzduch je v pořádku, CO2 {v.co2:.0f} "
+            f"pod prahem {dolni:.0f}")
     return beze_zmeny(
         f"nic nechce: CO2 {v.co2:.0f} je mezi prahy "
-        f"(otevřít nad {prah_startu:.0f}, zavřeno pod "
-        f"{prah_zavreni(v, n):.0f})")
+        f"(otevřít nad {prah_startu:.0f}, zavřeno pod {dolni:.0f})")
 
 
 # ------------------------------------------------------- obrázek smyčky

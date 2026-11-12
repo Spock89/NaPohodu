@@ -3129,3 +3129,29 @@ def test_narazovy_pulz_se_neposuzuje_na_teplote():
     narazovy3 = pamet(True)
     r4 = kolo(narazovy3, 846.0, n.mez_dolni - 0.5)
     assert r4.akce is Akce.ZAVRIT and r4.kod == "pojistka", r4.duvod
+
+
+def test_hlaska_nic_nechce_nelze_pod_prahem_tvrdit_mezi_prahy():
+    """„CO2 593 je mezi prahy (otevřít nad 800, zavřeno pod 625)" byla
+    nepravda: hodnota je pod oběma.
+
+    Na konec rozhodování se dá dojít i s nízkým CO2 — stačí, že prach
+    je mezi „čisto" a „špatně". Pak ale drží prach, ne prahy CO2.
+    """
+    N2 = Nastaveni(co2_otevrit=800, co2_zavrit=625)
+    zaklad = dict(cas_s=100000, t_in=21.0, t_in_max=21.2, t_out=12.0,
+                  rh_out=60.0, cil=21.0)
+    pamet = lambda: Pamet(cas_povelu_s=100000 - 120,
+                          posledni_akce="zavrit")
+
+    # prach mezi čisto (20) a špatně (35), venku lepší
+    r = rozhodni(Vstup(co2=593, pm25=28.0, pm10=40.0, pm25_venku=10.0,
+                       pm_platny=True, **zaklad), pamet(), N2)
+    assert "mezi prahy" not in r.duvod, r.duvod
+    assert "prach ještě není čistý" in r.duvod
+    assert "PM2.5 28" in r.duvod
+
+    # mezi prahy se to říct smí, tam to platí
+    r2 = rozhodni(Vstup(co2=700, **zaklad), pamet(), N2)
+    assert "je mezi prahy" in r2.duvod
+    assert "otevřít nad 800" in r2.duvod and "zavřeno pod 625" in r2.duvod

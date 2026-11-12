@@ -508,6 +508,12 @@ nebo jestli hlásí něco jiného a čeká se na klid mezi povely.
 Sluneční zisk se počítá pro každé okno zvlášť z jeho azimutu a polohy
 slunce, korigovaný naměřeným zářením. Stíní se jen tam, kam svítí.
 
+**Stíní se, až když teplota cíl překročí.** Dřív se clonilo o stupeň
+dopředu, tedy i v pokoji, který na cíl teprve lezl. Předstih zůstává
+nastavitelný u místnosti (*Předstih stínění*, ve stupních, ne v čase),
+ale výchozí je nula a u založených místností se převodem vynuloval.
+Kdo chce clonit dřív, nastaví si ho zpátky.
+
 Žaluzie se ovládají **pojmenovanými stavy**. Pohony, které neumí naklápět
 lamely přímo, se řídí posloupností kroků — najeď na procenta, počkej,
 zastav za jízdy. Posloupnosti se ladí testerem přímo v nastavení a
