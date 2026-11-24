@@ -4,6 +4,7 @@ import re
 
 import yaml
 
+import karty
 from karty import dashboard
 
 
@@ -854,11 +855,23 @@ def test_bez_okna_zadne_hlasky_o_oknu():
 
 
 def test_bez_okna_zustava_to_spolecne():
-    """Teplota, CO2, topení a žádost sousedům s oknem nesouvisí."""
-    a = _atributy_mistnosti(_bez_okna_karta())
+    """Teplota, CO2, topení a žádost sousedům s oknem nesouvisí.
+
+    Dílna bez oken má radiátor jako každá jiná místnost, takže řádek
+    o topení tam patří — na okno není vázaný.
+    """
+    a = _atributy_mistnosti(_bez_okna_karta(
+        vybaveni={"obyvak": {"okno", "co2"}, "dilna": {"topeni"}}))
     for klic in ("co2", "teplota_rozhodna", "vlhkost", "topeni",
                  "zadost_sousedum", "zastupce"):
         assert klic in a["dilna"], klic
+
+
+def test_bez_hlavic_zadny_radek_o_topeni():
+    """Bez hlavic se nikam nic neposílá, takže „Topení — posíláme" by
+    hlásilo číslo, které nikdo nedostane."""
+    a = _atributy_mistnosti(_bez_okna_karta())
+    assert "topeni" not in a["dilna"]
 
 
 def test_okno_se_bez_okna_nevyrobi():
@@ -1085,3 +1098,80 @@ def test_panel_bez_mistnosti_nespadne():
     text = dashboard([], [], lambda e: True, podoba="panel")
     assert yaml.safe_load(text) is None
     assert "Žádná místnost" in text
+
+
+def test_vyhozena_polozka_nenecha_osirely_nazev():
+    """Položka karty je víc textových řádků: „- entity: …" a pod ním
+    „name: …". Dokud se zahazovalo po jednotlivých řádcích, osiřelé
+    „name:" zůstalo a z karty byl neplatný YAML — nenačetla se vůbec.
+    """
+    je = {"sensor.a"}
+    polozky = (karty._radek("sensor.a", "Je")
+               + karty._radek("sensor.b", "Není")
+               + karty._atribut("sensor.c", "x", "Taky není")
+               + ["      - type: divider"])
+    out = karty._jen_existujici(polozky, lambda e: e in je)
+    assert out == ["      - entity: sensor.a", '        name: "Je"',
+                   "      - type: divider"]
+    # a výsledek musí jít přečíst jako YAML
+    yaml.safe_load("\n".join(["entities:"] + out))
+
+
+def test_byt_bez_vybaveni_nezminuje_vybaveni():
+    """Zkouška celku: byt bez oken, žaluzií, zvlhčovače a hlavic.
+
+    Jednotlivé filtry se dají obejít přehlédnutím, tohle hlídá
+    výsledek — v kartě nesmí zbýt ani jedna zmínka o zařízení, které
+    tam není. Výjimka je nápověda k plánu, která vysvětluje povel
+    „nikdo tu nebude": ta o topení mluvit smí, protože ten povel
+    opravdu existuje.
+    """
+    je = {"sensor.napohodu_dilna_stav",
+          "sensor.napohodu_dilna_cilova_teplota", "sensor.t_dilna",
+          "binary_sensor.napohodu_dilna_obsazeno",
+          "binary_sensor.napohodu_dilna_klid",
+          "number.napohodu_dilna_moje_odchylka_teploty"}
+
+    def existuje(eid):
+        if isinstance(eid, (list, tuple, set)):
+            return any(x in je for x in eid)
+        return eid in je
+
+    text = dashboard(
+        ["dilna"], [], existuje, nazvy={"dilna": "Dílna"},
+        cidla={"dilna": ["sensor.t_dilna"]}, zaluzie={},
+        se_zvlhcovacem=set(), s_cistickou=set(),
+        vybaveni={"dilna": set()}, s_okny=set(), s_klidem=set(),
+        podoba="stranka")
+
+    # musí jít načíst — to je podmínka všeho ostatního
+    yaml.safe_load(text)
+
+    radky = [r for r in text.split("\n")
+             if "utlumí topení té místnosti" not in r]
+    for slovo in ("okn", "Okn", "žaluz", "Žaluz", "zvlhč", "Zvlhč",
+                  "čistič", "Čistič", "stínění", "Stínění",
+                  "Topení", "hlavice"):
+        nalez = [r.strip() for r in radky if slovo in r]
+        assert not nalez, (slovo, nalez[:3])
+
+
+def test_prazdny_nadpis_se_nevypise():
+    """V bytě bez vybavení se obsah celých bloků odfiltruje. Nadpis
+    se dřív vypisoval pořád a zbylo pět nadpisů za sebou a pod nimi
+    nic.
+
+    Nadpis následovaný dalším nadpisem se ale zahodit nesmí: titulek
+    a podnadpis je běžná dvojice a obsah patří oběma.
+    """
+    assert karty._bez_prazdnych_nadpisu(
+        ["  - type: heading", '    heading: "Prázdný"',
+         "    heading_style: title", "    icon: mdi:x", ""]) == []
+
+    s_obsahem = ["  - type: heading", '    heading: "Titulek"',
+                 "    heading_style: title", "    icon: mdi:a", "",
+                 "  - type: heading", '    heading: "Podnadpis"',
+                 "    heading_style: subtitle", "    icon: mdi:b", "",
+                 "  - type: entities", "    entities:",
+                 "      - entity: sensor.a"]
+    assert karty._bez_prazdnych_nadpisu(s_obsahem) == s_obsahem

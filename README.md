@@ -1261,6 +1261,42 @@ které se dají na dashboardu chytat a přesouvat.
 
 Třetí možnost je **ovládací panel**, popsaný níž.
 
+#### Co tam není, se neukazuje
+
+Místnost bez oken, bez žaluzií nebo bez hlavic nedostane ani entity,
+ani řádky, ani nastavení pro to, co nemá. Platí to na třech místech
+naráz a každé z nich se dá pokazit zvlášť:
+
+**Entity** vznikají jen k tomu, co v místnosti je. Dřív se zakládaly
+všem: dílna bez jediného okna měla přepínač *Ovládat okna*, který
+nikdy nic neudělal, a čidlo okna, které hlásilo napořád „zavřeno".
+Karta se přitom ptala správně, jen dostávala odpověď „ano, existuje",
+takže se to nedalo spravit v kartě. Přepínač vznikne jen k přiřazenému
+zařízení, čidlo okna stačí ke kontaktu — ovládat okno netřeba. Žádost
+o vyvětrání sousedům tím netrpí, ta jde přes oblast a ptá se na okna
+sousedů, ne na vlastní přepínač.
+
+**Nastavení** se ptá jen na to, co má na čem fungovat. Formulář úpravy
+místnosti měl 78 polí vždycky; samostatná místnost bez vybavení jich
+má teď 35, místnost v oblasti 51, plně vybavená pořád 78. **Pole pro
+přiřazení zařízení zůstávají vidět vždycky** — jinak by nebylo jak
+zařízení přidat. Mizí jen to, co na nich závisí. Prahy CO2 a pásmo
+kolem cíle zůstávají i místnosti bez vlastního okna, pokud je
+v **oblasti**: tam si jimi říká sousedovi o vyvětrání, takže jsou
+jediný způsob, jak se vyjádřit. Nově přidané zařízení své nastavení
+ukáže, až formulář otevřeš znovu.
+
+**Karta** zahazuje celé položky, ne jednotlivé řádky YAML. Položka je
+„- entity: …" a pod ním „name: …"; zahazovat po řádcích nechávalo
+osiřelé „name:" a z karty byl neplatný YAML, který se vůbec nenačte.
+Nadpis, pod kterým do konce sekce nic nezbylo, se taky nevypíše —
+jinak zbylo pět nadpisů za sebou a pod nimi nic. Nadpis následovaný
+podnadpisem se ale nezahazuje, obsah patří oběma.
+
+Hlídá to test, který vygeneruje kartu pro byt bez vybavení a hledá
+v ní zmínky — jednotlivé filtry se dají obejít přehlédnutím, výsledek
+ne.
+
 ### Termostat místnosti
 
 Každá místnost, která má hlavice, dostane navíc **climate entitu**.

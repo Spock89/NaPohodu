@@ -127,6 +127,16 @@ ATRIBUTY_STAVU = [
 # řádek se vůbec nezobrazí, místo aby svítil „Neznámý".
 JEN_KDYZ_JE = {"ucinek", "plan_bytu", "plan"}
 
+# Totéž pro zvlhčovač: jeho vlastní aerosol nemá co vysvětlovat
+# v místnosti, kde žádný zvlhčovač není.
+JEN_SE_ZVLHCOVACEM = {"prach_ze_zvlhcovace"}
+
+# Řádky o topení. Bez hlavic se nikam nic neposílá, takže řádek
+# „Topení — posíláme" by hlásil číslo, které nikdo nedostane.
+JEN_S_HLAVICEMI = {"topeni", "topeni_rezim", "topeni_utlum",
+                   "topeni_poslano", "topeni_hlavice", "odvzdusneni",
+                   "prichod_nahrivam"}
+
 # Řádky, které mluví o okně. V místnosti, kde se okno neovládá, se
 # nevyrobí vůbec — dřív se vyrobily a každý z nich napsal jinými slovy
 # totéž, že se tu okno neovládá. Tři řádky, které říkají jen „tenhle
@@ -622,7 +632,8 @@ def klic_jmena(nazev: str) -> str:
 
 
 def _napoveda_planu(mistnosti: list[str], skupiny: list[str],
-                    sceny: list[str] | None = None) -> list[str]:
+                    sceny: list[str] | None = None,
+                    s_okny: set | None = None) -> list[str]:
     """Nápověda k ručnímu zadání plánu, podle skutečného nastavení.
 
     Obecný návod je tu k ničemu: jediné, co se dá splést, jsou přesná
@@ -632,12 +643,23 @@ def _napoveda_planu(mistnosti: list[str], skupiny: list[str],
     if not mistnosti and not skupiny:
         return []
     radky = ["NaPohodu: prázdno", "NaPohodu: příchod"]
-    for kdo in list(mistnosti) + list(skupiny):
-        radky += [f"{kdo}: je tu někdo",
-                  f"{kdo}: nikdo tu nebude",
+    # Povel „zavřená okna" se nabízí jen tam, kde je co zavřít.
+    # Skupina může okna mít i tehdy, když je nemá každá její
+    # místnost, takže se u ní vypisuje vždycky.
+    nejake_okno = s_okny is None
+    for kdo in list(mistnosti):
+        radky += [f"{kdo}: je tu někdo", f"{kdo}: nikdo tu nebude"]
+        if s_okny is None or kdo in s_okny:
+            nejake_okno = True
+            radky += [f"{kdo}: zavřená okna",
+                      f"{kdo}: nikdo tu nebude, zavřená okna"]
+        radky.append(f"{kdo}: cíl 21,5 °C")
+    for kdo in list(skupiny):
+        radky += [f"{kdo}: je tu někdo", f"{kdo}: nikdo tu nebude",
                   f"{kdo}: zavřená okna",
                   f"{kdo}: nikdo tu nebude, zavřená okna",
                   f"{kdo}: cíl 21,5 °C"]
+        nejake_okno = True
     c = [SEKCE]
     c += _hlavicka("Jak zadat plán ručně", "mdi:help-circle", "subtitle")
     c.append("  - type: markdown")
@@ -654,9 +676,13 @@ def _napoveda_planu(mistnosti: list[str], skupiny: list[str],
              " (`calendar.napohodu_plan`); opakování v panelu funguje."
              " Čemu integrace nerozumí, zůstane uložené a ozve se"
              " zprávou — nespolkne se to tiše.")
-    c.append("      *Nikdo tu nebude = utlumí topení a okna nechá jet"
-             " dál. Zavřená okna = drží okno zavřené, i když je zbytek"
-             " bytu plný lidí.*")
+    if nejake_okno:
+        c.append("      *Nikdo tu nebude = utlumí topení a okna nechá"
+                 " jet dál. Zavřená okna = drží okno zavřené, i když"
+                 " je zbytek bytu plný lidí.*")
+    else:
+        c.append("      *Nikdo tu nebude = utlumí topení té"
+                 " místnosti.*")
     if sceny:
         c.append("      **Scény** jdou zadat třemi způsoby a všechny"
                  " vedou na totéž. Jeden den: zaškrtni ho v mřížce"
@@ -712,6 +738,47 @@ def _serad(sekce: list[list[str]]) -> list[list[str]]:
         key=lambda x: x[0])]
 
 
+def _bez_prazdnych_nadpisu(radky: list[str]) -> list[str]:
+    """Zahodí nadpis, pod kterým do konce sekce nic nezbylo.
+
+    Karty se skládají z toho, co místnost doopravdy má, takže v bytě
+    bez oken a bez žaluzií se obsah celých bloků odfiltruje — nadpis
+    se ale vypisoval pořád. Zbylo pět nadpisů za sebou a pod nimi nic.
+
+    Řeší se to tady, na jednom místě, ne podmínkou u každého bloku:
+    těch je přes dvacet a stačí na jeden zapomenout.
+
+    Jde se **od konce**, protože nadpisy se vrší: titulek a hned za
+    ním podnadpis je běžná dvojice a obsah patří oběma. Rozhoduje
+    tedy, jestli po nadpisu ještě něco přijde, ne jestli hned za ním.
+    """
+    # rozdělit na kusy: nadpis je „- type: heading" a jeho popisné
+    # řádky, všechno ostatní je obsah
+    kusy: list[tuple[bool, list[str]]] = []
+    for r in radky:
+        nadpis = r.strip() == "- type: heading"
+        pokracovani = (kusy and kusy[-1][0] and not nadpis
+                       and (not r.strip()
+                            or r.strip().startswith(("heading:",
+                                                     "heading_style:",
+                                                     "icon:"))))
+        if pokracovani:
+            kusy[-1][1].append(r)
+        else:
+            kusy.append((nadpis, [r]))
+
+    out: list[list[str]] = []
+    videl_obsah = False
+    for je_nadpis, radky_kusu in reversed(kusy):
+        if je_nadpis:
+            if not videl_obsah:
+                continue
+        elif any(x.strip() for x in radky_kusu):
+            videl_obsah = True
+        out.append(radky_kusu)
+    return [r for kus in reversed(out) for r in kus]
+
+
 def _do_sekci(radky: list[str]) -> list[str]:
     """Rozdělí karty na sekce podle značek v proudu.
 
@@ -722,11 +789,13 @@ def _do_sekci(radky: list[str]) -> list[str]:
     sekce, drzim = [], []
     for r in radky:
         if r == SEKCE:
+            drzim = _bez_prazdnych_nadpisu(drzim)
             if any(x.strip() for x in drzim):
                 sekce.append(drzim)
             drzim = []
             continue
         drzim.append(r)
+    drzim = _bez_prazdnych_nadpisu(drzim)
     if any(x.strip() for x in drzim):
         sekce.append(drzim)
 
@@ -816,7 +885,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
         if cidla.get(m):
             polozky += _radek(cidla[m], "   teď v místnosti")
     c += _hlavicka("Cílová teplota", "mdi:target")
-    c += _karta([x for x in polozky if _ok(x, existuje)])
+    c += _karta(_jen_existujici(polozky, existuje))
     c.append("")
 
     c.append(ZNACKA_BLOKU + "zaklad")
@@ -961,6 +1030,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             if a == "cisticka_bezi" and m not in s_cistickou:
                 continue
             if a in JEN_S_OKNEM and m not in s_okny:
+                continue
+            if a in JEN_S_HLAVICEMI and not ma(m, "topeni"):
                 continue
             if a in JEN_KDYZ_JE:
                 polozky += _atribut_kdyz_je(stav, a, n, s)
@@ -1177,7 +1248,8 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     # a tam se bez přesného tvaru nedá trefit. Proto se vypisuje
     # podle skutečného nastavení, se jmény, která tahle instalace má.
     c += _napoveda_planu([jm(m) for m in mistnosti], skupiny or [],
-                         sceny or [])
+                         sceny or [],
+                         s_okny={jm(m) for m in mistnosti if m in s_okny})
 
 
     c.append(ZNACKA_BLOKU + "ladeni")
@@ -1372,8 +1444,11 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
             continue
         c.append(SEKCE)
         c += _hlavicka(f"{jm(m)} — podrobnosti", "mdi:magnify", "subtitle")
-        c += _markdown([(stav, a, n, jed) for a, n, jed in ATRIBUTY_PODROBNE
-                        if not (a in JEN_S_OKNEM and m not in s_okny)])
+        c += _markdown([
+            (stav, a, n, jed) for a, n, jed in ATRIBUTY_PODROBNE
+            if not (a in JEN_S_OKNEM and m not in s_okny)
+            and not (a in JEN_SE_ZVLHCOVACEM and m not in se_zvlhcovacem)
+            and not (a in JEN_S_HLAVICEMI and not ma(m, "topeni"))])
 
     karty = _jen_zapnute([x for x in c if x is not None],
                          bloky)
@@ -1502,7 +1577,31 @@ def _prvni(existuje, *kandidati: str) -> str | None:
     return kandidati[0] if kandidati else None
 
 
-def _ok(radek: str, existuje) -> bool:
-    if "entity: " not in radek:
-        return True
-    return existuje(radek.split("entity: ", 1)[1].strip())
+def _jen_existujici(polozky: list[str], existuje) -> list[str]:
+    """Vyhodí celé řádky karty, jejichž entita není.
+
+    Položka karty je **víc textových řádků** — „- entity: …" a pod ním
+    „  name: …", u atributu ještě typ a přípona. Dokud se zahazovalo
+    po jednotlivých textových řádcích, zmizel jen ten s entitou
+    a osiřelé „name:" zůstalo: z toho vznikne neplatný YAML a karta se
+    vůbec nenačte. Položka proto začíná tam, kde začíná „- ", a končí
+    před další takovou.
+    """
+    out: list[str] = []
+    polozka: list[str] = []
+    drzet = True
+
+    def zapsat():
+        if drzet:
+            out.extend(polozka)
+
+    for radek in polozky:
+        if radek.lstrip().startswith("- "):
+            zapsat()
+            polozka, drzet = [radek], True
+        else:
+            polozka.append(radek)
+        if "entity: " in radek:
+            drzet = drzet and existuje(radek.split("entity: ", 1)[1].strip())
+    zapsat()
+    return out

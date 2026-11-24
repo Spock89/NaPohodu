@@ -19,8 +19,9 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import dny as dn
-from .const import (DOMAIN, PODENTITA_KLIMA, PODENTITA_MISTNOST,
-                    )
+from .const import (CONF_CLIMATE, CONF_OKNA, CONF_ZALUZIE,
+                    CONF_ZVLHCOVAC, DOMAIN, PODENTITA_KLIMA,
+                    PODENTITA_MISTNOST)
 from .entity import NaPohoduEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -67,10 +68,25 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_MISTNOST:
-            pridat([OvladatOkno(k, pod), OvladatStineni(k, pod),
-                    OtevritProPohodu(k, pod), ZvlhcovatVeSpanku(k, pod),
-                    OvladatTopeni(k, pod)],
-                   config_subentry_id=pod.subentry_id)
+            # Přepínač k zařízení, které v místnosti není, je nabídka
+            # ovládat vzduch. Nic nedělá, ale na dashboardu zabírá
+            # řádek a svádí k tomu, že se tam něco dá nastavit —
+            # proto vzniká jen tam, kde má co povolovat.
+            #
+            # Dílna bez oken tím o nic nepřijde: žádost o vyvětrání
+            # sousedům se podle tohohle přepínače neřídí, ta jde přes
+            # zónu a ptá se na okna sousedů, ne na vlastní.
+            sada = []
+            if pod.data.get(CONF_OKNA):
+                sada += [OvladatOkno(k, pod), OtevritProPohodu(k, pod)]
+            if pod.data.get(CONF_ZALUZIE):
+                sada.append(OvladatStineni(k, pod))
+            if pod.data.get(CONF_ZVLHCOVAC):
+                sada.append(ZvlhcovatVeSpanku(k, pod))
+            if pod.data.get(CONF_CLIMATE):
+                sada.append(OvladatTopeni(k, pod))
+            if sada:
+                pridat(sada, config_subentry_id=pod.subentry_id)
         elif pod.subentry_type == PODENTITA_KLIMA:
             pridat([OvladatKlimu(k, pod)], config_subentry_id=pod.subentry_id)
 

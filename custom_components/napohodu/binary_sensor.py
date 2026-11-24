@@ -10,7 +10,9 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from homeassistant.helpers.device_registry import DeviceInfo
 
-from .const import CONF_ZDROJ_OKENNIHO_M, DOMAIN, PODENTITA_MISTNOST
+from .const import (CONF_KONTAKT_M, CONF_OKNA,
+                    CONF_ZDROJ_OKENNIHO_M, DOMAIN,
+                    PODENTITA_MISTNOST)
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .entity import NaPohoduEntity
@@ -21,8 +23,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     k = hass.data[DOMAIN][entry.entry_id]
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_MISTNOST:
-            pridat([OknoOtevreno(k, pod), Obsazeno(k, pod), Klid(k, pod),
-                    Okno(k, pod)], config_subentry_id=pod.subentry_id)
+            sada = [Obsazeno(k, pod), Klid(k, pod)]
+            # Čidlo okna v místnosti, která o žádném okně neví, hlásí
+            # napořád „zavřeno" — a to je horší než nic: termostat
+            # i karta se tváří, že je tu okno hlídané, a přitom se jen
+            # opisuje prázdno. Stačí kontakt, ovládat okno netřeba.
+            if pod.data.get(CONF_OKNA) or pod.data.get(CONF_KONTAKT_M):
+                sada += [OknoOtevreno(k, pod), Okno(k, pod)]
+            pridat(sada, config_subentry_id=pod.subentry_id)
     pridat([TopnaSezona(k, entry)])
 
 

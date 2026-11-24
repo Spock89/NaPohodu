@@ -183,11 +183,38 @@ def test_mistnost_dostane_vsechny_prepinace(nahradni_ha):
     uživatel nemá čím automatiku povolit."""
     import importlib
     const = importlib.import_module("napohodu.const")
-    pod = FalesnaPodentita(const.PODENTITA_MISTNOST, "Kuchyne")
+    pod = FalesnaPodentita(const.PODENTITA_MISTNOST, "Kuchyne", {
+        const.CONF_OKNA: ["cover.o"],
+        const.CONF_ZALUZIE: ["cover.z"],
+        const.CONF_ZVLHCOVAC: ["switch.z"],
+        const.CONF_CLIMATE: ["climate.h"]})
     # k ovládání přibyly volby místnosti, které nejsou číslo
     assert sorted(_klice(_entity_platformy("switch", [pod]))) == sorted([
         "ovladat_okno", "ovladat_stineni", "ovladat_topeni",
         "otevirat_i_pro_pohodu", "zvlhcovat_i_ve_spanku"])
+
+
+def test_prepinac_vznikne_jen_k_zarizeni_ktere_tam_je(nahradni_ha):
+    """Přepínač k zařízení, které v místnosti není, je nabídka ovládat
+    vzduch: nic nedělá, ale na dashboardu zabírá řádek.
+
+    Dílna bez oken tím o nic nepřijde — žádost o vyvětrání sousedům
+    se podle tohohle přepínače neřídí.
+    """
+    import importlib
+    const = importlib.import_module("napohodu.const")
+    holá = FalesnaPodentita(const.PODENTITA_MISTNOST, "Dilna")
+    assert _klice(_entity_platformy("switch", [holá])) == []
+
+    jen_okno = FalesnaPodentita(const.PODENTITA_MISTNOST, "Loznice",
+                                {const.CONF_OKNA: ["cover.o"]})
+    assert sorted(_klice(_entity_platformy("switch", [jen_okno]))) == [
+        "otevirat_i_pro_pohodu", "ovladat_okno"]
+
+    jen_hlavice = FalesnaPodentita(const.PODENTITA_MISTNOST, "Chodba",
+                                   {const.CONF_CLIMATE: ["climate.h"]})
+    assert _klice(_entity_platformy("switch", [jen_hlavice])) == [
+        "ovladat_topeni"]
 
 
 def test_klima_dostane_svuj_prepinac(nahradni_ha):
@@ -2161,3 +2188,27 @@ def test_poradi_podpolozek(nahradni_ha):
     assert typy == [const.PODENTITA_SCENA, const.PODENTITA_ZONA,
                     const.PODENTITA_SKUPINA, const.PODENTITA_MISTNOST,
                     const.PODENTITA_KLIMA], typy
+
+
+def test_cidlo_okna_vznikne_jen_kdyz_o_oknu_vime(nahradni_ha):
+    """Čidlo okna v místnosti, která o žádném okně neví, hlásí
+    napořád „zavřeno" — a to je horší než nic: termostat i karta se
+    tváří, že je tu okno hlídané, a přitom se opisuje prázdno."""
+    import importlib
+    const = importlib.import_module("napohodu.const")
+
+    holá = FalesnaPodentita(const.PODENTITA_MISTNOST, "Dilna")
+    # topna_sezona je čidlo bytu, ne místnosti
+    assert sorted(_klice(_entity_platformy("binary_sensor", [holá]))) == [
+        "klid", "obsazeno", "topna_sezona"]
+
+    # stačí kontakt, ovládat okno netřeba
+    s_kontaktem = FalesnaPodentita(
+        const.PODENTITA_MISTNOST, "Obyvak",
+        {const.CONF_KONTAKT_M: ["binary_sensor.k"]})
+    assert "okno" in _klice(_entity_platformy(
+        "binary_sensor", [s_kontaktem]))
+
+    s_oknem = FalesnaPodentita(const.PODENTITA_MISTNOST, "Kuchyne",
+                               {const.CONF_OKNA: ["cover.o"]})
+    assert "okno" in _klice(_entity_platformy("binary_sensor", [s_oknem]))

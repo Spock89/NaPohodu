@@ -116,3 +116,46 @@ def test_vymazani_pole_mistnosti_se_udrzi(cf):
     assert c.CONF_CO2 not in nove, "vymazané čidlo CO2 musí zmizet"
     # mapa stínění se v tomhle formuláři nevyplňuje, ať nezmizí s ním
     assert nove[c.CONF_STINENI_MAPA] == {"x": {"vychozi": "y"}}
+
+
+def test_formular_mistnosti_se_ptá_jen_na_to_co_tam_je(cf):
+    """Proklikat se desítkami polí, ze kterých polovina nic nedělá,
+    je nepřehledné. Chování zařízení, které v místnosti není, se
+    neukazuje — pole pro přiřazení toho zařízení ale zůstává jinde,
+    v základním kroku, takže jde přidat vždycky.
+    """
+    m, c = cf
+
+    def pole(data):
+        return {str(k.schema) for k
+                in m._schema_chovani([], data).schema}
+
+    holá = pole({})
+    vse = pole({c.CONF_OKNA: ["cover.o"], c.CONF_ZALUZIE: ["cover.z"],
+                c.CONF_ZVLHCOVAC: ["switch.v"], c.CONF_CISTICKA: ["fan.c"],
+                c.CONF_CLIMATE: ["climate.h"]})
+    assert len(holá) < len(vse) / 2, (len(holá), len(vse))
+
+    # čeho se to týká
+    assert c.CONF_STINENI_PREDSTIH in vse and c.CONF_STINENI_PREDSTIH not in holá
+    assert c.CONF_RH_MIN in vse and c.CONF_RH_MIN not in holá
+    assert c.CONF_UTLUM in vse and c.CONF_UTLUM not in holá
+    assert c.CONF_PROJEZD_M in vse and c.CONF_PROJEZD_M not in holá
+    assert c.CONF_PRACH_DOSAH in vse and c.CONF_PRACH_DOSAH not in holá
+
+    # Odchylka od cíle zůstává vždycky: posouvá cílovou teplotu,
+    # ať se v místnosti větrá nebo ne.
+    assert c.CONF_ODCHYLKA in holá
+
+    # Prahy CO2 a pásmo kolem cíle patří i místnosti bez vlastního
+    # okna, pokud je v oblasti — tam si jimi říká sousedovi o vyvětrání.
+    v_zone = {str(k.schema) for k
+              in m._schema_chovani([], {}, v_zone=True).schema}
+    for klic in (c.CONF_CO2_OTEVRIT, c.CONF_MEZ_DOLNI, c.CONF_MEZ_HORNI):
+        assert klic in v_zone, klic
+        assert klic not in holá, klic
+
+    # jednotlivě: žaluzie zapnou jen stínění, ne zvlhčovač
+    jen_zaluzie = pole({c.CONF_ZALUZIE: ["cover.z"]})
+    assert c.CONF_STINENI_PREDSTIH in jen_zaluzie
+    assert c.CONF_RH_MIN not in jen_zaluzie
