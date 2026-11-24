@@ -61,8 +61,8 @@ def test_navrat_ukonci_utlum_s_predstihem():
 
 def test_popis_rika_co_plati_a_dokdy():
     assert popis(Udalost(bezi=True, do_s=TED + 2 * HODINA),
-                 Udalost(), TED).startswith("nikdo doma, ještě 120 min")
-    assert "víc lidí za 30 min" in popis(
+                 Udalost(), TED).startswith("prázdno, ještě 120 min")
+    assert "příchod za 30 min" in popis(
         Udalost(), Udalost(od_s=TED + 30 * 60), TED)
     # bez plánu nic, ať se řádek v kartě schová
     assert popis(Udalost(), Udalost(), TED) is None
@@ -79,7 +79,7 @@ def test_mistnost_mluvi_o_sobe_ne_za_cely_byt():
     je_tu = Udalost(bezi=True, do_s=TED + HODINA, zdroj="calendar.loznice")
     t = popis(Udalost(), je_tu, TED, MISTNOST)
     assert t.startswith("je tu někdo")
-    assert "nikdo doma" not in t
+    assert "prázdno" not in t
 
 
 def test_popis_rekne_ze_ktereho_kalendare_to_je():
@@ -98,3 +98,19 @@ def test_slouc_si_zdroj_pamatuje():
     c = slouc([Udalost(od_s=TED + 5 * HODINA, zdroj="calendar.a"),
                Udalost(od_s=TED + HODINA, zdroj="calendar.b")])
     assert c.zdroj == "calendar.b"        # ta, která začne dřív
+
+
+def test_prichod_zacina_do_predstihu():
+    """Předstih na příchod se nezadává v minutách, ale počítá se
+    z naměřené křivky — proto sekundy."""
+    from plan import zacina_do
+
+    za_hodinu = Udalost(bezi=False, od_s=TED + 3600)
+    assert zacina_do(za_hodinu, TED, predstih_s=2 * 3600)
+    assert not zacina_do(za_hodinu, TED, predstih_s=1800)
+    # nula vypíná
+    assert not zacina_do(za_hodinu, TED, predstih_s=0)
+    # co už běží, se nenahřívá dopředu
+    assert not zacina_do(Udalost(bezi=True), TED, predstih_s=7200)
+    # a bez známého začátku se nedá plánovat nic
+    assert not zacina_do(Udalost(), TED, predstih_s=7200)

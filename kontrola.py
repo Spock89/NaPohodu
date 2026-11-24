@@ -634,6 +634,8 @@ VIDITELNE = jadro_text[jadro_text.index("def pevna_pravidla_bytu"):
 for jm in re.findall(r"^([A-Z][A-Z_]+) = [\d.]+", jadro_text, re.M):
     if jm in ("MAGNUS_A", "MAGNUS_B"):
         continue              # vzorec, ne rozhodnutí
+    if jm in ("NARAZ_ROZDIL",):
+        continue              # tvaruje větu, nerozhoduje o oknu
     if jm not in VIDITELNE:
         chyby.append(
             f"core.py: {jm} rozhoduje, ale nikde se neukazuje — "
@@ -1148,6 +1150,16 @@ for cislo, radek in enumerate(tok.splitlines(), 1):
         chyby.append(
             f"config_flow.py:{cislo}: nové hodnoty se přisypávají "
             f"k starým, vymazané pole se tím neuloží — použij _poskladej")
+
+# 5c) dvakrát stejné jméno testu znamená, že se jeden z nich nikdy
+#     nespustí — a nikdo si toho nevšimne, protože výpis je zelený.
+for soubor in sorted((d.parent.parent / "tests").glob("test_*.py")):
+    jmena = re.findall(r"^def (test_[a-z0-9_]+)\(",
+                       soubor.read_text(encoding="utf-8"), re.M)
+    for jm in {x for x in jmena if jmena.count(x) > 1}:
+        chyby.append(
+            f"{soubor.name}: test {jm} je tam dvakrát, běží jen ten "
+            f"druhý — přejmenuj jeden z nich")
 
 # 6) co hlídá hassfest u Home Assistantu — ať to nespadne až na GitHubu
 #    a) pořadí klíčů v manifestu: domain, name, pak abecedně

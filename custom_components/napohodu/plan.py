@@ -30,7 +30,7 @@ class Slova:
     plno: str
 
 
-BYT = Slova(prazdno="nikdo doma", plno="víc lidí")
+BYT = Slova(prazdno="prázdno", plno="příchod")
 MISTNOST = Slova(prazdno="nikdo tu nebude", plno="je tu někdo")
 
 
@@ -84,6 +84,20 @@ def predvetrat(vic: Udalost, cas_s: float, predstih_min: float) -> bool:
     if predstih_min <= 0 or vic.bezi or vic.od_s is None:
         return False
     return 0 <= vic.od_s - cas_s <= predstih_min * 60
+
+
+def zacina_do(vic: Udalost, cas_s: float, predstih_s: float) -> bool:
+    """Příchod je za chvíli, takže se má začít nahřívat.
+
+    Narozdíl od předvětrání se předstih nezadává v minutách, ale
+    v sekundách — počítá se z naměřené náběhové křivky místnosti,
+    takže je v mrazu jiný než na podzim a pro každou místnost jiný.
+    Jedno pevné číslo tu selhává viditelně: byt má být natopený
+    v okamžik příchodu, ne se v něm tou dobou teprve začínat topit.
+    """
+    if predstih_s <= 0 or vic.bezi or vic.od_s is None:
+        return False
+    return 0 <= vic.od_s - cas_s <= predstih_s
 
 
 def konci_do(nikdo: Udalost, cas_s: float, predstih_min: float) -> bool:

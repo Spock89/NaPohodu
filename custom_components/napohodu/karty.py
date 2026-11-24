@@ -29,7 +29,7 @@ GLOBALNI = [
      "Strop čekání. Když se venku změní dřív, zkusí se dřív."),
     ("predvetrat_pred_planovanou_navstevou",
      "Předvětrat před plánovanou návštěvou",
-     "Kolik minut před začátkem události „víc lidí“ se začne větrat až "
+     "Kolik minut před začátkem události „příchod“ se začne větrat až "
      "na čistou hodnotu CO2. Nula vypíná."),
 ]
 
@@ -175,6 +175,7 @@ ATRIBUTY_PODROBNE = [
     ("prahy_z_oblasti", "Prahy bere z oblasti", None),
     ("topeni_rezim", "Topení — režim", None),
     ("topeni_utlum", "Topení — útlum", None),
+    ("prichod_nahrivam", "Topení — nahřívám na příchod", None),
     ("topeni_poslano", "Topení — poslední povel", None),
     ("topeni_hlavice", "Topení — hlásí hlavice", None),
     ("odvzdusneni", "Odvzdušnění", None),
@@ -294,9 +295,9 @@ VYSVETLIVKY = {
         "- Útlum se odečítá až od povelu pro hlavice, ne od cíle "
         "místnosti. Prahy pro větrání a stínění se tím neposunou — ty "
         "s topením nemají co dělat.",
-        "- Útlumy se sčítají. Noční a „nikdo doma“ běží vedle sebe "
+        "- Útlumy se sčítají. Noční a „prázdno“ běží vedle sebe "
         "a výsledek je vidět v atributu `topeni_utlum`, třeba "
-        "`noc -1.0 °C, nikdo doma -1.5 °C`.",
+        "`noc -1.0 °C, prázdno -1.5 °C`.",
         "- Plánovaná nepřítomnost se nečeká ani vteřinu a navíc "
         "**přestane tlumit hodinu před svým koncem**, aby bylo po "
         "návratu nahřáto. Čidlo tohle neumí — o návratu se dozví, až "
@@ -630,7 +631,7 @@ def _napoveda_planu(mistnosti: list[str], skupiny: list[str],
     """
     if not mistnosti and not skupiny:
         return []
-    radky = ["NaPohodu: nikdo doma", "NaPohodu: víc lidí"]
+    radky = ["NaPohodu: prázdno", "NaPohodu: příchod"]
     for kdo in list(mistnosti) + list(skupiny):
         radky += [f"{kdo}: je tu někdo",
                   f"{kdo}: nikdo tu nebude",
@@ -1239,7 +1240,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
                             ("odclonit", "odclonit"),
                             ("zatahnout_kvuli_soukromi", "soukromí"),
                             ("nastavit_jako_kdyz_nikdo_neni_doma",
-                             "nikdo doma"),
+                             "prázdno"),
                             ("vychozi_stav_zaluzii", "výchozí stav")):
             eid = f"button.napohodu_{m}_{klic}"
             if existuje(eid):

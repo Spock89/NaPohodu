@@ -133,7 +133,7 @@ def test_nazev_z_panelu_se_precte_zpatky(koord):
     k = _instance(koord, podentity=[
         Podentita("skupina", "1. patro",
                   {"skupina_mistnosti": ["Ložnice"]})])
-    assert k.plan_z_nazvu("NaPohodu: nikdo doma") == ("nikdo", None, None,
+    assert k.plan_z_nazvu("NaPohodu: prázdno") == ("nikdo", None, None,
                                                       None)
     assert k.plan_z_nazvu("Ložnice: je tu někdo") == ("obsazeno", "Ložnice",
                                                       None, None)
@@ -314,7 +314,7 @@ def test_nabidka_nezavira_kde_neni_co_zavrit(koord):
     popisy = [v.popis for v in k.nabidka_planu()]
     assert not [x for x in popisy if "zavřená okna" in x], popisy
     assert "Dílna: nikdo tu nebude" in popisy      # ostatní zůstávají
-    assert "nikdo doma" in popisy
+    assert "prázdno" in popisy
 
 
 def test_nabidka_zavira_i_bez_okna_v_zone(koord):

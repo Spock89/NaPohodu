@@ -817,7 +817,13 @@ Výchozí hodnoty jsou nesouměrné schválně:
   zbytečně nezvlhčená ložnice. Platí to i chvíli po vypnutí: aerosol
   v pokoji zůstává, takže se prachu věří teprve tehdy, až klesne do
   čistého pásma, nejdéle ale dvě hodiny. Restart je pro aerosol totéž
-  co vypnutí, takže se stav zvlhčovače i doznívání ukládají,
+  co vypnutí, takže se stav zvlhčovače i doznívání ukládají. **Pozná
+  se i ruční zapnutí** — přepínačem, z karty nebo cizí automatizací:
+  rozhoduje skutečný stav jeho entit, ne vlastní odeslaný povel.
+  Dokud se integrace ptala jen na svůj povel, brala prach z cizího
+  zapnutí za skutečný a mohla kvůli němu otevřít okno, tedy přesně
+  naopak. Platí to i při pokaženém čidle vlhkosti: to zastaví řízení,
+  ne rozprašování,
 - **nezvlhčovat při otevřeném okně kdekoli v bytě**, protože vlhkost
   se šíří dál než jen do vlastní místnosti; pro menší dosah je tu zóna
   nebo výběr místností.
@@ -917,8 +923,8 @@ Význam dává **pole, do kterého entitu vložíš**, ne název události:
 
 | kde | pole |
 |---|---|
-| byt | Plán: nikdo doma |
-| byt | Plán: víc lidí |
+| byt | Plán: prázdno |
+| byt | Plán: příchod |
 | místnost | Plán: je tu někdo |
 | místnost | Plán: nikdo tu nebude |
 
@@ -930,14 +936,23 @@ později.
 
 Co to dělá:
 
-- **nikdo doma** — nepřítomnost se bere za dlouhou hned, bez čekání na
+- **prázdno** — nepřítomnost se bere za dlouhou hned, bez čekání na
   hodiny v poli *Utlumit až po*. A protože se ví, kdy skončí,
   **přestane se tlumit hodinu před jejím koncem**, aby bylo po návratu
   nahřáto; předstih je tentýž, jaký se nastavuje pro náběh před nocí.
-- **víc lidí** — byt se bere za obsazený, takže se netlumí, a před
-  začátkem události se **předvětrá**: větrá se až na čistou hodnotu
-  CO2, ne jen pod práh otevření, aby byla rezerva, než se byt zaplní.
-  Kolik minut předem, se nastavuje šoupátkem; nula vypíná.
+- **příchod** — v okamžik začátku události má být **vyvětráno
+  i natopeno**. Obojí se proto dělá dopředu:
+
+  **Vzduch**: větrá se až na čistou hodnotu CO2, ne jen pod práh
+  otevření, aby byla rezerva, než se byt zaplní. Kolik minut předem,
+  se nastavuje šoupátkem; nula vypíná.
+
+  **Teplo**: útlumy z nepřítomnosti se pustí tak dlouho předem, aby se
+  stihlo nahřát — podle **náběhové křivky** té místnosti, ne podle
+  pevného čísla (viz níž). Nočního útlumu se to netýká: příchod ve tři
+  ráno neznamená, že se má přestat spát.
+
+  Po začátku události se byt bere za obsazený, takže se netlumí.
 - **je tu někdo** v místnosti — bere se za obsazenou, i když v ní
   nejsou čidla. Pro pokoje, jejichž využití se mění po týdnech.
 - **nikdo tu nebude** v místnosti — **utlumí topení** té místnosti,
@@ -956,6 +971,35 @@ Co to dělá:
 Prázdno a zavřená okna jsou **dvě různé věci** a dají se zadat zvlášť
 i spolu (*nikdo tu nebude, zavřená okna* — na jeden odjezd jedna
 událost).
+
+#### Náběhová křivka
+
+Předstih nahřátí býval pevné číslo z nastavení, stejné v lednu
+i v květnu. U návratu domů to většinou projde, nikdo neměří, jestli
+bylo natopeno přesně v šest. **U příchodu selhává viditelně**: nahřát
+o dva stupně trvá v mrazu násobek toho, co na podzim, takže se buď
+topí zbytečně dlouho dopředu, nebo se to nestihne — a „nestihlo se to"
+je přesně to, kvůli čemu se příchod plánuje.
+
+Integrace si proto pamatuje, co místnost **doopravdy zvládá**: kolik
+stupňů za hodinu přibylo, když se topilo. Nic se nemodeluje z výkonu
+radiátorů, bere se naměřené. Měří se po celých nahřívacích úsecích,
+protože za minutu přibude setina stupně, což je pod rozlišením čidla;
+krátké úseky a úseky s otevřeným oknem se zahazují.
+
+Dělí se to **podle venkovní teploty**, po pěti stupních, protože na ní
+rychlost nejvíc závisí. Když vlastní přihrádka ještě nic neví, bere se
+nejbližší, která ví — pět stupňů vedle je pořád blíž pravdě než pevné
+číslo, které o venku neví nic.
+
+Dokud se nenaměří nic, **integrace nic netvrdí** a platí pevný
+předstih z nastavení jako dosud. Hádat rychlost z ničeho by znamenalo
+plánovat příchod podle výmyslu. Předstih má strop čtyři hodiny: bez
+něj by jedna pomalá místnost v mrazu začala topit od rána, a kdyby se
+příchod zrušil, protopilo by se to celé zbytečně.
+
+Naměřené hodnoty přežijí restart. Za den vyjde pár úseků, takže
+zahodit je při každé aktualizaci by znamenalo pořád začínat od nuly.
 
 **Skutečnost smí přítomnost jen přidat, nikdy ubrat.** Když čidlo vidí
 pohyb, je obsazeno, ať plán říká co chce — a povel „zavřená okna" tím
@@ -1572,6 +1616,14 @@ Mezi poryvy totiž náraz spadne pod uklidňovací mez klidně na jedno
 kvůli větru, za dvě minuty otevřelo a hned zase zavřelo. Hystereze
 hlídá jen výšku hodnoty, ne čas. Nula dobu klidu vypne. Kolik klidu
 ještě chybí, je vidět v hlášce i v atributu `vitr`.
+
+**Hláška uvádí naměřené hodnoty**, aby šla ověřit pohledem z okna:
+*„zavírám kvůli větru (8.4 m/s, nárazy 14.2, práh 7 a 11)"*. Bez
+čísel to při pohledu na klid vypadalo jako porucha a nedalo se
+poznat, jestli zavřely nárazy, nebo ustálená rychlost. Nárazy se
+píšou jen tehdy, když jsou doopravdy vyšší: čidlo, které je nehlásí,
+za ně dosazuje rychlost a psát dvakrát totéž nemá smysl. Hodnoty se
+ukazují i u zavřeného okna, které jen drží.
 
 **Obnova povelu, která okno přestaví, je pohyb.** Obnova se posílá
 každých třicet minut pro případ, že pohon povel zahodil. Většinou jen

@@ -160,6 +160,15 @@ class Vstup:
 
     dest: float = 0.0
     vitr_blokuje: bool = False
+    # Naměřené hodnoty větru a jeho prahy, v metrech za sekundu.
+    # Jen k vypsání: rozhoduje `vitr_blokuje`, které má svou
+    # hysterezi a dobu klidu. Bez čísel byla hláška „zavírám kvůli
+    # větru" neověřitelná — při pohledu z okna na klid vypadala jako
+    # porucha a nedalo se poznat, jestli zavřely nárazy nebo rychlost.
+    vitr: float | None = None
+    naraz: float | None = None
+    vitr_prah: float | None = None
+    naraz_prah: float | None = None
     smog: bool = False
     doma: bool = True
     spanek: bool = False
@@ -529,6 +538,34 @@ def prah_otevreni(v: Vstup, p: Pamet, n: Nastaveni) -> float:
     return prah
 
 
+# O kolik musí být náraz vyšší než ustálená rychlost, aby se vyplatilo
+# psát ho zvlášť. Čidlo, které nárazy nehlásí, za ně dosazuje rychlost
+# a psát dvakrát totéž je jen delší hláška.
+NARAZ_ROZDIL = 0.1
+
+
+def _vitr_cisla(v: "Vstup") -> str:
+    """Naměřený vítr do závorky, ať je hláška ověřitelná.
+
+    Nárazy se píšou jen tehdy, když jsou doopravdy vyšší — u čidla,
+    které je nehlásí, se za ně dosazuje rychlost a psát dvakrát totéž
+    nemá smysl. Prahy se připojí, aby šlo poznat, které z čísel
+    okno zavřelo.
+    """
+    if v.vitr is None and v.naraz is None:
+        return ""
+    casti = []
+    if v.vitr is not None:
+        casti.append(f"{v.vitr:.1f} m/s")
+    if v.naraz is not None and (v.vitr is None or v.naraz > v.vitr + NARAZ_ROZDIL):
+        casti.append(f"nárazy {v.naraz:.1f}")
+    prahy = [f"{x:.0f}" for x in (v.vitr_prah, v.naraz_prah)
+             if x is not None]
+    if prahy:
+        casti.append("práh " + " a ".join(dict.fromkeys(prahy)))
+    return " (" + ", ".join(casti) + ")"
+
+
 def _co_drzi(v: Vstup, pm_spatne: bool) -> str | None:
     """Co kromě CO2 drží okno otevřené — nebo ho otevřelo.
 
@@ -575,7 +612,7 @@ def duvody(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> list[str]:
         # nemá cenu vypisovat — nic z nich teď neplatí.
         return ["venkovní teplotu neznám, čekám na čidlo"]
     if v.vitr_blokuje:
-        seznam.append("vítr")
+        seznam.append("vítr" + _vitr_cisla(v))
     if v.dest > n.dest_prah:
         seznam.append(f"déšť {v.dest:.1f}")
     if not v.doma:
@@ -934,9 +971,10 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     # --- 1. vítr ---------------------------------------------------
     if v.vitr_blokuje:
         if not p.otevreno:
-            return beze_zmeny("vítr, zavřeno", False)
+            return beze_zmeny("vítr, zavřeno" + _vitr_cisla(v), False)
         p.rezim = "pulz"
-        return zavri("zavírám kvůli větru", hned=True, kod="vitr")
+        return zavri("zavírám kvůli větru" + _vitr_cisla(v),
+                     hned=True, kod="vitr")
 
     # --- 1b. déšť ---------------------------------------------------
     # Ochrana bytu stojí nad ručním rozhodnutím stejně jako vítr.

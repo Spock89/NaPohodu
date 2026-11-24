@@ -312,6 +312,7 @@ def test_vlhkost_se_ukazuje_i_bez_zarizeni(nahradni_ha):
             ko.NaPohoduCoordinator._stav_pomocnika)
         zvlhcuje: set = set()
         _dozvuk: dict = {}
+        _naber: dict = {}
         _pm_syrovy: dict = {}
         _uklid_dozvuku = staticmethod(lambda cas_s: None)
         _zvlhcuje_na = staticmethod(lambda pod_id: False)
@@ -774,6 +775,7 @@ def test_odeslany_souhrn_prezije_znovunacteni(nahradni_ha):
         pameti: dict = {}
         zvlhcuje: set = set()
         _dozvuk: dict = {}
+        _naber: dict = {}
         _cizi_zadost: dict = {}
         _t_in_drive: dict = {}
         _zaluzie_rukou: dict = {}
@@ -1036,6 +1038,7 @@ def test_zvlhcovac_respektuje_okno_a_pritomnost(nahradni_ha):
             _cislo = ko.NaPohoduCoordinator._cislo
             _stav = staticmethod(lambda eid: StavRH() if eid else None)
             _pomocnici_krok = ko.NaPohoduCoordinator._pomocnici_krok
+            _pomocnik_bezi = ko.NaPohoduCoordinator._pomocnik_bezi
             _stav_pomocnika = staticmethod(
                 ko.NaPohoduCoordinator._stav_pomocnika)
             hodnota = staticmethod(lambda a, b, vych: vych)
@@ -1045,7 +1048,12 @@ def test_zvlhcovac_respektuje_okno_a_pritomnost(nahradni_ha):
             _pm_syrovy: dict = {}
             _uklid_dozvuku = staticmethod(lambda cas_s: None)
             _zvlhcuje_na = staticmethod(lambda pod_id: False)
-            hass = None
+
+            class hass:
+                class states:
+                    # žádná entita se nehlásí, běží jen to, co jsme
+                    # sami zapnuli
+                    get = staticmethod(lambda eid: None)
 
         m = Mistnost()
         m.atributy = {}
@@ -1968,6 +1976,7 @@ def test_zvlhcovac_prezije_restart(nahradni_ha):
         _souhrn_odeslan = ""
         zvlhcuje = {"loznice"}
         _dozvuk = {"obyvak": 1000.0}
+        _naber: dict = {}
 
     snimek = Falesny()._uloz_pameti()
     assert snimek["_zvlhcuje"] == ["loznice"]

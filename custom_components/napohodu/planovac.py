@@ -61,7 +61,7 @@ def nabidka(mistnosti: list[str],
     něco znamená. None znamená „neřeš", aby se dala nabídka vypsat
     i bez znalosti vybavení.
     """
-    out = [Volba("nikdo doma", "nikdo"), Volba("víc lidí", "vic")]
+    out = [Volba("prázdno", "nikdo"), Volba("příchod", "vic")]
     # Scény taky, a to i na opakování: zaškrtávací mřížka umí jeden
     # den kliknutím, kdežto „každý všední den osmkrát" se naklikat
     # nedá. Nabídka se čte živě, takže nová scéna se tu objeví sama
@@ -103,8 +103,11 @@ def zkontroluj(od, do) -> str | None:
 # hádat z textu. Název se z něj jen skládá pro zobrazení.
 
 DRUHY = {
-    "nikdo": "nikdo doma",
-    "vic": "víc lidí",
+    # Vnitřní klíče zůstávají „nikdo" a „vic" schválně: jsou uložené
+    # v kalendáři plánu a přejmenovat je znamená přepsat záznamy,
+    # které už někdo založil. Mění se jen to, co je vidět.
+    "nikdo": "prázdno",
+    "vic": "příchod",
     "obsazeno": "je tu někdo",
     "prazdno": "nikdo tu nebude",
     "zavreno": "zavřená okna",

@@ -2955,7 +2955,7 @@ def test_pojistka_utne_nicneukazavsi_pulz_jako_marny():
     assert p2.pulzy_za_sebou == 0
 
 
-def test_marny_pulz_se_pocita_az_kdyz_povel_projde():
+def test_marny_pulz_necita_behem_drzeni_polohy():
     """Dokud zavření drží minimální doba, nemá se co počítat.
 
     Jinak během tří minut držení narostl počet marných pulzů ze čtyř
@@ -3155,3 +3155,36 @@ def test_hlaska_nic_nechce_nelze_pod_prahem_tvrdit_mezi_prahy():
     r2 = rozhodni(Vstup(co2=700, **zaklad), pamet(), N2)
     assert "je mezi prahy" in r2.duvod
     assert "otevřít nad 800" in r2.duvod and "zavřeno pod 625" in r2.duvod
+
+
+def test_hlaska_o_vetru_uvadi_namerene_hodnoty():
+    """„Zavírám kvůli větru" se nedalo ověřit pohledem z okna.
+
+    Při pohledu na klid to vypadalo jako porucha a nešlo poznat,
+    jestli zavřely nárazy, nebo ustálená rychlost.
+    """
+    z = dict(cas_s=100000, co2=600, t_in=21.0, t_in_max=21.2, t_out=8.0,
+             rh_out=70.0, cil=21.0, vitr_blokuje=True,
+             vitr_prah=7.0, naraz_prah=11.0)
+
+    r = rozhodni(Vstup(vitr=8.4, naraz=14.2, **z),
+                 Pamet(otevreno=True, cas_povelu_s=0), N)
+    assert r.akce is Akce.ZAVRIT
+    assert "8.4 m/s" in r.duvod and "nárazy 14.2" in r.duvod
+    assert "práh 7 a 11" in r.duvod
+
+    # i když je zavřeno a jen se drží, ať je poznat proč
+    r2 = rozhodni(Vstup(vitr=8.4, naraz=14.2, **z),
+                  Pamet(cas_povelu_s=100000 - 120,
+                        posledni_akce="zavrit"), N)
+    assert "8.4 m/s" in r2.duvod
+
+    # Čidlo bez vlastních nárazů: za ně se dosazuje rychlost, takže
+    # psát dvakrát totéž nemá smysl.
+    r3 = rozhodni(Vstup(vitr=9.0, naraz=9.0, **z),
+                  Pamet(otevreno=True, cas_povelu_s=0), N)
+    assert "9.0 m/s" in r3.duvod and "nárazy" not in r3.duvod
+
+    # bez čidla se nevymýšlí nic
+    r4 = rozhodni(Vstup(**z), Pamet(otevreno=True, cas_povelu_s=0), N)
+    assert r4.duvod == "zavírám kvůli větru"

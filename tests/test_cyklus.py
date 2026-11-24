@@ -1211,3 +1211,203 @@ def test_vlastni_termostat_jako_hlavice_se_preskoci(ha, caplog):
             for e in ([dd["entity_id"]] if isinstance(dd["entity_id"], str)
                       else dd["entity_id"])}
     assert cile == {"climate.hlavice"}, cile
+
+
+def test_rucne_zapnuty_zvlhcovac_se_pozna(ha):
+    """Zapnout zvlhčovač jde přepínačem, z karty nebo cizí
+    automatizací. Dokud se „běží" bralo z vlastního odeslaného
+    povelu, integrace o tom nevěděla — a prach z jeho aerosolu brala
+    za skutečný, takže kvůli němu mohla otevřít okno. Naopak.
+    """
+    ko = ha
+    from napohodu import const as c
+
+    podentity = [Podentita(c.PODENTITA_MISTNOST, "Obývák", {
+        c.CONF_TEPLOTY: ["sensor.t_obyvak"],
+        c.CONF_RH_VNITRNI: "sensor.rh",
+        c.CONF_ZVLHCOVAC: ["switch.zvlhcovac"]})]
+    stavy = _stavy()
+    stavy["sensor.rh"] = Stav("55", {})
+    stavy["switch.zvlhcovac"] = Stav("off")
+    k, hass = _koordinator(ko, c, podentity=podentity, stavy=stavy)
+    asyncio.run(k.async_nacti())
+    k.hodnoty[("id_Obývák", "ovladat")] = 1.0
+    asyncio.run(k._async_update_data())
+    # vlhkost je v pořádku, integrace sama nezapíná
+    assert "id_Obývák" not in k.zvlhcuje
+
+    # a teď ho někdo zapne rukou
+    hass.states._h["switch.zvlhcovac"] = Stav("on")
+    asyncio.run(k._async_update_data())
+    assert "id_Obývák" in k.zvlhcuje
+    assert k.mistnosti["id_Obývák"].atributy["zvlhcovac_bezi"] == "běží"
+
+    # po vypnutí doznívá, dokud prach neklesne do čistého pásma
+    hass.states._h["switch.zvlhcovac"] = Stav("off")
+    asyncio.run(k._async_update_data())
+    assert "id_Obývák" not in k.zvlhcuje
+    assert "id_Obývák" in k._dozvuk
+
+
+def test_zvlhcovac_bez_cidla_vlhkosti_porad_prasi(ha):
+    """Pokažené čidlo vlhkosti zastaví řízení, ne rozprašování.
+
+    Dokud rozpoznání aerosolu viselo uvnitř řízení vlhkosti, bez
+    čidla se neprovedlo vůbec.
+    """
+    ko = ha
+    from napohodu import const as c
+
+    podentity = [Podentita(c.PODENTITA_MISTNOST, "Obývák", {
+        c.CONF_TEPLOTY: ["sensor.t_obyvak"],
+        c.CONF_RH_VNITRNI: "sensor.rh",
+        c.CONF_ZVLHCOVAC: ["switch.zvlhcovac"]})]
+    stavy = _stavy()
+    stavy["sensor.rh"] = Stav("unavailable", {})
+    stavy["switch.zvlhcovac"] = Stav("on")
+    k, hass = _koordinator(ko, c, podentity=podentity, stavy=stavy)
+    asyncio.run(k.async_nacti())
+    k.hodnoty[("id_Obývák", "ovladat")] = 1.0
+    asyncio.run(k._async_update_data())
+
+    assert "id_Obývák" in k.zvlhcuje
+
+
+def test_prichod_zrusi_utlum_a_nahreje_dopredu(ha):
+    """Byt má být natopený v okamžik příchodu, ne se v něm tou dobou
+    teprve začínat topit.
+
+    Jak dlouho to bude trvat, ví naměřená křivka místnosti — pevné
+    číslo z nastavení platí jen do chvíle, než se něco naměří.
+    """
+    ko = ha
+    from homeassistant.util import dt as dt_util
+    from napohodu import const as c
+    import napohodu.naber as nb
+
+    podentity = [Podentita(c.PODENTITA_MISTNOST, "Obývák", {
+        c.CONF_TEPLOTY: ["sensor.t_obyvak"],
+        c.CONF_CLIMATE: ["climate.hlavice"],
+        c.CONF_PRYC_UTLUM: 2.0, c.CONF_PRYC_PO: 0.0})]
+    stavy = _stavy()
+    stavy["sensor.t_obyvak"] = Stav("18.0", {})
+    stavy["climate.hlavice"] = Stav("heat", {"temperature": 18.0})
+    stavy["binary_sensor.doma"] = Stav("off")      # nikdo doma
+    k, hass = _koordinator(ko, c, podentity=podentity, stavy=stavy)
+    asyncio.run(k.async_nacti())
+    k.hodnoty[("id_Obývák", "ovladat_topeni")] = 1.0
+    k.topna_sezona = True
+    k._t_out_posledni = 0.0
+
+    # Plán se každé kolo čte znovu z kalendáře, takže se podstrčí
+    # tam, odkud se čte — přiřazení do atributu by se přepsalo.
+    prichod = {"od_s": None}
+    puvodni = k._plan
+
+    async def plan(eid, cas_s):
+        if eid == "calendar.prichod" and prichod["od_s"] is not None:
+            return ko.pl.Udalost(bezi=False, od_s=prichod["od_s"])
+        return await puvodni(eid, cas_s)
+
+    k._plan = plan
+    k.entry.options = {**k.entry.options,
+                       c.CONF_PLAN_VIC: "calendar.prichod"}
+
+    def za(hodin):
+        prichod["od_s"] = (dt_util.utcnow().timestamp()
+                           + hodin * 3600) if hodin else None
+
+    def utlum():
+        # Jedno kolo na jedno zavolání: volat tohle podruhé jen kvůli
+        # hlášce v assertu by cyklus pustilo znovu a test by měřil
+        # něco jiného, než na co se ptá.
+        asyncio.run(k._async_update_data())
+        return k.mistnosti["id_Obývák"].atributy.get("topeni_utlum")
+
+    def utlumeno():
+        u = utlum()
+        return (any("prázdno" in x for x in u or []), u)
+
+    # První kolo nepřítomnost teprve zaznamená, útlum se počítá až
+    # od dalšího — proto se jedno kolo protočí naprázdno.
+    utlum()
+
+    # nikdo doma a žádný příchod: útlum drží
+    drzi, u = utlumeno()
+    assert drzi, u
+
+    # příchod za pět hodin je daleko i na pevný předstih
+    za(5)
+    drzi, u = utlumeno()
+    assert drzi, u
+
+    # půl hodiny předem se útlum pouští i bez naměřené křivky
+    za(0.5)
+    assert utlum() is None
+    assert "nahřívám" in k.mistnosti["id_Obývák"].atributy[
+        "prichod_nahrivam"]
+
+    # S naměřenou křivkou se předstih řídí jí: pomalá místnost (půl
+    # stupně za hodinu) potřebuje na čtyři stupně osm hodin, takže
+    # se topí dřív, než by pevné číslo dovolilo.
+    krivka = nb.Naber()
+    for _ in range(nb.DOST_VZORKU):
+        krivka.zapis(0.5, t_out=0.0)
+    k._naber["id_Obývák"] = krivka
+    za(3)
+    assert utlum() is None, "křivka má předstih prodloužit"
+
+    # strop drží: deset hodin dopředu se netopí ani u pomalé místnosti
+    za(10)
+    drzi, u = utlumeno()
+    assert drzi, u
+
+
+def test_krivka_se_nauci_z_nahrivani(ha):
+    """Měřit po jednotlivých kolech nejde — za minutu přibude setina
+    stupně. Sleduje se celý úsek, po který se topí."""
+    ko = ha
+    from napohodu import const as c
+
+    podentity = [Podentita(c.PODENTITA_MISTNOST, "Obývák", {
+        c.CONF_TEPLOTY: ["sensor.t_obyvak"],
+        c.CONF_CLIMATE: ["climate.hlavice"]})]
+    stavy = _stavy()
+    stavy["sensor.t_obyvak"] = Stav("19.0", {})
+    stavy["climate.hlavice"] = Stav("heat", {"temperature": 19.0})
+    k, hass = _koordinator(ko, c, podentity=podentity, stavy=stavy)
+    asyncio.run(k.async_nacti())
+    k._t_out_posledni = 2.0
+    m = k.mistnosti.setdefault("id_Obývák", None)
+
+    # úsek se otevře, když povel míří nad naměřenou teplotu
+    trida = ko.VysledekMistnosti
+    m = trida(nazev="Obývák", cil=22.0)
+    m.teplota = 19.0
+    k._zmer_naber("id_Obývák", m, povel=22.0, cas_s=0.0)
+    assert "id_Obývák" in k._naber_mereni
+
+    # o hodinu později je o stupeň výš a topit přestane
+    m.teplota = 20.0
+    k._zmer_naber("id_Obývák", m, povel=19.5, cas_s=3600.0)
+    assert "id_Obývák" not in k._naber_mereni
+    assert k._naber["id_Obývák"].rychlosti[
+        __import__("naber").prihradka(2.0)] == pytest.approx(1.0)
+
+
+def test_otevrene_okno_mereni_zahodi(ha):
+    """S otevřeným oknem se neměří nahřívání pokoje, ale souboj
+    s ulicí."""
+    ko = ha
+    from napohodu import const as c
+
+    k, hass = _koordinator(ko, c)
+    asyncio.run(k.async_nacti())
+    k._t_out_posledni = 2.0
+    m = ko.VysledekMistnosti(nazev="Obývák", cil=22.0)
+    m.teplota = 19.0
+    k._zmer_naber("id_Obývák", m, povel=22.0, cas_s=0.0)
+    k.okna_stav["id_Obývák"] = True
+    m.teplota = 20.0
+    k._zmer_naber("id_Obývák", m, povel=19.5, cas_s=3600.0)
+    assert "id_Obývák" not in k._naber

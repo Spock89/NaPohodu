@@ -11,7 +11,7 @@ def test_nabidka_ma_vsechny_varianty_kazde_mistnosti():
     a nabídku nemá smysl zkracovat podle toho, co je kde přiřazené."""
     v = nabidka(["Ložnice"], ["1. patro"])
     assert [x.popis for x in v] == [
-        "nikdo doma", "víc lidí",
+        "prázdno", "příchod",
         "Ložnice: je tu někdo", "Ložnice: nikdo tu nebude",
         "Ložnice: zavřená okna",
         "Ložnice: nikdo tu nebude, zavřená okna",
@@ -117,7 +117,7 @@ def test_vikend_v_lichem_tydnu_se_nerozdeli():
 
 
 def test_nazev_nese_i_cilovou_teplotu():
-    assert nazev("nikdo") == "NaPohodu: nikdo doma"
+    assert nazev("nikdo") == "NaPohodu: prázdno"
     assert nazev("obsazeno", "Ložnice") == "Ložnice: je tu někdo"
     assert nazev("cil", "Ložnice", 22.5) == "Ložnice: cíl 22,5 °C"
 

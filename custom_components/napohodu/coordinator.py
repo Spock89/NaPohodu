@@ -26,9 +26,10 @@ except ImportError:      # pragma: no cover - bez něj se jen neopakuje
     rrulestr = None
 
 from .number import MISTNOST as POSUVNIKY_MISTNOSTI
-from . import (core, dny, plan as pl, planovac as pz, podklady as pk,
-               pritomnost as pr, prumery as pm, slunce as sl,
-               sousedstvi as so, vykon as vy, zpravy as zp, klima as kl)
+from . import (core, dny, naber as nb, plan as pl, planovac as pz,
+               podklady as pk, pritomnost as pr, prumery as pm,
+               slunce as sl, sousedstvi as so, vykon as vy,
+               zpravy as zp, klima as kl)
 
 try:      # dateutil je v Home Assistantu běžně k dispozici
     from dateutil.rrule import rrulestr
@@ -89,6 +90,11 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 NEPLATNE = ("unknown", "unavailable", "none", "")
+
+# Nejdelší předstih nahřátí na příchod. Bez stropu by jedna pomalá
+# místnost v mrazu začala topit od rána — a kdyby se příchod zrušil,
+# protopilo by se to celé zbytečně.
+NABER_STROP_H = 4.0
 
 
 
@@ -213,6 +219,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # místnosti, kde právě běží zvlhčovač a prach z něj se nemá
         # brát jako prach ve vzduchu
         self.zvlhcuje: set = set()
+        # Poslední naměřený vítr, jen k vypsání v hlášce.
+        self.vitr_mereni: dict = {}
+        # Náběhová křivka na místnost a rozdělaná měření.
+        self._naber: dict[str, nb.Naber] = {}
+        self._naber_mereni: dict[str, nb.Mereni] = {}
         # Entity téhle integrace, které si někdo přiřadil jako cizí
         # zařízení. Drží se jen proto, aby se o každé řeklo jednou.
         self._smycka: set = set()
@@ -371,6 +382,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # co se vyvětrat nedá.
         out["_zvlhcuje"] = sorted(self.zvlhcuje)
         out["_dozvuk"] = dict(self._dozvuk)
+        # Náběhová křivka. Měří se po nahřívacích úsecích, kterých za
+        # den vyjde pár — zahodit je restartem by znamenalo začínat
+        # od nuly po každé aktualizaci.
+        out["_naber"] = {pid: k.uloz() for pid, k in self._naber.items()}
         return out
 
     async def _nacti_pameti(self) -> None:
@@ -378,6 +393,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._souhrn_odeslan = ulozene.pop("_souhrn_odeslan", "") or ""
         self.zvlhcuje = set(ulozene.pop("_zvlhcuje", None) or [])
         self._dozvuk = dict(ulozene.pop("_dozvuk", None) or {})
+        self._naber = {pid: nb.Naber.nacti(z) for pid, z
+                       in (ulozene.pop("_naber", None) or {}).items()}
         # Restart je pro aerosol totéž co vypnutí: dokud prach neklesne
         # do čistého pásma, bere se pořád za zvlhčovačův. Skutečný stav
         # zařízení se doplní v prvním cyklu.
@@ -682,6 +699,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # vichřice otevřelo — do dalšího poryvu, který ho zase zavřel.
         # Měří se od posledního čtení nad prahem, ne od prvního klidného.
         klid_s = float(g.get(CONF_VITR_KLID_MIN, 10.0)) * 60
+
+        # Naměřené hodnoty si necháváme, i když zrovna nefoukne:
+        # jdou do hlášky v kartě, aby šlo „zavírám kvůli větru"
+        # ověřit pohledem. Mlčící čidlo se nepřepisuje nulou, ta by
+        # tvrdila bezvětří.
+        if not mlci:
+            self.vitr_mereni = {"vitr": round(vitr, 1),
+                                "naraz": round(naraz, 1),
+                                "prah_v": prah_v, "prah_n": prah_n}
 
         drive = self.vitr_blokuje
         if mlci:
@@ -1066,7 +1092,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             doma = True
             # Ať je v kartě poznat, proč se byt bere za obsazený,
             # když přítomnost hlásí opak.
-            self.doma_popis += " (plán: víc lidí)"
+            self.doma_popis += " (plán: příchod)"
         self.plan_popis = self._plan_popis(
             pl.BYT, g.get(CONF_PLAN_NIKDO), g.get(CONF_PLAN_VIC),
             self.plan_nikdo, self.plan_vic, cas_s)
@@ -1499,8 +1525,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             if bezi:
                 stav.setdefault(kdo, []).append(popis)
 
-        pridej("Byt", "nikdo doma", self.plan_nikdo.bezi)
-        pridej("Byt", "víc lidí", self.plan_vic.bezi)
+        pridej("Byt", "prázdno", self.plan_nikdo.bezi)
+        pridej("Byt", "příchod", self.plan_vic.bezi)
         for m in self.mistnosti.values():
             pridej(m.nazev, "nikdo tu nebude", m.plan_prazdno)
             pridej(m.nazev, "zavřená okna", m.plan_zavreno)
@@ -1772,6 +1798,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             t_in_max=self._max(d.get(CONF_TEPLOTY), None),
             t_out=t_ven, rh_out=rh_ven, cil=m.cil,
             dest=dest, vitr_blokuje=vitr_blokuje,
+            vitr=self.vitr_mereni.get("vitr"),
+            naraz=self.vitr_mereni.get("naraz"),
+            vitr_prah=self.vitr_mereni.get("prah_v"),
+            naraz_prah=self.vitr_mereni.get("prah_n"),
             doma=doma or i_kdyz_nikdo,
             # Povel z plánu. Narozdíl od „nikdo není doma" ho
             # zaškrtnutí „Větrat i když nikdo není doma" neobejde:
@@ -2308,6 +2338,77 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                                    okno_fakt, doma)
         await self._topeni_krok(p, d, m, cas_s)
 
+    def _prichod_predstih(self, pod_id: str, m,
+                          cas_s: float) -> float | None:
+        """Za jak dlouho je příchod, pokud se už kvůli němu má topit.
+
+        Prázdno znamená, že se nechystá nebo je ještě daleko.
+
+        Předstih není pevný: spočítá se z toho, o kolik stupňů
+        místnost zaostává a co naměřená křivka při téhle venkovní
+        teplotě zvládá. Dokud křivka nic neví, platí pevný předstih
+        z nastavení jako dosud — hádat ho z ničeho by znamenalo
+        plánovat příchod podle výmyslu.
+        """
+        if not self.plan_vic.od_s or self.plan_vic.bezi:
+            return None
+        g = {**self.entry.data, **self.entry.options}
+        zaloha_s = float(g.get(CONF_NOC_PREDSTIH, 60)) * 60
+        rozdil = (m.cil - m.teplota) if m.teplota is not None else None
+        krivka = self._naber.get(pod_id)
+        predstih_s = None
+        if rozdil is not None and krivka is not None \
+                and self._t_out_posledni is not None:
+            predstih_s = krivka.predstih_s(
+                rozdil, self._t_out_posledni,
+                strop_s=NABER_STROP_H * 3600)
+        if predstih_s is None:
+            predstih_s = zaloha_s
+        if not pl.zacina_do(self.plan_vic, cas_s, predstih_s):
+            return None
+        return self.plan_vic.od_s - cas_s
+
+    def _zmer_naber(self, pod_id: str, m, povel: float,
+                    cas_s: float) -> None:
+        """Sleduje, jak rychle místnost přibírá teplotu, když se topí.
+
+        Měřit po jednotlivých kolech nejde — za minutu přibude setina
+        stupně, což je pod rozlišením čidla. Sleduje se proto celý
+        úsek, po který povel míří nad naměřenou teplotu, a vyhodnotí
+        se, až topit přestane.
+
+        Úsek se zahodí, když se mezitím otevře okno: pak se neměří
+        nahřívání pokoje, ale souboj s ulicí.
+        """
+        teplota = m.teplota
+        venku = self._t_out_posledni
+        if teplota is None or venku is None:
+            self._naber_mereni.pop(pod_id, None)
+            return
+
+        topi = povel > teplota + 0.2 and not self.okna_stav.get(pod_id)
+        beh = self._naber_mereni.get(pod_id)
+        if topi:
+            if beh is None:
+                self._naber_mereni[pod_id] = nb.Mereni(
+                    od_s=cas_s, od_t=teplota, t_out=venku)
+            return
+        if beh is None:
+            return
+        del self._naber_mereni[pod_id]
+        # Okno otevřené kdykoli v průběhu úsek ruší; tady se pozná
+        # aspoň to, že je otevřené na konci.
+        if self.okna_stav.get(pod_id):
+            return
+        rychlost = beh.vyhodnot(cas_s, teplota)
+        if rychlost is None:
+            return
+        krivka = self._naber.setdefault(pod_id, nb.Naber())
+        if krivka.zapis(rychlost, beh.t_out):
+            _LOGGER.debug(
+                "NaPohodu: %s — naměřeno %.2f °C/h při %.0f °C venku",
+                m.nazev, rychlost, beh.t_out)
+
     def _cizi_entity(self, entity_id: list[str], kde: str,
                      co: str) -> list[str]:
         """Vyhodí z výběru entity, které vyrábí tahle integrace.
@@ -2428,6 +2529,22 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 and m.skupina_prazdno:
             utlum_skupina = pryc
 
+        # Příchod přebíjí útlumy z nepřítomnosti. Byt má být natopený
+        # v okamžik příchodu, ne se v něm tou dobou teprve začínat
+        # topit — a jak dlouho to bude trvat, ví náběhová křivka té
+        # místnosti, ne jedno pevné číslo pro celou zimu.
+        #
+        # Nočního útlumu se to netýká: příchod ve tři ráno neznamená,
+        # že se má přestat spát.
+        prichod_za = self._prichod_predstih(p.subentry_id, m, cas_s)
+        if prichod_za is not None and (utlum_pryc or utlum_plan
+                                       or utlum_skupina):
+            utlum_pryc = utlum_plan = utlum_skupina = 0.0
+            m.atributy["prichod_nahrivam"] = (
+                f"příchod za {int(prichod_za / 60)} min, nahřívám")
+        else:
+            m.atributy["prichod_nahrivam"] = None
+
         celkem = round(utlum_noc + utlum_pryc + utlum_plan
                        + utlum_skupina, 2)
         if celkem:
@@ -2435,7 +2552,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                             if povel.cil is not None else None)
         m.atributy["topeni_utlum"] = [
             x for x in (f"noc {-utlum_noc:+.1f} °C" if utlum_noc else "",
-                        f"nikdo doma -{utlum_pryc:.1f} °C" if utlum_pryc
+                        f"prázdno -{utlum_pryc:.1f} °C" if utlum_pryc
                         else "",
                         f"plán: nikdo tu nebude -{utlum_plan:.1f} °C"
                         if utlum_plan else "",
@@ -2448,6 +2565,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # místnosti by lhalo pokaždé, když ho útlum nebo otevřené okno
         # stáhly dolů.
         m.povel_topeni = povel.cil
+        self._zmer_naber(p.subentry_id, m, povel.cil, cas_s)
 
         poslano = await vyk.topeni(
             hlavice, povel, cas_s,
@@ -3058,6 +3176,30 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return "zatím bez povelu"
         return "běží" if bezi else "stojí"
 
+    def _pomocnik_bezi(self, entity, nas_povel) -> bool:
+        """Běží to zařízení doopravdy?
+
+        Vlastní odeslaný povel nestačí ani sám o sobě, ani jako
+        jediný zdroj. Zapnout zvlhčovač jde přepínačem, z karty nebo
+        cizí automatizací a o tom integrace neví nic — a protože se
+        podle toho pozná vlastní aerosol, brala by jeho prach za
+        skutečný a otevřela kvůli němu okno. To je přesně naopak.
+
+        Na druhou stranu se odeslaný povel projeví ve stavu entity se
+        zpožděním, takže čekat jen na entitu by znamenalo, že první
+        kolo po zapnutí prach ještě svede na vzduch zvenčí. Platí
+        proto obojí: běží, když to tvrdí kterákoli z jeho entit —
+        nebo když jsme ho právě zapnuli.
+        """
+        if nas_povel:
+            return True
+        for e in entity or []:
+            st = self.hass.states.get(e)
+            if st is not None and st.state not in ("off", "unavailable",
+                                                   "unknown", None):
+                return True
+        return False
+
     async def _pomocnici_krok(self, p, d, m, okruh, cas_s: float,
                               t_in: float,
                               t_out: float | None, otevreno: bool,
@@ -3157,14 +3299,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                         "pri_klidu": "nespí se tu"}.get(kdy, ""))))
             m.atributy["zvlhcovac"] = await vyk.zarizeni(
                 zvlhcovac, zapnout, "zvlhčovač")
-            # Ultrazvukový zvlhčovač rozprašuje minerály z vody a čidlo
-            # je vidí jako prach. Větrat ani čistit kvůli tomu nemá
-            # smysl — je to jeho vlastní aerosol, ne vzduch zvenčí.
-            # Ptát se musíme na stav zařízení, ne na jeho popis:
-            # _stav_pomocnika vrací text a ten je pravdivý i tehdy,
-            # když zvlhčovač stojí — pak se prach pořád sváděl na něj
-            # a kvůli prachu se nikdy neotevřelo okno.
-            if vyk.stav.zarizeni.get("zvlhčovač"):
+
+        # Ultrazvukový zvlhčovač rozprašuje minerály z vody a čidlo je
+        # vidí jako prach. Větrat ani čistit kvůli tomu nemá smysl —
+        # je to jeho vlastní aerosol, ne vzduch zvenčí.
+        #
+        # Stojí to mimo řízení vlhkosti schválně: vlastní aerosol
+        # vzniká i tehdy, když zvlhčovač neřídíme. Dokud tohle bylo
+        # uvnitř, nepoznalo se ruční zapnutí ani rozprašování při
+        # pokaženém čidle vlhkosti, které řízení zastaví.
+        if zvlhcovac:
+            if self._pomocnik_bezi(zvlhcovac,
+                                   vyk.stav.zarizeni.get("zvlhčovač")):
                 self.zvlhcuje.add(p.subentry_id)
                 self._dozvuk.pop(p.subentry_id, None)
             elif p.subentry_id in self.zvlhcuje:
@@ -3175,7 +3321,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 self.zvlhcuje.discard(p.subentry_id)
                 self._dozvuk[p.subentry_id] = cas_s
         m.atributy["zvlhcovac_bezi"] = self._stav_pomocnika(
-            d.get(CONF_ZVLHCOVAC), vyk.stav.zarizeni.get("zvlhčovač"))
+            zvlhcovac, (True if p.subentry_id in self.zvlhcuje else
+                        vyk.stav.zarizeni.get("zvlhčovač")))
 
     async def _stineni_krok(self, p, d, u, m, doma, slunce_el, cas_s):
         """Rozhodne o žaluziích místnosti. Slunce svítí do pokoje, ne do oblasti."""
