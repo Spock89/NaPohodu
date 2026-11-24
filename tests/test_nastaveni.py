@@ -159,3 +159,31 @@ def test_formular_mistnosti_se_ptá_jen_na_to_co_tam_je(cf):
     jen_zaluzie = pole({c.CONF_ZALUZIE: ["cover.z"]})
     assert c.CONF_STINENI_PREDSTIH in jen_zaluzie
     assert c.CONF_RH_MIN not in jen_zaluzie
+
+
+def test_spolecne_nastaveni_schova_jen_to_co_nema_druhy_zdroj(cf):
+    """Schovat pole podle prázdného výběru entity smí jen tam, kde
+    ta entita je jediný zdroj.
+
+    Vítr jiný zdroj nemá: bez čidla se o větru nedozvíme nic.
+    Příchody ale chodí i z vlastního kalendáře integrace, kam se
+    události přidávají z dashboardu — tedy dlouho potom, co se
+    integrace nastavovala. Prázdné pole pro cizí kalendář neznamená,
+    že žádné příchody nejsou, takže předvětrání musí zůstat.
+    """
+    m, c = cf
+
+    def pole(data):
+        return {str(k.schema) for k in m._global_pro(data).schema}
+
+    bez = pole({})
+    assert c.CONF_VITR_PRAH not in bez
+    assert c.CONF_NARAZ_PRAH not in bez
+    assert c.CONF_PREDVETRAT in bez, "příchody chodí i z vlastního plánu"
+
+    # čidlo samotné zůstává, jinak by nebylo jak ho přidat
+    assert c.CONF_VITR in bez and c.CONF_PLAN_VIC in bez
+
+    s_vetrem = pole({c.CONF_VITR: "sensor.v"})
+    assert c.CONF_VITR_PRAH in s_vetrem
+    assert c.CONF_VITR_KLID in s_vetrem

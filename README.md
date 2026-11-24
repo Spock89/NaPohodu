@@ -1286,6 +1286,13 @@ v **oblasti**: tam si jimi říká sousedovi o vyvětrání, takže jsou
 jediný způsob, jak se vyjádřit. Nově přidané zařízení své nastavení
 ukáže, až formulář otevřeš znovu.
 
+Ve společném nastavení se takhle schovají jen prahy větru, a jen když
+není vybrané čidlo větru: jiný zdroj větru není. **Podle prázdného
+výběru kalendáře se schovávat nesmí** — příchody chodí i z vlastního
+kalendáře integrace, kam se události přidávají z dashboardu, tedy
+dlouho potom, co se integrace nastavovala. Prázdné pole pro cizí
+kalendář tedy neznamená, že žádné příchody nejsou.
+
 **Karta** zahazuje celé položky, ne jednotlivé řádky YAML. Položka je
 „- entity: …" a pod ním „name: …"; zahazovat po řádcích nechávalo
 osiřelé „name:" a z karty byl neplatný YAML, který se vůbec nenačte.

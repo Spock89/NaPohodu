@@ -215,20 +215,24 @@ def _poskladej(stare: dict, schema: vol.Schema, user_input: dict) -> dict:
 def _global_pro(data: dict) -> vol.Schema:
     """Společné nastavení bez polí, která nemají ke komu patřit.
 
-    Prahy větru bez čidla větru se nikdy neuplatní a předvětrání bez
-    kalendáře příchodů taky ne — ale člověk jimi při hledání projde
-    pokaždé. Čidla a kalendáře samotné zůstávají: bez nich by nebylo
-    jak je přidat.
+    Prahy větru bez čidla větru se nikdy neuplatní — ale člověk jimi
+    při hledání projde pokaždé. Čidlo samotné zůstává: bez něj by
+    nebylo jak ho přidat.
+
+    **Předvětrání se takhle schovat nedá**, i když to tak vypadá.
+    Příchody nejdou jen z cizího kalendáře vybraného v nastavení,
+    ale i z vlastního kalendáře integrace, kam se události přidávají
+    z dashboardu — tedy dlouho potom, co se integrace nastavovala.
+    Prázdné pole pro cizí kalendář tedy neznamená, že žádné příchody
+    nejsou.
 
     Zakládací formulář tím neprochází, tam se ta čidla teprve vybírají
-    a schovávat je co řádek, to co se zrovna vyplnilo, by poskakovalo.
+    a schovávat co řádek to, co se zrovna vyplnilo, by poskakovalo.
     """
     bez: set[str] = set()
     if not (data.get(c.CONF_VITR) or data.get(c.CONF_NARAZ)):
         bez |= {c.CONF_VITR_PRAH, c.CONF_NARAZ_PRAH,
                 c.CONF_VITR_KLID, c.CONF_VITR_KLID_MIN}
-    if not data.get(c.CONF_PLAN_VIC):
-        bez.add(c.CONF_PREDVETRAT)
     if not bez:
         return SCHEMA_GLOBAL
     return vol.Schema({k: v for k, v in SCHEMA_GLOBAL.schema.items()
