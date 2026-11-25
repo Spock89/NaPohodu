@@ -1320,6 +1320,15 @@ a skupin to nepotká ani omylem. Není to jednorázový převod: když se
 z místnosti okno odebere až někdy potom, uklidí se při dalším startu
 stejně. Každé smazání jde do logu s názvem místnosti a entity.
 
+Výběry stavu žaluzií se uklízejí **po jednotlivých žaluziích**, ne po
+celém druhu. Každá má vlastní entitu a v jejím identifikátoru je ta
+konkrétní žaluzie, takže odebrání druhé ze dvou osiří entitu, jejíž
+jméno v nastavení nikde nezůstane — seznam druhů by to minul. Platné
+identifikátory se proto dopočítají z žaluzií, které v místnosti zbyly,
+a co mezi ně nepatří, jde pryč. Poznávacím znakem odkazu na žaluzii je
+tečka v identifikátoru: budoucí pevný klíč, který by se jen náhodou
+jmenoval `stav_něčeho`, se tím nesmaže.
+
 ### Termostat místnosti
 
 Každá místnost, která má hlavice, dostane navíc **climate entitu**.

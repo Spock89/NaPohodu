@@ -76,9 +76,10 @@ def _uklid(hass: HomeAssistant, entry: ConfigEntry) -> None:
     vypínač okna v místnosti bez okna by po aktualizaci zůstal
     v dashboardu viset jako „nedostupný" a ručně by se musel mazat.
 
-    Maže se jen podle vybavení místnosti, a jen těch sedm druhů níž.
-    Nejde o jednorázový převod: když se z místnosti okno odebere
-    i později, uklidí se při dalším startu stejně.
+    Maže se jen podle vybavení místnosti, a jen druhy vypsané výš plus
+    výběry stavu žaluzií. Nejde o jednorázový převod: když se
+    z místnosti okno odebere i později, uklidí se při dalším startu
+    stejně.
     """
     registr = er.async_get(hass)
     zapisy = er.async_entries_for_config_entry(registr, entry.entry_id)
@@ -87,13 +88,23 @@ def _uklid(hass: HomeAssistant, entry: ConfigEntry) -> None:
             continue
         chybi = {klic for klic, pole in PODLE_VYBAVY.items()
                  if not any(pod.data.get(p) for p in pole)}
-        if not chybi:
-            continue
+        # Výběr stavu nese v identifikátoru konkrétní žaluzii, protože
+        # jich místnost může mít víc. Pevný seznam druhů na to nestačí:
+        # odebráním druhé žaluzie zmizí entita, jejíž jméno nikde
+        # nestojí, a sem se musí dopočítat z toho, co v místnosti
+        # zbylo.
+        zaluzie = {f"stav_{z}" for z in (pod.data.get(CONF_ZALUZIE) or [])}
         predpona = f"{pod.subentry_id}_"
         for zapis in zapisy:
             if not (zapis.unique_id or "").startswith(predpona):
                 continue
-            if zapis.unique_id[len(predpona):] not in chybi:
+            zbytek = zapis.unique_id[len(predpona):]
+            # Tečka je tu podmínkou schválně: jen tak se pozná odkaz
+            # na entitu žaluzie. Bez ní by se o klíč pojmenovaný
+            # „stav_cehosi" jednou smazalo něco jiného.
+            osirely_stav = (zbytek.startswith("stav_") and "." in zbytek
+                            and zbytek not in zaluzie)
+            if zbytek not in chybi and not osirely_stav:
                 continue
             registr.async_remove(zapis.entity_id)
             _LOGGER.info(

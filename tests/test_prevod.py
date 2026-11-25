@@ -182,3 +182,38 @@ def test_uklid_necha_na_pokoji_cizi_entity_a_jine_podentity(modul):
     m._uklid(hass, zapis)
 
     assert hass.registr.smazane == []
+
+
+def test_uklid_resi_i_jednotlive_odebrane_zaluzie(modul):
+    """Výběr stavu nese konkrétní žaluzii, pevný seznam druhů ho mine."""
+    m, c = modul
+    from homeassistant.helpers import entity_registry as er
+
+    # Místnost měla dvě žaluzie, zůstala jí první.
+    pokoj = _Pod(c.PODENTITA_MISTNOST, "Ložnice",
+                 {c.CONF_ZALUZIE: ["cover.lozmice_prvni"]}, "l1")
+    zapis = _Zapis([pokoj])
+    hass = _Hass()
+    hass.registr = er.Registr([
+        er.RegistrZapis("select.lozmice_stav_1",
+                        "l1_stav_cover.lozmice_prvni",
+                        config_entry_id="zapis"),
+        er.RegistrZapis("select.lozmice_stav_2",
+                        "l1_stav_cover.lozmice_druha",
+                        config_entry_id="zapis"),
+        # Ovládání stínění zůstává, jedna žaluzie v místnosti je.
+        er.RegistrZapis("switch.lozmice_stineni", "l1_ovladat_stineni",
+                        config_entry_id="zapis"),
+        # Pevný klíč, který na „stav_" jen začíná, se nesmí splést
+        # s odkazem na entitu žaluzie — poznávacím znakem je tečka.
+        er.RegistrZapis("sensor.lozmice_stav_vzduchu", "l1_stav_vzduchu",
+                        config_entry_id="zapis"),
+    ])
+
+    m._uklid(hass, zapis)
+
+    assert hass.registr.smazane == ["select.lozmice_stav_2"]
+
+    hass.registr.smazane.clear()
+    m._uklid(hass, zapis)
+    assert hass.registr.smazane == []
