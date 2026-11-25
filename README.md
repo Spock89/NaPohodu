@@ -1304,6 +1304,22 @@ Hlídá to test, který vygeneruje kartu pro byt bez vybavení a hledá
 v ní zmínky — jednotlivé filtry se dají obejít přehlédnutím, výsledek
 ne.
 
+**Úklid po aktualizaci.** Přestat entity zakládat nestačí. Registr
+entit si pamatuje všechno, co kdy existovalo, a platforma z něj sama
+nemaže nic — kdo integraci jen aktualizuje, měl by v dashboardu
+přepínač okna v dílně dál, jen s šedou značkou „nedostupný", a musel
+by ho mazat ručně. Integrace si proto při každém startu projde
+místnosti a přebytečné entity z registru smaže sama.
+
+Maže se **jen podle vybavení místnosti** a jen osm druhů entit, které
+na vybavení závisejí: *Ovládat okna*, *Otevírat i pro pohodu*,
+*Ovládat stínění*, *Zvlhčovat i ve spánku*, *Ovládat topení*, čidlo
+okna, čidlo otevření okna a termostat místnosti. Nic jiného se
+nekontroluje a nemaže; teplota, obsazenost ani entity oblastí, scén
+a skupin to nepotká ani omylem. Není to jednorázový převod: když se
+z místnosti okno odebere až někdy potom, uklidí se při dalším startu
+stejně. Každé smazání jde do logu s názvem místnosti a entity.
+
 ### Termostat místnosti
 
 Každá místnost, která má hlavice, dostane navíc **climate entitu**.

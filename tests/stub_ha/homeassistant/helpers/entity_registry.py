@@ -1,9 +1,13 @@
 class RegistrZapis:
     def __init__(self, entity_id, unique_id="", domain=None,
-                 platform="cizi"):
+                 platform="cizi", config_entry_id=None):
         self.entity_id = entity_id
         self.unique_id = unique_id
         self.domain = domain or entity_id.split(".")[0]
+        # Ke kterému zápisu konfigurace entita patří. Registr drží
+        # entity všech integrací, takže bez toho se vlastní od cizích
+        # neoddělí.
+        self.config_entry_id = config_entry_id
         # Která integrace entitu vyrobila. Podle toho se pozná vlastní
         # entita přiřazená jako cizí zařízení.
         self.platform = platform
@@ -48,4 +52,4 @@ def async_get(hass):
 
 
 def async_entries_for_config_entry(registr, entry_id):
-    return list(registr.zapisy)
+    return [z for z in registr.zapisy if z.config_entry_id == entry_id]
