@@ -1311,23 +1311,47 @@ přepínač okna v dílně dál, jen s šedou značkou „nedostupný", a musel
 by ho mazat ručně. Integrace si proto při každém startu projde
 místnosti a přebytečné entity z registru smaže sama.
 
-Maže se **jen podle vybavení místnosti** a jen osm druhů entit, které
-na vybavení závisejí: *Ovládat okna*, *Otevírat i pro pohodu*,
-*Ovládat stínění*, *Zvlhčovat i ve spánku*, *Ovládat topení*, čidlo
-okna, čidlo otevření okna a termostat místnosti. Nic jiného se
+Maže se **jen podle vybavení místnosti**, a jen ty druhy entit, které
+na vybavení závisejí — tedy přesně to, co platforma v nevybavené
+místnosti ani nezaloží: přepínače *Ovládat okna*, *Otevírat i pro
+pohodu*, *Ovládat stínění*, *Zvlhčovat i ve spánku* a *Ovládat
+topení*, tlačítka pro otevření a zavření okna, tlačítka stínění podle
+rolí, šoupátka útlumu v nepřítomnosti, čidlo okna, čidlo otevření
+okna, termostat místnosti a výběry stavu žaluzií. Nic jiného se
 nekontroluje a nemaže; teplota, obsazenost ani entity oblastí, scén
 a skupin to nepotká ani omylem. Není to jednorázový převod: když se
 z místnosti okno odebere až někdy potom, uklidí se při dalším startu
 stejně. Každé smazání jde do logu s názvem místnosti a entity.
 
-Výběry stavu žaluzií se uklízejí **po jednotlivých žaluziích**, ne po
+Dvě skupiny se neřídí tím, jestli je zařízení přiřazené:
+
+**Tlačítka stínění** vznikají podle toho, jestli role v mapě stínění
+vůbec na nějakou žaluzii míří. Úklid se proto ptá tou samou funkcí
+jako zakládání, ne na vyplněné pole žaluzií — kdo má žaluzie přiřazené
+a roli *soukromí* nenastavenou, nemá tlačítko mít a nemá ho mít ani
+po aktualizaci.
+
+**Výběry stavu žaluzií** se uklízejí po jednotlivých žaluziích, ne po
 celém druhu. Každá má vlastní entitu a v jejím identifikátoru je ta
 konkrétní žaluzie, takže odebrání druhé ze dvou osiří entitu, jejíž
 jméno v nastavení nikde nezůstane — seznam druhů by to minul. Platné
-identifikátory se proto dopočítají z žaluzií, které v místnosti zbyly,
-a co mezi ně nepatří, jde pryč. Poznávacím znakem odkazu na žaluzii je
+identifikátory se dopočítají ze žaluzií, které v místnosti zbyly, a co
+mezi ně nepatří, jde pryč. Poznávacím znakem odkazu na žaluzii je
 tečka v identifikátoru: budoucí pevný klíč, který by se jen náhodou
 jmenoval `stav_něčeho`, se tím nesmaže.
+
+Hlídat se to ručně nedá. Seznam druhů je opis pravidel rozesetých po
+devíti platformách a kdo přidá podmíněnou entitu a na úklid zapomene,
+nic nerozbije — jen po aktualizaci zůstane v registru entita, kterou
+nemá kdo smazat, a pozná se to až v dashboardu. **Test to porovnává
+sám:** vyrobí dvě místnosti, jednu plně vybavenou a jednu bez ničeho,
+nechá všech devět platforem založit entity a z rozdílu obou sad
+spočítá, co na vybavení závisí. Co v tom rozdílu je, musí úklid
+v nevybavené místnosti smazat a ve vybavené nechat. Tím se rozšířilo
+z osmi druhů na osmnáct: šoupátka útlumu (podmíněná od 2.61), tlačítka
+oken a tlačítka stínění (podmíněná od začátku) seznam míjel, protože
+se při psaní úklidu vycházelo z toho, co přestala zakládat 2.64 — a ta
+jen přidala další podmínky k těm, které už dávno platily.
 
 ### Termostat místnosti
 

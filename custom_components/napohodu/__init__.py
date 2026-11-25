@@ -9,7 +9,9 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
-from .const import (CONF_CLIMATE, CONF_KONTAKT_M, CONF_OKNA,
+from . import vykon as vy
+from .const import (CONF_CLIMATE, CONF_KONTAKT_M, CONF_OKNA, CONF_PRYC_PO,
+                    CONF_PRYC_UTLUM, CONF_STINENI_MAPA,
                     CONF_STINENI_PREDSTIH, CONF_ZALUZIE, CONF_ZVLHCOVAC,
                     DOMAIN, PODENTITA_MISTNOST, PODENTITA_ZONA)
 from .coordinator import NaPohoduCoordinator
@@ -55,16 +57,33 @@ def _preved(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 
 # Co musí být v místnosti vybráno, aby entita toho druhu měla smysl.
-# Stačí jedna z vypsaných položek.
+# Stačí jedna z vypsaných položek. Seznam musí krýt všechno, co
+# platformy zakládají podmíněně — hlídá to test_uklid.py, který obě
+# strany porovná sám, aby ruční opis nezastaral potichu.
 PODLE_VYBAVY: dict[str, tuple[str, ...]] = {
     "ovladat_okno": (CONF_OKNA,),
     "otevirat_i_pro_pohodu": (CONF_OKNA,),
+    "otevrit_okno": (CONF_OKNA,),
+    "zavrit_okno": (CONF_OKNA,),
     "ovladat_stineni": (CONF_ZALUZIE,),
     "zvlhcovat_i_ve_spanku": (CONF_ZVLHCOVAC,),
     "ovladat_topeni": (CONF_CLIMATE,),
     "termostat": (CONF_CLIMATE,),
+    CONF_PRYC_UTLUM: (CONF_CLIMATE,),
+    CONF_PRYC_PO: (CONF_CLIMATE,),
     "okno": (CONF_OKNA, CONF_KONTAKT_M),
     "okno_otevreno": (CONF_OKNA, CONF_KONTAKT_M),
+}
+
+# Tlačítka stínění nevznikají podle přiřazeného zařízení, ale podle
+# toho, jestli role v mapě stínění vůbec na něco míří. Podmínka se
+# proto bere tou samou funkcí jako při zakládání.
+PODLE_ROLE: dict[str, str] = {
+    "zastinit": "zastinit",
+    "odstinit": "odstinit",
+    "soukromi": "soukromi",
+    "stineni_pryc": "pryc",
+    "stineni_vychozi": "vychozi",
 }
 
 
@@ -88,6 +107,9 @@ def _uklid(hass: HomeAssistant, entry: ConfigEntry) -> None:
             continue
         chybi = {klic for klic, pole in PODLE_VYBAVY.items()
                  if not any(pod.data.get(p) for p in pole)}
+        mapa = pod.data.get(CONF_STINENI_MAPA) or {}
+        chybi |= {klic for klic, role in PODLE_ROLE.items()
+                  if not vy.cile_zaluzii(role, mapa)}
         # Výběr stavu nese v identifikátoru konkrétní žaluzii, protože
         # jich místnost může mít víc. Pevný seznam druhů na to nestačí:
         # odebráním druhé žaluzie zmizí entita, jejíž jméno nikde
