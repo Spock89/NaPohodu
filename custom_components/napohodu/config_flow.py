@@ -27,7 +27,7 @@ from homeassistant.core import callback
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers import selector
 
-from . import const as c, karty, podklady
+from . import const as c, karty, podklady, vybava as vb
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -230,7 +230,7 @@ def _global_pro(data: dict) -> vol.Schema:
     a schovávat co řádek to, co se zrovna vyplnilo, by poskakovalo.
     """
     bez: set[str] = set()
-    if not (data.get(c.CONF_VITR) or data.get(c.CONF_NARAZ)):
+    if not vb.ma_vitr(data):
         bez |= {c.CONF_VITR_PRAH, c.CONF_NARAZ_PRAH,
                 c.CONF_VITR_KLID, c.CONF_VITR_KLID_MIN}
     if not bez:
@@ -535,18 +535,18 @@ def _schema_chovani(mistnosti: list[dict] | None = None,
     """
     d = data or {}
     vse = data is None
-    ma_okna = vse or bool(d.get(c.CONF_OKNA))
-    # Rozhoduje přiřazená žaluzie, ne mapa rolí: ta vzniká až
-    # o krok dál, takže by se při zakládání nikdy nestihla.
-    ma_zaluzie = vse or bool(d.get(c.CONF_ZALUZIE))
-    ma_zvlhcovac = vse or bool(d.get(c.CONF_ZVLHCOVAC))
-    ma_prach = vse or bool(d.get(c.CONF_CISTICKA) or d.get(c.CONF_PM25)
-                            or d.get(c.CONF_PM10))
-    ma_topeni = vse or bool(d.get(c.CONF_CLIMATE))
-    # Místnost bez vlastního okna, ale v oblasti, si o vyvětrání říká
-    # sousedovi — a kdy, to určují právě tyhle prahy. Zavírací hrana
-    # jí ale nepatří, žádost dojede na cíl a ne za něj.
-    vetra_se_tu = ma_okna or v_zone or vse
+    # Co má v místnosti význam, ví `vybava` — tím samým pravidlem se
+    # řídí i zakládání entit a úklid registru. Kdyby si to tenhle
+    # formulář rozhodoval sám, rozešlo by se to: nastavení by se ptalo
+    # na útlum, který nemá čím topit, a dashboard by na něj neměl
+    # šoupátko.
+    v = vb.vlastnosti(d, v_zone, vse=vse)
+    ma_okna = v[vb.OKNA]
+    ma_zaluzie = v[vb.ZALUZIE]
+    ma_zvlhcovac = v[vb.ZVLHCOVAC]
+    ma_prach = v[vb.PRACH]
+    ma_topeni = v[vb.TOPENI]
+    vetra_se_tu = v[vb.VETRA_SE]
 
     def kdyz(podminka: bool, pole: dict) -> dict:
         return pole if podminka else {}
@@ -829,12 +829,7 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
             if self.source == "reconfigure" else None)
         if not muj:
             return False
-        for pod in self._get_entry().subentries.values():
-            if pod.subentry_type != c.PODENTITA_ZONA:
-                continue
-            if muj in (pod.data.get(c.CONF_MISTNOSTI) or []):
-                return True
-        return False
+        return vb.je_v_zone(self._get_entry().subentries.values(), muj)
 
     def _jmeno_zaluzie(self, eid: str, poradi: int) -> str:
         """Čitelné jméno žaluzie pro popisky polí."""

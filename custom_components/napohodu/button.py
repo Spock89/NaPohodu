@@ -18,6 +18,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
+from . import vybava as vb
 from . import vykon as vy
 from . import core
 from .const import (
@@ -33,20 +34,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     k = hass.data[DOMAIN][entry.entry_id]
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_MISTNOST:
-            tlacitka = [Srovnat(k, pod, "srovnat_okno"),
-                        Srovnat(k, pod, "srovnat_stineni"),
-                        Srovnat(k, pod, "srovnat_topeni")]
-            if pod.data.get(CONF_OKNA):
+            # Srovnat okno tam, kde okno není, je tlačítko, které
+            # nemá co srovnat. Vzniká proto jen s tím, co ovládá.
+            v = vb.pro_mistnost(entry, pod)
+            tlacitka = [Srovnat(k, pod, klic)
+                        for klic in ("srovnat_okno", "srovnat_stineni",
+                                     "srovnat_topeni")
+                        if vb.ma_smysl(klic, v)]
+            if vb.ma_smysl("otevrit_okno", v):
                 tlacitka += [Okno(k, pod, "otevrit_okno", True),
                              Okno(k, pod, "zavrit_okno", False)]
             # pro každou nakonfigurovanou roli vlastní tlačítko, ať se
             # stínění dá vyvolat rukou bez psaní automatizace
             mapa = pod.data.get(CONF_STINENI_MAPA) or {}
-            for role, klic in (("zastinit", "zastinit"),
-                               ("odstinit", "odstinit"),
-                               ("soukromi", "soukromi"),
-                               ("pryc", "stineni_pryc"),
-                               ("vychozi", "stineni_vychozi")):
+            for klic, role in vb.PODLE_ROLE.items():
                 # cile_zaluzii umí starý i nový tvar mapy; dřív se tu
                 # hledaly klíče „…|role", které novým tvarem zmizely,
                 # a tlačítka tiše přestala vznikat

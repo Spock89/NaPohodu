@@ -13,6 +13,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (DOMAIN, PODENTITA_KLIMA, PODENTITA_MISTNOST,
                     PODENTITA_ZONA)
+from . import vybava as vb
 from .entity import NaPohoduEntity
 
 
@@ -25,13 +26,23 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
         elif pod.subentry_type == PODENTITA_KLIMA:
             pridat([StavKlimy(k, pod)], config_subentry_id=pod.subentry_id)
         elif pod.subentry_type == PODENTITA_MISTNOST:
-            pridat([StavMistnosti(k, pod), CilMistnosti(k, pod),
-                    OdchylkaOdCile(k, pod), SlunceMistnosti(k, pod),
-                    StineniMistnosti(k, pod)],
-                   config_subentry_id=pod.subentry_id)
-    pridat([Prumer(k, entry, "prumer_tyden", "tyden"),
-            Prumer(k, entry, "prumer_tri_dny", "tri_dny"),
-            Vitr(k, entry)])
+            # Dopad slunce na okna místnosti, která žádné okno nemá,
+            # a stav stínění bez žaluzie jsou čidla, která opisují
+            # prázdno — a na kartě zabírají řádek.
+            v = vb.pro_mistnost(entry, pod)
+            sada = [StavMistnosti(k, pod), CilMistnosti(k, pod),
+                    OdchylkaOdCile(k, pod)]
+            if vb.ma_smysl("slunce", v):
+                sada.append(SlunceMistnosti(k, pod))
+            if vb.ma_smysl("stineni", v):
+                sada.append(StineniMistnosti(k, pod))
+            pridat(sada, config_subentry_id=pod.subentry_id)
+    byt = [Prumer(k, entry, "prumer_tyden", "tyden"),
+           Prumer(k, entry, "prumer_tri_dny", "tri_dny")]
+    # Přepočtená rychlost větru bez čidla větru je jen prázdný řádek.
+    if vb.ma_vitr({**entry.data, **entry.options}):
+        byt.append(Vitr(k, entry))
+    pridat(byt)
 
 
 class StavMistnosti(NaPohoduEntity, SensorEntity):

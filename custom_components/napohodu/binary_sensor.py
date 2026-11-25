@@ -10,11 +10,11 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from homeassistant.helpers.device_registry import DeviceInfo
 
-from .const import (CONF_KONTAKT_M, CONF_OKNA,
-                    CONF_ZDROJ_OKENNIHO_M, DOMAIN,
+from .const import (CONF_ZDROJ_OKENNIHO_M, DOMAIN,
                     PODENTITA_MISTNOST)
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import vybava as vb
 from .entity import NaPohoduEntity
 
 
@@ -28,7 +28,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             # napořád „zavřeno" — a to je horší než nic: termostat
             # i karta se tváří, že je tu okno hlídané, a přitom se jen
             # opisuje prázdno. Stačí kontakt, ovládat okno netřeba.
-            if pod.data.get(CONF_OKNA) or pod.data.get(CONF_KONTAKT_M):
+            if vb.ma_smysl("okno", vb.pro_mistnost(entry, pod)):
                 sada += [OknoOtevreno(k, pod), Okno(k, pod)]
             pridat(sada, config_subentry_id=pod.subentry_id)
     pridat([TopnaSezona(k, entry)])

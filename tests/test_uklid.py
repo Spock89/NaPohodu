@@ -49,6 +49,7 @@ def _stavy():
         "cover.zaluzie": Stav("open", {"current_position": 100}),
         "climate.hlavice": Stav("heat", {"temperature": 21.0}),
         "humidifier.zvlhcovac": Stav("on"),
+        "fan.cisticka": Stav("on"),
         "binary_sensor.kontakt": Stav("off"),
         "sun.sun": Stav("above_horizon", {"azimuth": 180.0,
                                           "elevation": 25.0}),
@@ -65,6 +66,7 @@ def _mistnosti(c):
             "zastinit": "dolu", "odstinit": "nahoru", "soukromi": "dolu",
             "pryc": "dolu", "vychozi": "nahoru"}},
         c.CONF_ZVLHCOVAC: ["humidifier.zvlhcovac"],
+        c.CONF_CISTICKA: ["fan.cisticka"],
         c.CONF_CLIMATE: ["climate.hlavice"]})
     prazdny = Podentita(c.PODENTITA_MISTNOST, "Prazdny",
                         {c.CONF_TEPLOTY: ["sensor.t"]})
@@ -111,7 +113,7 @@ def test_uklid_kryje_vsechno_podminene(ha):
     vznikle = _zaloz(ha, c, [plny, prazdny])
     podminene = _pro(vznikle, plny) - _pro(vznikle, prazdny)
     # Kdyby se podmínky z platforem vytratily, test by prošel naprázdno.
-    assert len(podminene) >= 8
+    assert len(podminene) >= 40
 
     # Registr jako po aktualizaci: obě místnosti mají všechno, co kdy
     # vzniklo plně vybavené.

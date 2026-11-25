@@ -39,6 +39,8 @@ class _Zapis:
     def __init__(self, podentity, entry_id="zapis"):
         self.subentries = {str(i): p for i, p in enumerate(podentity)}
         self.entry_id = entry_id
+        self.data = {}
+        self.options = {}
 
 
 class _Spravce:
@@ -217,3 +219,32 @@ def test_uklid_resi_i_jednotlive_odebrane_zaluzie(modul):
     hass.registr.smazane.clear()
     m._uklid(hass, zapis)
     assert hass.registr.smazane == []
+
+
+def test_uklid_smaze_i_cidlo_vetru_bez_cidla_vetru(modul):
+    """Entita bytu, která taky závisí na vybavení."""
+    m, c = modul
+    from homeassistant.helpers import entity_registry as er
+
+    zapis = _Zapis([])
+    hass = _Hass()
+    hass.registr = er.Registr([
+        er.RegistrZapis("sensor.napohodu_vitr", "zapis_vitr",
+                        config_entry_id="zapis"),
+        er.RegistrZapis("sensor.napohodu_prumer_tyden", "zapis_prumer_tyden",
+                        config_entry_id="zapis"),
+    ])
+
+    m._uklid(hass, zapis)
+    assert hass.registr.smazane == ["sensor.napohodu_vitr"]
+
+    # S čidlem větru zůstane.
+    zapis2 = _Zapis([])
+    zapis2.data = {c.CONF_VITR: "sensor.vitr"}
+    hass2 = _Hass()
+    hass2.registr = er.Registr([
+        er.RegistrZapis("sensor.napohodu_vitr", "zapis_vitr",
+                        config_entry_id="zapis"),
+    ])
+    m._uklid(hass2, zapis2)
+    assert hass2.registr.smazane == []

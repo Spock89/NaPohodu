@@ -9,10 +9,9 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
 
+from . import vybava as vb
 from . import vykon as vy
-from .const import (CONF_CLIMATE, CONF_KONTAKT_M, CONF_OKNA, CONF_PRYC_PO,
-                    CONF_PRYC_UTLUM, CONF_STINENI_MAPA,
-                    CONF_STINENI_PREDSTIH, CONF_ZALUZIE, CONF_ZVLHCOVAC,
+from .const import (CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH, CONF_ZALUZIE,
                     DOMAIN, PODENTITA_MISTNOST, PODENTITA_ZONA)
 from .coordinator import NaPohoduCoordinator
 from .services import zaregistruj
@@ -56,37 +55,6 @@ def _preved(hass: HomeAssistant, entry: ConfigEntry) -> None:
             "až při překročení cíle", pod.title, float(stary))
 
 
-# Co musí být v místnosti vybráno, aby entita toho druhu měla smysl.
-# Stačí jedna z vypsaných položek. Seznam musí krýt všechno, co
-# platformy zakládají podmíněně — hlídá to test_uklid.py, který obě
-# strany porovná sám, aby ruční opis nezastaral potichu.
-PODLE_VYBAVY: dict[str, tuple[str, ...]] = {
-    "ovladat_okno": (CONF_OKNA,),
-    "otevirat_i_pro_pohodu": (CONF_OKNA,),
-    "otevrit_okno": (CONF_OKNA,),
-    "zavrit_okno": (CONF_OKNA,),
-    "ovladat_stineni": (CONF_ZALUZIE,),
-    "zvlhcovat_i_ve_spanku": (CONF_ZVLHCOVAC,),
-    "ovladat_topeni": (CONF_CLIMATE,),
-    "termostat": (CONF_CLIMATE,),
-    CONF_PRYC_UTLUM: (CONF_CLIMATE,),
-    CONF_PRYC_PO: (CONF_CLIMATE,),
-    "okno": (CONF_OKNA, CONF_KONTAKT_M),
-    "okno_otevreno": (CONF_OKNA, CONF_KONTAKT_M),
-}
-
-# Tlačítka stínění nevznikají podle přiřazeného zařízení, ale podle
-# toho, jestli role v mapě stínění vůbec na něco míří. Podmínka se
-# proto bere tou samou funkcí jako při zakládání.
-PODLE_ROLE: dict[str, str] = {
-    "zastinit": "zastinit",
-    "odstinit": "odstinit",
-    "soukromi": "soukromi",
-    "stineni_pryc": "pryc",
-    "stineni_vychozi": "vychozi",
-}
-
-
 def _uklid(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Smaže entity, které v místnosti nemají co dělat.
 
@@ -95,43 +63,57 @@ def _uklid(hass: HomeAssistant, entry: ConfigEntry) -> None:
     vypínač okna v místnosti bez okna by po aktualizaci zůstal
     v dashboardu viset jako „nedostupný" a ručně by se musel mazat.
 
-    Maže se jen podle vybavení místnosti, a jen druhy vypsané výš plus
-    výběry stavu žaluzií. Nejde o jednorázový převod: když se
-    z místnosti okno odebere i později, uklidí se při dalším startu
-    stejně.
+    Co kde má význam, se bere ze `vybava`, odkud se tím samým
+    pravidlem řídí i zakládání entit a nastavení. Klíč, který tabulka
+    nezná, se nemaže — radši zůstane přebytečná entita než aby zmizela
+    ta, na kterou se někdo nedopatřením zapomněl.
+
+    Nejde o jednorázový převod: když se z místnosti okno odebere
+    i později, uklidí se při dalším startu stejně.
     """
     registr = er.async_get(hass)
     zapisy = er.async_entries_for_config_entry(registr, entry.entry_id)
+
+    def smaz(zapis, kde: str) -> None:
+        registr.async_remove(zapis.entity_id)
+        _LOGGER.info("NaPohodu: %s — %s smazána, takové zařízení tu "
+                     "není", kde, zapis.entity_id)
+
+    # Entity celého bytu. Zatím jediná závisí na vybavení: přepočtená
+    # rychlost větru bez čidla větru nemá co hlásit.
+    if not vb.ma_vitr({**entry.data, **entry.options}):
+        for zapis in zapisy:
+            if zapis.unique_id == f"{entry.entry_id}_vitr":
+                smaz(zapis, "byt")
+
     for pod in list(entry.subentries.values()):
         if pod.subentry_type != PODENTITA_MISTNOST:
             continue
-        chybi = {klic for klic, pole in PODLE_VYBAVY.items()
-                 if not any(pod.data.get(p) for p in pole)}
+        v = vb.pro_mistnost(entry, pod)
         mapa = pod.data.get(CONF_STINENI_MAPA) or {}
-        chybi |= {klic for klic, role in PODLE_ROLE.items()
-                  if not vy.cile_zaluzii(role, mapa)}
         # Výběr stavu nese v identifikátoru konkrétní žaluzii, protože
-        # jich místnost může mít víc. Pevný seznam druhů na to nestačí:
-        # odebráním druhé žaluzie zmizí entita, jejíž jméno nikde
-        # nestojí, a sem se musí dopočítat z toho, co v místnosti
-        # zbylo.
+        # jich místnost může mít víc. Tabulka druhů na to nestačí:
+        # odebráním druhé žaluzie osiří entita, jejíž jméno nikde
+        # nezůstane, a musí se dopočítat z toho, co v místnosti zbylo.
         zaluzie = {f"stav_{z}" for z in (pod.data.get(CONF_ZALUZIE) or [])}
         predpona = f"{pod.subentry_id}_"
         for zapis in zapisy:
             if not (zapis.unique_id or "").startswith(predpona):
                 continue
-            zbytek = zapis.unique_id[len(predpona):]
+            klic = zapis.unique_id[len(predpona):]
             # Tečka je tu podmínkou schválně: jen tak se pozná odkaz
             # na entitu žaluzie. Bez ní by se o klíč pojmenovaný
             # „stav_cehosi" jednou smazalo něco jiného.
-            osirely_stav = (zbytek.startswith("stav_") and "." in zbytek
-                            and zbytek not in zaluzie)
-            if zbytek not in chybi and not osirely_stav:
-                continue
-            registr.async_remove(zapis.entity_id)
-            _LOGGER.info(
-                "NaPohodu: %s — %s smazána, v místnosti takové "
-                "zařízení není", pod.title, zapis.entity_id)
+            if klic.startswith("stav_") and "." in klic:
+                prebyva = klic not in zaluzie
+            elif klic in vb.PODLE_ROLE:
+                # Tlačítka stínění nezávisejí na přiřazené žaluzii, ale
+                # na tom, jestli role v mapě vůbec na nějakou míří.
+                prebyva = not vy.cile_zaluzii(vb.PODLE_ROLE[klic], mapa)
+            else:
+                prebyva = not vb.ma_smysl(klic, v)
+            if prebyva:
+                smaz(zapis, pod.title)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

@@ -225,11 +225,23 @@ def test_klima_dostane_svuj_prepinac(nahradni_ha):
 
 
 def test_mistnost_dostane_tlacitka(nahradni_ha):
+    """Srovnat se dá jen to, co v místnosti je."""
     import importlib
     const = importlib.import_module("napohodu.const")
-    pod = FalesnaPodentita(const.PODENTITA_MISTNOST, "Kuchyne")
+    pod = FalesnaPodentita(const.PODENTITA_MISTNOST, "Kuchyne",
+                           {const.CONF_OKNA: ["cover.o"],
+                            const.CONF_ZALUZIE: ["cover.z"],
+                            const.CONF_CLIMATE: ["climate.h"]})
     klice = _klice(_entity_platformy("button", [pod]))
-    assert "srovnat_okno" in klice and "srovnat_stineni" in klice
+    for k in ("srovnat_okno", "srovnat_stineni", "srovnat_topeni"):
+        assert k in klice, k
+
+    # Dílna nemá co srovnávat, tlačítko by jen zabíralo řádek.
+    hola = FalesnaPodentita(const.PODENTITA_MISTNOST, "Dilna")
+    klice_bez = _klice(_entity_platformy("button", [hola]))
+    for k in ("srovnat_okno", "srovnat_stineni", "srovnat_topeni",
+              "otevrit_okno", "zavrit_okno"):
+        assert k not in klice_bez, k
 
 
 def test_tlacitka_stineni_jen_pro_prirazene_role(nahradni_ha):
@@ -248,12 +260,26 @@ def test_tlacitka_stineni_jen_pro_prirazene_role(nahradni_ha):
 
 
 def test_mistnost_dostane_senzory(nahradni_ha):
+    """Stav a cíl má každá místnost. Slunce a stínění jen ta, kde
+    vůbec je okno, respektive žaluzie — jinak čidlo opisuje prázdno."""
     import importlib
     const = importlib.import_module("napohodu.const")
-    pod = FalesnaPodentita(const.PODENTITA_MISTNOST, "Kuchyne")
-    klice = _klice(_entity_platformy("sensor", [pod]))
-    for k in ("stav", "cil", "slunce"):
-        assert k in klice
+    hola = FalesnaPodentita(const.PODENTITA_MISTNOST, "Dilna")
+    klice = _klice(_entity_platformy("sensor", [hola]))
+    for k in ("stav", "cil", "odchylka_od_cile"):
+        assert k in klice, k
+    assert "slunce" not in klice and "stineni" not in klice
+
+    # Ke slunci stačí kontakt okna, hýbat se jím nemusí.
+    s_kontaktem = FalesnaPodentita(const.PODENTITA_MISTNOST, "Obyvak",
+                                   {const.CONF_KONTAKT_M: ["binary_sensor.o"]})
+    klice = _klice(_entity_platformy("sensor", [s_kontaktem]))
+    assert "slunce" in klice and "stineni" not in klice
+
+    se_zaluzii = FalesnaPodentita(const.PODENTITA_MISTNOST, "Loznice",
+                                  {const.CONF_ZALUZIE: ["cover.z"]})
+    klice = _klice(_entity_platformy("sensor", [se_zaluzii]))
+    assert "slunce" in klice and "stineni" in klice
 
 
 def test_oblast_dostane_sdileny_vzduch(nahradni_ha):
@@ -2142,16 +2168,20 @@ def test_utlum_v_nepritomnosti_jen_s_hlavici(nahradni_ha):
     const = importlib.import_module("napohodu.const")
 
     s_hlavici = FalesnaPodentita(const.PODENTITA_MISTNOST, "Loznice",
-                                 {const.CONF_CLIMATE: "climate.hlavice"})
-    bez = FalesnaPodentita(const.PODENTITA_MISTNOST, "Dilna")
+                                 {const.CONF_CLIMATE: "climate.hlavice",
+                                  const.CONF_OKNA: ["cover.o"]})
+    # Okno má i ta bez hlavice, aby se lišily jen hlavicí.
+    bez = FalesnaPodentita(const.PODENTITA_MISTNOST, "Dilna",
+                           {const.CONF_OKNA: ["cover.o"]})
 
     klice_s = _klice(_entity_platformy("number", [s_hlavici]))
     klice_bez = _klice(_entity_platformy("number", [bez]))
     for klic in (const.CONF_PRYC_UTLUM, const.CONF_PRYC_PO):
         assert klic in klice_s, klic
         assert klic not in klice_bez, klic
-    # a ostatní šoupátka dostanou obě
+    # a šoupátka, která na hlavici nezávisejí, dostanou obě
     assert const.CONF_MEZ_DOLNI in klice_bez
+    assert const.CONF_MEZ_DOLNI in klice_s
 
 
 def test_zarizeni_bytu_je_jedno(nahradni_ha):

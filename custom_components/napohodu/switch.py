@@ -19,8 +19,8 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import dny as dn
-from .const import (CONF_CLIMATE, CONF_OKNA, CONF_ZALUZIE,
-                    CONF_ZVLHCOVAC, DOMAIN, PODENTITA_KLIMA,
+from . import vybava as vb
+from .const import (DOMAIN, PODENTITA_KLIMA,
                     PODENTITA_MISTNOST)
 from .entity import NaPohoduEntity
 
@@ -76,14 +76,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
             # Dílna bez oken tím o nic nepřijde: žádost o vyvětrání
             # sousedům se podle tohohle přepínače neřídí, ta jde přes
             # zónu a ptá se na okna sousedů, ne na vlastní.
+            v = vb.pro_mistnost(entry, pod)
             sada = []
-            if pod.data.get(CONF_OKNA):
+            if vb.ma_smysl("ovladat_okno", v):
                 sada += [OvladatOkno(k, pod), OtevritProPohodu(k, pod)]
-            if pod.data.get(CONF_ZALUZIE):
+            if vb.ma_smysl("ovladat_stineni", v):
                 sada.append(OvladatStineni(k, pod))
-            if pod.data.get(CONF_ZVLHCOVAC):
+            if vb.ma_smysl("zvlhcovat_i_ve_spanku", v):
                 sada.append(ZvlhcovatVeSpanku(k, pod))
-            if pod.data.get(CONF_CLIMATE):
+            if vb.ma_smysl("ovladat_topeni", v):
                 sada.append(OvladatTopeni(k, pod))
             if sada:
                 pridat(sada, config_subentry_id=pod.subentry_id)

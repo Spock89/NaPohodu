@@ -30,7 +30,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import (CONF_CLIMATE, CONF_ODCHYLKA, DOMAIN, ODCHYLKA_KROK,
+from . import vybava as vb
+from .const import (CONF_ODCHYLKA, DOMAIN, ODCHYLKA_KROK,
                     ODCHYLKA_MEZ, PODENTITA_MISTNOST)
 from .entity import NaPohoduEntity
 
@@ -45,7 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
         # kolečko, kterým se nic nestane — a v HomeKitu by se nabízel
         # jako plnohodnotné topení.
         if (pod.subentry_type == PODENTITA_MISTNOST
-                and (pod.data.get(CONF_CLIMATE) or [])):
+                and vb.ma_smysl("termostat", vb.pro_mistnost(entry, pod))):
             pridat([TermostatMistnosti(k, pod)],
                    config_subentry_id=pod.subentry_id)
 

@@ -1267,24 +1267,50 @@ Místnost bez oken, bez žaluzií nebo bez hlavic nedostane ani entity,
 ani řádky, ani nastavení pro to, co nemá. Platí to na třech místech
 naráz a každé z nich se dá pokazit zvlášť:
 
+**Jedno pravidlo na jednom místě.** Tutéž otázku — má tohle v téhle
+místnosti vůbec význam? — si kladou tři různá místa: nastavení (na co
+se ptát), platformy (co zakládat) a úklid registru (co smazat, když už
+tam být nemá). Dokud měla každá svoje vlastní podmínky, rozcházely se:
+šoupátko útlumu se zakládalo jen s hlavicí, ale nastavení se na něj
+ptalo i v dílně, a úklid o něm nevěděl vůbec. Odpověď proto zná jediný
+modul `vybava.py`: tabulka *co závisí na čem* plus výčet vlastností
+místnosti (okno, sklo, žaluzie, zvlhčovač, prach, topení, větrá se tu).
+Všichni tři se ptají jí. **Klíč, který tabulka nezná, platí všude** —
+tím se nová entita nikdy nezatluče omylem, jen se na ni musí při psaní
+úklidu pamatovat.
+
 **Entity** vznikají jen k tomu, co v místnosti je. Dřív se zakládaly
 všem: dílna bez jediného okna měla přepínač *Ovládat okna*, který
-nikdy nic neudělal, a čidlo okna, které hlásilo napořád „zavřeno".
-Karta se přitom ptala správně, jen dostávala odpověď „ano, existuje",
-takže se to nedalo spravit v kartě. Přepínač vznikne jen k přiřazenému
-zařízení, čidlo okna stačí ke kontaktu — ovládat okno netřeba. Žádost
-o vyvětrání sousedům tím netrpí, ta jde přes oblast a ptá se na okna
-sousedů, ne na vlastní přepínač.
+nikdy nic neudělal, čidlo okna hlásící napořád „zavřeno", tlačítko
+*Srovnat okno*, kterým nebylo co srovnat, čidlo dopadu slunce na okna,
+která neexistují, a dvacet šoupátek pro prahy CO2, vlhkost a prach,
+které nemělo co ovlivnit. Karta se přitom ptala správně, jen dostávala
+odpověď „ano, existuje", takže se to nedalo spravit v kartě. Dnes má
+místnost bez vybavení šest entit místo padesáti: stav, cíl, odchylku od
+cíle, odchylku, obsazenost a klid. Čidlo okna stačí ke kontaktu —
+ovládat okno netřeba; dopad slunce stačí ke sklu, tedy i k pouhému
+kontaktu nebo žaluzii. Žádost o vyvětrání sousedům tím netrpí, ta jde
+přes oblast a ptá se na okna sousedů, ne na vlastní přepínač.
+
+Prahy CO2 a pásmo kolem cíle jsou výjimka, která se musí hlídat:
+**místnost bez vlastního okna, ale v oblasti, je dostane.** Říká si
+jimi sousedovi o vyvětrání, takže jsou jediný způsob, jak se vyjádřit.
+Proto se vlastnost „větrá se tu" nepočítá jen z přiřazeného okna, ale
+i z členství v oblasti — a `vybava` se na podentity oblastí musí
+podívat i při zakládání entit, ne jen ve formuláři.
+
+Z entit celého bytu na vybavení závisí jediná: přepočtená rychlost
+větru. Bez čidla větru ani náraz není odkud ji brát, takže nevzniká —
+a ve stávající instalaci ji úklid smaže.
 
 **Nastavení** se ptá jen na to, co má na čem fungovat. Formulář úpravy
 místnosti měl 78 polí vždycky; samostatná místnost bez vybavení jich
 má teď 35, místnost v oblasti 51, plně vybavená pořád 78. **Pole pro
 přiřazení zařízení zůstávají vidět vždycky** — jinak by nebylo jak
-zařízení přidat. Mizí jen to, co na nich závisí. Prahy CO2 a pásmo
-kolem cíle zůstávají i místnosti bez vlastního okna, pokud je
-v **oblasti**: tam si jimi říká sousedovi o vyvětrání, takže jsou
-jediný způsob, jak se vyjádřit. Nově přidané zařízení své nastavení
-ukáže, až formulář otevřeš znovu.
+zařízení přidat. Mizí jen to, co na nich závisí, podle téže tabulky,
+podle které vznikají entity: co se nedá nastavit, to ani nevznikne jako
+šoupátko, a naopak. Nově přidané zařízení své nastavení ukáže, až
+formulář otevřeš znovu.
 
 Ve společném nastavení se takhle schovají jen prahy větru, a jen když
 není vybrané čidlo větru: jiný zdroj větru není. **Podle prázdného
@@ -1311,15 +1337,10 @@ přepínač okna v dílně dál, jen s šedou značkou „nedostupný", a musel
 by ho mazat ručně. Integrace si proto při každém startu projde
 místnosti a přebytečné entity z registru smaže sama.
 
-Maže se **jen podle vybavení místnosti**, a jen ty druhy entit, které
-na vybavení závisejí — tedy přesně to, co platforma v nevybavené
-místnosti ani nezaloží: přepínače *Ovládat okna*, *Otevírat i pro
-pohodu*, *Ovládat stínění*, *Zvlhčovat i ve spánku* a *Ovládat
-topení*, tlačítka pro otevření a zavření okna, tlačítka stínění podle
-rolí, šoupátka útlumu v nepřítomnosti, čidlo okna, čidlo otevření
-okna, termostat místnosti a výběry stavu žaluzií. Nic jiného se
-nekontroluje a nemaže; teplota, obsazenost ani entity oblastí, scén
-a skupin to nepotká ani omylem. Není to jednorázový převod: když se
+Maže se **jen podle vybavení místnosti**, a jen to, co platforma
+v nevybavené místnosti ani nezaloží — tedy přesně podle téže tabulky.
+Nic jiného se nekontroluje a nemaže; stav, cíl, obsazenost ani entity
+oblastí, scén a skupin to nepotká ani omylem. Není to jednorázový převod: když se
 z místnosti okno odebere až někdy potom, uklidí se při dalším startu
 stejně. Každé smazání jde do logu s názvem místnosti a entity.
 
@@ -1347,11 +1368,11 @@ nemá kdo smazat, a pozná se to až v dashboardu. **Test to porovnává
 sám:** vyrobí dvě místnosti, jednu plně vybavenou a jednu bez ničeho,
 nechá všech devět platforem založit entity a z rozdílu obou sad
 spočítá, co na vybavení závisí. Co v tom rozdílu je, musí úklid
-v nevybavené místnosti smazat a ve vybavené nechat. Tím se rozšířilo
-z osmi druhů na osmnáct: šoupátka útlumu (podmíněná od 2.61), tlačítka
-oken a tlačítka stínění (podmíněná od začátku) seznam míjel, protože
-se při psaní úklidu vycházelo z toho, co přestala zakládat 2.64 — a ta
-jen přidala další podmínky k těm, které už dávno platily.
+v nevybavené místnosti smazat a ve vybavené nechat. Právě ten test
+ukázal, jak mělký byl první pokus: ruční seznam měl osm druhů,
+podmíněných jich bylo osmnáct, a po zavedení `vybava.py` je jich
+čtyřiačtyřicet. Tabulku i tak může někdo doplnit špatně — ale ne
+potichu.
 
 ### Termostat místnosti
 

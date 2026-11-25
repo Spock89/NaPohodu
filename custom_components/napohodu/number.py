@@ -22,11 +22,12 @@ from .const import (
     ODCHYLKA_KROK, ODCHYLKA_MEZ,
     CONF_PLAN_CIL, CONF_PLAN_KOLIKRAT, CONF_PREDVETRAT,
     CONF_PM_SPATNE, CONF_REZERVA_VENKU, CONF_RH_MAX, CONF_RH_MIN,
-    CONF_CLIMATE, CONF_PRYC_PO, CONF_PRYC_UTLUM,
+    CONF_PRYC_PO, CONF_PRYC_UTLUM,
     CONF_RUCNI_KLID, CONF_RUCNI_KLID_ZALUZIE, CONF_UTLUM,
     CONF_ZMENA_PODMINEK, DOMAIN,
     PODENTITA_MISTNOST,
 )
+from . import vybava as vb
 from .entity import NaPohoduEntity
 
 
@@ -119,9 +120,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     for pod in entry.subentries.values():
         if pod.subentry_type != PODENTITA_MISTNOST:
             continue          # prahy vzduchu patří místnosti, ta se rozhoduje
-        # Útlum v nepřítomnosti má smysl jen tam, kde se opravdu
-        # topí — bez hlavice by to bylo šoupátko, které nic neudělá.
-        sada = MISTNOST + (TOPENI if pod.data.get(CONF_CLIMATE) else [])
+        # Šoupátko k tomu, co v místnosti není, nic neudělá — jen na
+        # dashboardu tvrdí, že se tím něco ovládá. Co na čem závisí,
+        # ví vybava.POTREBUJE, odkud se tím samým pravidlem řídí
+        # i nastavení a úklid registru.
+        v = vb.pro_mistnost(entry, pod)
+        sada = [p for p in MISTNOST + TOPENI if vb.ma_smysl(p.klic, v)]
         pridat([NaPohoduNumber(k, pod, p, entry) for p in sada],
                config_subentry_id=pod.subentry_id)
 
