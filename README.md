@@ -1534,7 +1534,10 @@ položka v **Nastavení → Opravy**, s postupem, co udělat:
   Taková entita se přeskakuje. Závažnost *chyba*.
 - **Nastavení ukazuje na entitu, která neexistuje** — přejmenované
   nebo odebrané zařízení. Integrace tu část přeskakuje: čidlo nečte,
-  povel neposílá.
+  povel neposílá. Společné nastavení bytu má vlastní hlášku: k němu
+  se chodí přes **Nastavit** u samotné integrace, ne přes *Upravit*
+  u místnosti, takže návod pro místnost by v něm posílal špatnou
+  cestou.
 - **Čidlo hlásí v jiné jednotce** — prahy jsou v °C a v m/s, a tichý
   přepočet je hádání.
 

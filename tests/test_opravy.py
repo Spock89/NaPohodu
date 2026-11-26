@@ -201,6 +201,9 @@ def test_zastupne_texty_v_prekladu_odpovidaji_hlasenym(op):
     hlasene = {
         "smycka": {"entita", "kde", "co"},
         "chybi": {"entita", "kde"},
+        # Společné nastavení nemá jméno místnosti, kam poslat — cesta
+        # k němu je jiná, takže má vlastní hlášku i vlastní návod.
+        "chybi_byt": {"entita"},
         "jednotka": {"entita", "popis", "jednotka", "ocekavane"},
     }
     for jazyk in ("cs", "en"):
@@ -211,3 +214,22 @@ def test_zastupne_texty_v_prekladu_odpovidaji_hlasenym(op):
             pouzite = set(re.findall(r"\{(\w+)\}",
                                      text["title"] + text["description"]))
             assert pouzite <= hlasene[druh], (jazyk, druh, pouzite)
+
+
+def test_spolecne_nastaveni_ma_vlastni_hlasku(op):
+    """Návod pro místnost posílá na „Upravit" u podentity. Ve
+    společném nastavení se tam nedá dojít, takže by lhal."""
+    hass = _Hass()
+    o = _opravy(op, hass)
+    zapis = _Zapis(data={"t_prumer": "sensor.zmizela"})
+
+    for _ in range(op.NEZ_SE_OHLASI):
+        o.zacni()
+        o.zkontroluj(zapis, lambda e: False)
+        o.hotovo()
+
+    assert _zalozene(hass) == ["chybi_byt_sensor.zmizela"]
+    zaznam = hass.opravy_registr[("napohodu", "chybi_byt_sensor.zmizela")]
+    assert zaznam["translation_key"] == "chybi_byt"
+    # Jméno místnosti tu nemá co dělat.
+    assert zaznam["translation_placeholders"] == {"entita": "sensor.zmizela"}

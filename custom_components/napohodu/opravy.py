@@ -49,6 +49,7 @@ ZAVAZNOST = {
     # Psát si sám sobě je chyba zadání, která tiše kazí výsledek.
     "smycka": ir.IssueSeverity.ERROR,
     "chybi": ir.IssueSeverity.WARNING,
+    "chybi_byt": ir.IssueSeverity.WARNING,
     "jednotka": ir.IssueSeverity.WARNING,
 }
 
@@ -147,9 +148,13 @@ class Opravy:
         `v_registru` dodává koordinátor — rozdíl mezi „entita neexistuje"
         a „zatím mlčí" se bez registru udělat nedá.
         """
+        # Kde entita stojí. Prázdné jméno znamená společné nastavení
+        # bytu — tam se do nastavení chodí jinou cestou než
+        # k místnosti, takže si zaslouží vlastní hlášku; návod, který
+        # posílá na „Upravit" u podentity, by v něm neplatil.
         hledane: dict[str, str] = {}
         for e in entity_v_nastaveni({**entry.data, **entry.options}):
-            hledane[e] = "ve společném nastavení"
+            hledane[e] = ""
         for pod in entry.subentries.values():
             for e in entity_v_nastaveni(pod.data):
                 hledane.setdefault(e, pod.title)
@@ -161,7 +166,10 @@ class Opravy:
             kolikrat = self._chybi_kolikrat.get(eid, 0) + 1
             self._chybi_kolikrat[eid] = kolikrat
             if kolikrat >= NEZ_SE_OHLASI:
-                self.nahlas("chybi", eid, entita=eid, kde=kde)
+                if kde:
+                    self.nahlas("chybi", eid, entita=eid, kde=kde)
+                else:
+                    self.nahlas("chybi_byt", eid, entita=eid)
         # Entita, která se vrátila nebo se přestala používat, se
         # z počítadla musí ztratit, jinak by po jejím druhém smazání
         # vyskočila hláška hned.
