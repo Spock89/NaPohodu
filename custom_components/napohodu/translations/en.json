@@ -1296,5 +1296,19 @@
         "name": "Thermostat"
       }
     }
+  },
+  "issues": {
+    "smycka": {
+      "title": "Assigned entity belongs to NaPohodu",
+      "description": "Room **{kde}** has `{entita}` assigned as {co}, but that entity is created by NaPohodu itself. It only shows what the integration calculated, so the integration would be writing to itself: the command would overwrite the input it came from.\n\nSuch an entity is skipped, which looks like the integration not responding even though the setting is at fault.\n\nWhat to do:\n1. Open **Settings → Devices & services → NaPohodu**.\n2. Click **Configure** on room {kde}.\n3. Remove `{entita}` from the {co} field and pick the real device instead.\n4. Save.\n\nThe issue clears itself within a minute and the room starts controlling the device."
+    },
+    "chybi": {
+      "title": "Setting points at an entity that does not exist",
+      "description": "The settings ({kde}) refer to `{entita}`, but Home Assistant does not know that entity at all — not even as unavailable. Usually the device was renamed or removed.\n\nWhile this lasts, the integration simply skips that part: the sensor is not read, the command is not sent. It is reported only after three minutes, so it does not appear during startup while devices are still loading.\n\nWhat to do:\n1. Open **Settings → Devices & services → NaPohodu**.\n2. Find {kde} and click **Configure**.\n3. Pick a new entity instead of `{entita}`, or clear the field if the device is gone.\n4. Save.\n\nThe issue clears itself within a minute."
+    },
+    "jednotka": {
+      "title": "Sensor reports in a different unit",
+      "description": "The {popis} sensor (`{entita}`) reports in **{jednotka}**, but NaPohodu's thresholds are in **{ocekavane}**. Values are not converted, because a silent conversion is guesswork — so decisions are made from a number that means something else.\n\nWhat to do:\n1. Open the `{entita}` entity page and change its **unit** to {ocekavane}.\n2. If that sensor does not allow it, create a template sensor that converts the value and assign that one in NaPohodu.\n\nThe issue clears after the integration is reloaded."
+    }
   }
 }

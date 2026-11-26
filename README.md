@@ -1501,6 +1501,63 @@ Atribut `dnes` shrne den: kolikrát se okno hýbalo, jak dlouho bylo
 otevřeno, nejvyšší CO2, nejnižší teplota. Podle toho se pozná, jestli
 jsou prahy dobře nastavené.
 
+#### Stáhnout diagnostická data
+
+Atributy jsou na jednu otázku. Když se ale ptáš „proč to včera udělalo
+tohle", je jich potřeba víc naráz — a z fotky obrazovky se nepozná,
+jestli se místnost rozhodla špatně, nebo dostala špatný vstup.
+
+V **Nastavení → Zařízení a služby → NaPohodu** je proto
+**Stáhnout diagnostická data**: jeden soubor JSON se vším, z čeho se
+rozhodovalo. Nastavení i podentity, ruční hodnoty šoupátek a přepínačů,
+stav oken, průměry venkovní teploty, naměřená náběhová křivka po
+přihrádkách, paměť rozhodování, která přežívá restart, a výsledek
+posledního cyklu za každou místnost i oblast včetně atributů.
+
+Hesla ani souřadnice v souboru nejsou, protože je integrace nemá —
+nastavení je jen výběr entit a čísla. I tak se export cedí podle jména
+pole (`latitude`, `token`, `password`…), protože ho člověk může
+poslat do veřejného vlákna a na pozdější přírůstek by si nikdo
+nevzpomněl. Export funguje i tehdy, když se integrace nenačetla; právě
+tehdy je nejpotřebnější, takže místo chyby vrátí aspoň nastavení.
+
+#### Opravy
+
+Některé problémy integrace poznala vždycky, ale psala je jen do
+protokolu — kam se nikdo nepodívá. Navenek to pak vypadalo, že
+integrace nereaguje, i když byla chyba v zadání. Teď se z nich stane
+položka v **Nastavení → Opravy**, s postupem, co udělat:
+
+- **Přiřazená entita patří NaPohodu** — v místnosti je jako hlavice
+  (nebo okno, žaluzie) přiřazená entita, kterou vyrábí sama integrace.
+  Psala by si sama sobě: povel by přepsal vstup, ze kterého vznikl.
+  Taková entita se přeskakuje. Závažnost *chyba*.
+- **Nastavení ukazuje na entitu, která neexistuje** — přejmenované
+  nebo odebrané zařízení. Integrace tu část přeskakuje: čidlo nečte,
+  povel neposílá.
+- **Čidlo hlásí v jiné jednotce** — prahy jsou v °C a v m/s, a tichý
+  přepočet je hádání.
+
+Dvě věci na tom byly důležitější než samotné hlášky:
+
+**Zmizet to musí samo.** Kdo přenastaví čidlo, nemá dál koukat na
+hlášku o tom starém — a hláška, která nezmizí po spravení, je horší
+než žádná, protože člověk přestane věřit i ostatním. Každý cyklus se
+proto hlásí znovu celý seznam toho, co pořád platí, a co se neohlásí,
+se zruší. Do protokolu se naopak píše jednou; hodina stejné věty
+v záznamu nic nepřidá.
+
+**Nehlásit planý poplach.** Při startu se integrace načítají postupně
+a cizí zařízení se ozve později než my. Chybějící entita se proto
+hlásí jen tehdy, když ji nezná ani registr entit — tedy neexistuje ani
+jako nedostupná — a až po třech cyklech po sobě. Když se vrátí,
+počítadlo se nuluje, takže po jejím druhém smazání se nehlásí hned.
+
+Entity v nastavení se hledají podle **tvaru hodnoty**, ne podle
+ručního výčtu polí. Ten by zastaral při prvním dalším výběru čidla —
+a právě takhle by se zapomnělo na přiřazení stínění, kde jsou žaluzie
+v klíčích slovníku, ne v hodnotách.
+
 ## Co to nedělá
 
 Neřeší regulaci samotné hlavice — kalibraci podle externího čidla,

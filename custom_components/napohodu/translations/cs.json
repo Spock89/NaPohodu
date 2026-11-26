@@ -1296,5 +1296,19 @@
         "name": "Termostat"
       }
     }
+  },
+  "issues": {
+    "smycka": {
+      "title": "Přiřazená entita patří NaPohodu",
+      "description": "V místnosti **{kde}** je jako {co} přiřazená entita `{entita}`, kterou vyrábí samotná NaPohodu. Ta jen ukazuje, co integrace spočítala, takže by si integrace psala sama sobě: povel by přepsal vstup, ze kterého vznikl.\n\nProto se taková entita přeskakuje — navenek to vypadá, že integrace nereaguje, i když je chyba v zadání.\n\nCo udělat:\n1. Otevři **Nastavení → Zařízení a služby → NaPohodu**.\n2. U místnosti {kde} klepni na **Upravit**.\n3. V poli pro {co} vyber `{entita}` a odeber ji; nahraď ji skutečným zařízením.\n4. Ulož.\n\nPo uložení se tahle položka do minuty sama zruší a místnost začne zařízení ovládat."
+    },
+    "chybi": {
+      "title": "Nastavení ukazuje na entitu, která neexistuje",
+      "description": "Nastavení ({kde}) se odvolává na `{entita}`, ale takovou entitu Home Assistant nezná — ani jako nedostupnou. Obvykle to znamená přejmenované nebo odebrané zařízení.\n\nDokud to platí, integrace tuhle část jen přeskakuje: čidlo se nečte, povel se neposílá. Hlásí se to až po třech minutách, aby to nevyskočilo při startu, kdy se zařízení načítají postupně.\n\nCo udělat:\n1. Otevři **Nastavení → Zařízení a služby → NaPohodu**.\n2. Najdi {kde} a klepni na **Upravit**.\n3. Vyber novou entitu místo `{entita}`, nebo pole vyprázdni, pokud už zařízení nemáš.\n4. Ulož.\n\nPo uložení se položka do minuty sama zruší."
+    },
+    "jednotka": {
+      "title": "Čidlo hlásí v jiné jednotce",
+      "description": "Čidlo {popis} (`{entita}`) hlásí hodnotu v **{jednotka}**, ale prahy v NaPohodu jsou v **{ocekavane}**. Hodnoty se nepřepočítávají, protože tichý přepočet je hádání — a rozhoduje se tedy podle čísla, které znamená něco jiného.\n\nCo udělat:\n1. Otevři stránku entity `{entita}` a v jejím nastavení přepni **jednotku** na {ocekavane}.\n2. Pokud to u tohohle čidla nejde, vyrob si šablonové čidlo, které hodnotu přepočítá, a přiřaď v NaPohodu to.\n\nPo změně se položka zruší po dalším načtení integrace."
+    }
   }
 }

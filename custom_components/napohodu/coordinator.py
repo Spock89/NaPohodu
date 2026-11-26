@@ -26,10 +26,10 @@ except ImportError:      # pragma: no cover - bez něj se jen neopakuje
     rrulestr = None
 
 from .number import MISTNOST as POSUVNIKY_MISTNOSTI
-from . import (core, dny, naber as nb, plan as pl, planovac as pz,
-               podklady as pk, pritomnost as pr, prumery as pm,
-               slunce as sl, sousedstvi as so, vykon as vy,
-               zpravy as zp, klima as kl)
+from . import (core, dny, naber as nb, opravy as op, plan as pl,
+               planovac as pz, podklady as pk, pritomnost as pr,
+               prumery as pm, slunce as sl, sousedstvi as so,
+               vykon as vy, zpravy as zp, klima as kl)
 
 try:      # dateutil je v Home Assistantu běžně k dispozici
     from dateutil.rrule import rrulestr
@@ -256,6 +256,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._souhrn_den: str = ""
         self.hlasic = zp.Hlasic()
         self._souhrn_odeslan: str = ""
+        # Problémy pro Nastavení → Opravy. Do protokolu se psaly dřív
+        # taky, jen tam nikdo nekoukal.
+        self.opravy = op.Opravy(hass, entry.entry_id)
         # průměry si počítáme sami, ať uživatel nemusí zakládat statistiky
         self.prumery = pm.Prumery()
         # hodnoty, se kterými se opravdu počítá, a odkud pocházejí
@@ -471,6 +474,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 "NaPohodu: %s (%s) hlásí v %r, ale prahy jsou v %s — "
                 "hodnoty nebudou odpovídat",
                 popis, eid, jednotka, " nebo ".join(ocekavane))
+            self.opravy.jednotka(eid, popis, jednotka,
+                                 " nebo ".join(ocekavane))
 
     def _v_registru(self, eid: str) -> bool:
         """Existuje entita, i když zrovna nehlásí stav?
@@ -1016,6 +1021,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         spolu dýchají, a řeší noční zastupování.
         """
         g = {**self.entry.data, **self.entry.options}
+        # Opravy se hlásí znovu celé každý cyklus. Co se neohlásí,
+        # na konci zmizí — jinak by hláška přežila i to, že ji člověk
+        # spravil.
+        self.opravy.zacni()
 
         # ---------- společné venku ----------
         # Po restartu čidlo chvíli nehlásí. Vymyslet si teplotu znamená
@@ -1509,6 +1518,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self._posledni_snimek = snimek
             self._uloziste_pameti.async_delay_save(lambda: snimek, 30)
 
+        self.opravy.zkontroluj(self.entry, self._v_registru)
+        self.opravy.hotovo()
         return {"zony": self.zony, "mistnosti": self.mistnosti}
 
     async def _plan_zpravy(self, g: dict, cas_s: float) -> None:
@@ -2433,6 +2444,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                         "NaPohodu: %s — %s %s je entita téhle "
                         "integrace, přeskakuji ji; psala by si sama "
                         "sobě", kde, co, e)
+                # Do Oprav naopak každý cyklus, aby položka zmizela,
+                # jakmile se přiřazení spraví.
+                self.opravy.nahlas("smycka", e, entita=e, kde=kde, co=co)
                 continue
             cizi.append(e)
         return cizi

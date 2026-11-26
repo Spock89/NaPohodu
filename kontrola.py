@@ -66,8 +66,10 @@ for p in d.glob("*.py"):
 # Seznam platforem se nepíše ručně: je v __init__.py a ručně psaná
 # kopie by zestárla při první další platformě — přesně to se stalo
 # u climate.
+# Diagnostiku si Home Assistant načítá podle jména souboru stejně jako
+# platformu, jen není v seznamu Platform.*.
 VSTUPNI = {"__init__", "const", "config_flow", "coordinator", "entity",
-           "services", "karty"}
+           "services", "karty", "diagnostics"}
 VSTUPNI |= set(re.findall(r"Platform\.([A-Z_]+)",
                           (d / "__init__.py").read_text()))
 VSTUPNI = {x.lower() for x in VSTUPNI}
@@ -304,6 +306,9 @@ HA_HOOKY = {"async_setup_entry", "async_unload_entry", "async_setup",
             "current_temperature", "hvac_mode", "hvac_action",
             "async_set_temperature",
             "async_get_supported_subentry_types", "async_migrate_entry",
+            # diagnostiku si Home Assistant hledá podle jména funkce
+            # v modulu diagnostics.py, nikdo ji nevolá z kódu
+            "async_get_config_entry_diagnostics",
             "_async_update_data", "device_info", "icon", "native_unit_of_measurement"}
 kod_vse = "\n".join(x.read_text() for x in d.glob("*.py"))
 for p in d.glob("*.py"):
