@@ -1304,7 +1304,7 @@
     },
     "chybi": {
       "title": "Nastavení ukazuje na entitu, která neexistuje",
-      "description": "Nastavení ({kde}) se odvolává na `{entita}`, ale takovou entitu Home Assistant nezná — ani jako nedostupnou. Obvykle to znamená přejmenované nebo odebrané zařízení.\n\nDokud to platí, integrace tuhle část jen přeskakuje: čidlo se nečte, povel se neposílá. Hlásí se to až po třech minutách, aby to nevyskočilo při startu, kdy se zařízení načítají postupně.\n\nCo udělat:\n1. Otevři **Nastavení → Zařízení a služby → NaPohodu**.\n2. Najdi {kde} a klepni na **Upravit**.\n3. Vyber novou entitu místo `{entita}`, nebo pole vyprázdni, pokud už zařízení nemáš.\n4. Ulož.\n\nPo uložení se položka do minuty sama zruší."
+      "description": "Nastavení ({kde}) se odvolává na `{entita}`, ale takovou entitu Home Assistant nezná — ani jako nedostupnou. Obvykle to znamená přejmenované nebo odebrané zařízení.\n\nDokud to platí, integrace tuhle část vynechává — a co to znamená, záleží na tom, co v tom poli bylo. **Chybějící čidlo** se nečte a bere se místo něj náhrada, pokud nějaká je. **Chybějící zařízení** (okno, žaluzie, hlavice) povel nedostane, protože není komu ho poslat. Hlásí se to až po třech minutách, aby to nevyskočilo při startu, kdy se zařízení načítají postupně.\n\nCo udělat:\n1. Otevři **Nastavení → Zařízení a služby → NaPohodu**.\n2. Najdi {kde} a klepni na **Upravit**.\n3. Vyber novou entitu místo `{entita}`, nebo pole vyprázdni, pokud už zařízení nemáš.\n4. Ulož.\n\nPo uložení se položka do minuty sama zruší."
     },
     "chybi_byt": {
       "title": "Společné nastavení ukazuje na entitu, která neexistuje",

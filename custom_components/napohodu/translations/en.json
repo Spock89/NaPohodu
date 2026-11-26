@@ -1304,7 +1304,7 @@
     },
     "chybi": {
       "title": "Setting points at an entity that does not exist",
-      "description": "The settings ({kde}) refer to `{entita}`, but Home Assistant does not know that entity at all — not even as unavailable. Usually the device was renamed or removed.\n\nWhile this lasts, the integration simply skips that part: the sensor is not read, the command is not sent. It is reported only after three minutes, so it does not appear during startup while devices are still loading.\n\nWhat to do:\n1. Open **Settings → Devices & services → NaPohodu**.\n2. Find {kde} and click **Configure**.\n3. Pick a new entity instead of `{entita}`, or clear the field if the device is gone.\n4. Save.\n\nThe issue clears itself within a minute."
+      "description": "The settings ({kde}) refer to `{entita}`, but Home Assistant does not know that entity at all — not even as unavailable. Usually the device was renamed or removed.\n\nWhile this lasts, the integration leaves that part out — what it means depends on what the field held. A **missing sensor** is not read and a fallback is used where there is one. A **missing device** (window, blind, valve) gets no command, because there is nobody to send it to. It is reported only after three minutes, so it does not appear during startup while devices are still loading.\n\nWhat to do:\n1. Open **Settings → Devices & services → NaPohodu**.\n2. Find {kde} and click **Configure**.\n3. Pick a new entity instead of `{entita}`, or clear the field if the device is gone.\n4. Save.\n\nThe issue clears itself within a minute."
     },
     "chybi_byt": {
       "title": "Shared settings point at an entity that does not exist",
