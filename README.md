@@ -1552,9 +1552,13 @@ v záznamu nic nepřidá.
 
 **Nehlásit planý poplach.** Při startu se integrace načítají postupně
 a cizí zařízení se ozve později než my. Chybějící entita se proto
-hlásí jen tehdy, když ji nezná ani registr entit — tedy neexistuje ani
-jako nedostupná — a až po třech cyklech po sobě. Když se vrátí,
-počítadlo se nuluje, takže po jejím druhém smazání se nehlásí hned.
+hlásí až po třech cyklech po sobě, a jen tehdy, když ji **nezná ani
+stav, ani registr entit**. Jedna strana nestačí ani jedním směrem:
+registr nezná čidla nastavená v YAML bez `unique_id` — tedy většinu
+šablonových a statistických — a ta přitom existují a integrace z nich
+počítá; stav zase chybí entitě, která v registru je, ale její
+integrace se ještě nenačetla. Když se entita vrátí, počítadlo se
+nuluje, takže po jejím druhém smazání se nehlásí hned.
 
 Entity v nastavení se hledají podle **tvaru hodnoty**, ne podle
 ručního výčtu polí. Ten by zastaral při prvním dalším výběru čidla —

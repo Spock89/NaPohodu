@@ -498,6 +498,25 @@ class NaPohoduCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         except Exception:      # pragma: no cover - registr při startu
             return False
 
+    def _entita_existuje(self, eid: str) -> bool:
+        """Existuje ta entita, i když třeba nehlásí nic rozumného?
+
+        Dvě cesty, protože ani jedna sama nestačí. **Registr** nezná
+        entity bez jednoznačného identifikátoru — a to je každé čidlo
+        nastavené v YAML bez `unique_id`, typicky šablonové nebo
+        statistické. Takové čidlo přitom existuje a integrace z něj
+        normálně počítá. **Stav** zase chybí entitě, která je
+        v registru, ale její integrace se ještě nenačetla.
+
+        Hlásit chybějící entitu podle registru samotného znamenalo, že
+        se šablonové čidlo z YAML tvrdilo za neexistující, i když
+        celou dobu fungovalo. Bere se proto obojí: co zná aspoň jedna
+        strana, existuje.
+        """
+        if self.hass.states.get(eid) is not None:
+            return True
+        return self._v_registru(eid)
+
     def _rychlost(self, eid: str | None, nahrada: float = 0.0) -> float:
         """Rychlost větru v metrech za sekundu, ať čidlo hlásí cokoli."""
         st = self._stav(eid)
@@ -1543,7 +1562,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._posledni_snimek = snimek
             self._uloziste_pameti.async_delay_save(lambda: snimek, 30)
 
-        self.opravy.zkontroluj(self.entry, self._v_registru)
+        self.opravy.zkontroluj(self.entry, self._entita_existuje)
         self.opravy.hotovo()
         return {"zony": self.zony, "mistnosti": self.mistnosti}
 

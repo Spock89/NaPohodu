@@ -142,11 +142,14 @@ class Opravy:
             "jednotka": jednotka, "ocekavane": ocekavane}
 
     def zkontroluj(self, entry: Any,
-                   v_registru: Callable[[str], bool]) -> None:
+                   existuje: Callable[[str], bool]) -> None:
         """Projde celé nastavení a ohlásí, co se v něm nedá najít.
 
-        `v_registru` dodává koordinátor — rozdíl mezi „entita neexistuje"
-        a „zatím mlčí" se bez registru udělat nedá.
+        `existuje` dodává koordinátor a ptá se na stav i na registr
+        entit naráz. Jedna strana nestačí: registr nezná čidla z YAML
+        bez `unique_id` a stav zase chybí entitě, jejíž integrace se
+        ještě nenačetla. Rozdíl mezi „neexistuje" a „zatím mlčí" se
+        bez obojího udělat nedá.
         """
         # Kde entita stojí. Prázdné jméno znamená společné nastavení
         # bytu — tam se do nastavení chodí jinou cestou než
@@ -160,7 +163,7 @@ class Opravy:
                 hledane.setdefault(e, pod.title)
 
         for eid, kde in sorted(hledane.items()):
-            if v_registru(eid):
+            if existuje(eid):
                 self._chybi_kolikrat.pop(eid, None)
                 continue
             kolikrat = self._chybi_kolikrat.get(eid, 0) + 1

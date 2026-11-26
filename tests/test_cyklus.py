@@ -1414,3 +1414,28 @@ def test_otevrene_okno_mereni_zahodi(ha):
     m.teplota = 20.0
     k._zmer_naber("id_Obývák", m, povel=19.5, cas_s=3600.0)
     assert "id_Obývák" not in k._naber
+
+
+def test_cidlo_z_yaml_bez_unique_id_se_nehlasi_jako_chybejici(ha):
+    """Registr zná jen entity s jednoznačným identifikátorem.
+
+    Šablonové a statistické čidlo z YAML ho nemá, takže v registru
+    není — a přitom existuje a integrace z něj počítá. Hlásit ho jako
+    chybějící znamenalo nabízet opravu něčeho, co funguje.
+    """
+    ko = ha
+    from napohodu import const as c
+    from homeassistant.helpers import entity_registry as er
+
+    k, hass = _koordinator(ko, c)
+    hass.registr = er.Registr()      # prázdný registr, jako u YAML
+    asyncio.run(k.async_nacti())
+
+    # čidlo, které hlásí stav, ale v registru není
+    assert k._entita_existuje("sensor.venku") is True
+    # entita v registru, která ještě nehlásí (integrace se načítá)
+    hass.registr = er.Registr([
+        er.RegistrZapis("sensor.pozdni", platform="zha")])
+    assert k._entita_existuje("sensor.pozdni") is True
+    # a co nezná ani jedna strana
+    assert k._entita_existuje("sensor.nikde") is False
