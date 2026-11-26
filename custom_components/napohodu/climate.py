@@ -20,19 +20,23 @@ nedá dojet nikam, odkud by to stejně skočilo zpátky.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
-from homeassistant.components.climate import (ClimateEntity,
-                                              ClimateEntityFeature,
-                                              HVACAction, HVACMode)
+from homeassistant.components.climate import ClimateEntity
+from homeassistant.components.climate.const import (ClimateEntityFeature,
+                                                    HVACAction, HVACMode)
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
+from homeassistant.config_entries import ConfigSubentry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback)
 
 from . import vybava as vb
 from .const import (CONF_ODCHYLKA, ODCHYLKA_KROK,
                     ODCHYLKA_MEZ, PODENTITA_MISTNOST)
 from .entity import NaPohoduEntity
+from .coordinator import NaPohoduCoordinator
 from .typy import NaPohoduEntry
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,7 +49,7 @@ _LOGGER = logging.getLogger(__name__)
 PARALLEL_UPDATES = 0
 
 async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
-                            pridat: AddEntitiesCallback) -> None:
+                            pridat: AddConfigEntryEntitiesCallback) -> None:
     k = entry.runtime_data
     for pod in entry.subentries.values():
         # Jen tam, kde je co ovládat. Termostat bez hlavice by byl
@@ -79,7 +83,7 @@ class TermostatMistnosti(NaPohoduEntity, ClimateEntity):
                                 | ClimateEntityFeature.TURN_ON
                                 | ClimateEntityFeature.TURN_OFF)
 
-    def __init__(self, k, pod) -> None:
+    def __init__(self, k: NaPohoduCoordinator, pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "termostat")
 
     # ------------------------------------------------------------ čtení
@@ -145,7 +149,7 @@ class TermostatMistnosti(NaPohoduEntity, ClimateEntity):
                 else HVACAction.IDLE)
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         m = self.mistnost
         return {
             # Ať je z karty poznat, že se nenastavuje teplota, ale
@@ -158,7 +162,7 @@ class TermostatMistnosti(NaPohoduEntity, ClimateEntity):
 
     # ------------------------------------------------------------ zápis
 
-    async def async_set_temperature(self, **kwargs) -> None:
+    async def async_set_temperature(self, **kwargs: Any) -> None:
         cil = kwargs.get(ATTR_TEMPERATURE)
         if cil is None:
             return

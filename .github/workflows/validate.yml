@@ -38,3 +38,26 @@ jobs:
       # kontrola celistvosti balíčku: entity v kartě, verze v manifestu,
       # zakázané vzory. Chyba se má ukázat tady, ne až v bytě.
       - run: python kontrola.py
+
+  typy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      # Kontrola typů proti **skutečnému** Home Assistantu, ne proti
+      # náhradě z testů. Právě tím se našlo volání
+      # `async_update_event_listeners()`, které v Home Assistantu
+      # vůbec neexistuje — testy ho měly ve své náhradě, takže
+      # procházely, a každé založení události z panelu přitom skončilo
+      # chybou.
+      #
+      # `--strict` platí pro celou integraci. Je to přísnější než
+      # pravidlo `strict-typing` jádra, kde stačí být na seznamu
+      # `.strict-typing`; tady není co vyjmenovávat, protože projde
+      # všechno.
+      - run: pip install "mypy==2.4.*" homeassistant
+      - run: >
+          mypy --strict --ignore-missing-imports
+          custom_components/napohodu

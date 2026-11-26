@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.const import UnitOfTemperature
+from homeassistant.config_entries import ConfigSubentry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback)
 
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -14,7 +18,9 @@ from .const import (DOMAIN, PODENTITA_KLIMA, PODENTITA_MISTNOST,
                     PODENTITA_ZONA)
 from . import vybava as vb
 from .entity import NaPohoduEntity
+from .coordinator import NaPohoduCoordinator
 from .typy import NaPohoduEntry
+
 
 
 # Entity samy nic nedotazují — stav do nich tlačí koordinátor a povely
@@ -24,7 +30,7 @@ from .typy import NaPohoduEntry
 PARALLEL_UPDATES = 0
 
 async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
-                            pridat: AddEntitiesCallback) -> None:
+                            pridat: AddConfigEntryEntitiesCallback) -> None:
     k = entry.runtime_data
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_ZONA:
@@ -43,8 +49,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
             if vb.ma_smysl("stineni", v):
                 sada.append(StineniMistnosti(k, pod))
             pridat(sada, config_subentry_id=pod.subentry_id)
-    byt = [Prumer(k, entry, "prumer_tyden", "tyden"),
-           Prumer(k, entry, "prumer_tri_dny", "tri_dny")]
+    byt: list[SensorEntity] = [
+        Prumer(k, entry, "prumer_tyden", "tyden"),
+        Prumer(k, entry, "prumer_tri_dny", "tri_dny")]
     # Přepočtená rychlost větru bez čidla větru je jen prázdný řádek.
     if vb.ma_vitr({**entry.data, **entry.options}):
         byt.append(Vitr(k, entry))
@@ -55,7 +62,8 @@ class StavMistnosti(NaPohoduEntity, SensorEntity):
     """Co se v místnosti děje s okny a proč."""
 
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "stav")
 
     @property
@@ -66,7 +74,7 @@ class StavMistnosti(NaPohoduEntity, SensorEntity):
         return m.rozhodnuti.duvod[:255]
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         m = self.mistnost
         return m.atributy if m else {}
 
@@ -75,7 +83,8 @@ class StavOblasti(NaPohoduEntity, SensorEntity):
     """Sdílený vzduch oblasti. Sama nic neovládá."""
 
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "stav_oblasti")
 
     @property
@@ -86,7 +95,7 @@ class StavOblasti(NaPohoduEntity, SensorEntity):
         return f"CO2 {z.atributy.get('co2', 0):.0f}"
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         z = self.zona
         return z.atributy if z else {}
 
@@ -98,16 +107,17 @@ class CilMistnosti(NaPohoduEntity, SensorEntity):
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_suggested_display_precision = 1
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "cil")
 
     @property
-    def native_value(self):
+    def native_value(self) -> float | str | None:
         m = self.mistnost
         return m.cil if m else None
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         m = self.mistnost
         return m.atributy if m else {}
 
@@ -126,16 +136,17 @@ class OdchylkaOdCile(NaPohoduEntity, SensorEntity):
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_suggested_display_precision = 1
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "odchylka_od_cile")
 
     @property
-    def native_value(self):
+    def native_value(self) -> float | str | None:
         m = self.mistnost
         return m.atributy.get("odchylka_od_cile") if m else None
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         m = self.mistnost
         if not m:
             return {}
@@ -149,16 +160,17 @@ class SlunceMistnosti(NaPohoduEntity, SensorEntity):
 
     _attr_native_unit_of_measurement = "W/m²"
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "slunce")
 
     @property
-    def native_value(self):
+    def native_value(self) -> float | str | None:
         m = self.mistnost
         return m.slunce if m else None
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         m = self.mistnost
         if not m:
             return {}
@@ -171,7 +183,7 @@ class SlunceMistnosti(NaPohoduEntity, SensorEntity):
                          "vraceni_vychoziho")}
 
 
-class Prumer(CoordinatorEntity, SensorEntity):
+class Prumer(CoordinatorEntity[NaPohoduCoordinator], SensorEntity):
     """Klouzavý průměr venkovní teploty.
 
     Ukazuje tu hodnotu, se kterou se opravdu počítá. Když je v nastavení
@@ -184,7 +196,8 @@ class Prumer(CoordinatorEntity, SensorEntity):
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_suggested_display_precision = 1
 
-    def __init__(self, koordinator, entry, klic: str, pole: str) -> None:
+    def __init__(self, koordinator: NaPohoduCoordinator,
+                 entry: NaPohoduEntry, klic: str, pole: str) -> None:
         super().__init__(koordinator)
         self._pole = pole
         self._attr_translation_key = klic
@@ -195,14 +208,14 @@ class Prumer(CoordinatorEntity, SensorEntity):
         )
 
     @property
-    def native_value(self):
+    def native_value(self) -> float | str | None:
         hodnota, _ = self.coordinator.pouzity.get(self._pole, (None, ""))
         if hodnota is None:
             return getattr(self.coordinator.prumery, self._pole, None)
         return round(hodnota, 2)
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         hodnota, zdroj = self.coordinator.pouzity.get(self._pole, (None, ""))
         vlastni = getattr(self.coordinator.prumery, self._pole, None)
         return {
@@ -217,7 +230,8 @@ class StavKlimy(NaPohoduEntity, SensorEntity):
     """Co sdílená klimatizace dělá a podle koho."""
 
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "stav_klimy")
 
     @property
@@ -229,11 +243,11 @@ class StavKlimy(NaPohoduEntity, SensorEntity):
         return f"{d['stav']}{cil}"
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         return self.coordinator.klimy.get(self.pod_id) or {}
 
 
-class Vitr(CoordinatorEntity, SensorEntity):
+class Vitr(CoordinatorEntity[NaPohoduCoordinator], SensorEntity):
     """Vítr přepočtený na metry za sekundu.
 
     Čidlo může hlásit v kilometrech za hodinu, i když ho Home Assistant
@@ -246,7 +260,8 @@ class Vitr(CoordinatorEntity, SensorEntity):
     _attr_native_unit_of_measurement = "m/s"
     _attr_suggested_display_precision = 1
 
-    def __init__(self, koordinator, entry) -> None:
+    def __init__(self, koordinator: NaPohoduCoordinator,
+                 entry: NaPohoduEntry) -> None:
         super().__init__(koordinator)
         self._attr_unique_id = f"{entry.entry_id}_vitr"
         self._attr_device_info = DeviceInfo(
@@ -255,11 +270,11 @@ class Vitr(CoordinatorEntity, SensorEntity):
         )
 
     @property
-    def native_value(self):
+    def native_value(self) -> float | str | None:
         return self.coordinator.vitr_stav.get("naraz")
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         return self.coordinator.vitr_stav
 
 
@@ -272,7 +287,8 @@ class StineniMistnosti(NaPohoduEntity, SensorEntity):
     """
 
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "stineni")
 
     @property
@@ -289,7 +305,7 @@ class StineniMistnosti(NaPohoduEntity, SensorEntity):
         return "neznámo"
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         m = self.mistnost
         if not m:
             return {}

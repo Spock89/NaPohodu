@@ -17,6 +17,9 @@ jinak by nebylo jak zařízení přidat.
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
+from typing import Any
+
 from . import const as c
 
 # --- Vlastnosti místnosti ---------------------------------------------
@@ -33,7 +36,7 @@ TOPENI = "topeni"
 VETRA_SE = "vetra_se"    # vlastním oknem, nebo žádostí sousedovi
 
 
-def vlastnosti(data: dict | None, v_zone: bool = False,
+def vlastnosti(data: Mapping[str, Any] | None, v_zone: bool = False,
                vse: bool = False) -> dict[str, bool]:
     """Co místnost má. `vse` je pro zakládání, kdy ještě nemá nic.
 
@@ -61,7 +64,7 @@ def vlastnosti(data: dict | None, v_zone: bool = False,
     }
 
 
-def je_v_zone(podentity, pod_id: str | None) -> bool:
+def je_v_zone(podentity: Iterable[Any], pod_id: str | None) -> bool:
     """Patří místnost do nějaké oblasti? Hledá se podle identifikátoru,
     aby přejmenování místnosti odkaz nerozbilo."""
     if not pod_id:
@@ -74,7 +77,7 @@ def je_v_zone(podentity, pod_id: str | None) -> bool:
     return False
 
 
-def pro_mistnost(entry, pod) -> dict[str, bool]:
+def pro_mistnost(entry: Any, pod: Any) -> dict[str, bool]:
     """Vlastnosti místnosti tak, jak je vidí platforma."""
     return vlastnosti(pod.data,
                       je_v_zone(entry.subentries.values(), pod.subentry_id))
@@ -151,7 +154,7 @@ PODLE_ROLE: dict[str, str] = {
 }
 
 
-def ma_vitr(g: dict | None) -> bool:
+def ma_vitr(g: Mapping[str, Any] | None) -> bool:
     """Je odkud brát vítr? Jiný zdroj než tahle dvě čidla není, takže
     bez nich nemá co hlásit čidlo přepočtené rychlosti ani co
     porovnávat prahy ve společném nastavení."""

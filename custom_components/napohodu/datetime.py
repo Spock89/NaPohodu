@@ -12,12 +12,15 @@ from homeassistant.components.datetime import DateTimeEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback)
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
+from .coordinator import NaPohoduCoordinator
 from .typy import NaPohoduEntry
+
 from .const import DOMAIN
 
 # Výchozí návrh: dnešek od teď do půlnoci. Nejčastější případ je
@@ -33,18 +36,18 @@ DO_ZA_H = 6
 PARALLEL_UPDATES = 0
 
 async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
-                            pridat: AddEntitiesCallback) -> None:
+                            pridat: AddConfigEntryEntitiesCallback) -> None:
     k = entry.runtime_data
     pridat([CasPlanu(k, entry, "plan_od", OD_ZA_MIN / 60),
             CasPlanu(k, entry, "plan_do", DO_ZA_H)])
 
 
-class CasPlanu(CoordinatorEntity, RestoreEntity, DateTimeEntity):
+class CasPlanu(CoordinatorEntity[NaPohoduCoordinator], RestoreEntity, DateTimeEntity):
     """Jeden z časů pro tlačítko Naplánovat."""
 
     _attr_has_entity_name = True
 
-    def __init__(self, k, entry: ConfigEntry, klic: str,
+    def __init__(self, k: NaPohoduCoordinator, entry: ConfigEntry, klic: str,
                  za_hodin: float) -> None:
         super().__init__(k)
         self._klic = klic

@@ -37,7 +37,9 @@ class _Pod:
 
 class _Zapis:
     def __init__(self, podentity, entry_id="zapis"):
-        self.subentries = {str(i): p for i, p in enumerate(podentity)}
+        # Klíčem je identifikátor podentity, stejně jako ve skutečném
+        # Home Assistantu — podle něj se pozná živé zařízení.
+        self.subentries = {p.subentry_id: p for p in podentity}
         self.entry_id = entry_id
         self.data = {}
         self.options = {}
@@ -248,3 +250,28 @@ def test_uklid_smaze_i_cidlo_vetru_bez_cidla_vetru(modul):
     ])
     m._uklid(hass2, zapis2)
     assert hass2.registr.smazane == []
+
+
+def test_smazat_zarizeni_jde_jen_u_osirelych(modul):
+    """Zařízení, které má svůj protějšek, by se po smazání vrátilo."""
+    m, c = modul
+    import asyncio
+    from homeassistant.helpers.device_registry import DeviceEntry
+
+    pokoj = _Pod(c.PODENTITA_MISTNOST, "Ložnice", {}, "l1")
+    zapis = _Zapis([pokoj])
+    hass = _Hass()
+
+    def smi(identifikatory):
+        return asyncio.run(m.async_remove_config_entry_device(
+            hass, zapis, DeviceEntry(identifikatory)))
+
+    # Živá místnost a celý byt se smazat nedají.
+    assert smi({(c.DOMAIN, "l1")}) is False
+    assert smi({(c.DOMAIN, "zapis")}) is False
+    # Osiřelé zařízení po poškozeném záznamu ano.
+    assert smi({(c.DOMAIN, "l0_stara")}) is True
+    # Cizí identifikátor nás nezajímá, ale sám o sobě mazání nebrání.
+    assert smi({("jina_integrace", "l1")}) is True
+    # Dvojí identifikátor: stačí jeden živý, aby se nemazalo.
+    assert smi({("jina_integrace", "x"), (c.DOMAIN, "l1")}) is False

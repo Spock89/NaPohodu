@@ -12,6 +12,12 @@ from __future__ import annotations
 
 import math
 import unicodedata
+from collections.abc import Callable, Collection
+from typing import Any
+
+# „Existuje tahle entita?" Karta se tím ptá na skutečný stav Home
+# Assistantu — bez toho se nedá poznat, co se smí vypsat.
+Existuje = Callable[[str], bool]
 
 # pořadí a názvy, aby karta dávala smysl a nebyla jen výpisem
 # Pořadí, názvy a jedna řádka, co to dělá — bez ní člověk za měsíc
@@ -215,7 +221,8 @@ BARVA_VOLNA = "teal"
 BARVA_PRACOVNIHO_DNE = "grey"
 
 
-def _jen_zapnute(radky: list[str], bloky: set | None) -> list[str]:
+def _jen_zapnute(radky: list[str],
+                 bloky: set[str] | None) -> list[str]:
     """Vyhodí řádky bloků, které nikdo nechce.
 
     Filtruje se až nad hotovým proudem: každý blok se jinak musel
@@ -356,7 +363,7 @@ PORADI_SEKCI = [
 ]
 
 
-def _text(x) -> str:
+def _text(x: object) -> str:
     """Volný text jako bezpečný řetězec v YAML.
 
     Dvojtečka v názvu rozbije celou stránku, ne jen ten řádek —
@@ -382,7 +389,7 @@ def _atribut(eid: str, atribut: str, nazev: str,
     return r
 
 
-def _markdown(radky: list[tuple]) -> list[str]:
+def _markdown(radky: list[tuple[Any, ...]]) -> list[str]:
     """Karta, která řádek bez hodnoty vynechá.
 
     Karta se seznamem to neumí: prázdný atribut v ní svítí jako
@@ -439,7 +446,8 @@ def _hlavicka(text: str, ikona: str, styl: str = "title") -> list[str]:
             f"    heading_style: {styl}", f"    icon: {ikona}", ""]
 
 
-def _panel(mistnosti: list[str], existuje, jm) -> str:
+def _panel(mistnosti: list[str], existuje: Existuje,
+           jm: Callable[[str], str]) -> str:
     """Ovládací panel: na každou místnost jedna dlaždice s −/+.
 
     Jako klimatizační karta, jenže se nenastavuje teplota, ale
@@ -489,7 +497,7 @@ def _panel(mistnosti: list[str], existuje, jm) -> str:
 
 
 def _graf(nadpis: str, hodin: int, polozky: list[tuple[str, str]],
-          existuje, min_radku: int = 2) -> list[str]:
+          existuje: Existuje, min_radku: int = 2) -> list[str]:
     """Graf se vynechá, když by v něm nebylo co kreslit.
 
     Srovnávací grafy potřebují aspoň dvě čáry, u jedné veličiny stačí
@@ -557,7 +565,8 @@ def _budik(eid: str, nazev: str, min_: float, max_: float,
     return r
 
 
-def _budiky_mistnosti(prah: dict | None, existuje, cil: str,
+def _budiky_mistnosti(prah: dict[str, Any] | None,
+                      existuje: Existuje, cil: str,
                       odchylka: str, co2: str, prach: str) -> list[str]:
     """Čtyři hlavní veličiny vedle sebe: cíl, odchylka, CO2, prach.
 
@@ -572,15 +581,16 @@ def _budiky_mistnosti(prah: dict | None, existuje, cil: str,
     # Pojistky zná jen místnost, která okno ovládá. Jinde se ručička
     # cíle nakreslí bez barevných pásem — vybarvit ji podle meze,
     # která v té místnosti nic nedělá, by bylo horší než nevybarvit.
-    s_mezemi = bool(prah) and prah.get("mez_dolni") is not None
-    dolni = float(prah["mez_dolni"]) if s_mezemi else 18.0
-    horni = float(prah["mez_horni"]) if s_mezemi else 27.0
-    pasmo = (max(float(prah["pasmo_den"]), float(prah["pasmo_noc"]))
+    p = prah or {}
+    s_mezemi = bool(prah) and p.get("mez_dolni") is not None
+    dolni = float(p["mez_dolni"]) if s_mezemi else 18.0
+    horni = float(p["mez_horni"]) if s_mezemi else 27.0
+    pasmo = (max(float(p["pasmo_den"]), float(p["pasmo_noc"]))
              if prah else 2.5)
-    uzsi = (min(float(prah["pasmo_den"]), float(prah["pasmo_noc"]))
+    uzsi = (min(float(p["pasmo_den"]), float(p["pasmo_noc"]))
             if prah else 2.5)
-    krize = float(prah["co2_krize"]) if prah else 1400.0
-    spatne = float(prah["pm_spatne"]) if prah else 35.0
+    krize = float(p["co2_krize"]) if prah else 1400.0
+    spatne = float(p["pm_spatne"]) if prah else 35.0
 
     karty = []
     if cil and existuje(cil):
@@ -633,7 +643,7 @@ def klic_jmena(nazev: str) -> str:
 
 def _napoveda_planu(mistnosti: list[str], skupiny: list[str],
                     sceny: list[str] | None = None,
-                    s_okny: set | None = None) -> list[str]:
+                    s_okny: set[str] | None = None) -> list[str]:
     """Nápověda k ručnímu zadání plánu, podle skutečného nastavení.
 
     Obecný návod je tu k ničemu: jediné, co se dá splést, jsou přesná
@@ -709,8 +719,9 @@ def _jako_pohled(radky: list[str]) -> list[str]:
     return out + radky
 
 
-def _klic_sekce(sekce: list[str]) -> tuple:
+def _klic_sekce(sekce: list[str]) -> tuple[int, int]:
     """Kam sekce v pořadí patří. Neznámé skončí na konci."""
+    znacka: str | None
     prvni = next((r for r in sekce if r.strip().startswith("- type:")), "")
     # Sekce místnosti začíná mřížkou ručiček. Dřív to byl stack a po
     # přechodu na mřížku se sekce přestaly poznávat — skončily na konci
@@ -725,10 +736,10 @@ def _klic_sekce(sekce: list[str]) -> tuple:
                        if z != "#pokoj"
                        and (f": {z}" in text or f': "{z}"' in text
                             or z in text)), None)
-    try:
-        return (PORADI_SEKCI.index(znacka), 0)
-    except ValueError:
+    # Nic nenalezeno znamená „na konec", stejně jako neznámá značka.
+    if znacka is None or znacka not in PORADI_SEKCI:
         return (len(PORADI_SEKCI), 0)
+    return (PORADI_SEKCI.index(znacka), 0)
 
 
 def _serad(sekce: list[list[str]]) -> list[list[str]]:
@@ -786,7 +797,8 @@ def _do_sekci(radky: list[str]) -> list[str]:
     při každé změně. Teď je pořadí i seskupení dané tím, kam generátor
     značku postaví — rozložení se pak mění přesunutím jednoho bloku.
     """
-    sekce, drzim = [], []
+    sekce: list[list[str]] = []
+    drzim: list[str] = []
     for r in radky:
         if r == SEKCE:
             drzim = _bez_prazdnych_nadpisu(drzim)
@@ -807,23 +819,23 @@ def _do_sekci(radky: list[str]) -> list[str]:
     return out
 
 
-def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
-              cidla: dict | None = None, zaluzie: dict | None = None,
-              nazvy: dict | None = None,
-              se_zvlhcovacem: set | None = None,
-              zvlhcovace: dict | None = None,
-              s_cistickou: set | None = None,
-              pm_cidla: dict | None = None,
-              prahy: dict | None = None,
-              vybaveni: dict | None = None,
-              bloky: set | None = None,
+def dashboard(mistnosti: list[str], oblasti: list[str], existuje: Existuje,
+              cidla: dict[str, Any] | None = None, zaluzie: dict[str, Any] | None = None,
+              nazvy: dict[str, Any] | None = None,
+              se_zvlhcovacem: set[str] | None = None,
+              zvlhcovace: dict[str, Any] | None = None,
+              s_cistickou: set[str] | None = None,
+              pm_cidla: dict[str, Any] | None = None,
+              prahy: dict[str, Any] | None = None,
+              vybaveni: dict[str, Any] | None = None,
+              bloky: set[str] | None = None,
               venku: str | None = None,
-              co2_cidla: dict | None = None,
-              rh_cidla: dict | None = None, s_okny: set | None = None,
-              s_klidem: set | None = None, jako_pohled: bool = False,
+              co2_cidla: dict[str, Any] | None = None,
+              rh_cidla: dict[str, Any] | None = None, s_okny: set[str] | None = None,
+              s_klidem: set[str] | None = None, jako_pohled: bool = False,
               podoba: str = "karta",
-              skupiny: list | None = None,
-              sceny: list | None = None) -> str:
+              skupiny: list[str] | None = None,
+              sceny: list[str] | None = None) -> str:
     """Poskládá kartu. `existuje` řekne, jestli entita opravdu je.
 
     `cidla` a `zaluzie` jsou entity, které integrace nevytváří — teploměr
@@ -852,7 +864,7 @@ def dashboard(mistnosti: list[str], oblasti: list[str], existuje,
     for x in POTREBUJE.values():
         VSE |= {x} if isinstance(x, str) else set(x)
 
-    def ma(m: str, co) -> bool:
+    def ma(m: str, co: str | Collection[str]) -> bool:
         mam = vybaveni.get(m, VSE)
         potreba = {co} if isinstance(co, str) else set(co)
         return bool(potreba & mam)
@@ -1494,7 +1506,7 @@ def _vysvetlivka(radky: list[str]) -> list[str]:
     return out
 
 
-def _mrizka_dnu(existuje) -> list[str]:
+def _mrizka_dnu(existuje: Existuje) -> list[str]:
     """Zaškrtávací mřížka dnů vybrané scény: dlaždice po sedmi.
 
     Mřížka se neváže na data, ale na dlaždice — popisek i stav si nese
@@ -1564,7 +1576,7 @@ def _mrizka_dnu(existuje) -> list[str]:
     return out
 
 
-def _prvni(existuje, *kandidati: str) -> str | None:
+def _prvni(existuje: Existuje, *kandidati: str) -> str:
     """První identifikátor, který v Home Assistantu opravdu existuje.
 
     Identifikátor vzniká z přeloženého jména, ale po přejmenování si
@@ -1574,10 +1586,13 @@ def _prvni(existuje, *kandidati: str) -> str | None:
     for eid in kandidati:
         if eid and existuje(eid):
             return eid
-    return kandidati[0] if kandidati else None
+    # Bez kandidátů není co vracet; prázdný text se v `existuje`
+    # chová jako neexistující entita, takže se řádek prostě nevypíše.
+    return kandidati[0] if kandidati else ""
 
 
-def _jen_existujici(polozky: list[str], existuje) -> list[str]:
+def _jen_existujici(polozky: list[str],
+                    existuje: Existuje) -> list[str]:
     """Vyhodí celé řádky karty, jejichž entita není.
 
     Položka karty je **víc textových řádků** — „- entity: …" a pod ním
@@ -1591,7 +1606,7 @@ def _jen_existujici(polozky: list[str], existuje) -> list[str]:
     polozka: list[str] = []
     drzet = True
 
-    def zapsat():
+    def zapsat() -> None:
         if drzet:
             out.extend(polozka)
 

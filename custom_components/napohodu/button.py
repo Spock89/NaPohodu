@@ -10,10 +10,14 @@ Ovládání to neobchází: kde je přepínač vypnutý, se nic nestane.
 
 from __future__ import annotations
 
+from typing import Any
+
 from homeassistant.components.button import ButtonEntity
+from homeassistant.config_entries import ConfigSubentry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback)
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
@@ -26,7 +30,9 @@ from .const import (
 )
 from .services import proved_stav_stineni
 from .entity import NaPohoduEntity
+from .coordinator import NaPohoduCoordinator
 from .typy import NaPohoduEntry
+
 
 
 # Entity samy nic nedotazují — stav do nich tlačí koordinátor a povely
@@ -36,17 +42,18 @@ from .typy import NaPohoduEntry
 PARALLEL_UPDATES = 0
 
 async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
-                            pridat: AddEntitiesCallback) -> None:
+                            pridat: AddConfigEntryEntitiesCallback) -> None:
     k = entry.runtime_data
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_MISTNOST:
             # Srovnat okno tam, kde okno není, je tlačítko, které
             # nemá co srovnat. Vzniká proto jen s tím, co ovládá.
             v = vb.pro_mistnost(entry, pod)
-            tlacitka = [Srovnat(k, pod, klic)
-                        for klic in ("srovnat_okno", "srovnat_stineni",
-                                     "srovnat_topeni")
-                        if vb.ma_smysl(klic, v)]
+            tlacitka: list[ButtonEntity] = [
+                Srovnat(k, pod, klic)
+                for klic in ("srovnat_okno", "srovnat_stineni",
+                             "srovnat_topeni")
+                if vb.ma_smysl(klic, v)]
             if vb.ma_smysl("otevrit_okno", v):
                 tlacitka += [Okno(k, pod, "otevrit_okno", True),
                              Okno(k, pod, "zavrit_okno", False)]
@@ -78,13 +85,14 @@ class Srovnat(NaPohoduEntity, ButtonEntity):
         await self.coordinator.async_request_refresh()
 
 
-class SrovnatVse(CoordinatorEntity, ButtonEntity):
+class SrovnatVse(CoordinatorEntity[NaPohoduCoordinator], ButtonEntity):
     """Srovná všechno naráz. Hodí se po restartu."""
 
     _attr_has_entity_name = True
     _attr_translation_key = "srovnat_vse"
 
-    def __init__(self, koordinator, entry) -> None:
+    def __init__(self, koordinator: NaPohoduCoordinator,
+                 entry: NaPohoduEntry) -> None:
         super().__init__(koordinator)
         self._attr_unique_id = f"{entry.entry_id}_srovnat_vse"
         self._attr_device_info = DeviceInfo(
@@ -97,7 +105,7 @@ class SrovnatVse(CoordinatorEntity, ButtonEntity):
         await self.coordinator.async_request_refresh()
 
 
-class VynulovatStavy(CoordinatorEntity, ButtonEntity):
+class VynulovatStavy(CoordinatorEntity[NaPohoduCoordinator], ButtonEntity):
     """Zapomene vnitřní stavy rozhodování.
 
     Když se integrace zamotá — drží nedokončené větrání, čeká na změnu
@@ -109,7 +117,8 @@ class VynulovatStavy(CoordinatorEntity, ButtonEntity):
     _attr_has_entity_name = True
     _attr_translation_key = "vynulovat_stavy"
 
-    def __init__(self, koordinator, entry) -> None:
+    def __init__(self, koordinator: NaPohoduCoordinator,
+                 entry: NaPohoduEntry) -> None:
         super().__init__(koordinator)
         self._attr_unique_id = f"{entry.entry_id}_vynulovat_stavy"
         self._attr_device_info = DeviceInfo(
@@ -136,13 +145,13 @@ class Stineni(NaPohoduEntity, ButtonEntity):
     """
 
 
-    def __init__(self, k, pod, klic: str, role: str) -> None:
+    def __init__(self, k: NaPohoduCoordinator, pod: ConfigSubentry, klic: str, role: str) -> None:
         super().__init__(k, pod, klic)
         self._role = role
 
     async def async_press(self) -> None:
         cile = vy.cile_zaluzii(self._role,
-                               self.pod.data.get(CONF_STINENI_MAPA) or {})
+                               self.pod_data.get(CONF_STINENI_MAPA) or {})
         for zaluzie, nazev in cile.items():
             await proved_stav_stineni(self.hass, zaluzie, nazev)
         vyk = self.coordinator.vykonavaci.get(self.pod_id)
@@ -165,12 +174,12 @@ class Okno(NaPohoduEntity, ButtonEntity):
     kde bylo, a stisk tlačítka by vypadal jako porucha.
     """
 
-    def __init__(self, k, pod, klic: str, otevrit: bool) -> None:
+    def __init__(self, k: NaPohoduCoordinator, pod: ConfigSubentry, klic: str, otevrit: bool) -> None:
         super().__init__(k, pod, klic)
         self._otevrit = otevrit
 
     async def async_press(self) -> None:
-        okna = self.pod.data.get(CONF_OKNA) or []
+        okna = self.pod_data.get(CONF_OKNA) or []
         if not okna:
             return
         await self.hass.services.async_call(
@@ -184,12 +193,12 @@ class Okno(NaPohoduEntity, ButtonEntity):
             # takže odpočet neodpovídal tomu, co bylo na dashboardu.
             klid = self.coordinator.hodnota(
                 self.pod_id, CONF_RUCNI_KLID,
-                float(self.pod.data.get(CONF_RUCNI_KLID, 30))) * 60
+                float(self.pod_data.get(CONF_RUCNI_KLID, 30))) * 60
             core.rucni_zasah(pamet, None, dt_util.utcnow().timestamp(),
                              self._otevrit, klid_s=klid)
 
 
-class Naplanovat(CoordinatorEntity, ButtonEntity):
+class Naplanovat(CoordinatorEntity[NaPohoduCoordinator], ButtonEntity):
     """Založí událost plánu podle toho, co je navolené vedle.
 
     Kalendář si integrace dohledá sama podle nastavení, takže se nedá
@@ -200,7 +209,8 @@ class Naplanovat(CoordinatorEntity, ButtonEntity):
     _attr_has_entity_name = True
     _attr_translation_key = "naplanovat"
 
-    def __init__(self, koordinator, entry) -> None:
+    def __init__(self, koordinator: NaPohoduCoordinator,
+                 entry: NaPohoduEntry) -> None:
         super().__init__(koordinator)
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_naplanovat"
@@ -217,7 +227,7 @@ class Naplanovat(CoordinatorEntity, ButtonEntity):
                                         self.coordinator.plan_do)
 
 
-class UlozitDny(CoordinatorEntity, ButtonEntity):
+class UlozitDny(CoordinatorEntity[NaPohoduCoordinator], ButtonEntity):
     """Zapíše do kalendáře všechny dny naklikané v mřížce.
 
     Jeden stisk na čtrnáct dní. Zaškrtávání samo nic nezapisuje právě
@@ -228,7 +238,8 @@ class UlozitDny(CoordinatorEntity, ButtonEntity):
     _attr_has_entity_name = True
     _attr_translation_key = "ulozit_dny"
 
-    def __init__(self, koordinator, entry) -> None:
+    def __init__(self, koordinator: NaPohoduCoordinator,
+                 entry: NaPohoduEntry) -> None:
         super().__init__(koordinator)
         self._attr_unique_id = f"{entry.entry_id}_ulozit_dny"
         self._attr_device_info = DeviceInfo(
@@ -236,7 +247,7 @@ class UlozitDny(CoordinatorEntity, ButtonEntity):
             name="NaPohodu", manufacturer="NaPohodu", model="Byt")
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         pridat_, zrusit = self.coordinator.scena_kolik_ceka()
         return {
             "k_ulozeni": (
@@ -251,13 +262,14 @@ class UlozitDny(CoordinatorEntity, ButtonEntity):
         await self.coordinator.scena_uloz()
 
 
-class ZahoditDny(CoordinatorEntity, ButtonEntity):
+class ZahoditDny(CoordinatorEntity[NaPohoduCoordinator], ButtonEntity):
     """Zahodí rozpracovaný výběr. Kalendář zůstane, jak byl."""
 
     _attr_has_entity_name = True
     _attr_translation_key = "zahodit_dny"
 
-    def __init__(self, koordinator, entry) -> None:
+    def __init__(self, koordinator: NaPohoduCoordinator,
+                 entry: NaPohoduEntry) -> None:
         super().__init__(koordinator)
         self._attr_unique_id = f"{entry.entry_id}_zahodit_dny"
         self._attr_device_info = DeviceInfo(

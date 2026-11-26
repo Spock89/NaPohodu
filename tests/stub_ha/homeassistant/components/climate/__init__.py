@@ -1,23 +1,12 @@
-"""Náhrada climate pro testy. Jen to, co platforma opravdu používá."""
+"""Náhrada climate pro testy. Jen to, co platforma opravdu používá.
 
-from enum import IntFlag, StrEnum
+Dělení na `__init__` a `const` je stejné jako ve skutečném Home
+Assistantu: výčty se přes balíček nevyvážejí, takže se musí brát
+z `climate.const`. Jinak by tu prošel import, který v Home
+Assistantu spadne.
+"""
 
-
-class HVACMode(StrEnum):
-    OFF = "off"
-    HEAT = "heat"
-
-
-class HVACAction(StrEnum):
-    OFF = "off"
-    IDLE = "idle"
-    HEATING = "heating"
-
-
-class ClimateEntityFeature(IntFlag):
-    TARGET_TEMPERATURE = 1
-    TURN_ON = 2
-    TURN_OFF = 4
+from .const import ClimateEntityFeature, HVACAction, HVACMode  # noqa: F401
 
 
 class ClimateEntity:

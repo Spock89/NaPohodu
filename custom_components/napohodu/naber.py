@@ -24,6 +24,8 @@ hádat rychlost z ničeho by znamenalo plánovat příchod podle výmyslu.
 
 from __future__ import annotations
 
+from typing import Any
+
 from dataclasses import dataclass, field
 
 # Hranice přihrádek podle venkovní teploty, po pěti stupních.
@@ -113,12 +115,12 @@ class Naber:
         """Kolik přihrádek už něco ví. Jen pro výpis v kartě."""
         return sum(1 for n in self.vzorky if n >= DOST_VZORKU)
 
-    def uloz(self) -> dict:
+    def uloz(self) -> dict[str, Any]:
         return {"rychlosti": [round(x, 3) for x in self.rychlosti],
                 "vzorky": list(self.vzorky)}
 
     @classmethod
-    def nacti(cls, ulozene: dict | None) -> "Naber":
+    def nacti(cls, ulozene: dict[str, Any] | None) -> "Naber":
         """Poškozený nebo starší záznam se bere jako prázdný.
 
         Spadnout kvůli uložené hodnotě by znamenalo, že integrace

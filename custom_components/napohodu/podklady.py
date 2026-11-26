@@ -7,6 +7,9 @@ se rozešly.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
+from typing import Any
+
 from .const import (CONF_CISTICKA, CONF_CLIMATE, CONF_CO2, CONF_MISTNOSTI,
                     CONF_OKNA, CONF_PM25, CONF_PORADI, CONF_RH_VNITRNI,
                     CONF_SPANEK, CONF_TEPLOTY, CONF_ZALUZIE,
@@ -14,7 +17,8 @@ from .const import (CONF_CISTICKA, CONF_CLIMATE, CONF_CO2, CONF_MISTNOSTI,
                     PODENTITA_SKUPINA, PODENTITA_ZONA, klic)
 
 
-def podklady(podentity, stav=None) -> dict:
+def podklady(podentity: Iterable[Any],
+             stav: Callable[[str], Any] | None = None) -> dict[str, Any]:
     """Co karta potřebuje vědět o instalaci, poskládané z podentit.
 
     Jedno místo pro obojí cestu, kterou se karta generuje — z dialogu
@@ -26,7 +30,10 @@ def podklady(podentity, stav=None) -> dict:
     `stav(eid)` vrací stav entity, nebo nic — kvůli hranám ručiček,
     které se berou z běžící integrace.
     """
-    out = {
+    # Pytel různého: seznamy, slovníky i množiny pod jedním klíčem.
+    # Přesnější typ by znamenal TypedDict se čtyřiceti poli, která se
+    # plní na jednom místě a čtou na jednom místě.
+    out: dict[str, Any] = {
         "mistnosti": [], "oblasti": [], "skupiny": [], "sceny": [],
         "nazvy": {}, "cidla": {}, "co2_cidla": {}, "rh_cidla": {},
         "pm_cidla": {}, "zaluzie": {}, "zvlhcovace": {},

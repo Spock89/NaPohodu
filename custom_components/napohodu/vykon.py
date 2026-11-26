@@ -12,13 +12,16 @@ přímo a úhlu se dosahuje najížděním.
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass, field
+from typing import Any
 from typing import TYPE_CHECKING
 
 try:  # uvnitř Home Assistantu balíček, v testech samostatný modul
     from . import core
 except ImportError:  # pragma: no cover
-    import core
+    # Testy si moduly jádra importují i samostatně, mimo balíček.
+    import core  # type: ignore[no-redef]
 
 if TYPE_CHECKING:  # kvůli testům se Home Assistant neimportuje za běhu
     from homeassistant.core import HomeAssistant
@@ -62,15 +65,15 @@ class StavVykonu:
     rozejiti_od: dict[str, float] = field(default_factory=dict)
     # role a splněné podmínky se drží pro každou žaluzii zvlášť —
     # dvě okna v pokoji můžou mít různé nastavení a tím i různý průběh
-    posledni_role: dict = field(default_factory=dict)
+    posledni_role: dict[str, str | None] = field(default_factory=dict)
     # Platily minule všechny zaškrtnuté podmínky návratu do výchozího
     # stavu? Podle toho se pozná okamžik, kdy se má poslat povel.
     # Nevyplněno znamená, že jsme ještě nic neviděli — po startu se
     # nic neposílá, jen se zapamatuje, jak to zrovna je.
-    drive_splneno: dict = field(default_factory=dict)
+    drive_splneno: dict[str, bool] = field(default_factory=dict)
     # poloha se hned po sekvenci ještě ustaluje, takže první změřená
     # hodnota je prozatímní a jednou se opraví podle skutečnosti
-    poloha_predbezna: set = field(default_factory=set)
+    poloha_predbezna: set[str] = field(default_factory=set)
     stineni_cas_s: float = -1e9
     prvni_beh: bool = True
     chyby: list[str] = field(default_factory=list)
@@ -141,7 +144,13 @@ class Vykonavac:
                 self.TOLERANCE_POLOHY),
                ("naklopení", tilt, self.stav.stineni_tilt,
                 self.TOLERANCE_TILTU))
-        znam = [x for x in osy if x[1] is not None]
+        # Rozepsané schválně: v záznamu musí být jen známé polohy,
+        # a výběr podle `x[1] is not None` to kontrole typů neřekne.
+        znam: list[tuple[str, float, dict[str, float], float]] = []
+        for jmeno, hodnota, pametka, tolerance in osy:
+            if hodnota is None:
+                continue
+            znam.append((jmeno, hodnota, pametka, tolerance))
         if not znam:
             return None
 
@@ -320,8 +329,9 @@ class Vykonavac:
         hlasi_vypnuto = st is not None and str(st.state).lower() == "off"
         hlasi_cil = None
         if st is not None:
+            surove = st.attributes.get("temperature")
             try:
-                hlasi_cil = float(st.attributes.get("temperature"))
+                hlasi_cil = float(surove) if surove is not None else None
             except (TypeError, ValueError):
                 hlasi_cil = None
 
@@ -447,7 +457,8 @@ class Vykonavac:
         try:  # pozdní import, ať se modul dá testovat bez Home Assistanta
             from .services import proved_stav_stineni
         except ImportError:  # pragma: no cover
-            from services import proved_stav_stineni
+            from services import (  # type: ignore[no-redef]
+                proved_stav_stineni)
 
         hotovo = []
         for z, nazev in zbyva.items():
@@ -577,7 +588,8 @@ def role_stineni(zisk: float, prah: float, horko: bool, zima: bool,
     return None
 
 
-def cile_zaluzii(role: str | None, mapa: dict) -> dict[str, str]:
+def cile_zaluzii(role: str | None,
+                 mapa: Mapping[str, Any]) -> dict[str, str]:
     """Ke každé žaluzii najde její stav, který danou roli plní.
 
     Mapa je uložená jako {"cover.o1": {"zastinit": "zastíněno"}}. Dřív
@@ -705,7 +717,7 @@ SPOUSTEC_CESKY = {"konec_klidu": "konec klidu", "rozednilo": "rozednění"}
 def ocekavani_stineni(role: str | None, zisk: float, prah: float,
                       po_zapadu: bool, klid: bool, horko: bool,
                       zima: bool, soukromi_kdy: str,
-                      vraceni: list | None) -> list[str]:
+                      vraceni: list[str] | None) -> list[str]:
     """Co příští pohyb žaluzie spustí."""
     vraceni = [SPOUSTEC_CESKY.get(x, x) for x in (vraceni or [])]
     seznam = []

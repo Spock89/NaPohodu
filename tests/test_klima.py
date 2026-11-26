@@ -156,3 +156,15 @@ def test_vetsi_zmena_cile_po_uplynuti_klidu_projde():
 def test_vysledek_rekne_podle_ceho_se_rozhodl():
     v = r(byt(obyvak=25.0, loznice=27.0))
     assert "Ložnice" in v.podle
+
+
+def test_bez_venkovni_teploty_okno_nechladi():
+    """Po restartu čidlo chvíli nehlásí a okno může být otevřené.
+
+    Dřív se v tu chvíli porovnávala prázdná hodnota s teplotou
+    a spadl celý cyklus koordinátoru — všechny entity integrace
+    zůstaly nedostupné, dokud se čidlo neozvalo.
+    """
+    # Okno se bez venkovní teploty za chladicí nepočítá, takže
+    # jednotka chladí dál.
+    assert r(byt(okno_otevreno=True), t_out=None).stav == STAV_CHLADIT

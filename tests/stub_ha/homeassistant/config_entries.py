@@ -7,6 +7,8 @@ class ConfigEntry:
         return cls
 
 class ConfigSubentry: pass
+# Výsledek kroku formuláře; ve skutečnosti TypedDict.
+ConfigFlowResult = dict
 class _Flow:
     def __init_subclass__(cls, **kw): pass
 class ConfigFlow(_Flow): pass

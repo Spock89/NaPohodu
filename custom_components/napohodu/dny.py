@@ -16,6 +16,9 @@ ta dlaždice, která na třetího zrovna ukazuje.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
+from typing import Any
+
 import uuid
 from datetime import date, datetime, timedelta
 
@@ -171,7 +174,7 @@ def typ_dne(den: date) -> str:
     return "volno" if vikend(den) or svatek(den) else "pracovní"
 
 
-def _vlastni(zaznam: dict) -> bool:
+def _vlastni(zaznam: dict[str, Any]) -> bool:
     """Je to jednodenní záznam bez opakování, tedy jedno zaškrtnutí?
 
     Jen takový smí dlaždice smazat. Opakovaná nebo vícedenní událost
@@ -183,10 +186,11 @@ def _vlastni(zaznam: dict) -> bool:
     od, do = zaznam.get("od"), zaznam.get("do")
     if od is None or do is None:
         return False
-    return (do - od) <= timedelta(days=1)
+    return bool((do - od) <= timedelta(days=1))
 
 
-def _pokryva(zaznam: dict, den: date, rozbal) -> bool:
+def _pokryva(zaznam: dict[str, Any], den: date,
+             rozbal: Callable[..., Any]) -> bool:
     """Platí ten záznam na ten den?
 
     Rozbaluje se, protože opakovaná událost sama o sobě drží jen
@@ -203,7 +207,8 @@ def _pokryva(zaznam: dict, den: date, rozbal) -> bool:
     return False
 
 
-def pro_den(zaznamy, scena_id: str, den: date, rozbal) -> dict:
+def pro_den(zaznamy: Iterable[dict[str, Any]], scena_id: str, den: date,
+            rozbal: Callable[..., Any]) -> dict[str, Any]:
     """Co o tom dni plán říká: platí, a dá se to odsud zrušit?
 
     `vlastni` jsou záznamy, které smí dlaždice smazat. `odjinud`
@@ -218,7 +223,8 @@ def pro_den(zaznamy, scena_id: str, den: date, rozbal) -> dict:
             "odjinud": bool([z for z in moje if not _vlastni(z)])}
 
 
-def novy_zaznam(scena_id: str, definice: dict, den: date) -> dict:
+def novy_zaznam(scena_id: str, definice: dict[str, Any],
+                den: date) -> dict[str, Any]:
     """Záznam pro jeden zaškrtnutý den.
 
     Má stejnou podobu jako celodenní událost z kalendáře scény, aby

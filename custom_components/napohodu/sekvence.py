@@ -22,6 +22,8 @@ u pohonů, které polohu hlásí. Když ji nehlásí, použij čekání v sekund
 
 from __future__ import annotations
 
+from typing import Any
+
 import re
 from dataclasses import dataclass, field
 from enum import Enum
@@ -159,7 +161,7 @@ class Stav:
     def kroky(self) -> list[Krok]:
         return preved(self.sekvence)
 
-    def jako_slovnik(self) -> dict:
+    def jako_slovnik(self) -> dict[str, Any]:
         return {"nazev": self.nazev, "sekvence": self.sekvence}
 
 
@@ -184,7 +186,7 @@ class Vysledek:
     def povedlo_se(self) -> bool:
         return self.chyba is None
 
-    def jako_slovnik(self) -> dict:
+    def jako_slovnik(self) -> dict[str, Any]:
         return {
             "poloha_pred": self.poloha_pred,
             "poloha_po": self.poloha_po,

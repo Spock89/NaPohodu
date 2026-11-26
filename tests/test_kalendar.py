@@ -140,3 +140,27 @@ def test_kalendar_sceny_cte_jen_svoje(kalendar):
     assert udalosti[0].summary == "Home Office"
     assert udalosti[0].start.hour == 7
     assert udalosti[0].end.hour == 18
+
+
+def test_zalozeni_a_mazani_konci_obnovou_z_koordinatoru(kalendar):
+    """Entita si po zápisu nic nevolá sama.
+
+    Dřív tu byla `self.async_update_event_listeners()`. Taková metoda
+    v Home Assistantu **neexistuje** — jen ji měla náhrada v testech,
+    takže testy procházely a ve skutečnosti každé založení události
+    z panelu skončilo chybou AttributeError. Obnovu si vyžádá
+    koordinátor v `plan_zapis` i `plan_smaz`, takže tu není co volat.
+    """
+    import inspect
+
+    zdroj = inspect.getsource(kalendar)
+    assert "async_update_event_listeners" not in zdroj
+
+    # A obě cesty pořád vedou do koordinátoru.
+    k = Koordinator()
+    e = _entita(kalendar, k)
+    od = datetime(2026, 10, 20, 8, 0)
+    asyncio.run(e.async_create_event(dtstart=od, dtend=od + timedelta(hours=1),
+                                     summary="Ložnice: je tu někdo"))
+    asyncio.run(e.async_delete_event("a"))
+    assert len(k.zapsane) == 1 and k.smazane == ["a"]

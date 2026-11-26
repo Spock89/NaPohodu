@@ -445,7 +445,9 @@ def _okno_pro_topeni(zdroj, nase, kontakt):
         atributy = {"kontakt_hlasi": kontakt}
 
     class Falesna:
-        pod = type("P", (), {"data": {c.CONF_ZDROJ_OKENNIHO_M: zdroj}})()
+        # Entita čte nastavení podentity přes `pod_data`, aby se
+        # posuvník celého bytu bez podentity nemusel tvářit, že ji má.
+        pod_data = {c.CONF_ZDROJ_OKENNIHO_M: zdroj}
         mistnost = Mistnost()
         is_on = bs.OknoOtevreno.is_on
 

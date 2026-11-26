@@ -24,7 +24,7 @@ except ImportError:  # pragma: no cover - starší Home Assistant
     SubentryFlowResult = dict  # type: ignore[assignment, misc]
     PODENTITY = False
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.helpers import selector
 
 from . import const as c, karty, podklady, vybava as vb
@@ -34,15 +34,25 @@ _LOGGER = logging.getLogger(__name__)
 # ---------------------------------------------------------------- selektory
 
 
-def _ent(domeny: list[str], vic: bool = False, trida: list[str] | None = None):
-    kw: dict[str, Any] = {"domain": domeny, "multiple": vic}
+# Položka rolovátka: ukazuje `label`, ukládá `value`. Jedno jméno pro
+# tvar, který si mezi sebou předává půlka formulářů.
+Volby = list[selector.SelectOptionDict]
+
+# Pole formuláře: klíčem je `vol.Optional`/`vol.Required`, hodnotou
+# výběr nebo validátor.
+Pole = dict[Any, Any]
+
+
+def _ent(domeny: list[str], vic: bool = False,
+         trida: list[str] | None = None) -> selector.EntitySelector:
+    nastaveni = selector.EntitySelectorConfig(domain=domeny, multiple=vic)
     if trida:
-        kw["device_class"] = trida
-    return selector.EntitySelector(selector.EntitySelectorConfig(**kw))
+        nastaveni["device_class"] = trida
+    return selector.EntitySelector(nastaveni)
 
 
 def _cislo(min_: float, max_: float, krok: float = 0.5,
-           jednotka: str = "°C"):
+           jednotka: str = "°C") -> selector.NumberSelector:
     """Číselné pole. Výchozí jednotka jsou stupně, protože jich je
     nejvíc — u ostatních se musí uvést, jinak se u čísla objeví °C."""
     return selector.NumberSelector(
@@ -54,7 +64,8 @@ def _cislo(min_: float, max_: float, krok: float = 0.5,
     )
 
 
-def _volba(moznosti: list[str], klic: str):
+def _volba(moznosti: list[str],
+           klic: str) -> selector.SelectSelector:
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
             options=moznosti,
@@ -138,7 +149,8 @@ class NaPohoduConfigFlow(ConfigFlow, domain=c.DOMAIN):
 
     VERSION = 1
 
-    async def async_step_user(self, user_input=None) -> FlowResult:
+    async def async_step_user(self,
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         await self.async_set_unique_id(c.DOMAIN)
         self._abort_if_unique_id_configured()
         if user_input is not None:
@@ -147,7 +159,7 @@ class NaPohoduConfigFlow(ConfigFlow, domain=c.DOMAIN):
 
     @classmethod
     @callback
-    def async_get_supported_subentry_types(cls, entry: ConfigEntry) -> dict:
+    def async_get_supported_subentry_types(cls, entry: ConfigEntry) -> dict[str, Any]:
         if not PODENTITY:
             return {}
         # Pořadí rozhoduje: Home Assistant podle něj řadí jak tlačítka
@@ -196,7 +208,7 @@ SCHEMA_ULOZENI = vol.Schema(
 )
 
 
-def _poskladej(stare: dict, schema: vol.Schema, user_input: dict) -> dict:
+def _poskladej(stare: dict[str, Any], schema: vol.Schema, user_input: dict[str, Any]) -> dict[str, Any]:
     """Výsledek kroku: co formulář poslal, plus to, na co se neptal.
 
     Vymazané pole se ve výsledku formuláře neobjeví **vůbec** — pozná
@@ -212,7 +224,7 @@ def _poskladej(stare: dict, schema: vol.Schema, user_input: dict) -> dict:
     return nove
 
 
-def _global_pro(data: dict) -> vol.Schema:
+def _global_pro(data: dict[str, Any]) -> vol.Schema:
     """Společné nastavení bez polí, která nemají ke komu patřit.
 
     Prahy větru bez čidla větru se nikdy neuplatní — ale člověk jimi
@@ -248,13 +260,15 @@ class NaPohoduOptionsFlow(OptionsFlow):
         self._zaluzie: str = ""
         self._chyba: str = ""
 
-    async def async_step_init(self, user_input=None) -> FlowResult:
+    async def async_step_init(self,
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         return self.async_show_menu(
             step_id="init",
             menu_options=["nastaveni", "tester", "stavy", "karta"]
         )
 
-    async def async_step_nastaveni(self, user_input=None) -> FlowResult:
+    async def async_step_nastaveni(self,
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         soucasne = {**self.config_entry.data, **self.config_entry.options}
         if user_input is not None:
             # Nastavení se čte jako data překrytá options. Uložení
@@ -275,22 +289,28 @@ class NaPohoduOptionsFlow(OptionsFlow):
 
     # ------------------------------------------------------------ karta
 
-    async def async_step_karta(self, user_input=None) -> FlowResult:
+    async def async_step_karta(self,
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Výběr podoby: jedna karta, nebo celá stránka."""
         return self.async_show_menu(
             step_id="karta",
             menu_options=["karta_jedna", "karta_stranka", "karta_panel"])
 
-    async def async_step_karta_jedna(self, user_input=None) -> FlowResult:
+    async def async_step_karta_jedna(self,
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         return await self._vypis("karta", user_input)
 
-    async def async_step_karta_stranka(self, user_input=None) -> FlowResult:
+    async def async_step_karta_stranka(self,
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         return await self._vypis("stranka", user_input)
 
-    async def async_step_karta_panel(self, user_input=None) -> FlowResult:
+    async def async_step_karta_panel(self,
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         return await self._vypis("panel", user_input)
 
-    async def _vypis(self, podoba: str, user_input=None) -> FlowResult:
+    async def _vypis(self, podoba: str,
+                     user_input: dict[str, Any] | None = None
+                     ) -> ConfigFlowResult:
         """Vypíše hotovou kartu na dashboard.
 
         Text je v poli, ze kterého se dá vybrat a zkopírovat. Vkládat ho
@@ -343,7 +363,8 @@ class NaPohoduOptionsFlow(OptionsFlow):
 
     # ------------------------------------------------------------ stavy
 
-    async def async_step_stavy(self, user_input=None) -> FlowResult:
+    async def async_step_stavy(self,
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Výběr žaluzie, jejíž stavy se budou upravovat."""
         if user_input is not None:
             self._zaluzie = user_input[c.CONF_ZALUZIE]
@@ -352,7 +373,8 @@ class NaPohoduOptionsFlow(OptionsFlow):
             step_id="stavy", data_schema=SCHEMA_STAVY_VYBER
         )
 
-    async def async_step_stavy_text(self, user_input=None) -> FlowResult:
+    async def async_step_stavy_text(self,
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Všechny stavy jedné žaluzie jako text, po řádcích."""
         from .services import nacti_stavy, uloz_hromadne
         from . import sekvence as sq
@@ -384,7 +406,8 @@ class NaPohoduOptionsFlow(OptionsFlow):
 
     # ------------------------------------------------------------ tester
 
-    async def async_step_tester(self, user_input=None) -> FlowResult:
+    async def async_step_tester(self,
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Vyzkouší posloupnost na skutečné žaluzii a ukáže, co se stalo."""
         if user_input is not None:
             self._tester = dict(user_input)
@@ -405,7 +428,8 @@ class NaPohoduOptionsFlow(OptionsFlow):
             ),
         )
 
-    async def async_step_vysledek(self, user_input=None) -> FlowResult:
+    async def async_step_vysledek(self,
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Ukáže výsledek a nechá rozhodnout, co dál.
 
         Uložit jde jen povedený pokus — u chyby by to nemělo smysl.
@@ -434,14 +458,17 @@ class NaPohoduOptionsFlow(OptionsFlow):
             f"Podívej se z okna. Když lamely vypadají, jak mají, ulož to."
         )
 
-    async def async_step_znovu(self, user_input=None) -> FlowResult:
+    async def async_step_znovu(self,
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Zpět na tester s předvyplněnou posloupností."""
         return await self.async_step_tester()
 
-    async def async_step_hotovo(self, user_input=None) -> FlowResult:
+    async def async_step_hotovo(self,
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         return await self.async_step_init()
 
-    async def async_step_ulozit(self, user_input=None) -> FlowResult:
+    async def async_step_ulozit(self,
+            user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             nazev = (user_input.get(c.CONF_NAZEV_STAVU) or "").strip()
             if nazev:
@@ -469,7 +496,7 @@ class NaPohoduOptionsFlow(OptionsFlow):
 
 # ---------------------------------------------------------------- místnost
 
-def _stav_vyber(nazvy: list[str]):
+def _stav_vyber(nazvy: list[str]) -> selector.SelectSelector:
     """Nabídne už uložené stavy, ale nechá napsat i nový."""
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
@@ -519,8 +546,8 @@ def _schema_mistnost() -> vol.Schema:
     }
 )
 
-def _schema_chovani(mistnosti: list[dict] | None = None,
-                    data: dict | None = None,
+def _schema_chovani(mistnosti: Volby | None = None,
+                    data: dict[str, Any] | None = None,
                     v_zone: bool = False) -> vol.Schema:
     """Jak se to má chovat.
 
@@ -548,7 +575,8 @@ def _schema_chovani(mistnosti: list[dict] | None = None,
     ma_topeni = v[vb.TOPENI]
     vetra_se_tu = v[vb.VETRA_SE]
 
-    def kdyz(podminka: bool, pole: dict) -> dict:
+    # Klíče schématu jsou `vol.Optional`/`vol.Required`, ne text.
+    def kdyz(podminka: bool, pole: Pole) -> Pole:
         return pole if podminka else {}
 
     return vol.Schema(
@@ -704,7 +732,7 @@ SCHEMA_INDICIE = vol.Schema(
 )
 
 
-def _zkontroluj_prahy(data: dict) -> dict:
+def _zkontroluj_prahy(data: dict[str, Any]) -> dict[str, Any]:
     """Prahy musí jít vzestupně, jinak dávají nesmysl.
 
     Zavírací práh nad otevíracím obrátí mrtvou zónu naruby: okno by se
@@ -733,7 +761,7 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         self._data: dict[str, Any] = {}
         self._uprava = False        # rozlišuje přidání od úpravy
 
-    def _platne(self, pod_id: str, ulozene: dict) -> dict:
+    def _platne(self, pod_id: str, ulozene: dict[str, Any]) -> dict[str, Any]:
         """Hodnoty, které právě platí — ne ty naposledy uložené.
 
         Posuvník na dashboardu zapisuje do běžící paměti, formulář čte
@@ -767,10 +795,12 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         except Exception:  # pragma: no cover
             return []
 
-    async def async_step_user(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_user(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         return await self.async_step_zaklad(user_input)
 
-    async def async_step_zaklad(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_zaklad(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         chyby = {}
         if user_input is not None:
             chyby = _zkontroluj_prahy(user_input)
@@ -784,7 +814,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
                 _schema_mistnost(), user_input or {}),
             errors=chyby)
 
-    async def async_step_chovani(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_chovani(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         """Druhý krok: jak se to má chovat. Dá se proklikat."""
         chyby = {}
         if user_input is not None:
@@ -804,7 +835,7 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
                 user_input or {}),
             errors=chyby)
 
-    def _ostatni_mistnosti(self) -> list[dict]:
+    def _ostatni_mistnosti(self) -> Volby:
         """Místnosti k výběru dosahu. Ukládá se identifikátor, aby
         přejmenování odkaz nerozbilo."""
         vstup = self._get_entry()
@@ -837,7 +868,9 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         jmeno = (st.attributes.get("friendly_name") if st else None) or eid
         return f"{poradi + 1}. {jmeno}"
 
-    def _klice_stineni(self, zaluzie: list[str]) -> dict[str, tuple]:
+    def _klice_stineni(
+            self,
+            zaluzie: list[str]) -> dict[str, tuple[str, str, str]]:
         """Popisky polí a co za nimi je.
 
         Klíč pole je zároveň jeho popiskem — Home Assistant umí přeložit
@@ -862,7 +895,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
                 klice[f"{jmeno} — {popis}"] = (z, "chovani", co)
         return klice
 
-    async def async_step_stineni(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_stineni(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         """Ke každé žaluzii se přiřadí, který její stav plní kterou roli.
 
         Dvě žaluzie v jednom pokoji můžou mít stavy pojmenované jinak,
@@ -876,8 +910,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         if user_input is not None:
             # Klíč pole je pořadí žaluzie, ne její entity_id — do názvů
             # polí patří co nejmíň a entity_id se v nich dá poškodit.
-            mapa: dict[str, dict] = {}
-            chovani: dict[str, dict] = {}
+            mapa: dict[str, dict[str, Any]] = {}
+            chovani: dict[str, dict[str, Any]] = {}
             klice = self._klice_stineni(zaluzie)
             for popisek, hodnota in user_input.items():
                 if popisek not in klice:
@@ -952,7 +986,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
             title=self._data[c.CONF_NAZEV],
         )
 
-    async def async_step_pritomnost(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_pritomnost(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         if user_input is not None:
             self._data = _poskladej(
                 self._data, SCHEMA_PRITOMNOST, user_input)
@@ -961,7 +996,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
             step_id="pritomnost", data_schema=SCHEMA_PRITOMNOST
         )
 
-    async def async_step_indicie(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_indicie(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         if user_input is not None:
             self._data = _poskladej(self._data, SCHEMA_INDICIE, user_input)
             return self.async_create_entry(
@@ -969,7 +1005,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
             )
         return self.async_show_form(step_id="indicie", data_schema=SCHEMA_INDICIE)
 
-    async def async_step_reconfigure(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_reconfigure(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         self._uprava = True
         pod = self._get_reconfigure_subentry()
         chyby = {}
@@ -1008,7 +1045,8 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
 
 # ---------------------------------------------------------------- zóna
 
-def _vyber(polozky: list[dict]) -> selector.SelectSelector:
+def _vyber(
+        polozky: list[selector.SelectOptionDict]) -> selector.SelectSelector:
     """Ukazuje jméno, ukládá identifikátor. Přejmenování pak odkaz nerozbije."""
     return selector.SelectSelector(
         selector.SelectSelectorConfig(
@@ -1019,7 +1057,7 @@ def _vyber(polozky: list[dict]) -> selector.SelectSelector:
     )
 
 
-def _schema_zona(mistnosti: list[dict], sousedi: list[dict] | None = None) -> vol.Schema:
+def _schema_zona(mistnosti: Volby, sousedi: Volby | None = None) -> vol.Schema:
     """Oblast je jen propojení místností. Okna a prahy patří místnostem."""
     return vol.Schema(
         {
@@ -1034,7 +1072,7 @@ def _schema_zona(mistnosti: list[dict], sousedi: list[dict] | None = None) -> vo
 class ZonaSubentryFlow(ConfigSubentryFlow):
     """Zóna je jedno okno a místnosti, které jím dýchají."""
 
-    def _seznam(self, typ: str, krome: str | None = None) -> list[dict]:
+    def _seznam(self, typ: str, krome: str | None = None) -> Volby:
         try:
             entry = self._get_entry()
         except Exception:  # pragma: no cover - starší API
@@ -1043,7 +1081,7 @@ class ZonaSubentryFlow(ConfigSubentryFlow):
                 for p in entry.subentries.values()
                 if p.subentry_type == typ and p.subentry_id != krome]
 
-    def _zony(self) -> list[dict]:
+    def _zony(self) -> Volby:
         """Možní sousedé: jiné oblasti i místnosti bez oblasti.
 
         Místnost, která oblast nepotřebuje, musí jít taky vybrat —
@@ -1061,7 +1099,7 @@ class ZonaSubentryFlow(ConfigSubentryFlow):
                                 "label": f"{m['label']} (samostatná)"})
         return polozky
 
-    def _mistnosti(self) -> list[dict]:
+    def _mistnosti(self) -> Volby:
         return self._seznam(c.PODENTITA_MISTNOST)
 
     def _obsazene(self, krome: str | None = None) -> dict[str, str]:
@@ -1078,7 +1116,8 @@ class ZonaSubentryFlow(ConfigSubentryFlow):
                 mapa[m] = q.title
         return mapa
 
-    async def async_step_user(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_user(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         chyby = {}
         if user_input is not None:
             kolize = [m for m in (user_input.get(c.CONF_MISTNOSTI) or [])
@@ -1095,7 +1134,8 @@ class ZonaSubentryFlow(ConfigSubentryFlow):
             errors=chyby,
         )
 
-    async def async_step_reconfigure(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_reconfigure(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         pod = self._get_reconfigure_subentry()
         if user_input is not None:
             return self.async_update_and_abort(
@@ -1112,14 +1152,15 @@ class ZonaSubentryFlow(ConfigSubentryFlow):
 
 # ---------------------------------------------------------------- klima
 
-def _schema_klima(mistnosti: list[dict]) -> vol.Schema:
+def _schema_klima(mistnosti: Volby) -> vol.Schema:
     """Sdílená klimatizace na celý byt.
 
     Vnitřní jednotka v každé místnosti sem nepatří — tu zadáš u té
     místnosti a řídí se sama. Tady je jen jednotka, která obsluhuje víc
     místností a musí se rozhodnout, komu vyhoví.
     """
-    jmena = [{"value": m["value"], "label": m["label"]} for m in mistnosti]
+    jmena: Volby = [{"value": m["value"], "label": m["label"]}
+                    for m in mistnosti]
     return vol.Schema(
         {
             vol.Required(c.CONF_NAZEV): selector.TextSelector(),
@@ -1148,7 +1189,7 @@ def _schema_klima(mistnosti: list[dict]) -> vol.Schema:
     )
 
 
-def _schema_skupina(mistnosti: list[dict]) -> vol.Schema:
+def _schema_skupina(mistnosti: Volby) -> vol.Schema:
     """Skupina místností: společné plánování a společná obsazenost.
 
     Není to zóna — vzduch se v ní nesdílí a větrání se podle ní
@@ -1160,7 +1201,8 @@ def _schema_skupina(mistnosti: list[dict]) -> vol.Schema:
     nepřebije. Jinak by stačil jeden ztuhlý senzor a vychladl by pokoj,
     ve kterém někdo sedí.
     """
-    jmena = [{"value": m["label"], "label": m["label"]} for m in mistnosti]
+    jmena: Volby = [{"value": m["label"], "label": m["label"]}
+                    for m in mistnosti]
     return vol.Schema(
         {
             vol.Required(c.CONF_NAZEV): selector.TextSelector(),
@@ -1176,7 +1218,7 @@ def _schema_skupina(mistnosti: list[dict]) -> vol.Schema:
 class SkupinaSubentryFlow(ConfigSubentryFlow):
     """Přidání a úprava skupiny místností pro plánování."""
 
-    def _mistnosti(self) -> list[dict]:
+    def _mistnosti(self) -> Volby:
         try:
             entry = self._get_entry()
         except Exception:  # pragma: no cover
@@ -1185,14 +1227,16 @@ class SkupinaSubentryFlow(ConfigSubentryFlow):
                 for p in entry.subentries.values()
                 if p.subentry_type == c.PODENTITA_MISTNOST]
 
-    async def async_step_user(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_user(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         if user_input is not None:
             return self.async_create_entry(
                 title=user_input[c.CONF_NAZEV], data=user_input)
         return self.async_show_form(
             step_id="user", data_schema=_schema_skupina(self._mistnosti()))
 
-    async def async_step_reconfigure(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_reconfigure(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         pod = self._get_reconfigure_subentry()
         if user_input is not None:
             return self.async_update_and_abort(
@@ -1204,7 +1248,7 @@ class SkupinaSubentryFlow(ConfigSubentryFlow):
                 _schema_skupina(self._mistnosti()), pod.data))
 
 
-def _schema_scena(mistnosti: list[dict]) -> vol.Schema:
+def _schema_scena(mistnosti: Volby) -> vol.Schema:
     """Scéna: pojmenovaná sada dopadů na místnosti.
 
     Dny se pak jen označí v jejím vlastním kalendáři. Cíl se zadává
@@ -1214,7 +1258,8 @@ def _schema_scena(mistnosti: list[dict]) -> vol.Schema:
     Okno dne platí pro celodenní události. Událost se zadaným časem
     si ho přebije, když má člověk jednou kratší den.
     """
-    jmena = [{"value": m["label"], "label": m["label"]} for m in mistnosti]
+    jmena: Volby = [{"value": m["label"], "label": m["label"]}
+                    for m in mistnosti]
     pole = {
         vol.Required(c.CONF_NAZEV): selector.TextSelector(),
         vol.Optional(c.CONF_SCENA_OD, default="07:00:00"):
@@ -1234,7 +1279,7 @@ def _schema_scena(mistnosti: list[dict]) -> vol.Schema:
 class ScenaSubentryFlow(ConfigSubentryFlow):
     """Přidání a úprava scény."""
 
-    def _mistnosti(self) -> list[dict]:
+    def _mistnosti(self) -> Volby:
         try:
             entry = self._get_entry()
         except Exception:  # pragma: no cover
@@ -1243,14 +1288,16 @@ class ScenaSubentryFlow(ConfigSubentryFlow):
                 for p in entry.subentries.values()
                 if p.subentry_type == c.PODENTITA_MISTNOST]
 
-    async def async_step_user(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_user(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         if user_input is not None:
             return self.async_create_entry(
                 title=user_input[c.CONF_NAZEV], data=user_input)
         return self.async_show_form(
             step_id="user", data_schema=_schema_scena(self._mistnosti()))
 
-    async def async_step_reconfigure(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_reconfigure(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         pod = self._get_reconfigure_subentry()
         if user_input is not None:
             return self.async_update_and_abort(
@@ -1265,7 +1312,7 @@ class ScenaSubentryFlow(ConfigSubentryFlow):
 class KlimaSubentryFlow(ConfigSubentryFlow):
     """Přidání a úprava sdílené klimatizace."""
 
-    def _mistnosti(self) -> list[dict]:
+    def _mistnosti(self) -> Volby:
         try:
             entry = self._get_entry()
         except Exception:  # pragma: no cover
@@ -1274,14 +1321,16 @@ class KlimaSubentryFlow(ConfigSubentryFlow):
                 for p in entry.subentries.values()
                 if p.subentry_type == c.PODENTITA_MISTNOST]
 
-    async def async_step_user(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_user(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         if user_input is not None:
             return self.async_create_entry(
                 title=user_input[c.CONF_NAZEV], data=user_input)
         return self.async_show_form(
             step_id="user", data_schema=_schema_klima(self._mistnosti()))
 
-    async def async_step_reconfigure(self, user_input=None) -> SubentryFlowResult:
+    async def async_step_reconfigure(self,
+            user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         pod = self._get_reconfigure_subentry()
         if user_input is not None:
             return self.async_update_and_abort(

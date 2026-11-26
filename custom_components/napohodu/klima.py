@@ -89,12 +89,13 @@ def dotlak(pokoje: list[Pokoj], vlastni: Pokoj | None) -> float:
                if p is not vlastni and p.t_in is not None]
     if not ostatni:
         return 0.0
-    prekroceni = [max(0.0, p.t_in - p.cil) for p in ostatni]
+    prekroceni = [max(0.0, t - p.cil) for p in ostatni
+                  if (t := p.t_in) is not None]
     return min(DOTLAK_MAX, sum(prekroceni) / len(prekroceni))
 
 
 def rozhodni(pokoje: list[Pokoj], p: Pamet, cas_s: float,
-             t_out: float, topna_sezona: bool,
+             t_out: float | None, topna_sezona: bool,
              n: Nastaveni = Nastaveni()) -> Rozhodnuti:
     """Co má sdílená jednotka dělat."""
     vlastni = next((x for x in pokoje if x.nazev == n.v_pokoji), None)
@@ -116,7 +117,12 @@ def rozhodni(pokoje: list[Pokoj], p: Pamet, cas_s: float,
     # --- volné chlazení oknem má přednost, ale jen když opravdu chladí ---
     # Okno otevřené kvůli CO2 při horku dovnitř tahá teplo, takže jednotka
     # jede dál. Rozhoduje venkovní teplota, ne stav okna.
-    okno_chladi = any(x.okno_otevreno for x in pocitane) and t_out < zaklad
+    # Bez venkovní teploty se nedá tvrdit, že okno chladí — a tvrdit
+    # to naslepo by jednotku vypnulo v horku. Dřív se tady počítalo
+    # s číslem, které po restartu ještě neexistuje, a celý cyklus
+    # spadl na porovnání s prázdnou hodnotou.
+    okno_chladi = (any(x.okno_otevreno for x in pocitane)
+                   and t_out is not None and t_out < zaklad)
 
     horke = [x for x in pocitane
              if x.t_in is not None and x.t_in > x.cil + n.chladit_od]
@@ -161,7 +167,8 @@ def dotlak_topeni(pokoje: list[Pokoj], vlastni: Pokoj | None) -> float:
                if x is not vlastni and x.t_in is not None]
     if not ostatni:
         return 0.0
-    chybi = [max(0.0, x.cil - x.t_in) for x in ostatni]
+    chybi = [max(0.0, x.cil - t) for x in ostatni
+             if (t := x.t_in) is not None]
     return min(DOTLAK_MAX, sum(chybi) / len(chybi))
 
 

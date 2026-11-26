@@ -40,7 +40,8 @@ def dni(elevace: float, jasno: float = 1.0) -> float:
         return 0.0
     sin_e = math.sin(math.radians(elevace))
     vzduch = 1.0 / max(sin_e, 0.05)
-    return 950.0 * (0.7 ** (vzduch ** 0.678)) * max(0.0, min(1.0, jasno))
+    return float(950.0 * (0.7 ** (vzduch ** 0.678))
+                 * max(0.0, min(1.0, jasno)))
 
 
 def dopad(okno: Okno, azimut_slunce: float, elevace: float,

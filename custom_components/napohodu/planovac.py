@@ -17,8 +17,14 @@ nebo do týdenního rozvrhu, který je přesně na to.
 
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
+from typing import Any
+
+
+# Jeden výskyt události: začátek, konec a jestli je celodenní.
+Vyskyty = list[tuple[Any, ...]]
 
 
 @dataclass(frozen=True)
@@ -69,7 +75,7 @@ def nabidka(mistnosti: list[str],
     for pid, nazev in (sceny or {}).items():
         out.append(Volba(f"scéna: {nazev}", "scena", None, None, pid))
 
-    def druhy(nazev: str):
+    def druhy(nazev: str) -> tuple[str, ...]:
         if lze_zavrit is None or nazev in lze_zavrit:
             return PRO_MISTNOST
         return tuple(d for d in PRO_MISTNOST if d not in JEN_SE_ZAVIRANIM)
@@ -84,7 +90,8 @@ def nabidka(mistnosti: list[str],
     return out
 
 
-def zkontroluj(od, do) -> str | None:
+def zkontroluj(od: datetime | None,
+               do: datetime | None) -> str | None:
     """Co brání založení. Prázdno znamená, že je to v pořádku.
 
     Obrácené pořadí časů kalendář přijme a vznikne z toho událost,
@@ -134,7 +141,7 @@ def obsahuje(druh_zaznamu: str, hledany: str) -> bool:
 # takže se nedá splést název ani rozsypat překlepem.
 
 
-def dopad_sceny(definice: dict | None) -> dict:
+def dopad_sceny(definice: dict[str, Any] | None) -> dict[str, Any]:
     """Rozpad scény na jednotlivé povely místnostem.
 
     Vrací stejné druhy, jaké umí plán sám, takže se dál nikde nemusí
@@ -150,7 +157,7 @@ def dopad_sceny(definice: dict | None) -> dict:
     }
 
 
-def scena_plati(zaznam: dict, definice: dict | None,
+def scena_plati(zaznam: dict[str, Any], definice: dict[str, Any] | None,
                 druh: str, mistnost: str | None) -> bool:
     """Dělá tahle scéna tomuhle pokoji tenhle povel?
 
@@ -168,16 +175,17 @@ def scena_plati(zaznam: dict, definice: dict | None,
     return mistnost in d.get(druh, [])
 
 
-def scena_cil(zaznam: dict, definice: dict | None,
+def scena_cil(zaznam: dict[str, Any], definice: dict[str, Any] | None,
               mistnost: str) -> float | None:
     """Jakou teplotu scéna téhle místnosti nastavuje."""
     d = dopad_sceny(definice if definice is not None
                     else zaznam.get("opis"))
-    return d["cil"].get(mistnost)
+    cil: float | None = d["cil"].get(mistnost)
+    return cil
 
 
-def patri(zaznam: dict, mistnost: str | None,
-          skupiny: dict | None = None) -> bool:
+def patri(zaznam: dict[str, Any], mistnost: str | None,
+          skupiny: dict[str, Any] | None = None) -> bool:
     """Vztahuje se záznam na tuhle místnost?
 
     Skupina se drží jménem, aby „1. patro" znamenalo 1. patro i po
@@ -271,7 +279,8 @@ PODLE_DELKY = sorted(((k, v) for k, v in DRUHY.items() if k != "scena"),
                      key=lambda x: -len(x[1]))
 
 
-def rozbal(zaznam: dict, od, do, rrulestr=None) -> list[tuple]:
+def rozbal(zaznam: dict[str, Any], od: datetime, do: datetime,
+           rrulestr: Callable[..., Any] | None = None) -> Vyskyty:
     """Výskyty jedné události v zadaném okně.
 
     Kalendář musí vracet opakovanou událost rozloženou na jednotlivé
@@ -311,7 +320,7 @@ def rozbal(zaznam: dict, od, do, rrulestr=None) -> list[tuple]:
             if x[1] > od and x[0] < do]
 
 
-def _po_dnech(vyskyty: list[tuple], zaznam: dict) -> list[tuple]:
+def _po_dnech(vyskyty: Vyskyty, zaznam: dict[str, Any]) -> Vyskyty:
     """Celodenní událost rozpadne na denní okna scény.
 
     V kalendáři scény se den označí kliknutím a žádný čas se nezadává.
@@ -349,7 +358,8 @@ def _po_dnech(vyskyty: list[tuple], zaznam: dict) -> list[tuple]:
     return out
 
 
-def _lichy_nebo_sudy(rada, par: int, do, kolikrat: int) -> list:
+def _lichy_nebo_sudy(rada: Any, par: int, do: datetime,
+                     kolikrat: int) -> list[datetime]:
     """Výskyty jen v lichých nebo jen v sudých týdnech.
 
     Počítá se od začátku řady, ne od začátku okna: omezení počtu
@@ -371,7 +381,8 @@ def _lichy_nebo_sudy(rada, par: int, do, kolikrat: int) -> list:
     return out
 
 
-def nejblizsi(vyskyty: list[tuple], ted) -> tuple | None:
+def nejblizsi(vyskyty: Vyskyty,
+              ted: datetime) -> tuple[Any, ...] | None:
     """Co platí teď, jinak co začne nejdřív. Nic staršího nás nezajímá."""
     bezici = [(a, b) for a, b in vyskyty if a <= ted < b]
     if bezici:
@@ -393,7 +404,7 @@ DOPAD = {
 }
 
 
-def dopad(druhy) -> str:
+def dopad(druhy: Iterable[str]) -> str:
     """Souhrn dopadů několika povelů dohromady."""
     texty = []
     for d in druhy:
@@ -403,8 +414,9 @@ def dopad(druhy) -> str:
     return ", ".join(texty)
 
 
-def chyby(zaznam: dict, skupiny: dict, mistnosti, mez=(10.0, 30.0),
-          sceny: dict | None = None) -> list:
+def chyby(zaznam: dict[str, Any], skupiny: dict[str, Any],
+          mistnosti: Iterable[str], mez: tuple[float, float] = (10.0, 30.0),
+          sceny: dict[str, Any] | None = None) -> list[str]:
     """Co je na záznamu špatně. Prázdno znamená, že je v pořádku.
 
     Hlásí se dopředu, dokud se s tím dá něco dělat. Tiše to spolknout

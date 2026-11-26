@@ -11,7 +11,9 @@ import copy
 import logging
 import uuid
 from dataclasses import asdict, dataclass, field, fields, replace
-from datetime import timedelta
+from collections.abc import Iterable
+from datetime import date, datetime, timedelta
+from typing import Any
 
 from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.core import HomeAssistant, State
@@ -108,7 +110,7 @@ class VysledekZony:
 
     nazev: str
     mistnosti: list[str] = field(default_factory=list)
-    atributy: dict = field(default_factory=dict)
+    atributy: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -135,10 +137,10 @@ class VysledekMistnosti:
     cil_zaklad: float = 22.0
     teplota: float | None = None
     povel_topeni: float | None = None
-    atributy: dict = field(default_factory=dict)
+    atributy: dict[str, Any] = field(default_factory=dict)
 
 
-class NaPohoduCoordinator(DataUpdateCoordinator):
+class NaPohoduCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Jediné místo, které čte stav Home Assistantu."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -158,9 +160,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.vitr_naposled_s: float = 0.0
         # hodnoty, které blokaci spustily — zpráva má říkat pravdu,
         # ne aktuální stav, který už může být jiný
-        self.vitr_pricina: dict = {}
-        self.vitr_stav: dict = {}
-        self.klimy: dict[str, dict] = {}
+        self.vitr_pricina: dict[str, Any] = {}
+        self.vitr_stav: dict[str, Any] = {}
+        self.klimy: dict[str, dict[str, Any]] = {}
         self._klima_pamet: dict[str, kl.Pamet] = {}
         self._prazdno_od: float | None = None
         self._sezona_od: float | None = None
@@ -195,38 +197,40 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # přidat a co zrušit. Zaškrtávání se tím oddělí od zapisování —
         # čtrnáct dní se naklikne a uloží jedním stiskem, ne čtrnácti
         # zápisy do kalendáře.
-        self.scena_cekajici: dict[str, dict[str, set]] = {}
+        self.scena_cekajici: dict[str, dict[str, set[date]]] = {}
         self.scena_vysledek: str = "nic k uložení"
-        self.plan_od = None
-        self.plan_do = None
+        # Začátek a konec rozdělané události. Prázdno znamená, že
+        # tlačítko nemá co založit — řekne to a nic neudělá.
+        self.plan_od: datetime | None = None
+        self.plan_do: datetime | None = None
         self.plan_opakovani: str = "jednou"
         # Vlastní kalendář plánu. Význam události je v záznamu, ne
         # v názvu, takže ho nejde pokazit překlepem.
-        self._vlastni_plan: list[dict] = []
+        self._vlastni_plan: list[dict[str, Any]] = []
         # Poslední viděné hodnoty z formuláře. Musí přežít znovunačtení
         # integrace, protože uložení formuláře ho spustí — jinak by se
         # změna nikdy nepoznala a šoupátko by po restartu vyhrálo.
-        self._formular: dict[tuple, float] = {}
+        self._formular: dict[tuple[str, str], float] = {}
         # klíče, které formulář v tomhle běhu přepsal
-        self._prepsano: set[tuple] = set()
-        self._posledni_snimek: dict | None = None
+        self._prepsano: set[tuple[str, str]] = set()
+        self._posledni_snimek: dict[str, Any] | None = None
         # kdy integrace naběhla — hned po startu se nic neohlašuje
         self._start_s: float = dt_util.utcnow().timestamp()
         self.doma_popis: str = ""
         self.cil_rozpad: list[str] = []
-        self._konflikt_hlasen: dict = {}
+        self._konflikt_hlasen: dict[str, Any] = {}
         self._t_out_posledni: float | None = None
         # místnosti, kde právě běží zvlhčovač a prach z něj se nemá
         # brát jako prach ve vzduchu
-        self.zvlhcuje: set = set()
+        self.zvlhcuje: set[str] = set()
         # Poslední naměřený vítr, jen k vypsání v hlášce.
-        self.vitr_mereni: dict = {}
+        self.vitr_mereni: dict[str, Any] = {}
         # Náběhová křivka na místnost a rozdělaná měření.
         self._naber: dict[str, nb.Naber] = {}
         self._naber_mereni: dict[str, nb.Mereni] = {}
         # Entity téhle integrace, které si někdo přiřadil jako cizí
         # zařízení. Drží se jen proto, aby se o každé řeklo jednou.
-        self._smycka: set = set()
+        self._smycka: set[str] = set()
         # skutečný stav okna v každé místnosti; None znamená, že o něm
         # nevíme nic — ani kontakt, ani ovládané okno
         self.okna_stav: dict[str, bool | None] = {}
@@ -235,7 +239,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # desetina je šum čidla.
         self._t_in_drive: dict[str, tuple[float, float]] = {}
         # popis okruhů z posledního cyklu, kvůli dosahu „v jeho zóně"
-        self._okruhy_popis: list[dict] = []
+        self._okruhy_popis: list[dict[str, Any]] = []
         # žádosti o chlazení a ohřev od místností bez vlastního okna;
         # drží se mezi cykly, aby měly hysterezi jako každé jiné větrání
         self._cizi_zadost: dict[str, str] = {}
@@ -252,7 +256,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self._noc_od: float = 22.0
         self._noc_do: float = 6.5
         # denní souhrn: podle něj se pozná, jestli jsou prahy dobře
-        self.souhrn: dict[str, dict] = {}
+        self.souhrn: dict[str, dict[str, Any]] = {}
         self._souhrn_den: str = ""
         self.hlasic = zp.Hlasic()
         self._souhrn_odeslan: str = ""
@@ -265,14 +269,18 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.pouzity: dict[str, tuple[float | None, str]] = {
             "tyden": (None, "pocitano"), "tri_dny": (None, "pocitano")}
         self.vykonavaci: dict[str, vy.Vykonavac] = {}
-        self._uloziste = Store(hass, 1, f"{DOMAIN}.prumery")
+        self._uloziste: Store[dict[str, Any]] = Store(
+            hass, 1, f"{DOMAIN}.prumery")
         # Bez tohohle by se po každém znovunačtení integrace žaluzie
         # rozjely znovu do stejné polohy. Zarachotí a nikdo neví proč.
-        self._uloziste_stineni = Store(hass, 1, f"{DOMAIN}.stineni_pamet")
+        self._uloziste_stineni: Store[dict[str, Any]] = Store(
+            hass, 1, f"{DOMAIN}.stineni_pamet")
         # Bez tohohle se po restartu zapomene rozdělané větrání, doba
         # držení stavu i běžící pulz — okno by se mohlo hned rozjet.
-        self._uloziste_pameti = Store(hass, 1, f"{DOMAIN}.pameti")
-        self._uloziste_planu = Store(hass, 1, f"{DOMAIN}.plan")
+        self._uloziste_pameti: Store[dict[str, Any]] = Store(
+            hass, 1, f"{DOMAIN}.pameti")
+        self._uloziste_planu: Store[list[dict[str, Any]]] = Store(
+            hass, 1, f"{DOMAIN}.plan")
         self.mistnosti: dict[str, VysledekMistnosti] = {}
 
     def vynuluj_stavy(self) -> None:
@@ -365,7 +373,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # polohy známe z disku, ochrana po startu už netřeba
             vyk.stav.prvni_beh = False
 
-    def _uloz_pameti(self) -> dict:
+    def _uloz_pameti(self) -> dict[str, Any]:
         """Stav rozhodování, aby restart nezačínal od nuly."""
         out = {"_formular": {f"{a}|{b}": v
                              for (a, b), v in self._formular.items()},
@@ -420,7 +428,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if ulozene:
             _LOGGER.debug("NaPohodu: obnoveno %d pamětí", len(ulozene))
 
-    def _uloz_stineni(self) -> dict:
+    def _uloz_stineni(self) -> dict[str, Any]:
         # Ruční klid se ukládá taky, a proto se záznam zakládá i tam,
         # kde pojmenovaný stav není: ruční přestavení ten stav právě
         # zapomene, takže by se po restartu klid ztratil a žaluzie by
@@ -454,7 +462,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         "kn": 0.514444, "kt": 0.514444, "ft/s": 0.3048,
     }
 
-    def _zkontroluj_jednotku(self, eid: str | None, ocekavane: tuple,
+    def _zkontroluj_jednotku(self, eid: str | None, ocekavane: tuple[Any, ...],
                              popis: str) -> None:
         """Upozorní, když čidlo hlásí v jednotce, se kterou nepočítáme.
 
@@ -509,7 +517,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return hodnota
         return hodnota * prevod
 
-    def _cislo(self, eid: str | None, nahrada: float | None = None):
+    def _cislo(self, eid: str | None,
+               nahrada: float | None = None) -> float | None:
         st = self._stav(eid)
         if st is None:
             return nahrada
@@ -553,19 +562,21 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         return ((ted - st.last_changed).total_seconds(),
                 (ted - st.last_updated).total_seconds())
 
-    def _max(self, eidy, nahrada=None):
-        h = [self._cislo(e) for e in (eidy or [])]
-        h = [x for x in h if x is not None]
+    def _max(self, eidy: Iterable[str] | None,
+             nahrada: float | None = None) -> float | None:
+        h = [x for x in (self._cislo(e) for e in (eidy or []))
+             if x is not None]
         return max(h) if h else nahrada
 
-    def _min(self, eidy, nahrada=None):
-        h = [self._cislo(e) for e in (eidy or [])]
-        h = [x for x in h if x is not None]
+    def _min(self, eidy: Iterable[str] | None,
+             nahrada: float | None = None) -> float | None:
+        h = [x for x in (self._cislo(e) for e in (eidy or []))
+             if x is not None]
         return min(h) if h else nahrada
 
     # ------------------------------------------------------------ pomocné
 
-    def _srovnej_posuvniky(self, pod_id: str, d: dict) -> None:
+    def _srovnej_posuvniky(self, pod_id: str, d: dict[str, Any]) -> None:
         """Změnu v nastavení místnosti přenese na šoupátka."""
         for p2 in POSUVNIKY_MISTNOSTI:
             if p2.klic not in d:
@@ -578,12 +589,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                              pod_id, p2.klic, hodnota)
                 self._posledni_snimek = None      # vynutí zápis
 
-    def prepsano_formularem(self, klic: tuple) -> bool:
+    def prepsano_formularem(self, klic: tuple[Any, ...]) -> bool:
         """Přepsal tenhle klíč formulář? Pak má přednost před uloženou
         hodnotou šoupátka, kterou by obnova jinak vrátila."""
         return klic in self._prepsano
 
-    def formular_zmenen(self, klic: tuple, hodnota: float) -> bool:
+    def formular_zmenen(self, klic: tuple[Any, ...], hodnota: float) -> bool:
         """Změnil se od minula údaj ve formuláři?
 
         Když ano, má přednost před hodnotou šoupátka — uživatel ji právě
@@ -624,7 +635,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         return f"{h:02d}:{int(round((hodina - h) * 60)):02d}"
 
     @staticmethod
-    def _hodina(text, nahrada: float) -> float:
+    def _hodina(text: Any, nahrada: float) -> float:
         """Čas z formuláře, tedy '22:00:00', na desetinnou hodinu."""
         if isinstance(text, (int, float)):
             return float(text)
@@ -636,7 +647,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     # ------------------------------------------------------------ cíl
 
-    def _cil_zakladni(self, g: dict, cas_s: float = 0.0) -> float:
+    def _cil_zakladni(self, g: dict[str, Any], cas_s: float = 0.0) -> float:
         """Adaptivní cíl. Bez týdenního průměru se použije aktuální teplota."""
         # týdenní průměr je jádrem adaptivního modelu; bez něj by se cíl
         # měnil s každým odpolednem, proto raději samostatná entita
@@ -687,7 +698,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     # ------------------------------------------------------------ hlavní
 
-    def _vitr(self, g: dict, vitr: float, naraz: float,
+    def _vitr(self, g: dict[str, Any], vitr: float, naraz: float,
               mlci: bool = False, cas_s: float = 0.0) -> bool:
         """Nárazy mají vlastní práh, protože pohon poškodí dřív než
         ustálená rychlost.
@@ -715,6 +726,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                                 "prah_v": prah_v, "prah_n": prah_n}
 
         drive = self.vitr_blokuje
+        # Co blokaci drží a jaký práh u toho platí. Oboje může chybět —
+        # tehdy se v kartě nepíše nic.
+        co: str | None
+        prah: float | None
         if mlci:
             # Nastavené čidlo, které nehlásí, není bezvětří. Dokud mlčí,
             # drží se předchozí stav: výpadek blokaci nezruší ani
@@ -778,7 +793,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         }
         return self.vitr_blokuje
 
-    def _pasmo(self, nast, m, v, pamet, otevreno: bool,
+    def _pasmo(self, nast: core.Nastaveni, m: VysledekMistnosti,
+               v: core.Vstup, pamet: core.Pamet, otevreno: bool,
                cas_s: float = 0.0, pod_id: str = "") -> list[str]:
         """Stupnice teplotního pásma pro kartu."""
         noc = core._je_noc(self._hodina_ted, nast, bool(m.klid))
@@ -797,7 +813,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self._trend(pod_id, v, cas_s), v.t_out)
 
     @staticmethod
-    def _cislo_z(hodnota) -> float | None:
+    def _cislo_z(hodnota: Any) -> float | None:
         """Číslo z atributu entity, nebo nic."""
         try:
             return float(hodnota)
@@ -806,7 +822,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
     TREND_ODSTUP_S = 5 * 60
 
-    def _trend(self, pod_id: str, v, cas_s: float) -> int:
+    def _trend(self, pod_id: str, v: core.Vstup, cas_s: float) -> int:
         """Kam se teplota hýbe: +1 nahoru, -1 dolů, 0 stojí."""
         drive = self._t_in_drive.get(pod_id)
         if drive is None:
@@ -839,7 +855,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 return True
         return False
 
-    def _zadost_bez_okna(self, pod_id: str, d: dict) -> str:
+    def _zadost_bez_okna(self, pod_id: str, d: dict[str, Any]) -> str:
         """Chce místnost bez okna chladit, ohřát, nebo nic?
 
         Hranice jsou její vlastní, včetně hystereze: začne se při
@@ -951,7 +967,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         return any(self.okna_stav.get(x) is True
                    for x in dosah if x != pod_id)
 
-    def _prehled_bytu(self, g: dict) -> list[str]:
+    def _prehled_bytu(self, g: dict[str, Any]) -> list[str]:
         """Globální nastavení, ať je na dashboardu vidět, co platí."""
         naraz = bool(g.get(CONF_NARAZOVE, False))
         odstup_naraz = self.hodnota(
@@ -979,7 +995,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         ]
         return radky
 
-    def _sezona(self, g: dict) -> bool:
+    def _sezona(self, g: dict[str, Any]) -> bool:
         rezim = g.get(CONF_SEZONA_REZIM, "podle_prumeru")
         if rezim == "vzdy":
             self.pouzity["tri_dny"] = (None, "nastaveno natvrdo")
@@ -989,7 +1005,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return False
         return self._sezona_podle_prumeru(g)
 
-    def _sezona_podle_prumeru(self, g: dict) -> bool:
+    def _sezona_podle_prumeru(self, g: dict[str, Any]) -> bool:
         """Topná sezóna podle třídenního průměru, s hysterezí kolem prahu.
 
         Bez vlastní entity se použije počítaný průměr.
@@ -1013,7 +1029,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return False
         return self.topna_sezona          # v pásmu se nemění
 
-    async def _async_update_data(self):
+    async def _async_update_data(self) -> dict[str, Any]:
         """Jeden cyklus: přečti stav, rozhodni za každou místnost, vykonej.
 
         Rozhoduje se za místnost, protože okna patří místnosti. Oblast
@@ -1036,8 +1052,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if namerene is not None:
             self._t_out_posledni = namerene
         t_out = namerene if namerene is not None else self._t_out_posledni
-        self.prumery.aktualizuj(self._cislo(g.get(CONF_T_VENKU)),
-                                dt_util.utcnow().timestamp())
+        # Průměry se posouvají jen naměřenou hodnotou; bez čidla není
+        # co průměrovat.
+        namerene_ted = self._cislo(g.get(CONF_T_VENKU))
+        if namerene_ted is not None:
+            self.prumery.aktualizuj(namerene_ted,
+                                    dt_util.utcnow().timestamp())
         self._uloziste.async_delay_save(self.prumery.jako_slovnik, 300)
         # Vlhkost se používá na rosný bod, takže vymyšlená padesátka
         # umí kondenzaci buď zatajit, nebo vyrobit. Poslední známá, a
@@ -1140,7 +1160,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # místnosti zvlášť.
         skupiny_bez_lidi = self._skupiny_bez_lidi()
         self.mistnosti = {}
-        podklady: dict[str, dict] = {}
+        podklady: dict[str, dict[str, Any]] = {}
         for p in self._podentity(PODENTITA_MISTNOST):
             d = dict(p.data)
 
@@ -1230,11 +1250,14 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                                        "nast": nast_pr}
 
         # ---------- 2. okruhy: oblasti plus samostatné místnosti ----------
-        okruhy = []
-        v_oblasti = set()
+        # Okruh je oblast, nebo samostatná místnost. Pytel různého:
+        # podentita, seznam členů i jméno pod jedním klíčem.
+        okruhy: list[dict[str, Any]] = []
+        v_oblasti: set[str] = set()
         for z in self._podentity(PODENTITA_ZONA):
-            cleni = [self._mistnost(j) for j in (z.data.get(CONF_MISTNOSTI) or [])]
-            cleni = [x for x in cleni if x and x.subentry_id in podklady]
+            cleni = [mist for j in (z.data.get(CONF_MISTNOSTI) or [])
+                     if (mist := self._mistnost(j)) is not None
+                     and mist.subentry_id in podklady]
             if not cleni:
                 continue
             v_oblasti.update(x.subentry_id for x in cleni)
@@ -1319,7 +1342,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
             # Drahé je větrání tam, kde se otevírá — místnost bez okna
             # k tomu nemá co říct. Bez oken se bere celá oblast.
-            def pod(x):
+            def pod(x: ConfigSubentry) -> bool:
                 m2 = self.mistnosti[x.subentry_id]
                 return (m2.atributy.get("teplota_min") or 99) < m2.cil
 
@@ -1328,9 +1351,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
 
             # ochota větrat: od kuchyňského okna táhne, kdežto v ložnici
             # může být otevřeno celý den a nikomu to nevadí
-            def ochota(x, jaka):
-                return (podklady[x.subentry_id]["d"]
-                        .get(CONF_OCHOTA, "normalne") == jaka)
+            def ochota(x: ConfigSubentry, jaka: str) -> bool:
+                return bool(podklady[x.subentry_id]["d"]
+                            .get(CONF_OCHOTA, "normalne") == jaka)
 
             o["nerada"] = any(ochota(x, "nerada") for x in s_okny)
             o["ochotna"] = bool(s_okny) and all(
@@ -1348,7 +1371,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # výchozí hodnota tiše přetlačovala nastavení těch, které
             # čidlo mají. Když nemá čidlo nikdo, platí všichni: lepší
             # výchozí hodnota než žádná.
-            def kdo_mluvi(klice: tuple) -> list:
+            def kdo_mluvi(klice: tuple[Any, ...]) -> list[Any]:
                 mluvi = [x for x in o["cleni"]
                          if any(podklady[x.subentry_id]["d"].get(k)
                                 for k in klice)]
@@ -1357,7 +1380,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             s_co2 = kdo_mluvi((CONF_CO2, CONF_OKNA))
             s_prachem = kdo_mluvi((CONF_PM25, CONF_CISTICKA, CONF_OKNA))
 
-            def nej(klic, vychozi, kdo):
+            def nej(klic: str, vychozi: float,
+                    kdo: Iterable[ConfigSubentry]) -> float:
                 return min(self.hodnota(x.subentry_id, klic,
                                         float(podklady[x.subentry_id]["d"]
                                               .get(klic, vychozi)))
@@ -1408,12 +1432,12 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # Sousedství platí v obou směrech. Když oblast jmenuje ložnici,
         # ložnice má za souseda ji — jinak by zastupování fungovalo
         # jen jednou stranou a to nikdo nečeká.
-        podle_id = {z.id: z for z in stavy}
-        for z in stavy:
-            for sid in list(z.sousedi):
+        podle_id = {zs.id: zs for zs in stavy}
+        for zs in stavy:
+            for sid in list(zs.sousedi):
                 soused = podle_id.get(sid)
-                if soused is not None and z.id not in soused.sousedi:
-                    soused.sousedi.append(z.id)
+                if soused is not None and zs.id not in soused.sousedi:
+                    soused.sousedi.append(zs.id)
 
         upravy = so.prerozdel(stavy, prah_zastoupeni)
 
@@ -1478,9 +1502,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             self._souhrn_odeslan = dnes
             self._posledni_snimek = None      # vynutí zápis
             for pid, sh in self.souhrn.items():
-                m = self.mistnosti.get(pid)
-                if not m:
+                ms = self.mistnosti.get(pid)
+                if ms is None:
                     continue
+                m = ms
                 den = m.atributy.get("dnes", {})
                 # Místnost, o které se nedá říct nic — žádné okno,
                 # žádné čidlo CO2 — posílala každý večer „nic
@@ -1499,16 +1524,16 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             if o["pod"] is None:
                 continue
             uprava = upravy.get(o["id"], so.Uprava())
-            z = VysledekZony(nazev=o["nazev"],
-                             mistnosti=[x.title for x in o["cleni"]])
-            z.atributy = {
+            vz = VysledekZony(nazev=o["nazev"],
+                              mistnosti=[x.title for x in o["cleni"]])
+            vz.atributy = {
                 "co2": o["co2"], "pm25": o["pm25"],
                 "spi_se": o["spanek"], "klid": o["klid"],
                 "zastupce": uprava.zastupce, "vetra_i_za": uprava.za_koho,
                 "teplo_za": o.get("cizi_za") or None,
-                "mistnosti": z.mistnosti,
+                "mistnosti": vz.mistnosti,
             }
-            self.zony[o["id"]] = z
+            self.zony[o["id"]] = vz
 
         # Zápis jen při skutečné změně. Ukládat každou minutu celý stav
         # znamená čtrnáct set zápisů denně a na paměťové kartě to není
@@ -1522,7 +1547,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.opravy.hotovo()
         return {"zony": self.zony, "mistnosti": self.mistnosti}
 
-    async def _plan_zpravy(self, g: dict, cas_s: float) -> None:
+    async def _plan_zpravy(self, g: dict[str, Any], cas_s: float) -> None:
         """Zprávy o plánu: začátky, konce a chyby v zadání.
 
         Hlásí se **dopad**, ne záznam: co se právě na koho vztahuje.
@@ -1636,15 +1661,15 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         return [obracene[x] for x in popisy if x in obracene]
 
     @staticmethod
-    def _cas_text(do_s: float, cas_s: float, ted) -> str:
+    def _cas_text(do_s: float, cas_s: float, ted: datetime) -> str:
         """Kdy to skončí, řečeno hodinami, ne sekundami."""
         kdy = ted + timedelta(seconds=do_s - cas_s)
         if kdy.date() == ted.date():
             return kdy.strftime("%H:%M")
         return kdy.strftime("%-d.%-m. %H:%M")
 
-    async def _posli(self, g: dict, druh: str, mistnost: str,
-                     cas_s: float, **udaje) -> None:
+    async def _posli(self, g: dict[str, Any], druh: str, mistnost: str,
+                     cas_s: float, **udaje: Any) -> None:
         """Sestaví zprávu a pošle ji na vybrané notify entity."""
         kam = g.get(CONF_ZPRAVY) or []
         if not kam:
@@ -1660,7 +1685,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         except Exception as e:  # pragma: no cover - výpadek notifikací
             _LOGGER.warning("NaPohodu: zprávu se nepodařilo poslat: %s", e)
 
-    async def _klima_krok(self, t_out: float,
+    async def _klima_krok(self, t_out: float | None,
                           cas_s: float) -> None:
         """Sdílená jednotka obsluhuje víc místností, tak se musí rozhodnout.
 
@@ -1686,7 +1711,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     rh_in=m.atributy.get("vlhkost"),
                     okno_otevreno=m.okno_otevreno,
                 ))
-            v_pokoji = self.mistnosti.get(v_pokoji_id)
+            v_pokoji = (self.mistnosti.get(v_pokoji_id)
+                        if v_pokoji_id else None)
 
             dlouho = bool(self._zapnuto(d.get(CONF_KLIMA_DLOUHA)))
             # Plánovaná nepřítomnost je dlouhá hned, bez čekání na
@@ -1723,7 +1749,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                               for x in vybrane if x in self.mistnosti],
             }
 
-    async def _klima_povel(self, entita: str, r) -> None:
+    async def _klima_povel(self, entita: str,
+                           r: kl.Rozhodnuti) -> None:
         """Přeloží rozhodnutí na povely climate."""
         rezimy = {kl.STAV_CHLADIT: "cool", kl.STAV_TOPIT: "heat",
                   kl.STAV_SUSIT: "dry", kl.STAV_UTLUM: "cool",
@@ -1744,7 +1771,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             _LOGGER.warning("NaPohodu: klimatizace %s selhala: %s", entita, e)
 
     @staticmethod
-    def _bez_okna(okruh) -> list[str]:
+    def _bez_okna(okruh: dict[str, Any]) -> list[str]:
         """Co říct místnosti, která okno neovládá."""
         if okruh["pod"] is not None:
             return [f"okno tady neovládáme, vzduch sdílíme s oblastí "
@@ -1753,7 +1780,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 "nebo ventilátor"]
 
     @staticmethod
-    def _diagnostika(okna, otevreno, v, pamet, nast) -> list[str]:
+    def _diagnostika(okna: list[str], otevreno: bool, v: core.Vstup,
+                     pamet: core.Pamet,
+                     nast: core.Nastaveni) -> list[str]:
         """Co brání větrání. U místnosti bez okna nemá o čem mluvit."""
         if not okna:
             return ["okno tady neovládáme"]
@@ -1761,9 +1790,13 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return ["větrá se"]
         return core.duvody(v, pamet, nast) or ["nic nebrání"]
 
-    async def _mistnost_krok(self, p, u, okruh, uprava, t_out, rh_out, dest,
-                             doma, vitr_blokuje, je_noc, hodina, cas_s,
-                             noc_od, noc_do, slunce_el):
+    async def _mistnost_krok(
+            self, p: ConfigSubentry, u: dict[str, Any],
+            okruh: dict[str, Any], uprava: so.Uprava,
+            t_out: float | None, rh_out: float | None, dest: float,
+            doma: bool, vitr_blokuje: bool, je_noc: bool, hodina: float,
+            cas_s: float, noc_od: float, noc_do: float,
+            slunce_el: float) -> None:
         """Rozhodne o oknech jedné místnosti a případně je ovládne."""
         d = u["d"]
         g = {**self.entry.data, **self.entry.options}
@@ -1805,7 +1838,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             cizi_ohrev=bool(okruh.get("cizi_ohrev")) and bool(okna),
             pm25_venku=self._cislo(g.get(CONF_PM25_VENKU)),
             pm10_venku=self._cislo(g.get(CONF_PM10_VENKU)),
-            t_in=self._min(d.get(CONF_TEPLOTY), 21.0),
+            t_in=self._min(d.get(CONF_TEPLOTY), 21.0) or 21.0,
             t_in_max=self._max(d.get(CONF_TEPLOTY), None),
             t_out=t_ven, rh_out=rh_ven, cil=m.cil,
             dest=dest, vitr_blokuje=vitr_blokuje,
@@ -1842,10 +1875,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             co2_noc=okruh["prahy"][CONF_CO2_NOC],
             co2_noc_krize=okruh["prahy"][CONF_CO2_NOC_KRIZE],
             dest_prah=prah_deste,
-            projezd_s=float(d.get(CONF_PROJEZD_M, 120)),
-            min_drzeni_s=self.hodnota(
+            projezd_s=int(float(d.get(CONF_PROJEZD_M, 120))),
+            min_drzeni_s=int(self.hodnota(
                 p.subentry_id, CONF_MIN_DRZENI,
-                float(d.get(CONF_MIN_DRZENI, 20))) * 60,
+                float(d.get(CONF_MIN_DRZENI, 20))) * 60),
             hyst_den_otevrit=self.hodnota(
                 p.subentry_id, CONF_HYST_DEN_OTEVRIT,
                 float(d.get(CONF_HYST_DEN_OTEVRIT, 2.5))),
@@ -2349,7 +2382,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                                    okno_fakt, doma)
         await self._topeni_krok(p, d, m, cas_s)
 
-    def _prichod_predstih(self, pod_id: str, m,
+    def _prichod_predstih(self, pod_id: str, m: VysledekMistnosti,
                           cas_s: float) -> float | None:
         """Za jak dlouho je příchod, pokud se už kvůli němu má topit.
 
@@ -2379,7 +2412,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return None
         return self.plan_vic.od_s - cas_s
 
-    def _zmer_naber(self, pod_id: str, m, povel: float,
+    def _zmer_naber(self, pod_id: str, m: VysledekMistnosti, povel: float,
                     cas_s: float) -> None:
         """Sleduje, jak rychle místnost přibírá teplotu, když se topí.
 
@@ -2451,7 +2484,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             cizi.append(e)
         return cizi
 
-    async def _topeni_krok(self, p, d, m, cas_s: float) -> None:
+    async def _topeni_krok(self, p: ConfigSubentry, d: dict[str, Any],
+                           m: VysledekMistnosti, cas_s: float) -> None:
         """Napíše hlavicím cílovou teplotu.
 
         Hlavice může být virtuální z Better Thermostatu i skutečná —
@@ -2579,7 +2613,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         # místnosti by lhalo pokaždé, když ho útlum nebo otevřené okno
         # stáhly dolů.
         m.povel_topeni = povel.cil
-        self._zmer_naber(p.subentry_id, m, povel.cil, cas_s)
+        if povel.cil is not None:
+            self._zmer_naber(p.subentry_id, m, povel.cil, cas_s)
 
         poslano = await vyk.topeni(
             hlavice, povel, cas_s,
@@ -2632,7 +2667,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         m.atributy["topeni_hlavice"] = ", ".join(skutecnost) or None
         m.atributy["odvzdusneni"] = odvzdusneni
 
-    def sceny(self) -> dict[str, dict]:
+    def sceny(self) -> dict[str, dict[str, Any]]:
         """Scény podle identifikátoru: co dělají které místnosti.
 
         Definice se čte živá, takže úprava scény se promítne do všech
@@ -2710,7 +2745,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             if z.get("druh") == "scena":
                 # Scéna se rozpadne na tytéž druhy, jaké umí plán sám,
                 # takže se o ní dál nikde nemusí vědět.
-                if not pz.scena_plati(z, sceny.get(z.get("scena")),
+                if not pz.scena_plati(z, sceny.get(z.get("scena") or ""),
                                       druh, mistnost):
                     continue
             else:
@@ -2750,7 +2785,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         nalezy = []
         for z in self._vlastni_plan:
             if z.get("druh") == "scena":
-                cil = pz.scena_cil(z, sceny.get(z.get("scena")), mistnost)
+                cil = pz.scena_cil(z, sceny.get(z.get("scena") or ""),
+                                   mistnost)
                 if cil is None:
                     continue
                 prednost = 0
@@ -2769,7 +2805,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return None
         return max(nalezy, key=lambda x: (x[0], x[1]))[2]
 
-    def scena_vybrana(self) -> tuple[str | None, dict]:
+    def scena_vybrana(self) -> tuple[str | None, dict[str, Any]]:
         """Vybraná scéna: identifikátor a definice.
 
         Bez vybrání platí první scéna — prázdná mřížka, která nikam
@@ -2784,7 +2820,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 return pid, d
         return next(iter(sceny.items()))
 
-    def scena_ceka(self, scena_id: str) -> dict[str, set]:
+    def scena_ceka(self, scena_id: str) -> dict[str, set[date]]:
         """Rozpracovaný výběr té scény. Založí se prázdný."""
         return self.scena_cekajici.setdefault(
             scena_id, {"pridat": set(), "zrusit": set()})
@@ -2856,7 +2892,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         self.async_update_listeners()
         return self.scena_vysledek
 
-    def plan_rozbal(self, zaznam: dict, od, do) -> list[tuple]:
+    def plan_rozbal(self, zaznam: dict[str, Any], od: datetime,
+                    do: datetime) -> list[tuple[Any, ...]]:
         """Výskyty jednoho záznamu v daném rozsahu.
 
         Jedno místo na rozbalování pro všechny, kdo se plánu ptají:
@@ -2866,11 +2903,11 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         """
         return pz.rozbal(zaznam, od, do, rrulestr)
 
-    def plan_zaznamy(self) -> list[dict]:
+    def plan_zaznamy(self) -> list[dict[str, Any]]:
         """Uložené záznamy plánu i s časy jako datum, ne text."""
         return self._vlastni_plan
 
-    def plan_z_nazvu(self, nazev: str) -> tuple:
+    def plan_z_nazvu(self, nazev: str) -> tuple[Any, ...]:
         """Co znamená událost založená ručně v panelu Kalendář.
 
         Panel nic jiného než název nenabízí, takže se tady čte zpátky
@@ -2905,7 +2942,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 return (druh, mistnost, skupina, None)
         return ("nerozumim", mistnost, skupina, None)
 
-    async def plan_zapis(self, zaznam: dict) -> None:
+    async def plan_zapis(self, zaznam: dict[str, Any]) -> None:
         self._vlastni_plan.append(zaznam)
         await self._uloz_plan()
         await self.async_request_refresh()
@@ -2954,7 +2991,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             list(skupiny), lze_zavrit=zavira,
             sceny={pid: d["nazev"] for pid, d in self.sceny().items()})
 
-    async def naplanuj(self, popis: str, od, do) -> str:
+    async def naplanuj(self, popis: str, od: datetime | None,
+                       do: datetime | None) -> str:
         """Založí událost ve vlastním kalendáři plánu.
 
         Vrací větu pro člověka — tlačítko samo o sobě nic neukáže
@@ -2972,6 +3010,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         if potiz:
             self.plan_vysledek = potiz
             return self.plan_vysledek
+        # Prázdné časy odmítla kontrola výš; z jejího návratu se to
+        # ale nedá vyčíst, tak ať je to řečeno.
+        assert od is not None and do is not None
         # Hodnoty šoupátek se čtou přes hodnota(), stejně jako
         # všechno ostatní — jinak by platil jen formulář.
         kolikrat = self.hodnota(self.entry.entry_id, CONF_PLAN_KOLIKRAT, 8.0)
@@ -2981,8 +3022,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             # Scéna se zakládá tak, jak ji zná zaškrtávací mřížka
             # i vlastní kalendář: s opisem a oknem dne. Jinak by den
             # z dashboardu platil celou noc a po smazání scény zmizel.
-            d = self.sceny().get(volba.scena) or {}
-            zaznam = dny.novy_zaznam(volba.scena, d, od.date())
+            scena = volba.scena or ""
+            d = self.sceny().get(scena) or {}
+            zaznam = dny.novy_zaznam(scena, d, od.date())
             zaznam.update({
                 "rrule": pravidlo,
                 "parita": pz.parita(self.plan_opakovani),
@@ -3023,7 +3065,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         _LOGGER.info("NaPohodu: %s", self.plan_vysledek)
         return self.plan_vysledek
 
-    def _plan_popis(self, slova, prazdno_ent, plno_ent, prazdno: pl.Udalost,
+    def _plan_popis(self, slova: pl.Slova,
+                    prazdno_ent: list[str] | None,
+                    plno_ent: list[str] | None, prazdno: pl.Udalost,
                     plno: pl.Udalost, cas_s: float) -> str | None:
         """Co plán říká — a když neříká nic, tak aspoň že je nastavený.
 
@@ -3043,7 +3087,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return "entita chybí: " + ", ".join(chybi)
         return f"nastaveno ({', '.join(nastavene)}), teď nic neplatí"
 
-    async def _plan(self, entity, cas_s: float) -> pl.Udalost:
+    async def _plan(self, entity: Iterable[str] | None,
+                    cas_s: float) -> pl.Udalost:
         """Co říká kalendář nebo rozvrh: platí to teď a kdy se to změní.
 
         Stav obojího je zapnuto/vypnuto, takže „teď" se čte stejně.
@@ -3082,17 +3127,23 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("NaPohodu: %s neodpověděl na get_events: %s",
                           eid, e)
             return pl.Udalost(bezi=bezi, zdroj=eid)
-        udalosti = ((odpoved or {}).get(eid) or {}).get("events") or []
+        # Odpověď cizí integrace: tvar se neslibuje, takže se čte
+        # opatrně a cokoli jiného než slovník se bere jako prázdno.
+        pro_entitu = (odpoved or {}).get(eid)
+        surove = pro_entitu.get("events") if isinstance(pro_entitu, dict) else None
+        udalosti = surove if isinstance(surove, list) else []
         if not udalosti:
             return pl.Udalost(bezi=bezi, zdroj=eid)
         prvni = udalosti[0]
+        if not isinstance(prvni, dict):
+            return pl.Udalost(bezi=bezi, zdroj=eid)
         if bezi:
             return pl.Udalost(bezi=True, zdroj=eid,
                               do_s=self._cas_z(prvni.get("end"), cas_s))
         return pl.Udalost(bezi=False, zdroj=eid,
                           od_s=self._cas_z(prvni.get("start"), cas_s))
 
-    def _cas_z(self, hodnota, cas_s: float) -> float | None:
+    def _cas_z(self, hodnota: Any, cas_s: float) -> float | None:
         """Čas z entity na tutéž osu, na jaké běží jádro.
 
         Kalendář vrací text i datetime a celodenní událost jen datum.
@@ -3128,7 +3179,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         return abs(t_out - cile[kdo]), kdo
 
     @staticmethod
-    def _narazove_vzduch(okruhy: list[dict]) -> list[tuple]:
+    def _narazove_vzduch(
+            okruhy: list[dict[str, Any]]) -> list[tuple[Any, ...]]:
         """Co se do nárazového větrání počítá: hodnota a její dva prahy.
 
         CO2 za každý okruh a prach taky — v mrazu je krátké vyvětrání
@@ -3156,7 +3208,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         return vzduch
 
     @staticmethod
-    def _narazove_pokracuje(vzduch: list[tuple], bezi: bool) -> bool:
+    def _narazove_pokracuje(vzduch: list[tuple[Any, ...]],
+                            bezi: bool) -> bool:
         """Běží nárazové větrání? Hystereze jako u všeho ostatního.
 
         Zapne práh otevření, vypne až práh zavření, mezi tím drží.
@@ -3178,7 +3231,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
         return bezi
 
     @staticmethod
-    def _stav_pomocnika(entity, bezi) -> str:
+    def _stav_pomocnika(entity: list[str] | None,
+                        bezi: bool | None) -> str:
         """Čitelný stav pomocného zařízení.
 
         Prázdný atribut se v kartě ukáže jako Neznámý a člověk pak neví,
@@ -3190,7 +3244,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return "zatím bez povelu"
         return "běží" if bezi else "stojí"
 
-    def _pomocnik_bezi(self, entity, nas_povel) -> bool:
+    def _pomocnik_bezi(self, entity: list[str] | None,
+                       nas_povel: bool | None) -> bool:
         """Běží to zařízení doopravdy?
 
         Vlastní odeslaný povel nestačí ani sám o sobě, ani jako
@@ -3214,7 +3269,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                 return True
         return False
 
-    async def _pomocnici_krok(self, p, d, m, okruh, cas_s: float,
+    async def _pomocnici_krok(self, p: ConfigSubentry, d: dict[str, Any],
+                              m: VysledekMistnosti,
+                              okruh: dict[str, Any], cas_s: float,
                               t_in: float,
                               t_out: float | None, otevreno: bool,
                               doma: bool) -> None:
@@ -3338,7 +3395,10 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             zvlhcovac, (True if p.subentry_id in self.zvlhcuje else
                         vyk.stav.zarizeni.get("zvlhčovač")))
 
-    async def _stineni_krok(self, p, d, u, m, doma, slunce_el, cas_s):
+    async def _stineni_krok(self, p: ConfigSubentry, d: dict[str, Any],
+                            u: dict[str, Any], m: VysledekMistnosti,
+                            doma: bool, slunce_el: float,
+                            cas_s: float) -> None:
         """Rozhodne o žaluziích místnosti. Slunce svítí do pokoje, ne do oblasti."""
         vyk_m = self.vykonavaci.setdefault(
             p.subentry_id, vy.Vykonavac(self.hass, p.subentry_id))
@@ -3396,7 +3456,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             t_min = m.atributy.get("teplota_min")
             mapa = d.get(CONF_STINENI_MAPA) or {}
             chovani = d.get(CONF_STINENI_CHOVANI) or {}
-            st = vyk_m.stav
+            stav_vyk = vyk_m.stav
             pohyb = bool(u["sig"].cidlo) or bool(
                 pr.indicie_aktivni(u["sig"], u["nast"]))
 
@@ -3405,7 +3465,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             for z in zaluzie_mistnosti:
                 vlastni = chovani.get(z) or {}
 
-                def nastav(klic, vychozi):
+                def nastav(klic: str, vychozi: Any) -> Any:
                     # chování se nastavuje jen u žaluzie, ne u místnosti
                     return vlastni.get(klic, vychozi)
 
@@ -3419,8 +3479,8 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     podminky.append(slunce_el >= 0)
                 vraceni[z] = chtene
                 splneno = bool(podminky) and all(podminky)
-                vratit = splneno and st.drive_splneno.get(z) is False
-                st.drive_splneno[z] = splneno
+                vratit = splneno and stav_vyk.drive_splneno.get(z) is False
+                stav_vyk.drive_splneno[z] = splneno
 
                 # Chladno má přednost. Jedno čidlo na slunci umí ukázat
                 # víc než cíl, přestože je v pokoji o pár stupňů méně —
@@ -3442,9 +3502,9 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
                     zisk, 150.0, horko, zima, doma,
                     rezim=rezim, po_zapadu=slunce_el < 0, pohyb=pohyb,
                     soukromi_kdy=soukromi, v_pokoji=pohyb, klid=m.klid,
-                    role_drive=st.posledni_role.get(z), vratit=vratit)
+                    role_drive=stav_vyk.posledni_role.get(z), vratit=vratit)
 
-                st.posledni_role[z] = role
+                stav_vyk.posledni_role[z] = role
                 role_vse[z] = role
                 cile.update(vy.cile_zaluzii(role, {z: mapa.get(z, {})}))
                 duvody[z] = vy.duvody_stineni(
@@ -3551,7 +3611,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             return float(poloha) > 0
         return pamet.otevreno
 
-    def _signaly(self, d: dict, doma: bool, hodina: float,
+    def _signaly(self, d: dict[str, Any], doma: bool, hodina: float,
                  noc_od: float, noc_do: float) -> pr.Signaly:
         cidlo = self._zapnuto(d.get(CONF_PRITOMNOST),
                               bool(d.get(CONF_PRITOMNOST_OBRACENE)))
@@ -3576,7 +3636,7 @@ class NaPohoduCoordinator(DataUpdateCoordinator):
             indicie=ind,
         )
 
-    def _nastaveni_pritomnosti(self, d: dict) -> pr.NastaveniPritomnosti:
+    def _nastaveni_pritomnosti(self, d: dict[str, Any]) -> pr.NastaveniPritomnosti:
         dobeh = float(d.get(CONF_INDICIE_DOBEH, 10)) * 60
         indicie = tuple(
             pr.Indicie(eid, dobeh_s=dobeh)

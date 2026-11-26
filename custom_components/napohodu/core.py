@@ -246,7 +246,10 @@ class Pamet:
     # držení stavu a drželo i den po zavření kvůli větru.
     pauza_do_s: float = 0.0
     marne_od_s: float = 0.0
-    marne_t_out: float = 0.0
+    # Venkovní teplota při marném pokusu. Rozhodování se bez ní
+    # nespustí, takže je tu vždycky známá — a prázdno znamená
+    # „žádný marný pokus se nepamatuje".
+    marne_t_out: float | None = None
     # Kvůli čemu bylo okno marně otevřené: "chlazeni", "ohrev",
     # "vzduch" (CO2 nebo prach), "pohoda" (nic nevadilo, jen bylo venku
     # příjemně). Prázdno znamená, že žádný marný pokus neproběhl.
@@ -819,7 +822,12 @@ def rucni_zasah(p: Pamet, n: Nastaveni | None, cas_s: float,
     # Délka klidu se dá předat rovnou, aby si kvůli ní nikdo nemusel
     # skládat celé nastavení — tak vznikl odpočet, který neodpovídal
     # šoupátku na dashboardu.
-    p.rucni_do_s = cas_s + (n.rucni_klid_s if klid_s is None else klid_s)
+    # Když nepřijde ani délka klidu, ani nastavení, není z čeho ji
+    # vzít — klid se pak nedrží vůbec. Dřív se v tom případě sahalo
+    # na nastavení, které nebylo, a spadlo to na AttributeError.
+    if klid_s is None:
+        klid_s = n.rucni_klid_s if n is not None else 0.0
+    p.rucni_do_s = cas_s + klid_s
     p.rucni_od_s = cas_s
 
 
@@ -1470,8 +1478,9 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         # Pomůže jen posun tím směrem, který by větrání zachránil:
         # chlazení potřebuje chladnější vzduch, ohřev teplejší. Opačný
         # posun situaci nezlepší, jen ji otočí.
-        chladneji = v.t_out <= p.marne_t_out - n.zmena_podminek
-        tepleji = v.t_out >= p.marne_t_out + n.zmena_podminek
+        drive = p.marne_t_out if p.marne_t_out is not None else v.t_out
+        chladneji = v.t_out <= drive - n.zmena_podminek
+        tepleji = v.t_out >= drive + n.zmena_podminek
         zmenilo_se = n.zmena_podminek > 0 and (
             chladneji if p.marne_proc == "chlazeni"
             else tepleji if p.marne_proc == "ohrev"
@@ -1558,17 +1567,19 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
         p.chladi = chlazeni
         p.ohrivam = ohrev and not chlazeni
         if chlazeni:
-            kam = f"{v.cil - h_zavrit:.1f}"
-            popis_bezi = (f"chladím na {kam} °C (teď {t_in:.1f}, "
+            # `kam` je o pár set řádků výš číslo; tady je to text do
+            # hlášky, takže vlastní jméno.
+            kam_text = f"{v.cil - h_zavrit:.1f}"
+            popis_bezi = (f"chladím na {kam_text} °C (teď {t_in:.1f}, "
                           f"venku {v.t_out:.1f})")
             popis_nove = (f"otevírám kvůli teplu: {t_in:.1f} °C, "
-                          f"venku {v.t_out:.1f} — chladím na {kam}")
+                          f"venku {v.t_out:.1f} — chladím na {kam_text}")
         elif ohrev:
-            kam = f"{v.cil + h_zavrit:.1f}"
-            popis_bezi = (f"ohřívám na {kam} °C (teď {t_in:.1f}, "
+            kam_text = f"{v.cil + h_zavrit:.1f}"
+            popis_bezi = (f"ohřívám na {kam_text} °C (teď {t_in:.1f}, "
                           f"venku {v.t_out:.1f})")
             popis_nove = (f"otevírám kvůli chladu: {t_in:.1f} °C, "
-                          f"venku {v.t_out:.1f} — ohřívám na {kam}")
+                          f"venku {v.t_out:.1f} — ohřívám na {kam_text}")
         else:
             # ať je poznat, že za tím nestojí prach, CO2 ani teplota
             popis_bezi = "nic nevadí, venku je příjemně"
@@ -1743,9 +1754,9 @@ def rozhodni(v: Vstup, p: Pamet, n: Nastaveni = Nastaveni()) -> Rozhodnuti:
             # Ruční žádost otevírá bez ohledu na CO2, takže samotné
             # číslo CO2 jako důvod mate: je pod prahem otevření.
             duvod = f"otevírám na ruční žádost, CO2 {v.co2:.0f}"
-        dolni = 30
+        nejmene_minut = 30
         p.narazove_pulz = zkraceno
-        limit_s = min(max(minuty, dolni), 120) * 60
+        limit_s = min(max(minuty, nejmene_minut), 120) * 60
         if zkraceno:
             # Nárazové větrání je na čas, ne na splnění podmínky:
             # dojede a zavře se, i když je vzduch pořád špatný.

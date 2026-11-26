@@ -14,7 +14,8 @@ naopak trvale obsazený a klid v něm platí jen výjimečně.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from enum import Enum
 
 
@@ -82,11 +83,9 @@ class Signaly:
     cidlo_od_s: float = 0.0
     cidlo_stari_s: float = 0.0
 
-    indicie: dict = None          # nazev -> StavIndicie
-
-    def __post_init__(self):
-        if self.indicie is None:
-            self.indicie = {}
+    # nazev -> StavIndicie; prázdný slovník zakládá dataclass sám,
+    # ať se None neprotáhne dál do rozhodování
+    indicie: dict[str, StavIndicie] = field(default_factory=dict)
 
 
 def _verohodne(aktivni: bool | None, od_s: float, stari_s: float,
@@ -183,7 +182,7 @@ def klid(s: Signaly) -> bool:
 # ---------------------------------------------------------------- oblačnost
 
 def oblacnost(namerene_w: float | None, elevace: float,
-              dni_fn=None) -> float:
+              dni_fn: Callable[[float, float], float] | None = None) -> float:
     """Podíl skutečného a teoretického záření, 0 až 1.
 
     Vstupem je čidlo globálního záření na střeše. Když chybí nebo je
@@ -193,13 +192,14 @@ def oblacnost(namerene_w: float | None, elevace: float,
         return 1.0
     if dni_fn is None:
         try:
-            from .slunce import dni as dni_fn
+            from .slunce import dni
         except ImportError:  # pragma: no cover
-            from slunce import dni as dni_fn
+            from slunce import dni  # type: ignore[no-redef]
+        dni_fn = dni
     import math
     sin_e = math.sin(math.radians(elevace))
     # teoretické globální vodorovné záření: přímé + hrubý odhad rozptýleného
     teoreticke = dni_fn(elevace, 1.0) * sin_e * 1.1
     if teoreticke <= 10:
         return 1.0
-    return max(0.0, min(1.0, namerene_w / teoreticke))
+    return float(max(0.0, min(1.0, namerene_w / teoreticke)))

@@ -1,11 +1,15 @@
+"""Náhrada kalendáře pro testy.
+
+Dělení na `__init__` a `const` je stejné jako ve skutečném Home
+Assistantu: výčet funkcí se přes balíček nevyváží, takže se musí
+brát z `calendar.const`.
+"""
+
 from dataclasses import dataclass
 from datetime import datetime
-from enum import IntFlag
 
 
-class CalendarEntityFeature(IntFlag):
-    CREATE_EVENT = 1
-    DELETE_EVENT = 2
+from .const import CalendarEntityFeature  # noqa: F401
 
 
 @dataclass
@@ -24,7 +28,4 @@ class CalendarEntity:
     _attr_supported_features = 0
 
     def async_write_ha_state(self):
-        pass
-
-    def async_update_event_listeners(self):
         pass

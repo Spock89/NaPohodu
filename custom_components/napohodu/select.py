@@ -8,18 +8,23 @@ Assistanta — z karty, z automatizace nebo z hlasového asistenta.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from homeassistant.components.select import SelectEntity
+from homeassistant.config_entries import ConfigSubentry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback)
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import planovac as pz
 from .const import CONF_ZALUZIE, DOMAIN, PODENTITA_MISTNOST
 from .entity import NaPohoduEntity
+from .coordinator import NaPohoduCoordinator
 from .typy import NaPohoduEntry
+
 from .services import nacti_stavy, proved_stav_stineni
 
 _LOGGER = logging.getLogger(__name__)
@@ -32,7 +37,7 @@ _LOGGER = logging.getLogger(__name__)
 PARALLEL_UPDATES = 0
 
 async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
-                            pridat: AddEntitiesCallback) -> None:
+                            pridat: AddConfigEntryEntitiesCallback) -> None:
     k = entry.runtime_data
     for pod in entry.subentries.values():
         if pod.subentry_type != PODENTITA_MISTNOST:
@@ -49,7 +54,8 @@ class StavZaluzie(NaPohoduEntity, SelectEntity):
     """Pošle žaluzii do vybraného uloženého stavu."""
 
 
-    def __init__(self, k, pod, zaluzie: str, poradi: int) -> None:
+    def __init__(self, k: NaPohoduCoordinator, pod: ConfigSubentry,
+                 zaluzie: str, poradi: int) -> None:
         super().__init__(k, pod, "stav_zaluzie")
         self._zaluzie = zaluzie
         # translation_key je pro všechny stejný, jméno i identifikátor
@@ -71,7 +77,7 @@ class StavZaluzie(NaPohoduEntity, SelectEntity):
         return nazev if nazev in self.options else None
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         return {"zaluzie": self._zaluzie}
 
     async def async_select_option(self, option: str) -> None:
@@ -92,7 +98,7 @@ class StavZaluzie(NaPohoduEntity, SelectEntity):
         self.async_write_ha_state()
 
 
-class CoNaplanovat(CoordinatorEntity, RestoreEntity, SelectEntity):
+class CoNaplanovat(CoordinatorEntity[NaPohoduCoordinator], RestoreEntity, SelectEntity):
     """Co založí tlačítko Naplánovat.
 
     Nabídka vzniká z nastavení: je v ní jen to, co má kam zapsat.
@@ -102,7 +108,7 @@ class CoNaplanovat(CoordinatorEntity, RestoreEntity, SelectEntity):
     _attr_has_entity_name = True
     _attr_translation_key = "co_naplanovat"
 
-    def __init__(self, k, entry) -> None:
+    def __init__(self, k: NaPohoduCoordinator, entry: NaPohoduEntry) -> None:
         super().__init__(k)
         self._volba: str | None = None
         self._attr_unique_id = f"{entry.entry_id}_co_naplanovat"
@@ -127,7 +133,7 @@ class CoNaplanovat(CoordinatorEntity, RestoreEntity, SelectEntity):
         return self._volba if self._volba in self.options else None
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         # Výsledek posledního stisku. Tlačítko sám o sobě nic neukáže
         # a bez téhle zpětné vazby člověk neví, jestli se událost
         # založila, nebo proč ne.
@@ -139,7 +145,7 @@ class CoNaplanovat(CoordinatorEntity, RestoreEntity, SelectEntity):
         self.async_write_ha_state()
 
 
-class JakCasto(CoordinatorEntity, RestoreEntity, SelectEntity):
+class JakCasto(CoordinatorEntity[NaPohoduCoordinator], RestoreEntity, SelectEntity):
     """Jak často se má naplánovaná událost opakovat.
 
     Opakování neumí akce `calendar.create_event`, ale entita kalendáře
@@ -150,7 +156,7 @@ class JakCasto(CoordinatorEntity, RestoreEntity, SelectEntity):
     _attr_has_entity_name = True
     _attr_translation_key = "jak_casto"
 
-    def __init__(self, k, entry) -> None:
+    def __init__(self, k: NaPohoduCoordinator, entry: NaPohoduEntry) -> None:
         super().__init__(k)
         self._attr_unique_id = f"{entry.entry_id}_jak_casto"
         self._attr_device_info = DeviceInfo(
@@ -176,7 +182,7 @@ class JakCasto(CoordinatorEntity, RestoreEntity, SelectEntity):
         self.async_write_ha_state()
 
 
-class KteraScena(CoordinatorEntity, SelectEntity, RestoreEntity):
+class KteraScena(CoordinatorEntity[NaPohoduCoordinator], SelectEntity, RestoreEntity):
     """Kterou scénu zrovna zaškrtávám.
 
     Kalendář i zaškrtávací mřížka patří jedné scéně — téhle. Jinak by
@@ -189,7 +195,7 @@ class KteraScena(CoordinatorEntity, SelectEntity, RestoreEntity):
     _attr_has_entity_name = True
     _attr_translation_key = "ktera_scena"
 
-    def __init__(self, k, entry) -> None:
+    def __init__(self, k: NaPohoduCoordinator, entry: NaPohoduEntry) -> None:
         super().__init__(k)
         self._volba: str | None = None
         self._attr_unique_id = f"{entry.entry_id}_ktera_scena"

@@ -26,6 +26,8 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Callable, Mapping
+from typing import Any
 
 from homeassistant.helpers import issue_registry as ir
 
@@ -51,7 +53,7 @@ ZAVAZNOST = {
 }
 
 
-def entity_v_nastaveni(data: dict | None) -> set[str]:
+def entity_v_nastaveni(data: Mapping[str, Any] | None) -> set[str]:
     """Všechny entity, na které se nastavení odvolává.
 
     Hledá se podle tvaru hodnoty, ne podle seznamu polí: ručně psaný
@@ -61,7 +63,7 @@ def entity_v_nastaveni(data: dict | None) -> set[str]:
     """
     nalez: set[str] = set()
 
-    def projdi(x) -> None:
+    def projdi(x: Any) -> None:
         if isinstance(x, dict):
             for k, v in x.items():
                 if isinstance(k, str) and ENTITA.match(k):
@@ -80,7 +82,7 @@ def entity_v_nastaveni(data: dict | None) -> set[str]:
 class Opravy:
     """Účetnictví položek v Opravách: co platí teď a co už ne."""
 
-    def __init__(self, hass, entry_id: str) -> None:
+    def __init__(self, hass: Any, entry_id: str) -> None:
         self.hass = hass
         self.entry_id = entry_id
         self._platne: set[str] = set()
@@ -138,7 +140,8 @@ class Opravy:
             "entita": eid, "popis": popis,
             "jednotka": jednotka, "ocekavane": ocekavane}
 
-    def zkontroluj(self, entry, v_registru) -> None:
+    def zkontroluj(self, entry: Any,
+                   v_registru: Callable[[str], bool]) -> None:
         """Projde celé nastavení a ohlásí, co se v něm nedá najít.
 
         `v_registru` dodává koordinátor — rozdíl mezi „entita neexistuje"

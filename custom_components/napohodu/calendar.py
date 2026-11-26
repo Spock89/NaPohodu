@@ -14,20 +14,24 @@ i opakování** — akce pole pro opakování nemá, kdežto entita ano.
 from __future__ import annotations
 
 import logging
+from typing import Any
 import uuid
 from datetime import datetime, timedelta
 
-from homeassistant.components.calendar import (CalendarEntity, CalendarEvent,
-                                               CalendarEntityFeature)
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.components.calendar import CalendarEntity, CalendarEvent
+from homeassistant.components.calendar.const import CalendarEntityFeature
+from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback)
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import planovac as pz
+from .coordinator import NaPohoduCoordinator
 from .typy import NaPohoduEntry
+
 from .const import DOMAIN, PODENTITA_SCENA
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,7 +49,7 @@ except ImportError:      # pragma: no cover - bez něj se jen neopakuje
 PARALLEL_UPDATES = 0
 
 async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
-                            pridat: AddEntitiesCallback) -> None:
+                            pridat: AddConfigEntryEntitiesCallback) -> None:
     k = entry.runtime_data
     pridat([KalendarPlanu(k, entry)])
     # Každá scéna má vlastní kalendář. Den se v něm označí kliknutím
@@ -67,7 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
     pridat([KalendarVybraneSceny(k, entry)])
 
 
-class KalendarPlanu(CoordinatorEntity, CalendarEntity):
+class KalendarPlanu(CoordinatorEntity[NaPohoduCoordinator], CalendarEntity):
     """Plán obsazenosti jako kalendář."""
 
     _attr_has_entity_name = True
@@ -75,7 +79,7 @@ class KalendarPlanu(CoordinatorEntity, CalendarEntity):
     _attr_supported_features = (CalendarEntityFeature.CREATE_EVENT
                                 | CalendarEntityFeature.DELETE_EVENT)
 
-    def __init__(self, k, entry: ConfigEntry) -> None:
+    def __init__(self, k: NaPohoduCoordinator, entry: ConfigEntry) -> None:
         super().__init__(k)
         self._attr_unique_id = f"{entry.entry_id}_plan"
         self._attr_device_info = DeviceInfo(
@@ -116,7 +120,7 @@ class KalendarPlanu(CoordinatorEntity, CalendarEntity):
                     description=z.get("popis") or ""))
         return sorted(out, key=lambda u: u.start)
 
-    async def async_create_event(self, **kw) -> None:
+    async def async_create_event(self, **kw: Any) -> None:
         """Událost z panelu Kalendář.
 
         Panel posílá i pravidlo opakování, takže odtud jde založit
@@ -139,10 +143,10 @@ class KalendarPlanu(CoordinatorEntity, CalendarEntity):
             "popis": kw.get("description") or "",
             "nazev_rucne": kw.get("summary") or "",
         })
-        self.async_update_event_listeners()
 
-    async def async_delete_event(self, uid: str, recurrence_id=None,
-                                 recurrence_range=None) -> None:
+    async def async_delete_event(self, uid: str,
+                                 recurrence_id: str | None = None,
+                                 recurrence_range: str | None = None) -> None:
         """Maže se celá řada.
 
         Vyndat z opakování jediný výskyt by znamenalo vést seznam
@@ -150,10 +154,9 @@ class KalendarPlanu(CoordinatorEntity, CalendarEntity):
         jednodušší je řadu smazat a založit znovu.
         """
         await self.coordinator.plan_smaz(uid)
-        self.async_update_event_listeners()
 
 
-class KalendarSceny(CoordinatorEntity, CalendarEntity):
+class KalendarSceny(CoordinatorEntity[NaPohoduCoordinator], CalendarEntity):
     """Dny, kdy platí jedna scéna.
 
     Událost nenese nic než odkaz na scénu. Co scéna dělá, se čte z ní
@@ -166,13 +169,15 @@ class KalendarSceny(CoordinatorEntity, CalendarEntity):
     """
 
     _attr_has_entity_name = True
-    _attr_icon = "mdi:calendar-star"
+    _attr_icon: str | None = "mdi:calendar-star"
     _attr_supported_features = (CalendarEntityFeature.CREATE_EVENT
                                 | CalendarEntityFeature.DELETE_EVENT)
 
-    def __init__(self, k, entry: ConfigEntry, pod) -> None:
+    def __init__(self, k: NaPohoduCoordinator, entry: ConfigEntry,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k)
-        self._pod_id = pod.subentry_id
+        # Kalendář vybrané scény svoji podentitu nemá, viz potomek.
+        self._pod_id: str | None = pod.subentry_id
         # Jméno entity nese zařízení, aby z toho vzniklo
         # `calendar.napohodu_<scéna>` — stejně jako u všech ostatních
         # entit scény, místnosti i zóny.
@@ -183,17 +188,17 @@ class KalendarSceny(CoordinatorEntity, CalendarEntity):
             name=f"NaPohodu {pod.title}",
             manufacturer="NaPohodu", model="Scéna")
 
-    def _definice(self) -> dict:
-        return self.coordinator.sceny().get(self._pod_id) or {}
+    def _definice(self) -> dict[str, Any]:
+        return self.coordinator.sceny().get(self._pod_id or "") or {}
 
-    def _moje(self) -> list[dict]:
+    def _moje(self) -> list[dict[str, Any]]:
         return [z for z in self.coordinator.plan_zaznamy()
                 if z.get("druh") == "scena"
                 and z.get("scena") == self._pod_id]
 
     def _komu(self) -> str | None:
         """Do které scény se zakládá. Potomek si to přepíše."""
-        return self._pod_id
+        return str(self._pod_id) if self._pod_id else None
 
     @property
     def event(self) -> CalendarEvent | None:
@@ -219,7 +224,7 @@ class KalendarSceny(CoordinatorEntity, CalendarEntity):
                     description=z.get("popis") or ""))
         return sorted(out, key=lambda u: u.start)
 
-    async def async_create_event(self, **kw) -> None:
+    async def async_create_event(self, **kw: Any) -> None:
         """Den označený v kalendáři scény.
 
         Celodenní událost pozná podle toho, že panel pošle datum bez
@@ -250,12 +255,11 @@ class KalendarSceny(CoordinatorEntity, CalendarEntity):
             "rrule": kw.get("rrule"),
             "popis": kw.get("description") or d.get("popis") or "",
         })
-        self.async_update_event_listeners()
 
-    async def async_delete_event(self, uid: str, recurrence_id=None,
-                                 recurrence_range=None) -> None:
+    async def async_delete_event(self, uid: str,
+                                 recurrence_id: str | None = None,
+                                 recurrence_range: str | None = None) -> None:
         await self.coordinator.plan_smaz(uid)
-        self.async_update_event_listeners()
 
 
 class KalendarVybraneSceny(KalendarSceny):
@@ -273,7 +277,7 @@ class KalendarVybraneSceny(KalendarSceny):
     # před překladovou ikonou přednost.
     _attr_icon = None
 
-    def __init__(self, k, entry: ConfigEntry) -> None:
+    def __init__(self, k: NaPohoduCoordinator, entry: ConfigEntry) -> None:
         # Základ chce podentitu; tahle entita ale patří bytu, takže se
         # zařízení i jméno přepíšou hned za ním.
         CoordinatorEntity.__init__(self, k)
@@ -291,10 +295,10 @@ class KalendarVybraneSceny(KalendarSceny):
     def _scena_id(self) -> str | None:
         return self.coordinator.scena_vybrana()[0]
 
-    def _definice(self) -> dict:
+    def _definice(self) -> dict[str, Any]:
         return self.coordinator.scena_vybrana()[1]
 
-    def _moje(self) -> list[dict]:
+    def _moje(self) -> list[dict[str, Any]]:
         pid = self._scena_id
         if pid is None:
             return []

@@ -9,6 +9,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.typing import ConfigType
 
 from . import vybava as vb
@@ -81,7 +82,7 @@ def _uklid(hass: HomeAssistant, entry: ConfigEntry) -> None:
     registr = er.async_get(hass)
     zapisy = er.async_entries_for_config_entry(registr, entry.entry_id)
 
-    def smaz(zapis, kde: str) -> None:
+    def smaz(zapis: er.RegistryEntry, kde: str) -> None:
         registr.async_remove(zapis.entity_id)
         _LOGGER.info("NaPohodu: %s — %s smazána, takové zařízení tu "
                      "není", kde, zapis.entity_id)
@@ -164,6 +165,30 @@ async def async_setup_entry(hass: HomeAssistant,
 async def _znovu_nacti(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Přibyla nebo se změnila místnost či zóna."""
     await hass.config_entries.async_reload(entry.entry_id)
+
+
+async def async_remove_config_entry_device(
+        hass: HomeAssistant, entry: NaPohoduEntry,
+        device: DeviceEntry) -> bool:
+    """Smí se tohle zařízení smazat rukou?
+
+    Zařízení NaPohodu nejsou na žádném rozbočovači — každé patří
+    místnosti, oblasti, skupině, scéně nebo klimatizaci, tedy
+    podentitě nastavení, a jedno patří celému bytu. Když podentitu
+    odebereš, Home Assistant její zařízení i entity smaže sám.
+
+    Zbývá jediný případ, kdy zařízení přežije to, co popisovalo:
+    poškozený záznam, nebo přejmenování identifikátoru ve starší
+    verzi. Takové zařízení jde smazat rukou — jinak by v seznamu
+    zůstalo navždy a tlačítko by bylo šedé.
+
+    Zařízení, které svůj protějšek má, se smazat nedá. Zmizelo by ze
+    seznamu, ale integrace by ho při dalším cyklu založila znovu i se
+    všemi entitami, takže by to vypadalo jako porucha.
+    """
+    zive = {entry.entry_id} | set(entry.subentries)
+    return not any(oblast == DOMAIN and klic in zive
+                   for oblast, klic in device.identifiers)
 
 
 async def async_unload_entry(hass: HomeAssistant,

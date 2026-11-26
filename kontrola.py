@@ -309,6 +309,8 @@ HA_HOOKY = {"async_setup_entry", "async_unload_entry", "async_setup",
             # diagnostiku si Home Assistant hledá podle jména funkce
             # v modulu diagnostics.py, nikdo ji nevolá z kódu
             "async_get_config_entry_diagnostics",
+            # tlačítko Smazat na stránce zařízení se ptá téhle funkce
+            "async_remove_config_entry_device",
             "_async_update_data", "device_info", "icon", "native_unit_of_measurement"}
 kod_vse = "\n".join(x.read_text() for x in d.glob("*.py"))
 for p in d.glob("*.py"):

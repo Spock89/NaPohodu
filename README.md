@@ -1851,6 +1851,44 @@ entit ikonu schválně nemá, protože ji určuje jejich `device_class`
 (okno, obsazenost, teplota) a vlastní ikona by ten rozumný výchozí
 stav jen přepsala; ty jsou v testu vypsané jmenovitě.
 
+**Zařízení se dá smazat rukou** (pravidlo `stale-devices`).
+Zařízení NaPohodu nejsou na žádném rozbočovači — každé patří
+podentitě nastavení (místnosti, oblasti, skupině, scéně, klimatizaci)
+a jedno celému bytu. Když podentitu odebereš, Home Assistant její
+zařízení i entity smaže sám, takže zbývá jediný případ, kdy zařízení
+přežije to, co popisovalo: poškozený záznam nebo starší verze. Takové
+jde smazat rukou. Zařízení, které svůj protějšek má, se smazat nedá —
+zmizelo by ze seznamu a integrace by ho při dalším cyklu založila
+znovu, což vypadá jako porucha.
+
+**Kontrola typů projde celou integraci** (pravidlo `strict-typing`).
+`mypy --strict` proti **skutečnému** Home Assistantu, ne proti náhradě
+z testů, a to na všech 34 modulech. Pravidlo jádra žádá jen zápis na
+seznamu `.strict-typing`; tady není co vyjmenovávat, protože projde
+všechno.
+
+Právě tím se našla **skutečná chyba, kterou testy neviděly**: kalendář
+po založení i smazání události volal `async_update_event_listeners()`.
+Taková metoda v Home Assistantu **neexistuje** — jen ji měla náhrada
+v testech, takže testy procházely a ve skutečnosti každé založení
+události z panelu skončilo chybou `AttributeError`. Obnovu si přitom
+vyžádá koordinátor sám, takže volání bylo i zbytečné. Náhrada tu
+metodu už nemá a hlídá to test; kalendář a climate se v náhradě
+rozdělily na `__init__` a `const` stejně jako ve skutečném Home
+Assistantu, aby v nich nešlo napsat import, který jinde spadne.
+
+Druhý nález byl latentní: sdílená klimatizace porovnávala venkovní
+teplotu, kterou po restartu ještě nikdo nenaměřil. Stačilo mít
+otevřené okno a celý cyklus koordinátoru by spadl — všechny entity
+integrace by zůstaly nedostupné, dokud se čidlo neozve. Bez venkovní
+teploty se teď okno za chladicí nepočítá a jednotka chladí dál.
+
+Zbytek byla práce na čitelnosti: dvě stě dopsaných anotací, pryč
+s jedním jménem pro dvě různé věci v jedné funkci (`kam` jako číslo
+i text, `z` jako podentita i výsledek oblasti, `st` jako stav entity
+i stav výkonu, `dolni` jako práh CO2 i nejkratší nárazové větrání)
+a tvar odpovědi cizí integrace se čte opatrně, místo aby se mu věřilo.
+
 **Platformy deklarují `PARALLEL_UPDATES = 0`** (pravidlo
 `parallel-updates`). U nás se tím nic nemění — entity samy nic
 nedotazují, stav do nich tlačí koordinátor — ale bez té deklarace se

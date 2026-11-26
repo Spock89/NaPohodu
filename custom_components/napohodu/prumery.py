@@ -98,8 +98,11 @@ class Prumery:
             self.soucet = self.doba_h = 0.0
             return
 
-        self.tyden = self._krok(self.tyden, teplota, hodin, TAU_TYDEN_H)
-        self.tri_dny = self._krok(self.tri_dny, teplota, hodin, TAU_TRI_DNY_H)
+        # Obě hodnoty tu známe — prázdný stav řeší návrat výš.
+        tyden, tri_dny = self.tyden, self.tri_dny
+        assert tyden is not None and tri_dny is not None
+        self.tyden = self._krok(tyden, teplota, hodin, TAU_TYDEN_H)
+        self.tri_dny = self._krok(tri_dny, teplota, hodin, TAU_TRI_DNY_H)
         self.soucet += teplota * hodin
         self.doba_h += hodin
         self.cas_s = cas_s
@@ -109,14 +112,14 @@ class Prumery:
         vaha = 1.0 - math.exp(-hodin / tau)
         return stav + (nova - stav) * vaha
 
-    def jako_slovnik(self) -> dict:
+    def jako_slovnik(self) -> dict[str, float | None]:
         return {"zaseto_s": self.zaseto_s, "soucet": self.soucet,
                 "doba_h": self.doba_h,
                 "tyden": self.tyden, "tri_dny": self.tri_dny,
                 "cas_s": self.cas_s}
 
     @classmethod
-    def ze_slovniku(cls, d: dict | None) -> "Prumery":
+    def ze_slovniku(cls, d: dict[str, float | None] | None) -> "Prumery":
         if not d:
             return cls()
         # Starší uložený průměr „zaseto_s" nemá. Bere se za usazený:

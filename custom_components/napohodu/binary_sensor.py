@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from homeassistant.components.binary_sensor import (BinarySensorDeviceClass,
                                                     BinarySensorEntity)
+from homeassistant.config_entries import ConfigSubentry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback)
 
 from homeassistant.helpers.device_registry import DeviceInfo
 
@@ -15,7 +19,9 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import vybava as vb
 from .entity import NaPohoduEntity
+from .coordinator import NaPohoduCoordinator
 from .typy import NaPohoduEntry
+
 
 
 # Entity samy nic nedotazují — stav do nich tlačí koordinátor a povely
@@ -25,7 +31,7 @@ from .typy import NaPohoduEntry
 PARALLEL_UPDATES = 0
 
 async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
-                            pridat: AddEntitiesCallback) -> None:
+                            pridat: AddConfigEntryEntitiesCallback) -> None:
     k = entry.runtime_data
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_MISTNOST:
@@ -56,7 +62,8 @@ class OknoOtevreno(NaPohoduEntity, BinarySensorEntity):
     # mrtvý řádek, který tvrdí, že se tím něco nastavuje.
     _attr_available = True
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "okno_otevreno")
 
     @property
@@ -64,7 +71,7 @@ class OknoOtevreno(NaPohoduEntity, BinarySensorEntity):
         m = self.mistnost
         if m is None:
             return False
-        zdroj = self.pod.data.get(CONF_ZDROJ_OKENNIHO_M, "nase_otevreni")
+        zdroj = self.pod_data.get(CONF_ZDROJ_OKENNIHO_M, "nase_otevreni")
         kontakt = m.atributy.get("kontakt_hlasi")
         if zdroj == "nikdy":
             return False          # topení se otevřeným oknem neřídí
@@ -75,16 +82,17 @@ class OknoOtevreno(NaPohoduEntity, BinarySensorEntity):
         return bool(m.okno_otevreno)
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         return {"k_cemu": "vstup pro Better Thermostat, ne stav topení",
-                "zdroj": self.pod.data.get(CONF_ZDROJ_OKENNIHO_M,
+                "zdroj": self.pod_data.get(CONF_ZDROJ_OKENNIHO_M,
                                            "nase_otevreni")}
 
 
 class Obsazeno(NaPohoduEntity, BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.OCCUPANCY
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "obsazeno")
 
     @property
@@ -93,14 +101,15 @@ class Obsazeno(NaPohoduEntity, BinarySensorEntity):
         return bool(m and m.obsazeno)
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         m = self.mistnost
         return {"indicie": m.atributy.get("indicie", [])} if m else {}
 
 
 class Klid(NaPohoduEntity, BinarySensorEntity):
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "klid")
 
     @property
@@ -114,7 +123,8 @@ class Okno(NaPohoduEntity, BinarySensorEntity):
 
     _attr_device_class = BinarySensorDeviceClass.WINDOW
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "okno")
 
     @property
@@ -123,14 +133,15 @@ class Okno(NaPohoduEntity, BinarySensorEntity):
         return bool(m and m.okno_otevreno)
 
 
-class TopnaSezona(CoordinatorEntity, BinarySensorEntity):
+class TopnaSezona(CoordinatorEntity[NaPohoduCoordinator], BinarySensorEntity):
     """Zapnuto znamená topnou sezónu. Mimo ni se topí klimatizací,
     v sezóně radiátory — ať se ty dva zdroje nepřetahují."""
 
     _attr_has_entity_name = True
     _attr_translation_key = "topna_sezona"
 
-    def __init__(self, koordinator, entry) -> None:
+    def __init__(self, koordinator: NaPohoduCoordinator,
+                 entry: NaPohoduEntry) -> None:
         super().__init__(koordinator)
         self._attr_unique_id = f"{entry.entry_id}_topna_sezona"
         self._attr_device_info = DeviceInfo(

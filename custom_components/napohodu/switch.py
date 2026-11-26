@@ -6,13 +6,17 @@ co by udělala, což je bezpečnější způsob, jak ji poprvé nasadit.
 
 from __future__ import annotations
 
+from datetime import date
+
 import logging
+from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigSubentry
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback)
 from homeassistant.helpers.restore_state import RestoreEntity
 
 from homeassistant.helpers import entity_registry as er
@@ -23,7 +27,9 @@ from . import vybava as vb
 from .const import (DOMAIN, PODENTITA_KLIMA,
                     PODENTITA_MISTNOST)
 from .entity import NaPohoduEntity
+from .coordinator import NaPohoduCoordinator
 from .typy import NaPohoduEntry
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,7 +64,7 @@ def _sprav_identifikatory(hass: HomeAssistant, entry: ConfigEntry) -> None:
 PARALLEL_UPDATES = 0
 
 async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
-                            pridat: AddEntitiesCallback) -> None:
+                            pridat: AddConfigEntryEntitiesCallback) -> None:
     k = entry.runtime_data
     # Mřížka dnů patří vybrané scéně, ne každé zvlášť: s každou novou
     # by karta narostla o pětatřicet dlaždic a musela by se generovat
@@ -106,7 +112,8 @@ class NaPohoduPrepinac(NaPohoduEntity, SwitchEntity, RestoreEntity):
     _attr_entity_category = EntityCategory.CONFIG
     _klic_hodnoty = "ovladat"
 
-    def __init__(self, k, pod, klic):
+    def __init__(self, k: NaPohoduCoordinator, pod: ConfigSubentry,
+                 klic: str) -> None:
         super().__init__(k, pod, klic)
         self._zap = False
 
@@ -122,10 +129,10 @@ class NaPohoduPrepinac(NaPohoduEntity, SwitchEntity, RestoreEntity):
     def is_on(self) -> bool:
         return self._zap
 
-    async def async_turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs: Any) -> None:
         await self._nastav(True)
 
-    async def async_turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs: Any) -> None:
         await self._nastav(False)
 
     async def _nastav(self, hodnota: bool) -> None:
@@ -151,7 +158,7 @@ class ZVolbyMistnosti(NaPohoduPrepinac):
         # ho člověk opravdu změnil. Opačné pořadí znamenalo, že obnova
         # formulář vždycky přepsala a nastavení se neprojevilo.
         await super().async_added_to_hass()
-        z_formulare = bool(self.pod.data.get(self._vychozi_klic, True))
+        z_formulare = bool(self.pod_data.get(self._vychozi_klic, True))
         klic = (self.pod_id, self._klic_hodnoty)
         if self.coordinator.formular_zmenen(klic, float(z_formulare)):
             self._zap = z_formulare
@@ -164,7 +171,8 @@ class OtevritProPohodu(ZVolbyMistnosti):
     _klic_hodnoty = "pro_pohodu"
     _vychozi_klic = "pro_pohodu"
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "otevirat_i_pro_pohodu")
 
 
@@ -174,28 +182,32 @@ class ZvlhcovatVeSpanku(ZVolbyMistnosti):
     _klic_hodnoty = "zvlhcovac_ve_spanku"
     _vychozi_klic = "zvlhcovac_ve_spanku"
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "zvlhcovat_i_ve_spanku")
 
 
 class OvladatOkno(NaPohoduPrepinac):
     _klic_hodnoty = "ovladat"
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "ovladat_okno")
 
 
 class OvladatStineni(NaPohoduPrepinac):
     _klic_hodnoty = "ovladat_stineni"
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "ovladat_stineni")
 
 
 class OvladatKlimu(NaPohoduPrepinac):
     _klic_hodnoty = "ovladat"
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "ovladat_klimu")
 
 
@@ -204,11 +216,12 @@ class OvladatTopeni(NaPohoduPrepinac):
 
     _klic_hodnoty = "ovladat_topeni"
 
-    def __init__(self, k, pod):
+    def __init__(self, k: NaPohoduCoordinator,
+                 pod: ConfigSubentry) -> None:
         super().__init__(k, pod, "ovladat_topeni")
 
 
-class DenSceny(CoordinatorEntity, SwitchEntity):
+class DenSceny(CoordinatorEntity[NaPohoduCoordinator], SwitchEntity):
     """Jeden den v zaškrtávací mřížce vybrané scény.
 
     Dlaždice patří odstupu od dneška, ne datu — jen tak zůstane mřížka
@@ -232,7 +245,7 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
     # verzím odolná, protože nezávisí na žádném přepínači.
     _attr_has_entity_name = False
 
-    def __init__(self, k, entry, odstup: int) -> None:
+    def __init__(self, k: NaPohoduCoordinator, entry: NaPohoduEntry, odstup: int) -> None:
         super().__init__(k)
         self._odstup = odstup
         # V jméně entity je číslo dlaždice, ne datum: z něho vzniká
@@ -258,15 +271,15 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
         return self.coordinator.scena_vybrana()[0]
 
     @property
-    def _definice(self) -> dict:
+    def _definice(self) -> dict[str, Any]:
         return self.coordinator.scena_vybrana()[1]
 
     @property
-    def _den(self):
+    def _den(self) -> date:
         return dn.datum(self._odstup)
 
     @property
-    def _stav_dne(self) -> dict:
+    def _stav_dne(self) -> dict[str, Any]:
         if self._pod_id is None:
             return {"plati": False, "vlastni": [], "odjinud": False}
         return dn.pro_den(self.coordinator.plan_zaznamy(), self._pod_id,
@@ -285,7 +298,7 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
         super()._handle_coordinator_update()
 
     @property
-    def _ceka(self) -> dict[str, set]:
+    def _ceka(self) -> dict[str, set[date]]:
         if self._pod_id is None:
             return {"pridat": set(), "zrusit": set()}
         return self.coordinator.scena_ceka(self._pod_id)
@@ -302,7 +315,7 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
             return True
         if den in ceka["zrusit"]:
             return False
-        return self._stav_dne["plati"]
+        return bool(self._stav_dne["plati"])
 
     @property
     def icon(self) -> str:
@@ -322,7 +335,7 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
                 else "mdi:calendar-blank-outline")
 
     @property
-    def extra_state_attributes(self) -> dict:
+    def extra_state_attributes(self) -> dict[str, Any]:
         s = self._stav_dne
         den, ceka = self._den, self._ceka
         return {
@@ -352,7 +365,7 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
                      else "zrušit" if den in ceka["zrusit"] else None),
         }
 
-    async def async_turn_on(self, **kwargs) -> None:
+    async def async_turn_on(self, **kwargs: Any) -> None:
         if self._pod_id is None or dn.stav_dlazdice(self._odstup) == "minulost":
             return      # včerejšek se naplánovat nedá
         den, ceka = self._den, self._ceka
@@ -363,7 +376,7 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
         # Počítadlo „k uložení" visí na jiné entitě, musí se dozvědět.
         self.coordinator.async_update_listeners()
 
-    async def async_turn_off(self, **kwargs) -> None:
+    async def async_turn_off(self, **kwargs: Any) -> None:
         if self._pod_id is None:
             return
         den, ceka = self._den, self._ceka

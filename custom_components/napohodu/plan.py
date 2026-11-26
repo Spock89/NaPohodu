@@ -68,10 +68,12 @@ def slouc(udalosti: list[Udalost]) -> Udalost:
         posledni = max(bezici, key=lambda u: (u.do_s is not None, u.do_s
                                               if u.do_s is not None else 0))
         return Udalost(bezi=True, do_s=do_s, zdroj=posledni.zdroj)
-    cekajici = [u for u in udalosti if u.od_s is not None]
+    cekajici = [(u.od_s, u) for u in udalosti if u.od_s is not None]
     if not cekajici:
         return Udalost()
-    prvni = min(cekajici, key=lambda u: u.od_s)
+    # Vybírá se podle času, ne podle události: dvě události se mezi
+    # sebou porovnat nedají a `min` by si o to řeklo.
+    prvni = min(cekajici, key=lambda p: p[0])[1]
     return Udalost(bezi=False, od_s=prvni.od_s, zdroj=prvni.zdroj)
 
 

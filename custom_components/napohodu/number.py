@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
+from homeassistant.config_entries import ConfigSubentry
 from homeassistant.components.number import (NumberEntity, NumberMode,
                                              RestoreNumber)
 from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.entity_platform import (
+    AddConfigEntryEntitiesCallback)
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
@@ -29,6 +32,11 @@ from .const import (
 from . import vybava as vb
 from .entity import NaPohoduEntity
 from .typy import NaPohoduEntry
+
+if TYPE_CHECKING:
+    # Koordinátor si bere seznam šoupátek odsud, takže zpětný import
+    # smí být jen pro kontrolu typů — jinak se moduly zacyklí.
+    from .coordinator import NaPohoduCoordinator
 
 
 @dataclass(frozen=True)
@@ -110,7 +118,7 @@ TOPENI = [
 PARALLEL_UPDATES = 0
 
 async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
-                            pridat: AddEntitiesCallback) -> None:
+                            pridat: AddConfigEntryEntitiesCallback) -> None:
     k = entry.runtime_data
     pridat([NaPohoduNumber(k, None, p, entry) for p in CELY_BYT])
     for pod in entry.subentries.values():
@@ -138,11 +146,16 @@ class NaPohoduNumber(NaPohoduEntity, RestoreNumber, NumberEntity):
     _attr_mode = NumberMode.SLIDER
     _attr_entity_category = EntityCategory.CONFIG
 
-    def __init__(self, k, pod, p: Posuvnik, entry=None) -> None:
+    def __init__(self, k: "NaPohoduCoordinator",
+                 pod: ConfigSubentry | None,
+                 p: Posuvnik, entry: NaPohoduEntry | None = None) -> None:
         if pod is None:
-            # Posuvník pro celý byt visí na hlavním zařízení integrace.
+            # Posuvník pro celý byt visí na hlavním zařízení integrace
+            # a zápis konfigurace k tomu potřebuje — jiné místo, odkud
+            # vzít jeho identifikátor, není.
+            assert entry is not None
             CoordinatorEntity.__init__(self, k)
-            self.pod = None
+            self.pod = None      # posuvník bytu podentitu nemá
             self.pod_id = entry.entry_id
             self._attr_translation_key = p.klic
             self._attr_unique_id = f"{entry.entry_id}_{p.klic}"
@@ -183,7 +196,7 @@ class NaPohoduNumber(NaPohoduEntity, RestoreNumber, NumberEntity):
             (self.pod_id, self._p.klic), self._vychozi)
 
     @property
-    def extra_state_attributes(self) -> dict | None:
+    def extra_state_attributes(self) -> dict[str, Any] | None:
         """U odchylky i to, co z ní vyšlo: cíl a naměřená teplota.
 
         Dlaždice na dashboardu umí ukázat jen stav a atributy **své**

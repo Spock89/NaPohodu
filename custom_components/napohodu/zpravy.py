@@ -11,6 +11,8 @@ která upozorňuje pořád, se přestane číst.
 
 from __future__ import annotations
 
+from typing import Any
+
 from dataclasses import dataclass, field
 
 # jak dlouho se stejná zpráva neopakuje
@@ -57,14 +59,15 @@ class Hlasic:
         return True
 
     def zprava(self, druh: str, mistnost: str, cas_s: float,
-               **udaje) -> str | None:
+               **udaje: Any) -> str | None:
         """Vrátí text, nebo nic, když se posílat nemá."""
         if not self.smi(druh, mistnost, cas_s):
             return None
-        return SKLADBA.get(druh, lambda m, u: None)(mistnost, udaje)
+        skladatel = SKLADBA.get(druh)
+        return skladatel(mistnost, udaje) if skladatel else None
 
 
-def _vitr(m, u):
+def _vitr(m: str, u: dict[str, Any]) -> str | None:
     """Uvádí hodnotu, která blokaci spustila, ne tu aktuální.
 
     Blokace drží, dokud vítr neklesne pod uklidňovací mez, takže mezitím
@@ -75,7 +78,7 @@ def _vitr(m, u):
     if rychlost is None and naraz is None:
         return f"{m}: zavírám okno kvůli větru."
     prahy = u.get("prahy") or {}
-    co = u.get("co_prekrocilo")
+    co = u.get("co_prekrocilo") or ""
     kvuli = {"nárazy": "nárazy jsou nad prahem",
              "rychlost": "rychlost je nad prahem",
              "hystereze": "vítr ještě neklesl dost nízko",
@@ -92,16 +95,16 @@ def _vitr(m, u):
             f"povolí pod {prahy.get('povoli_pod', '?')}." + dokdy)
 
 
-def _dest(m, u):
+def _dest(m: str, u: dict[str, Any]) -> str | None:
     return f"{m}: zavírám okno, prší ({u.get('dest', 0):.1f} mm/h)."
 
 
-def _nouzove(m, u):
+def _nouzove(m: str, u: dict[str, Any]) -> str | None:
     return (f"{m}: nouzové noční provětrání, CO2 {u.get('co2', 0):.0f}. "
             f"Otevřeno jen krátce.")
 
 
-def _chyba(m, u):
+def _chyba(m: str, u: dict[str, Any]) -> str | None:
     return f"{m}: {u.get('text', 'pohon nereaguje')}"
 
 
@@ -118,26 +121,26 @@ def _sloveso(m: str, sloveso: str, duvod: str) -> str:
     return f"{m}: {sloveso}, {duvod}."
 
 
-def _vetrani(m, u):
+def _vetrani(m: str, u: dict[str, Any]) -> str | None:
     return _sloveso(m, "otevírám", u.get("duvod", ""))
 
 
-def _zavirani(m, u):
+def _zavirani(m: str, u: dict[str, Any]) -> str | None:
     return _sloveso(m, "zavírám", u.get("duvod", ""))
 
 
-def _zaluzie(m, u):
+def _zaluzie(m: str, u: dict[str, Any]) -> str | None:
     """Kam jsme žaluzie poslali a proč."""
     return f"{m}: žaluzie {u.get('co', '')} — {u.get('duvod', '')}."
 
 
-def _obnova(m, u):
+def _obnova(m: str, u: dict[str, Any]) -> str | None:
     """Opakovaný povel. Chodí pravidelně, proto vlastní volba."""
     return (f"{m}: posílám znovu {u.get('co', 'povel')} — pohon možná "
             f"předchozí zahodil.")
 
 
-def _plan(_m, u):
+def _plan(_m: str, u: dict[str, Any]) -> str | None:
     """Začátek a konec naplánované události, nebo chyba v plánu.
 
     Chybu má smysl hlásit dopředu — dozvědět se o nepochopené události
@@ -161,7 +164,7 @@ def _plan(_m, u):
     return "".join(casti) + "."
 
 
-def _souhrn(m, u):
+def _souhrn(m: str, u: dict[str, Any]) -> str | None:
     """Skládá se z toho, co místnost opravdu má.
 
     Místnost bez ovládaného okna o žádném nic neví, takže psát jí do

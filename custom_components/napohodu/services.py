@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from typing import Any
 
 import voluptuous as vol
 
@@ -91,7 +92,8 @@ class OvladacHA:
         except (TypeError, ValueError):
             return None
 
-    async def _sluzba(self, sluzba: str, data: dict | None = None) -> None:
+    async def _sluzba(self, sluzba: str,
+                      data: dict[str, Any] | None = None) -> None:
         await self.hass.services.async_call(
             "cover", sluzba, {"entity_id": self.entita, **(data or {})},
             blocking=True,
@@ -119,7 +121,8 @@ class Stavy:
 
     def __init__(self, hass: HomeAssistant) -> None:
         self._hass = hass
-        self._store = Store(hass, 1, ULOZISTE)
+        self._store: Store[dict[str, dict[str, str]]] = Store(
+            hass, 1, ULOZISTE)
         self._data: dict[str, dict[str, str]] = {}
 
     async def nacti(self) -> None:
@@ -153,11 +156,12 @@ class Stavy:
 
 
 def _stavy(hass: HomeAssistant) -> "Stavy":
-    return hass.data.setdefault(DOMAIN, {})["stavy_stineni"]
+    stavy: Stavy = hass.data.setdefault(DOMAIN, {})["stavy_stineni"]
+    return stavy
 
 
 async def proved_sekvenci(hass: HomeAssistant, entita: str, zapis: str,
-                          timeout_s: float = 30.0) -> dict:
+                          timeout_s: float = 30.0) -> dict[str, Any]:
     """Provede posloupnost. Volá se ze služby i z testeru v nastavení."""
     try:
         kroky = sq.preved(zapis)
@@ -189,14 +193,14 @@ def vsechna_jmena_stavu(hass: HomeAssistant) -> list[str]:
     return sorted(jmena)
 
 
-def nacti_stavy(hass: HomeAssistant, entita: str) -> dict:
+def nacti_stavy(hass: HomeAssistant, entita: str) -> dict[str, Any]:
     """Uložené stavy jedné žaluzie. Prázdné, když ještě žádné nejsou."""
     stavy = hass.data.get(DOMAIN, {}).get("stavy_stineni")
     return stavy.pro(entita) if stavy else {}
 
 
 async def proved_stav_stineni(hass: HomeAssistant, entita: str,
-                              nazev: str) -> dict:
+                              nazev: str) -> dict[str, Any]:
     """Provede uložený pojmenovaný stav."""
     stavy = hass.data.get(DOMAIN, {}).get("stavy_stineni")
     if stavy is None:
@@ -210,7 +214,7 @@ async def proved_stav_stineni(hass: HomeAssistant, entita: str,
 
 
 async def uloz_hromadne(hass: HomeAssistant, entita: str,
-                        text: str) -> dict:
+                        text: str) -> dict[str, Any]:
     """Nahradí všechny stavy jedné žaluzie tím, co je v textu."""
     try:
         stavy = sq.z_textu(text)
@@ -221,7 +225,7 @@ async def uloz_hromadne(hass: HomeAssistant, entita: str,
 
 
 async def uloz_stav_stineni(hass: HomeAssistant, entita: str, nazev: str,
-                            zapis: str) -> dict:
+                            zapis: str) -> dict[str, Any]:
     try:
         kroky = sq.preved(zapis)
     except sq.ChybaSekvence as e:
@@ -238,7 +242,7 @@ async def zaregistruj(hass: HomeAssistant) -> None:
         await stavy.nacti()
         hass.data.setdefault(DOMAIN, {})["stavy_stineni"] = stavy
 
-    async def _proved(entita: str, zapis: str, timeout: float) -> dict:
+    async def _proved(entita: str, zapis: str, timeout: float) -> dict[str, Any]:
         return await proved_sekvenci(hass, entita, zapis, timeout)
 
     async def test_sekvence(call: ServiceCall) -> ServiceResponse:
@@ -273,11 +277,14 @@ async def zaregistruj(hass: HomeAssistant) -> None:
                     "chyba": f"Místnost {call.data[ATR_MISTNOST]!r} nemá "
                              f"přiřazené žádné žaluzie."}
         vysledky = [await proved_stav_stineni(hass, z, nazev) for z in zaluzie]
-        return {
+        # Odpověď akce se skládá volněji, než umí popsat typ JSON —
+        # seznamy textů a slovníků se do něj nevejdou.
+        odpoved: dict[str, Any] = {
             "povedlo_se": all(v.get("povedlo_se") for v in vysledky),
             "zaluzie": zaluzie,
             "vysledky": vysledky,
         }
+        return odpoved
 
     async def dashboard(call: ServiceCall) -> ServiceResponse:
         """Vygeneruje kartu z entit, které opravdu existují."""
@@ -314,7 +321,9 @@ async def zaregistruj(hass: HomeAssistant) -> None:
                         k.srovnej(pod.subentry_id)
                         srovnano.append(pod.title)
             await k.async_request_refresh()
-        return {"povedlo_se": bool(srovnano), "srovnano": srovnano}
+        hotovo: dict[str, Any] = {"povedlo_se": bool(srovnano),
+                                  "srovnano": srovnano}
+        return hotovo
 
     async def smaz_stav(call: ServiceCall) -> ServiceResponse:
         smazano = await stavy.smaz(call.data[ATR_ZALUZIE], call.data[ATR_NAZEV])
