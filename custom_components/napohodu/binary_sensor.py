@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from homeassistant.components.binary_sensor import (BinarySensorDeviceClass,
                                                     BinarySensorEntity)
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -16,11 +15,18 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import vybava as vb
 from .entity import NaPohoduEntity
+from .typy import NaPohoduEntry
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
+# Entity samy nic nedotazují — stav do nich tlačí koordinátor a povely
+# jdou přes služby Home Assistantu, takže není co omezovat. Nula tedy
+# znamená bez omezení, a hlavně je to řečeno nahlas: bez téhle deklarace
+# se u platformy nedá poznat, jestli se na to zapomnělo.
+PARALLEL_UPDATES = 0
+
+async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
                             pridat: AddEntitiesCallback) -> None:
-    k = hass.data[DOMAIN][entry.entry_id]
+    k = entry.runtime_data
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_MISTNOST:
             sada = [Obsazeno(k, pod), Klid(k, pod)]
@@ -45,14 +51,13 @@ class OknoOtevreno(NaPohoduEntity, BinarySensorEntity):
     """
 
     _attr_device_class = BinarySensorDeviceClass.WINDOW
+    # Vlastnost, ne `_attr_available`: hodnota se tím nemění, ale
+    # kdyby obojí stálo vedle sebe, vyhraje vlastnost a to druhé je
+    # mrtvý řádek, který tvrdí, že se tím něco nastavuje.
     _attr_available = True
 
     def __init__(self, k, pod):
         super().__init__(k, pod, "okno_otevreno")
-
-    @property
-    def available(self) -> bool:
-        return True
 
     @property
     def is_on(self) -> bool:
@@ -94,7 +99,6 @@ class Obsazeno(NaPohoduEntity, BinarySensorEntity):
 
 
 class Klid(NaPohoduEntity, BinarySensorEntity):
-    _attr_icon = "mdi:sleep"
 
     def __init__(self, k, pod):
         super().__init__(k, pod, "klid")
@@ -125,7 +129,6 @@ class TopnaSezona(CoordinatorEntity, BinarySensorEntity):
 
     _attr_has_entity_name = True
     _attr_translation_key = "topna_sezona"
-    _attr_icon = "mdi:radiator"
 
     def __init__(self, koordinator, entry) -> None:
         super().__init__(koordinator)

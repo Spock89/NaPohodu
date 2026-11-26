@@ -93,6 +93,8 @@ class Zapis:
         self.subentries = {p.subentry_id: p for p in podentity}
         self.data = data or {}
         self.options = {}
+        # Doplní `_koordinator`; platformy si ho berou odtud.
+        self.runtime_data = None
 
 
 def _instalace(c):
@@ -147,6 +149,7 @@ def _koordinator(ko, c, podentity=None, stavy=None, data=None):
                            c.CONF_DOMA: "binary_sensor.doma"})
     k = ko.NaPohoduCoordinator(hass, entry)
     k.hass = hass
+    entry.runtime_data = k
     return k, hass
 
 

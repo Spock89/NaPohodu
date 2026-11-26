@@ -746,7 +746,7 @@ class MistnostSubentryFlow(ConfigSubentryFlow):
         try:
             from .number import MISTNOST
 
-            k = self.hass.data[c.DOMAIN][self._get_entry().entry_id]
+            k = self._get_entry().runtime_data
             aktualni = dict(ulozene)
             for posuvnik in MISTNOST:
                 hodnota = k.hodnoty.get((pod_id, posuvnik.klic))

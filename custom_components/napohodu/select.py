@@ -10,7 +10,6 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.select import SelectEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -20,14 +19,21 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import planovac as pz
 from .const import CONF_ZALUZIE, DOMAIN, PODENTITA_MISTNOST
 from .entity import NaPohoduEntity
+from .typy import NaPohoduEntry
 from .services import nacti_stavy, proved_stav_stineni
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
+# Entity samy nic nedotazují — stav do nich tlačí koordinátor a povely
+# jdou přes služby Home Assistantu, takže není co omezovat. Nula tedy
+# znamená bez omezení, a hlavně je to řečeno nahlas: bez téhle deklarace
+# se u platformy nedá poznat, jestli se na to zapomnělo.
+PARALLEL_UPDATES = 0
+
+async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
                             pridat: AddEntitiesCallback) -> None:
-    k = hass.data[DOMAIN][entry.entry_id]
+    k = entry.runtime_data
     for pod in entry.subentries.values():
         if pod.subentry_type != PODENTITA_MISTNOST:
             continue
@@ -42,7 +48,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 class StavZaluzie(NaPohoduEntity, SelectEntity):
     """Pošle žaluzii do vybraného uloženého stavu."""
 
-    _attr_icon = "mdi:blinds-horizontal"
 
     def __init__(self, k, pod, zaluzie: str, poradi: int) -> None:
         super().__init__(k, pod, "stav_zaluzie")
@@ -95,7 +100,6 @@ class CoNaplanovat(CoordinatorEntity, RestoreEntity, SelectEntity):
     """
 
     _attr_has_entity_name = True
-    _attr_icon = "mdi:calendar-plus"
     _attr_translation_key = "co_naplanovat"
 
     def __init__(self, k, entry) -> None:
@@ -144,7 +148,6 @@ class JakCasto(CoordinatorEntity, RestoreEntity, SelectEntity):
     """
 
     _attr_has_entity_name = True
-    _attr_icon = "mdi:repeat"
     _attr_translation_key = "jak_casto"
 
     def __init__(self, k, entry) -> None:
@@ -184,7 +187,6 @@ class KteraScena(CoordinatorEntity, SelectEntity, RestoreEntity):
     """
 
     _attr_has_entity_name = True
-    _attr_icon = "mdi:calendar-star"
     _attr_translation_key = "ktera_scena"
 
     def __init__(self, k, entry) -> None:

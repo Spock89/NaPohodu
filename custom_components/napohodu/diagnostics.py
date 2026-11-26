@@ -21,10 +21,10 @@ from __future__ import annotations
 from dataclasses import asdict, is_dataclass
 from typing import Any
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from .typy import NaPohoduEntry
+
 
 # Jméno pole stačí, že tohle slovo obsahuje. Výčtem přesných jmen by
 # první jinak pojmenovaný přírůstek propadl.
@@ -54,9 +54,9 @@ def _cedit(hodnota: Any) -> Any:
 
 
 async def async_get_config_entry_diagnostics(
-        hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
+        hass: HomeAssistant, entry: NaPohoduEntry) -> dict[str, Any]:
     """Všechno, z čeho se rozhodovalo, v jednom souboru."""
-    k = (hass.data.get(DOMAIN) or {}).get(entry.entry_id)
+    k = getattr(entry, "runtime_data", None)
 
     out: dict[str, Any] = {
         "nastaveni": {

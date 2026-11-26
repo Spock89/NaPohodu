@@ -7,7 +7,9 @@ import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.typing import ConfigType
 
 from . import vybava as vb
 from . import vykon as vy
@@ -15,8 +17,13 @@ from .const import (CONF_STINENI_MAPA, CONF_STINENI_PREDSTIH, CONF_ZALUZIE,
                     DOMAIN, PODENTITA_MISTNOST, PODENTITA_ZONA)
 from .coordinator import NaPohoduCoordinator
 from .services import zaregistruj
+from .typy import NaPohoduEntry
 
 _LOGGER = logging.getLogger(__name__)
+
+# Nastavuje se jen přes rozhraní. Bez tohohle by Home Assistant u
+# integrace, která má `async_setup`, čekal i nastavení z YAML.
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 PLATFORMY: list[Platform] = [
     Platform.BUTTON,
@@ -116,15 +123,32 @@ def _uklid(hass: HomeAssistant, entry: ConfigEntry) -> None:
                 smaz(zapis, pod.title)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
+    """Služby musí existovat dřív než zápis konfigurace.
+
+    Registrovat je až při načtení zápisu znamená, že při nenačtené
+    integraci služby v Home Assistantu vůbec nejsou — a automatizace,
+    která je zavolá, spadne na „služba neexistuje" místo na hlášku,
+    že integrace není načtená. Přitom nenačtený zápis je zrovna ten
+    stav, kdy se to stane.
+    """
     await zaregistruj(hass)
+    return True
+
+
+async def async_setup_entry(hass: HomeAssistant,
+                            entry: NaPohoduEntry) -> bool:
     _preved(hass, entry)
     _uklid(hass, entry)
 
     koordinator = NaPohoduCoordinator(hass, entry)
     await koordinator.async_nacti()
     await koordinator.async_config_entry_first_refresh()
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = koordinator
+    # Koordinátor patří zápisu konfigurace, ne globálnímu slovníku:
+    # odebráním zápisu zmizí s ním a platforma si ho nemusí hledat
+    # podle entry_id. V hass.data zůstávají jen věci sdílené napříč
+    # zápisy, tedy uložené stavy žaluzií pro služby.
+    entry.runtime_data = koordinator
 
     mistnosti = sum(1 for p in entry.subentries.values()
                     if p.subentry_type == PODENTITA_MISTNOST)
@@ -142,8 +166,6 @@ async def _znovu_nacti(hass: HomeAssistant, entry: ConfigEntry) -> None:
     await hass.config_entries.async_reload(entry.entry_id)
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMY)
-    if ok:
-        hass.data[DOMAIN].pop(entry.entry_id, None)
-    return ok
+async def async_unload_entry(hass: HomeAssistant,
+                             entry: NaPohoduEntry) -> bool:
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMY)

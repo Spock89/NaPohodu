@@ -24,23 +24,29 @@ import logging
 from homeassistant.components.climate import (ClimateEntity,
                                               ClimateEntityFeature,
                                               HVACAction, HVACMode)
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import vybava as vb
-from .const import (CONF_ODCHYLKA, DOMAIN, ODCHYLKA_KROK,
+from .const import (CONF_ODCHYLKA, ODCHYLKA_KROK,
                     ODCHYLKA_MEZ, PODENTITA_MISTNOST)
 from .entity import NaPohoduEntity
+from .typy import NaPohoduEntry
 
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
+# Entity samy nic nedotazují — stav do nich tlačí koordinátor a povely
+# jdou přes služby Home Assistantu, takže není co omezovat. Nula tedy
+# znamená bez omezení, a hlavně je to řečeno nahlas: bez téhle deklarace
+# se u platformy nedá poznat, jestli se na to zapomnělo.
+PARALLEL_UPDATES = 0
+
+async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
                             pridat: AddEntitiesCallback) -> None:
-    k = hass.data[DOMAIN][entry.entry_id]
+    k = entry.runtime_data
     for pod in entry.subentries.values():
         # Jen tam, kde je co ovládat. Termostat bez hlavice by byl
         # kolečko, kterým se nic nestane — a v HomeKitu by se nabízel
@@ -72,7 +78,6 @@ class TermostatMistnosti(NaPohoduEntity, ClimateEntity):
     _attr_supported_features = (ClimateEntityFeature.TARGET_TEMPERATURE
                                 | ClimateEntityFeature.TURN_ON
                                 | ClimateEntityFeature.TURN_OFF)
-    _attr_icon = "mdi:home-thermometer"
 
     def __init__(self, k, pod) -> None:
         super().__init__(k, pod, "termostat")

@@ -1,0 +1,226 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "klid": {
+        "default": "mdi:sleep"
+      },
+      "topna_sezona": {
+        "default": "mdi:radiator"
+      }
+    },
+    "button": {
+      "naplanovat": {
+        "default": "mdi:calendar-check"
+      },
+      "odstinit": {
+        "default": "mdi:blinds-horizontal"
+      },
+      "otevrit_okno": {
+        "default": "mdi:window-open-variant"
+      },
+      "soukromi": {
+        "default": "mdi:blinds-horizontal"
+      },
+      "srovnat_okno": {
+        "default": "mdi:sync"
+      },
+      "srovnat_stineni": {
+        "default": "mdi:sync"
+      },
+      "srovnat_topeni": {
+        "default": "mdi:sync"
+      },
+      "srovnat_vse": {
+        "default": "mdi:sync-circle"
+      },
+      "stineni_pryc": {
+        "default": "mdi:blinds-horizontal"
+      },
+      "stineni_vychozi": {
+        "default": "mdi:blinds-horizontal"
+      },
+      "ulozit_dny": {
+        "default": "mdi:calendar-arrow-right"
+      },
+      "vynulovat_stavy": {
+        "default": "mdi:restore-alert"
+      },
+      "zahodit_dny": {
+        "default": "mdi:calendar-remove-outline"
+      },
+      "zastinit": {
+        "default": "mdi:blinds-horizontal"
+      },
+      "zavrit_okno": {
+        "default": "mdi:window-closed-variant"
+      }
+    },
+    "calendar": {
+      "plan": {
+        "default": "mdi:calendar-account"
+      },
+      "vybrana_scena": {
+        "default": "mdi:calendar-star"
+      }
+    },
+    "climate": {
+      "termostat": {
+        "default": "mdi:home-thermometer"
+      }
+    },
+    "datetime": {
+      "plan_do": {
+        "default": "mdi:calendar-clock"
+      },
+      "plan_od": {
+        "default": "mdi:calendar-clock"
+      }
+    },
+    "number": {
+      "chlazeni_min_venku": {
+        "default": "mdi:snowflake-alert"
+      },
+      "co2_noc": {
+        "default": "mdi:weather-night"
+      },
+      "co2_noc_krize": {
+        "default": "mdi:weather-night-partly-cloudy"
+      },
+      "co2_otevrit": {
+        "default": "mdi:molecule-co2"
+      },
+      "co2_zavrit": {
+        "default": "mdi:molecule-co2"
+      },
+      "hyst_den_otevrit": {
+        "default": "mdi:arrow-expand-vertical"
+      },
+      "hyst_den_zavrit": {
+        "default": "mdi:arrow-collapse-vertical"
+      },
+      "hyst_noc_otevrit": {
+        "default": "mdi:weather-night"
+      },
+      "hyst_noc_zavrit": {
+        "default": "mdi:weather-night-partly-cloudy"
+      },
+      "mez_dolni": {
+        "default": "mdi:thermometer-low"
+      },
+      "mez_horni": {
+        "default": "mdi:thermometer-high"
+      },
+      "min_drzeni_min": {
+        "default": "mdi:timer-lock"
+      },
+      "narazove_odstup": {
+        "default": "mdi:weather-windy"
+      },
+      "nejdriv_znovu_min": {
+        "default": "mdi:timer-sand"
+      },
+      "noc_posun": {
+        "default": "mdi:weather-night"
+      },
+      "odchylka": {
+        "default": "mdi:thermometer-plus"
+      },
+      "plan_cil": {
+        "default": "mdi:thermometer-check"
+      },
+      "plan_kolikrat": {
+        "default": "mdi:repeat"
+      },
+      "pm_cisto_pod": {
+        "default": "mdi:blur-off"
+      },
+      "pm_spatne_od": {
+        "default": "mdi:blur"
+      },
+      "predvetrat_min": {
+        "default": "mdi:calendar-clock"
+      },
+      "pryc_utlum_po_hodinach": {
+        "default": "mdi:timer-sand"
+      },
+      "pryc_utlum_topeni": {
+        "default": "mdi:home-export-outline"
+      },
+      "rezerva_venku": {
+        "default": "mdi:thermometer-chevron-down"
+      },
+      "rh_max": {
+        "default": "mdi:water-percent-alert"
+      },
+      "rh_min": {
+        "default": "mdi:water-percent"
+      },
+      "rucni_klid_min": {
+        "default": "mdi:hand-back-right"
+      },
+      "rucni_klid_zaluzie_min": {
+        "default": "mdi:hand-back-left"
+      },
+      "utlum": {
+        "default": "mdi:radiator-off"
+      },
+      "zmena_podminek": {
+        "default": "mdi:thermometer-chevron-up"
+      }
+    },
+    "select": {
+      "co_naplanovat": {
+        "default": "mdi:calendar-plus"
+      },
+      "jak_casto": {
+        "default": "mdi:repeat"
+      },
+      "ktera_scena": {
+        "default": "mdi:calendar-star"
+      },
+      "stav_zaluzie": {
+        "default": "mdi:blinds-horizontal"
+      }
+    },
+    "sensor": {
+      "odchylka_od_cile": {
+        "default": "mdi:thermometer-minus"
+      },
+      "slunce": {
+        "default": "mdi:weather-sunny"
+      },
+      "stav": {
+        "default": "mdi:window-open-variant"
+      },
+      "stav_klimy": {
+        "default": "mdi:air-conditioner"
+      },
+      "stav_oblasti": {
+        "default": "mdi:home-group"
+      },
+      "stineni": {
+        "default": "mdi:blinds-horizontal"
+      },
+      "vitr": {
+        "default": "mdi:weather-windy"
+      }
+    },
+    "switch": {
+      "otevirat_i_pro_pohodu": {
+        "default": "mdi:weather-sunny"
+      },
+      "ovladat_klimu": {
+        "default": "mdi:air-conditioner"
+      },
+      "ovladat_okno": {
+        "default": "mdi:window-shutter-auto"
+      },
+      "ovladat_stineni": {
+        "default": "mdi:blinds-horizontal"
+      },
+      "ovladat_topeni": {
+        "default": "mdi:radiator"
+      }
+    }
+  }
+}

@@ -1,0 +1,2 @@
+ConfigType = dict
+StateType = object

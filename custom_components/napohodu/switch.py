@@ -23,6 +23,7 @@ from . import vybava as vb
 from .const import (DOMAIN, PODENTITA_KLIMA,
                     PODENTITA_MISTNOST)
 from .entity import NaPohoduEntity
+from .typy import NaPohoduEntry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,9 +51,15 @@ def _sprav_identifikatory(hass: HomeAssistant, entry: ConfigEntry) -> None:
             registr.async_update_entity(stary, new_entity_id=novy)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
+# Entity samy nic nedotazují — stav do nich tlačí koordinátor a povely
+# jdou přes služby Home Assistantu, takže není co omezovat. Nula tedy
+# znamená bez omezení, a hlavně je to řečeno nahlas: bez téhle deklarace
+# se u platformy nedá poznat, jestli se na to zapomnělo.
+PARALLEL_UPDATES = 0
+
+async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
                             pridat: AddEntitiesCallback) -> None:
-    k = hass.data[DOMAIN][entry.entry_id]
+    k = entry.runtime_data
     # Mřížka dnů patří vybrané scéně, ne každé zvlášť: s každou novou
     # by karta narostla o pětatřicet dlaždic a musela by se generovat
     # znovu.
@@ -154,7 +161,6 @@ class ZVolbyMistnosti(NaPohoduPrepinac):
 class OtevritProPohodu(ZVolbyMistnosti):
     """Smí se otevřít i tehdy, když k tomu není důvod?"""
 
-    _attr_icon = "mdi:weather-sunny"
     _klic_hodnoty = "pro_pohodu"
     _vychozi_klic = "pro_pohodu"
 
@@ -165,7 +171,6 @@ class OtevritProPohodu(ZVolbyMistnosti):
 class ZvlhcovatVeSpanku(ZVolbyMistnosti):
     """Smí zvlhčovač běžet i při zapnutém spánku?"""
 
-    _attr_icon = "mdi:air-humidifier"
     _klic_hodnoty = "zvlhcovac_ve_spanku"
     _vychozi_klic = "zvlhcovac_ve_spanku"
 
@@ -174,7 +179,6 @@ class ZvlhcovatVeSpanku(ZVolbyMistnosti):
 
 
 class OvladatOkno(NaPohoduPrepinac):
-    _attr_icon = "mdi:window-shutter-auto"
     _klic_hodnoty = "ovladat"
 
     def __init__(self, k, pod):
@@ -182,7 +186,6 @@ class OvladatOkno(NaPohoduPrepinac):
 
 
 class OvladatStineni(NaPohoduPrepinac):
-    _attr_icon = "mdi:blinds-horizontal"
     _klic_hodnoty = "ovladat_stineni"
 
     def __init__(self, k, pod):
@@ -190,7 +193,6 @@ class OvladatStineni(NaPohoduPrepinac):
 
 
 class OvladatKlimu(NaPohoduPrepinac):
-    _attr_icon = "mdi:air-conditioner"
     _klic_hodnoty = "ovladat"
 
     def __init__(self, k, pod):
@@ -200,7 +202,6 @@ class OvladatKlimu(NaPohoduPrepinac):
 class OvladatTopeni(NaPohoduPrepinac):
     """Povolí zapisovat cílovou teplotu do hlavic místnosti."""
 
-    _attr_icon = "mdi:radiator"
     _klic_hodnoty = "ovladat_topeni"
 
     def __init__(self, k, pod):
@@ -230,7 +231,6 @@ class DenSceny(CoordinatorEntity, SwitchEntity):
     # zbylo „NaP…" — datum se nevešlo vůbec. Tahle cesta je proti
     # verzím odolná, protože nezávisí na žádném přepínači.
     _attr_has_entity_name = False
-    _attr_icon = "mdi:calendar-check"
 
     def __init__(self, k, entry, odstup: int) -> None:
         super().__init__(k)

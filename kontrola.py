@@ -421,9 +421,25 @@ for m in re.finditer(r"vol\.Optional\(c\.(CONF_\w+),\s*default=([^)]+?)\)",
             f"{klic}: formulář má výchozí {ve_form}, kód bere "
             f"{sorted(cisla)} — komu se pole neuložilo, platí jiná hodnota")
 
+# 1o') koordinátor patří zápisu konfigurace, ne globálnímu slovníku.
+# Pravidlo `runtime-data`: v hass.data smí být jen to, co je sdílené
+# napříč zápisy (uložené stavy žaluzií pro služby). Koordinátor
+# hledaný podle entry_id se při odebrání zápisu neuklidí a typ se
+# musí hádat.
+for p in d.glob("*.py"):
+    for i, radek in enumerate(p.read_text().splitlines(), 1):
+        if (not radek.lstrip().startswith("#")
+                and re.search(r"hass\.data.{0,40}entry_id", radek)):
+            chyby.append(
+                f"{p.name}:{i}: koordinátor se bere z hass.data podle "
+                f"entry_id, patří do entry.runtime_data")
+
 # Argumenty, které předepisuje Home Assistant. Vyhodit je nejde,
 # i když je zrovna nepoužijeme.
-HA_ARGUMENTY = {"recurrence_id", "recurrence_range", "hass"}
+# `config` v async_setup předepisuje Home Assistant pro nastavení
+# z YAML; integrace se nastavuje jen přes rozhraní, takže zůstává
+# nepoužitý — vyhodit ho ale nejde, hook se pak nenajde.
+HA_ARGUMENTY = {"recurrence_id", "recurrence_range", "hass", "config"}
 
 # 1p) argument, který se v těle nepoužije. Vzniká, když se funkce
 # přestaví a volání zůstane po starém — čte se pak něco, co nikdo

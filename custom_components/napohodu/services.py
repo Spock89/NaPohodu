@@ -300,7 +300,9 @@ async def zaregistruj(hass: HomeAssistant) -> None:
         nazev = (call.data.get(ATR_MISTNOST) or "").strip().lower()
         srovnano = []
         for entry in hass.config_entries.async_entries(DOMAIN):
-            k = hass.data.get(DOMAIN, {}).get(entry.entry_id)
+            # Nenačtený zápis koordinátor nemá; služba se o něm
+            # nesmí dozvědět až výjimkou.
+            k = getattr(entry, "runtime_data", None)
             if k is None or not hasattr(k, "srovnej"):
                 continue
             if not nazev:

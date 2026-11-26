@@ -6,7 +6,6 @@ from dataclasses import dataclass
 
 from homeassistant.components.number import (NumberEntity, NumberMode,
                                              RestoreNumber)
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, EntityCategory, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -29,6 +28,7 @@ from .const import (
 )
 from . import vybava as vb
 from .entity import NaPohoduEntity
+from .typy import NaPohoduEntry
 
 
 @dataclass(frozen=True)
@@ -39,65 +39,56 @@ class Posuvnik:
     krok: float
     jednotka: str | None
     vychozi: float
-    ikona: str
 
 
 # Globální hodnoty nepatří místnosti, ale celému bytu. Jsou to pořád
 # čísla, takže si zaslouží posuvník stejně jako ta místnostní.
 CELY_BYT = [
     Posuvnik(CONF_NARAZOVE_ODSTUP, 2, 30, 0.5, UnitOfTemperature.CELSIUS,
-             15.0, "mdi:weather-windy"),
+             15.0),
     Posuvnik(CONF_ZMENA_PODMINEK, 0, 10, 0.5, UnitOfTemperature.CELSIUS,
-             2.0, "mdi:thermometer-chevron-up"),
-    Posuvnik(CONF_NEJDRIV_ZNOVU, 5, 240, 5, "min", 60.0,
-             "mdi:timer-sand"),
-    Posuvnik(CONF_PREDVETRAT, 0, 240, 15, "min", 60.0,
-             "mdi:calendar-clock"),
+             2.0),
+    Posuvnik(CONF_NEJDRIV_ZNOVU, 5, 240, 5, "min", 60.0),
+    Posuvnik(CONF_PREDVETRAT, 0, 240, 15, "min", 60.0),
     # Plánovač: kolikrát se má událost zopakovat a jakou cílovou
     # teplotu nese, když se plánuje právě ta.
-    Posuvnik(CONF_PLAN_KOLIKRAT, 0, 52, 1, "×", 8.0, "mdi:repeat"),
-    Posuvnik(CONF_PLAN_CIL, 10, 30, 0.5, UnitOfTemperature.CELSIUS, 21.0,
-             "mdi:thermometer-check"),
+    Posuvnik(CONF_PLAN_KOLIKRAT, 0, 52, 1, "×", 8.0),
+    Posuvnik(CONF_PLAN_CIL, 10, 30, 0.5, UnitOfTemperature.CELSIUS, 21.0),
 ]
 
 MISTNOST = [
     Posuvnik(CONF_ODCHYLKA, -ODCHYLKA_MEZ, ODCHYLKA_MEZ, ODCHYLKA_KROK,
-             UnitOfTemperature.CELSIUS, 0.0, "mdi:thermometer-plus"),
+             UnitOfTemperature.CELSIUS, 0.0),
     Posuvnik(CONF_NOC_POSUN, -5, 5, 0.5, UnitOfTemperature.CELSIUS,
-             0.0, "mdi:weather-night"),
+             0.0),
     Posuvnik(CONF_HYST_DEN_OTEVRIT, 0, 8, 0.5, UnitOfTemperature.CELSIUS,
-             2.5, "mdi:arrow-expand-vertical"),
+             2.5),
     Posuvnik(CONF_HYST_DEN_ZAVRIT, 0, 8, 0.5, UnitOfTemperature.CELSIUS,
-             1.0, "mdi:arrow-collapse-vertical"),
+             1.0),
     Posuvnik(CONF_HYST_NOC_OTEVRIT, 0, 8, 0.5, UnitOfTemperature.CELSIUS,
-             2.5, "mdi:weather-night"),
+             2.5),
     Posuvnik(CONF_HYST_NOC_ZAVRIT, 0, 8, 0.5, UnitOfTemperature.CELSIUS,
-             1.0, "mdi:weather-night-partly-cloudy"),
+             1.0),
     Posuvnik(CONF_REZERVA_VENKU, 0, 8, 0.5, UnitOfTemperature.CELSIUS,
-             2.0, "mdi:thermometer-chevron-down"),
+             2.0),
     Posuvnik(CONF_MEZ_DOLNI, 10, 24, 0.5, UnitOfTemperature.CELSIUS,
-             18.0, "mdi:thermometer-low"),
+             18.0),
     Posuvnik(CONF_MEZ_HORNI, 22, 35, 0.5, UnitOfTemperature.CELSIUS,
-             27.0, "mdi:thermometer-high"),
+             27.0),
     Posuvnik(CONF_CHLAZENI_MIN_VENKU, -20, 10, 0.5,
-             UnitOfTemperature.CELSIUS, 7.0, "mdi:snowflake-alert"),
-    Posuvnik(CONF_MIN_DRZENI, 1, 120, 1, "min", 20.0, "mdi:timer-lock"),
-    Posuvnik(CONF_RUCNI_KLID, 0, 240, 5, "min", 30.0, "mdi:hand-back-right"),
-    Posuvnik(CONF_RUCNI_KLID_ZALUZIE, 0, 480, 5, "min", 120.0,
-             "mdi:hand-back-left"),
-    Posuvnik(CONF_PM_SPATNE, 10, 100, 1, "µg/m³", 35.0, "mdi:blur"),
-    Posuvnik(CONF_PM_CISTO, 5, 60, 1, "µg/m³", 20.0, "mdi:blur-off"),
-    Posuvnik(CONF_RH_MIN, 20, 55, 1, PERCENTAGE, 38.0,
-             "mdi:water-percent"),
-    Posuvnik(CONF_RH_MAX, 40, 80, 1, PERCENTAGE, 60.0,
-             "mdi:water-percent-alert"),
-    Posuvnik(CONF_UTLUM, 5, 20, 0.5, UnitOfTemperature.CELSIUS, 16.0,
-             "mdi:radiator-off"),
-    Posuvnik(CONF_CO2_OTEVRIT, 500, 2000, 25, "ppm", 800.0, "mdi:molecule-co2"),
-    Posuvnik(CONF_CO2_ZAVRIT, 400, 1500, 25, "ppm", 700.0, "mdi:molecule-co2"),
-    Posuvnik(CONF_CO2_NOC, 600, 2000, 25, "ppm", 1000.0, "mdi:weather-night"),
-    Posuvnik(CONF_CO2_NOC_KRIZE, 800, 2500, 25, "ppm", 1250.0,
-             "mdi:weather-night-partly-cloudy"),
+             UnitOfTemperature.CELSIUS, 7.0),
+    Posuvnik(CONF_MIN_DRZENI, 1, 120, 1, "min", 20.0),
+    Posuvnik(CONF_RUCNI_KLID, 0, 240, 5, "min", 30.0),
+    Posuvnik(CONF_RUCNI_KLID_ZALUZIE, 0, 480, 5, "min", 120.0),
+    Posuvnik(CONF_PM_SPATNE, 10, 100, 1, "µg/m³", 35.0),
+    Posuvnik(CONF_PM_CISTO, 5, 60, 1, "µg/m³", 20.0),
+    Posuvnik(CONF_RH_MIN, 20, 55, 1, PERCENTAGE, 38.0),
+    Posuvnik(CONF_RH_MAX, 40, 80, 1, PERCENTAGE, 60.0),
+    Posuvnik(CONF_UTLUM, 5, 20, 0.5, UnitOfTemperature.CELSIUS, 16.0),
+    Posuvnik(CONF_CO2_OTEVRIT, 500, 2000, 25, "ppm", 800.0),
+    Posuvnik(CONF_CO2_ZAVRIT, 400, 1500, 25, "ppm", 700.0),
+    Posuvnik(CONF_CO2_NOC, 600, 2000, 25, "ppm", 1000.0),
+    Posuvnik(CONF_CO2_NOC_KRIZE, 800, 2500, 25, "ppm", 1250.0),
 ]
 
 
@@ -107,15 +98,20 @@ MISTNOST = [
 # z nastavení bytu, takže se nastavují na jednom místě a místnosti se
 # odchylují jen tam, kde je proč.
 TOPENI = [
-    Posuvnik(CONF_PRYC_UTLUM, 0, 3, 0.5, UnitOfTemperature.CELSIUS, 0.0,
-             "mdi:home-export-outline"),
-    Posuvnik(CONF_PRYC_PO, 0, 12, 0.5, "h", 0.0, "mdi:timer-sand"),
+    Posuvnik(CONF_PRYC_UTLUM, 0, 3, 0.5, UnitOfTemperature.CELSIUS, 0.0),
+    Posuvnik(CONF_PRYC_PO, 0, 12, 0.5, "h", 0.0),
 ]
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
+# Entity samy nic nedotazují — stav do nich tlačí koordinátor a povely
+# jdou přes služby Home Assistantu, takže není co omezovat. Nula tedy
+# znamená bez omezení, a hlavně je to řečeno nahlas: bez téhle deklarace
+# se u platformy nedá poznat, jestli se na to zapomnělo.
+PARALLEL_UPDATES = 0
+
+async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
                             pridat: AddEntitiesCallback) -> None:
-    k = hass.data[DOMAIN][entry.entry_id]
+    k = entry.runtime_data
     pridat([NaPohoduNumber(k, None, p, entry) for p in CELY_BYT])
     for pod in entry.subentries.values():
         if pod.subentry_type != PODENTITA_MISTNOST:
@@ -166,7 +162,6 @@ class NaPohoduNumber(NaPohoduEntity, RestoreNumber, NumberEntity):
         self._attr_native_max_value = p.max
         self._attr_native_step = p.krok
         self._attr_native_unit_of_measurement = p.jednotka
-        self._attr_icon = p.ikona
         self._vychozi = float(data.get(p.klic, p.vychozi))
 
     async def async_added_to_hass(self) -> None:

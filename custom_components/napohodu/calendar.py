@@ -27,6 +27,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import planovac as pz
+from .typy import NaPohoduEntry
 from .const import DOMAIN, PODENTITA_SCENA
 
 _LOGGER = logging.getLogger(__name__)
@@ -37,9 +38,15 @@ except ImportError:      # pragma: no cover - bez něj se jen neopakuje
     rrulestr = None
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
+# Entity samy nic nedotazují — stav do nich tlačí koordinátor a povely
+# jdou přes služby Home Assistantu, takže není co omezovat. Nula tedy
+# znamená bez omezení, a hlavně je to řečeno nahlas: bez téhle deklarace
+# se u platformy nedá poznat, jestli se na to zapomnělo.
+PARALLEL_UPDATES = 0
+
+async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
                             pridat: AddEntitiesCallback) -> None:
-    k = hass.data[DOMAIN][entry.entry_id]
+    k = entry.runtime_data
     pridat([KalendarPlanu(k, entry)])
     # Každá scéna má vlastní kalendář. Den se v něm označí kliknutím
     # a nic se nepojmenovává — význam nese kalendář sám, takže
@@ -65,7 +72,6 @@ class KalendarPlanu(CoordinatorEntity, CalendarEntity):
 
     _attr_has_entity_name = True
     _attr_translation_key = "plan"
-    _attr_icon = "mdi:calendar-account"
     _attr_supported_features = (CalendarEntityFeature.CREATE_EVENT
                                 | CalendarEntityFeature.DELETE_EVENT)
 
@@ -261,6 +267,11 @@ class KalendarVybraneSceny(KalendarSceny):
     """
 
     _attr_translation_key = "vybrana_scena"
+    # Ikonu si bere z icons.json podle klíče výš. Nadřazená třída má
+    # ikonu v kódu, protože se jmenuje scénou a klíč nemá — jenže
+    # kdyby se zdědila, přebila by tabulku: ikona ve stavu entity má
+    # před překladovou ikonou přednost.
+    _attr_icon = None
 
     def __init__(self, k, entry: ConfigEntry) -> None:
         # Základ chce podentitu; tahle entita ale patří bytu, takže se

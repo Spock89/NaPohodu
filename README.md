@@ -1707,8 +1707,9 @@ konstanty, mrtvé moduly a funkce, proměnné čtené před přiřazením,
 chybějící překlady na obou obrazovkách, rozsahy posuvníků proti polím ve
 formuláři, výchozí hodnoty ve formuláři proti kódu, nastavení, které
 nejde vyplnit nebo nikdo nečte, jedno jméno pro jednu hodnotu, atributy
-vystavené bez toho, aby se nastavovaly, a entity, na které se odkazuje
-karta, ale nevznikají.
+vystavené bez toho, aby se nastavovaly, entity, na které se odkazuje
+karta, ale nevznikají, a koordinátor hledaný v `hass.data` podle
+`entry_id` místo v `entry.runtime_data`.
 
 Každý hlídač byl přidán po skutečné chybě a ověřen tím, že ji naschvál
 vrátíme a kontrola ji najde.
@@ -1812,6 +1813,54 @@ pojistky se „nevím" čte na bezpečnou stranu, stejně jako u přítomnosti.
 Naopak všechno ostatní tvoje rozhodnutí respektuje. Ruční zásah zruší
 rozdělanou akci, vynucené otevření přebije vzduch i teploty a přepínače
 ovládání vypnou automatiku úplně.
+
+## Podle pravidel Home Assistantu
+
+Vývojáři Home Assistantu mají svoje pravidla pro psaní, testování a
+revizi integrací v repozitáři jádra (`.claude/skills/`) — tedy to,
+podle čeho se měří kód, který jim přijde. NaPohodu je vlastní
+integrace, takže se jí formálně netýkají, ale většina z nich má důvod,
+který platí stejně. Co z nich je v kódu vidět:
+
+**Služby se registrují v `async_setup`, ne až v `async_setup_entry`**
+(pravidlo `action-setup`). Jinak při nenačtené integraci služby
+v Home Assistantu vůbec neexistují a automatizace, která je zavolá,
+spadne na „služba neexistuje" místo na hlášku, že integrace není
+načtená — a nenačtený zápis je zrovna ten stav, kdy se to stane.
+
+**Koordinátor žije v `entry.runtime_data`**, ne ve `hass.data` podle
+`entry_id` (pravidlo `runtime-data`). Odebráním zápisu zmizí s ním,
+platforma si ho nemusí hledat a typ je vidět: `NaPohoduEntry` je
+`ConfigEntry[NaPohoduCoordinator]`. Alias má vlastní modul `typy.py`,
+protože koordinátor si bere seznam šoupátek z `number` — kdyby `number`
+sahalo pro typ zpátky do koordinátoru, moduly by se importovaly
+navzájem. Ve `hass.data` zůstává jen to, co je sdílené napříč zápisy,
+tedy uložené stavy žaluzií pro služby. Hlídá to `kontrola.py`.
+
+**Ikony jsou v `icons.json`**, ne v kódu (pravidlo
+`icon-translations`). Všech 68 ikon se přesunulo podle překladového
+klíče, a posuvníky tím ztratily poslední pole, které nebylo číslo.
+Dvě výjimky zůstaly v kódu, protože je tabulka neumí: kalendář scény
+se jmenuje scénou, takže překladový klíč nemá, a dlaždice dne si ikonu
+počítá ze stavu zaškrtnutí a z toho, jestli je rozdělaná změna.
+
+Chybějící ikona se nijak neohlásí — entita prostě dostane výchozí
+ikonu svého oboru. Proto se obě strany porovnávají testem: co vzniká,
+musí mít záznam, a co je v `icons.json`, musí někomu patřit. Šest
+entit ikonu schválně nemá, protože ji určuje jejich `device_class`
+(okno, obsazenost, teplota) a vlastní ikona by ten rozumný výchozí
+stav jen přepsala; ty jsou v testu vypsané jmenovitě.
+
+**Platformy deklarují `PARALLEL_UPDATES = 0`** (pravidlo
+`parallel-updates`). U nás se tím nic nemění — entity samy nic
+nedotazují, stav do nich tlačí koordinátor — ale bez té deklarace se
+u platformy nedá poznat, jestli se na to zapomnělo.
+
+**Ikona vedle vlastnosti je mrtvý kód.** Dvě místa měla `_attr_icon`
+i `_attr_available` vedle vlastnosti, která je počítá. Vlastnost
+vyhraje, takže to druhé nikdy nehrálo. Pozor na dědění: `_attr_icon`
+v nadřazené třídě přebije `icons.json` i podtřídě, která svůj klíč má
+— proto ho kalendář vybrané scény ruší výslovně.
 
 ## Ikona v HACS
 

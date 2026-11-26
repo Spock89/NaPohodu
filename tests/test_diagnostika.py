@@ -85,7 +85,9 @@ def test_export_funguje_i_kdyz_se_integrace_nenacetla(ha):
     """Právě tehdy je nejpotřebnější — nesmí spadnout."""
     dg = importlib.import_module("napohodu.diagnostics")
     k, hass, c = _hotovy(ha)
+    # Nenačtený zápis koordinátor nenese.
     hass.data = {}
+    k.entry.runtime_data = None
 
     out = asyncio.run(dg.async_get_config_entry_diagnostics(hass, k.entry))
     assert out["koordinator"] == "nenačtený"

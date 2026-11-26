@@ -143,11 +143,13 @@ class FalesnaPodentita:
 
 
 class FalesnyEntry:
-    def __init__(self, podentity):
+    def __init__(self, podentity, koordinator=None):
         self.entry_id = "entry"
         self.data = {}
         self.options = {}
         self.subentries = {p.subentry_id: p for p in podentity}
+        # Koordinátor si platformy berou ze zápisu, ne z hass.data.
+        self.runtime_data = koordinator if koordinator is not None else object()
 
 
 def _entity_platformy(modul, podentity):
@@ -684,11 +686,12 @@ def test_formular_ukazuje_platne_hodnoty(nahradni_ha):
         _platne = cf.MistnostSubentryFlow._platne
 
         class hass:
-            data = {c.DOMAIN: {"e1": FalesnyKoordinator()}}
+            data: dict = {}
 
         @staticmethod
         def _get_entry():
-            return type("E", (), {"entry_id": "e1"})()
+            return type("E", (), {"entry_id": "e1",
+                                  "runtime_data": FalesnyKoordinator()})()
 
     out = FalesnyFlow()._platne("m1", {c.CONF_MEZ_DOLNI: 18.0,
                                        c.CONF_NAZEV: "Ložnice"})
@@ -2242,3 +2245,46 @@ def test_cidlo_okna_vznikne_jen_kdyz_o_oknu_vime(nahradni_ha):
     s_oknem = FalesnaPodentita(const.PODENTITA_MISTNOST, "Kuchyne",
                                {const.CONF_OKNA: ["cover.o"]})
     assert "okno" in _klice(_entity_platformy("binary_sensor", [s_oknem]))
+
+
+def test_sluzby_se_registruji_uz_v_async_setup(nahradni_ha):
+    """Služby musí existovat dřív než zápis konfigurace.
+
+    Registrovat je až při načtení zápisu znamená, že při nenačtené
+    integraci služby v Home Assistantu vůbec nejsou a automatizace
+    spadne na „služba neexistuje" místo na hlášku, že integrace není
+    načtená. Pravidlo `action-setup` z ha-integration-knowledge.
+    """
+    import asyncio
+    import importlib
+
+    m = importlib.import_module("napohodu")
+    volano: list = []
+
+    async def falesny_zaregistruj(hass):
+        volano.append(hass)
+
+    puvodni = m.zaregistruj
+    m.zaregistruj = falesny_zaregistruj
+    try:
+        class _Hass:
+            data: dict = {}
+
+        assert asyncio.run(m.async_setup(_Hass(), {})) is True
+        assert len(volano) == 1
+        # A v načtení zápisu už ne — jinak by se registrovalo dvakrát.
+        zdroj = (pathlib.Path(m.__file__).read_text()
+                 .split("async def async_setup_entry")[1])
+        assert "zaregistruj" not in zdroj
+    finally:
+        m.zaregistruj = puvodni
+
+
+def test_platformy_deklaruji_parallel_updates(nahradni_ha):
+    """Bez deklarace se nedá poznat, jestli se na to zapomnělo."""
+    import importlib
+
+    for jmeno in ("sensor", "binary_sensor", "switch", "number", "select",
+                  "button", "datetime", "calendar", "climate"):
+        modul = importlib.import_module(f"napohodu.{jmeno}")
+        assert getattr(modul, "PARALLEL_UPDATES", None) == 0, jmeno

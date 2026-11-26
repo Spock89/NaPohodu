@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -15,11 +14,18 @@ from .const import (DOMAIN, PODENTITA_KLIMA, PODENTITA_MISTNOST,
                     PODENTITA_ZONA)
 from . import vybava as vb
 from .entity import NaPohoduEntity
+from .typy import NaPohoduEntry
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
+# Entity samy nic nedotazují — stav do nich tlačí koordinátor a povely
+# jdou přes služby Home Assistantu, takže není co omezovat. Nula tedy
+# znamená bez omezení, a hlavně je to řečeno nahlas: bez téhle deklarace
+# se u platformy nedá poznat, jestli se na to zapomnělo.
+PARALLEL_UPDATES = 0
+
+async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
                             pridat: AddEntitiesCallback) -> None:
-    k = hass.data[DOMAIN][entry.entry_id]
+    k = entry.runtime_data
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_ZONA:
             pridat([StavOblasti(k, pod)], config_subentry_id=pod.subentry_id)
@@ -48,7 +54,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 class StavMistnosti(NaPohoduEntity, SensorEntity):
     """Co se v místnosti děje s okny a proč."""
 
-    _attr_icon = "mdi:window-open-variant"
 
     def __init__(self, k, pod):
         super().__init__(k, pod, "stav")
@@ -69,7 +74,6 @@ class StavMistnosti(NaPohoduEntity, SensorEntity):
 class StavOblasti(NaPohoduEntity, SensorEntity):
     """Sdílený vzduch oblasti. Sama nic neovládá."""
 
-    _attr_icon = "mdi:home-group"
 
     def __init__(self, k, pod):
         super().__init__(k, pod, "stav_oblasti")
@@ -121,7 +125,6 @@ class OdchylkaOdCile(NaPohoduEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_suggested_display_precision = 1
-    _attr_icon = "mdi:thermometer-minus"
 
     def __init__(self, k, pod):
         super().__init__(k, pod, "odchylka_od_cile")
@@ -145,7 +148,6 @@ class SlunceMistnosti(NaPohoduEntity, SensorEntity):
     """Kolik slunce právě dopadá na okna místnosti."""
 
     _attr_native_unit_of_measurement = "W/m²"
-    _attr_icon = "mdi:weather-sunny"
 
     def __init__(self, k, pod):
         super().__init__(k, pod, "slunce")
@@ -214,7 +216,6 @@ class Prumer(CoordinatorEntity, SensorEntity):
 class StavKlimy(NaPohoduEntity, SensorEntity):
     """Co sdílená klimatizace dělá a podle koho."""
 
-    _attr_icon = "mdi:air-conditioner"
 
     def __init__(self, k, pod):
         super().__init__(k, pod, "stav_klimy")
@@ -244,7 +245,6 @@ class Vitr(CoordinatorEntity, SensorEntity):
     _attr_translation_key = "vitr"
     _attr_native_unit_of_measurement = "m/s"
     _attr_suggested_display_precision = 1
-    _attr_icon = "mdi:weather-windy"
 
     def __init__(self, koordinator, entry) -> None:
         super().__init__(koordinator)
@@ -271,7 +271,6 @@ class StineniMistnosti(NaPohoduEntity, SensorEntity):
     do kterého pojmenovaného stavu jsme je poslali.
     """
 
-    _attr_icon = "mdi:blinds-horizontal"
 
     def __init__(self, k, pod):
         super().__init__(k, pod, "stineni")

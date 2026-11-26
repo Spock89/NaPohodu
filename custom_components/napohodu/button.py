@@ -11,7 +11,6 @@ Ovládání to neobchází: kde je přepínač vypnutý, se nic nestane.
 from __future__ import annotations
 
 from homeassistant.components.button import ButtonEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -27,11 +26,18 @@ from .const import (
 )
 from .services import proved_stav_stineni
 from .entity import NaPohoduEntity
+from .typy import NaPohoduEntry
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
+# Entity samy nic nedotazují — stav do nich tlačí koordinátor a povely
+# jdou přes služby Home Assistantu, takže není co omezovat. Nula tedy
+# znamená bez omezení, a hlavně je to řečeno nahlas: bez téhle deklarace
+# se u platformy nedá poznat, jestli se na to zapomnělo.
+PARALLEL_UPDATES = 0
+
+async def async_setup_entry(hass: HomeAssistant, entry: NaPohoduEntry,
                             pridat: AddEntitiesCallback) -> None:
-    k = hass.data[DOMAIN][entry.entry_id]
+    k = entry.runtime_data
     for pod in entry.subentries.values():
         if pod.subentry_type == PODENTITA_MISTNOST:
             # Srovnat okno tam, kde okno není, je tlačítko, které
@@ -66,7 +72,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
 class Srovnat(NaPohoduEntity, ButtonEntity):
     """Srovná jednu místnost nebo zónu."""
 
-    _attr_icon = "mdi:sync"
 
     async def async_press(self) -> None:
         self.coordinator.srovnej(self.pod_id)
@@ -78,7 +83,6 @@ class SrovnatVse(CoordinatorEntity, ButtonEntity):
 
     _attr_has_entity_name = True
     _attr_translation_key = "srovnat_vse"
-    _attr_icon = "mdi:sync-circle"
 
     def __init__(self, koordinator, entry) -> None:
         super().__init__(koordinator)
@@ -104,7 +108,6 @@ class VynulovatStavy(CoordinatorEntity, ButtonEntity):
 
     _attr_has_entity_name = True
     _attr_translation_key = "vynulovat_stavy"
-    _attr_icon = "mdi:restore-alert"
 
     def __init__(self, koordinator, entry) -> None:
         super().__init__(koordinator)
@@ -132,7 +135,6 @@ class Stineni(NaPohoduEntity, ButtonEntity):
     převezme z toho, kam žaluzie doopravdy dojede.
     """
 
-    _attr_icon = "mdi:blinds-horizontal"
 
     def __init__(self, k, pod, klic: str, role: str) -> None:
         super().__init__(k, pod, klic)
@@ -166,8 +168,6 @@ class Okno(NaPohoduEntity, ButtonEntity):
     def __init__(self, k, pod, klic: str, otevrit: bool) -> None:
         super().__init__(k, pod, klic)
         self._otevrit = otevrit
-        self._attr_icon = ("mdi:window-open-variant" if otevrit
-                           else "mdi:window-closed-variant")
 
     async def async_press(self) -> None:
         okna = self.pod.data.get(CONF_OKNA) or []
@@ -199,7 +199,6 @@ class Naplanovat(CoordinatorEntity, ButtonEntity):
 
     _attr_has_entity_name = True
     _attr_translation_key = "naplanovat"
-    _attr_icon = "mdi:calendar-check"
 
     def __init__(self, koordinator, entry) -> None:
         super().__init__(koordinator)
@@ -228,7 +227,6 @@ class UlozitDny(CoordinatorEntity, ButtonEntity):
 
     _attr_has_entity_name = True
     _attr_translation_key = "ulozit_dny"
-    _attr_icon = "mdi:calendar-arrow-right"
 
     def __init__(self, koordinator, entry) -> None:
         super().__init__(koordinator)
@@ -258,7 +256,6 @@ class ZahoditDny(CoordinatorEntity, ButtonEntity):
 
     _attr_has_entity_name = True
     _attr_translation_key = "zahodit_dny"
-    _attr_icon = "mdi:calendar-remove-outline"
 
     def __init__(self, koordinator, entry) -> None:
         super().__init__(koordinator)
